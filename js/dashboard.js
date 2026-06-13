@@ -106,8 +106,6 @@ async function carregarContas(){
         <tr>
           <th></th>
           <th>Conta</th>
-          <th>Banco</th>
-          <th>Tipo</th>
           <th>Moeda</th>
           <th>Saldo Atual</th>
         </tr>
@@ -117,8 +115,6 @@ async function carregarContas(){
           <tr>
             <td><span class="color-dot" style="background:${conta.color || '#4f8ef7'}"></span></td>
             <td>${conta.nome || '-'}</td>
-            <td>${conta.bank || '-'}</td>
-            <td>${conta.tipo || '-'}</td>
             <td>${conta.currency || 'BRL'}</td>
             <td class="money">${formatCurrency(conta.saldo_atual || 0, conta.currency || 'BRL')}</td>
           </tr>
@@ -227,21 +223,40 @@ async function carregarCartoesEFaturas(){
   renderizarFaturas(listaParcelas);
 }
 
+function referenciasMesAtualEProximo(){
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = hoje.getMonth() + 1;
+
+  const r1 = `${ano}-${String(mes).padStart(2,'0')}`;
+
+  const proximoMes = mes === 12 ? 1 : mes + 1;
+  const proximoAno = mes === 12 ? ano + 1 : ano;
+  const r2 = `${proximoAno}-${String(proximoMes).padStart(2,'0')}`;
+
+  return [r1, r2];
+}
+
 function renderizarFaturas(parcelas){
   if(!parcelas || parcelas.length === 0){
     resumoFaturas.innerHTML = '<p class="muted">Nenhuma fatura aberta.</p>';
     return;
   }
 
+  const [refAtual, refProxima] = referenciasMesAtualEProximo();
+
+  const parcelasFiltradas = parcelas.filter(p =>
+    p.fatura_referencia === refAtual || p.fatura_referencia === refProxima
+  );
+
   const grupos = {};
 
-  parcelas.forEach(parcela => {
+  parcelasFiltradas.forEach(parcela => {
     const chave = `${parcela.card_id}|${parcela.fatura_referencia}`;
 
     if(!grupos[chave]){
       grupos[chave] = {
         cartao: parcela.credit_cards?.nome || 'Cartão',
-        banco: parcela.credit_cards?.banco || '',
         referencia: parcela.fatura_referencia,
         total: 0,
         quantidade: 0
@@ -253,6 +268,11 @@ function renderizarFaturas(parcelas){
   });
 
   const faturas = Object.values(grupos).sort((a,b) => a.referencia.localeCompare(b.referencia));
+
+  if(faturas.length === 0){
+    resumoFaturas.innerHTML = '<p class="muted">Nenhuma fatura no mês atual.</p>';
+    return;
+  }
 
   resumoFaturas.innerHTML = `
     <table class="data-table">
@@ -268,7 +288,7 @@ function renderizarFaturas(parcelas){
         ${faturas.map(fatura => `
           <tr>
             <td>${formatarReferencia(fatura.referencia)}</td>
-            <td>${fatura.cartao}${fatura.banco ? ' - ' + fatura.banco : ''}</td>
+            <td>${fatura.cartao}</td>
             <td>${fatura.quantidade}</td>
             <td class="money negative">-${formatCurrency(fatura.total, 'BRL')}</td>
           </tr>
