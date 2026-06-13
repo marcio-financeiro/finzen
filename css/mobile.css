@@ -1,0 +1,152 @@
+@media (max-width:700px){
+  body{
+    background:var(--bg);
+  }
+
+  .app-shell{
+    display:block;
+    min-height:100vh;
+  }
+
+  .sidebar{
+    display:none;
+  }
+
+  .content{
+    padding:14px 14px 96px;
+  }
+
+  .topbar{
+    margin:-14px -14px 14px;
+    padding:14px 18px 16px;
+    border-bottom:1px solid var(--border);
+    background:var(--surface);
+    position:sticky;
+    top:0;
+    z-index:5;
+    align-items:flex-start;
+  }
+
+  .topbar h1{
+    font-size:22px;
+    margin-bottom:4px;
+  }
+
+  .topbar .muted{
+    max-width:220px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .kpi-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    margin-bottom:14px;
+  }
+
+  .kpi-card{
+    padding:12px;
+    border-radius:10px;
+  }
+
+  .kpi-card span{
+    font-size:10px;
+    margin-bottom:5px;
+  }
+
+  .kpi-card strong{
+    font-size:16px;
+  }
+
+  .panel{
+    border-radius:10px;
+    margin-bottom:14px;
+  }
+
+  .panel-header{
+    padding:13px 14px;
+  }
+
+  .panel .form-grid{
+    margin-left:14px;
+    margin-right:14px;
+    padding-top:14px;
+  }
+
+  .panel > .btn,
+  .panel > .message{
+    margin-left:14px;
+    margin-right:14px;
+  }
+
+  .form-grid{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .data-table{
+    min-width:720px;
+  }
+
+  .btn.compact{
+    padding:8px 10px;
+  }
+
+  .mobile-nav{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    display:flex;
+    background:var(--surface);
+    border-top:1px solid var(--border);
+    padding:8px 0 10px;
+    z-index:20;
+    box-shadow:0 -20px 50px rgba(0,0,0,.35);
+  }
+
+  .mobile-nav a{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    color:var(--muted);
+    font-size:10px;
+    padding:4px 2px;
+    border-radius:0;
+  }
+
+  .mobile-nav a.active{
+    color:var(--accent);
+    background:transparent;
+  }
+
+  .mobile-nav a::before{
+    font-size:18px;
+    line-height:1;
+  }
+
+  .mobile-nav a[href*="dashboard"]::before{ content:"📊"; }
+  .mobile-nav a[href*="transactions"]::before{ content:"↕️"; }
+  .mobile-nav a[href*="cards"]::before{ content:"💳"; }
+  .mobile-nav a[href*="card-bills"]::before{ content:"🧾"; }
+  .mobile-nav a[href*="budgets"]::before{ content:"🎯"; }
+  .mobile-nav a[href*="goals"]::before{ content:"🏆"; }
+  .mobile-nav a[href*="investments"]::before{ content:"📈"; }
+  .mobile-nav a[href*="allocation"]::before{ content:"🧭"; }
+  .mobile-nav a[href*="wealth-dashboard"]::before{ content:"💎"; }
+  .mobile-nav a[href*="dividends"]::before{ content:"💰"; }
+}
+
+@media (max-width:390px){
+  .kpi-grid{
+    grid-template-columns:1fr;
+  }
+
+  .topbar{
+    flex-direction:column;
+  }
+}

@@ -1,0 +1,45 @@
+
+/* FinZen 7.4 - Navegação Global */
+.sidebar-nav::before{
+  content:none !important;
+}
+
+.nav-section-label{
+  padding:16px 20px 6px;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+
+.nav-icon{
+  width:20px;
+  text-align:center;
+  display:inline-block;
+}
+
+.topbar-actions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+@media (max-width:700px){
+  .mobile-nav a::before{
+    content:none !important;
+  }
+
+  .mobile-nav-icon{
+    font-size:18px;
+    line-height:1;
+  }
+
+  .mobile-nav a{
+    gap:3px;
+  }
+
+  .topbar-actions{
+    display:none;
+  }
+}

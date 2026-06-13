@@ -1,0 +1,138 @@
+.app-shell{
+  display:grid;
+  grid-template-columns:220px 1fr;
+  min-height:100vh;
+  background:var(--bg);
+}
+
+.sidebar{
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  position:sticky;
+  top:0;
+  height:100vh;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+}
+
+.sidebar-brand{
+  padding:20px;
+  min-height:64px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  border-bottom:1px solid var(--border);
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:-0.02em;
+}
+
+.sidebar-brand::before{
+  content:"☯";
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  background:linear-gradient(135deg,var(--accent),var(--purple));
+  color:white;
+  font-size:17px;
+  box-shadow:0 8px 24px rgba(75,132,243,.25);
+}
+
+.sidebar-nav{
+  display:flex;
+  flex-direction:column;
+  padding:12px 0;
+}
+
+.sidebar-nav::before{
+  content:"Principal";
+  padding:14px 20px 8px;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+
+.sidebar-nav a{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:9px 20px;
+  color:var(--muted);
+  font-size:13px;
+  transition:background .15s ease,color .15s ease;
+}
+
+.sidebar-nav a:hover{
+  background:rgba(255,255,255,.03);
+  color:var(--text);
+}
+
+.sidebar-nav a.active{
+  background:var(--accent-dim);
+  color:var(--accent);
+}
+
+.sidebar-nav a.active::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:4px;
+  bottom:4px;
+  width:3px;
+  background:var(--accent);
+  border-radius:0 2px 2px 0;
+}
+
+.content{
+  min-width:0;
+  background:var(--bg);
+  padding:24px;
+  padding-bottom:96px;
+  overflow-x:hidden;
+}
+
+.topbar{
+  min-height:64px;
+  margin:-24px -24px 24px;
+  padding:16px 24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  border-bottom:1px solid var(--border);
+  background:var(--surface);
+  position:sticky;
+  top:0;
+  z-index:5;
+}
+
+.topbar h1{
+  margin-bottom:4px;
+}
+
+.topbar .muted{
+  font-size:12px;
+}
+
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:14px;
+  margin-bottom:24px;
+}
+
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:16px;
+}
+
+.mobile-nav{
+  display:none;
+}
