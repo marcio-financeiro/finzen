@@ -60,6 +60,7 @@ async function carregarDashboard(){
     { data: ultimosLanc },
     { data: categorias },
     { data: pendentesRestantesMes },
+    { data: cartoes },
   ] = await Promise.all([
     supabase.from('accounts').select('id,nome,currency,saldo_atual,color').eq('user_id',user.id).eq('active',true),
     supabase.from('transactions').select('type,amount,status,date,category_id,categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),
@@ -72,6 +73,8 @@ async function carregarDashboard(){
     supabase.from('categories').select('id,nome,icon,cor').eq('user_id',user.id),
     // Todas pendentes do restante do mês (para previsão)
     supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date',ultimoDiaMes()),
+    // Cartões com vencimento (para alertas de fatura)
+    supabase.from('credit_cards').select('id,nome,vencimento_dia').eq('user_id',user.id).eq('ativo',true),
   ]);
 
   // ── KPIs ─────────────────────────────────────────
@@ -91,7 +94,7 @@ async function carregarDashboard(){
   aplicarClasse(el('kpiResultado'), resultado);
 
   // ── Alertas de vencimento ─────────────────────────
-  renderAlertas(transacoesPendentes||[]);
+  renderAlertas(transacoesPendentes||[], cartoes||[], parcelasMes||[]);
 
   // ── Pizza de despesas ─────────────────────────────
   renderPizza(pagas.filter(t=>t.type==='despesa'));
@@ -113,22 +116,83 @@ async function carregarDashboard(){
 }
 
 // ── Alertas ───────────────────────────────────────────
-function renderAlertas(pendentes){
-  if(!pendentes.length){
-    el('blocoAlertas').innerHTML = '<p class="muted" style="font-size:13px">✅ Nenhuma despesa pendente nos próximos 7 dias.</p>';
+function renderAlertas(pendentes, cartoes, parcelasMes){
+  const alertas = [];
+
+  // Despesas pendentes nos próximos 7 dias
+  pendentes.forEach(p => {
+    const dias = diasAte(p.date);
+    if(dias !== null && dias >= 0 && dias <= 7){
+      alertas.push({
+        tipo: 'despesa',
+        titulo: p.description || 'Despesa',
+        subtitulo: `Lançamento pendente · ${formatData(p.date)}`,
+        valor: Number(p.amount || 0),
+        dias,
+      });
+    }
+  });
+
+  // Faturas de cartão — calcular data de vencimento do mês atual
+  const d = hoje();
+  const ano = d.getFullYear();
+  const mes = d.getMonth() + 1;
+
+  cartoes.forEach(cartao => {
+    if(!cartao.vencimento_dia) return;
+
+    // Calcular data de vencimento deste mês
+    let anoVenc = ano;
+    let mesVenc = mes;
+    let diaVenc = cartao.vencimento_dia;
+
+    // Se o dia já passou esse mês, o próximo vencimento é no mês seguinte
+    if(diaVenc < d.getDate()){
+      mesVenc = mes + 1;
+      if(mesVenc > 12){ mesVenc = 1; anoVenc++; }
+    }
+
+    const dataVenc = `${anoVenc}-${String(mesVenc).padStart(2,'0')}-${String(diaVenc).padStart(2,'0')}`;
+    const dias = diasAte(dataVenc);
+
+    if(dias === null || dias < 0 || dias > 14) return;
+
+    // Calcular total da fatura (parcelas abertas do mês de referência)
+    const ref = `${ano}-${String(mes).padStart(2,'0')}`;
+    const totalFatura = parcelasMes
+      .filter(p => p.card_id === cartao.id || p.credit_cards?.id === cartao.id)
+      .reduce((s, p) => s + Number(p.valor_parcela || 0), 0);
+
+    if(totalFatura <= 0) return;
+
+    alertas.push({
+      tipo: 'fatura',
+      titulo: `Fatura ${cartao.nome}`,
+      subtitulo: `Vence dia ${diaVenc} · ${formatData(dataVenc)}`,
+      valor: totalFatura,
+      dias,
+    });
+  });
+
+  // Ordenar por urgência
+  alertas.sort((a, b) => a.dias - b.dias);
+
+  if(!alertas.length){
+    el('blocoAlertas').innerHTML = '<p class="muted" style="font-size:13px">✅ Nenhum vencimento nos próximos 7 dias.</p>';
     return;
   }
-  el('blocoAlertas').innerHTML = pendentes.map(p => {
-    const dias = diasAte(p.date);
-    const urgencia = dias === 0 ? '🔴' : dias <= 2 ? '🟡' : '🟢';
-    const label = dias === 0 ? 'hoje' : dias === 1 ? 'amanhã' : `em ${dias} dias`;
+
+  el('blocoAlertas').innerHTML = alertas.map(a => {
+    const urgencia = a.dias === 0 ? '🔴' : a.dias <= 2 ? '🟡' : '🟢';
+    const label    = a.dias === 0 ? 'hoje' : a.dias === 1 ? 'amanhã' : `em ${a.dias} dias`;
+    const icone    = a.tipo === 'fatura' ? '💳' : '📄';
     return `<div class="alerta-item">
       <span class="alerta-icon">${urgencia}</span>
       <div class="alerta-info">
-        <strong>${p.description||'-'}</strong>
-        <small>Vence ${label} · ${formatData(p.date)}</small>
+        <strong>${icone} ${a.titulo}</strong>
+        <small>Vence ${label} · ${a.subtitulo}</small>
       </div>
-      <span class="alerta-valor negative">-${fmt(p.amount)}</span>
+      <span class="alerta-valor negative">-${fmt(a.valor)}</span>
     </div>`;
   }).join('');
 }
