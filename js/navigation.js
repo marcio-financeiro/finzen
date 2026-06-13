@@ -2,19 +2,21 @@ const NAV_GROUPS = [
   {
     label:'FinZen',
     items:[
-      {title:'Dashboard',icon:'🏠',href:'./dashboard.html'},
-      {title:'Movimentações',icon:'💸',href:'./movements.html'},
-      {title:'Patrimônio',icon:'💎',href:'./patrimony-history.html'},
-      {title:'Investimentos',icon:'📈',href:'./investments.html'},
-      {title:'Cadastros',icon:'⚙️',href:'./registrations.html'}
+      {title:'Dashboard',      icon:'🏠', href:'./dashboard.html'},
+      {title:'Movimentações',  icon:'💸', href:'./movements.html'},
+      {title:'Cartões',        icon:'💳', href:'./cards.html'},
+      {title:'Faturas',        icon:'📄', href:'./card-bills.html'},
+      {title:'Investimentos',  icon:'📈', href:'./investments.html'},
+      {title:'Patrimônio',     icon:'💎', href:'./patrimony-history.html'},
+      {title:'Cadastros',      icon:'⚙️', href:'./registrations.html'}
     ]
   },
   {
     label:'Sistema',
     items:[
-      {title:'Busca',icon:'🔍',href:'./search.html'},
-      {title:'Backup',icon:'💾',href:'./backup.html'},
-      {title:'Restaurar',icon:'📤',href:'./restore.html'}
+      {title:'Busca',          icon:'🔍', href:'./search.html'},
+      {title:'Backup',         icon:'💾', href:'./backup.html'},
+      {title:'Restaurar',      icon:'📤', href:'./restore.html'}
     ]
   }
 ];
@@ -28,16 +30,17 @@ function normalizeHref(href){
 }
 
 function isActive(href){
-  const file = currentFile();
+  const file   = currentFile();
   const target = normalizeHref(href);
 
   if(file === target) return true;
 
-  if(file === 'accounts.html' && target === 'registrations.html') return true;
-  if(file === 'cards.html' && target === 'registrations.html') return true;
-  if(file === 'categories.html' && target === 'registrations.html') return true;
-  if(file === 'wealth-dashboard.html' && target === 'patrimony-history.html') return true;
-  if(file === 'patrimony-history.html' && target === 'patrimony-history.html') return true;
+  if(file === 'accounts.html'        && target === 'registrations.html')   return true;
+  if(file === 'cards.html'           && target === 'cards.html')           return true;
+  if(file === 'card-purchases.html'  && target === 'cards.html')           return true;
+  if(file === 'card-bills.html'      && target === 'card-bills.html')      return true;
+  if(file === 'categories.html'      && target === 'registrations.html')   return true;
+  if(file === 'wealth-dashboard.html'&& target === 'patrimony-history.html') return true;
 
   return false;
 }
@@ -79,6 +82,7 @@ function injectStyles(){
       font-size:26px;
       z-index:9997;
       display:none;
+      cursor:pointer;
     }
 
     .drawer-overlay{
@@ -93,9 +97,7 @@ function injectStyles(){
 
     .mobile-drawer{
       position:fixed;
-      top:0;
-      left:0;
-      bottom:0;
+      top:0; left:0; bottom:0;
       width:min(320px, 82vw);
       background:var(--surface);
       border-right:1px solid var(--border);
@@ -106,14 +108,8 @@ function injectStyles(){
       padding:18px;
     }
 
-    .drawer-open .drawer-overlay{
-      opacity:1;
-      pointer-events:auto;
-    }
-
-    .drawer-open .mobile-drawer{
-      transform:translateX(0);
-    }
+    .drawer-open .drawer-overlay{ opacity:1; pointer-events:auto; }
+    .drawer-open .mobile-drawer{ transform:translateX(0); }
 
     .drawer-profile{
       display:flex;
@@ -125,11 +121,9 @@ function injectStyles(){
     }
 
     .drawer-avatar{
-      width:42px;
-      height:42px;
+      width:42px; height:42px;
       border-radius:14px;
-      display:grid;
-      place-items:center;
+      display:grid; place-items:center;
       font-weight:800;
       background:var(--accent);
     }
@@ -143,6 +137,7 @@ function injectStyles(){
       background:transparent;
       color:var(--text);
       font-size:28px;
+      cursor:pointer;
     }
 
     .drawer-nav a{
@@ -155,9 +150,7 @@ function injectStyles(){
       text-decoration:none;
     }
 
-    .sidebar-nav::before{
-      content:none !important;
-    }
+    .sidebar-nav::before{ content:none !important; }
 
     .sidebar-nav .nav-section-label{
       display:block;
@@ -175,8 +168,7 @@ function injectStyles(){
 
     .sidebar-nav .nav-icon,
     .drawer-nav .nav-icon{
-      width:20px;
-      min-width:20px;
+      width:20px; min-width:20px;
       text-align:center;
       display:inline-block;
     }
@@ -193,7 +185,8 @@ function injectStyles(){
       color:var(--muted);
     }
 
-    .drawer-nav a.active{
+    .drawer-nav a.active,
+    .sidebar-nav a.active{
       background:rgba(79,142,247,.16);
       color:var(--text);
     }
@@ -211,7 +204,6 @@ function ensureDesktopSidebar(){
   if(!shell) return;
 
   let sidebar = document.querySelector('.sidebar');
-
   if(!sidebar){
     sidebar = document.createElement('aside');
     sidebar.className = 'sidebar';
@@ -241,7 +233,6 @@ function ensureMobileDrawer(){
 
   const drawer = document.createElement('aside');
   drawer.className = 'mobile-drawer';
-
   drawer.innerHTML = `
     <div class="drawer-profile">
       <div class="drawer-avatar">FZ</div>
@@ -270,17 +261,11 @@ function ensureMenuButton(){
   btn.setAttribute('aria-label','Abrir menu');
   btn.innerHTML = '☰';
   btn.addEventListener('click', openDrawer);
-
   document.body.appendChild(btn);
 }
 
-function openDrawer(){
-  document.body.classList.add('drawer-open');
-}
-
-function closeDrawer(){
-  document.body.classList.remove('drawer-open');
-}
+function openDrawer(){  document.body.classList.add('drawer-open'); }
+function closeDrawer(){ document.body.classList.remove('drawer-open'); }
 
 function initNavigation(){
   injectStyles();
