@@ -62,19 +62,17 @@ async function carregarDashboard(){
     { data: pendentesRestantesMes },
     { data: cartoes },
   ] = await Promise.all([
-    supabase.from('accounts').select('id,nome,currency,saldo_atual,color').eq('user_id',user.id).eq('active',true),
-    supabase.from('transactions').select('type,amount,status,date,category_id,categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),
-    supabase.from('card_transactions').select('valor_parcela,fatura_referencia,status,credit_cards:card_id(nome)').eq('user_id',user.id).eq('status','aberta').eq('fatura_referencia',ref),
-    supabase.from('transactions').select('id,description,amount,date,type,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date', (() => { const d=new Date(hoje()); d.setDate(d.getDate()+7); return d.toISOString().split('T')[0]; })()).order('date',{ascending:true}).limit(5),
-    supabase.from('budgets').select('*,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',ref),
-    supabase.from('goals').select('*').eq('user_id',user.id).eq('ativo',true).order('data_alvo',{ascending:true}).limit(5),
-    supabase.from('transactions').select('type,amount,recurrence_frequency').eq('user_id',user.id).eq('is_recurring',true).eq('recurrence_active',true),
-    supabase.from('transactions').select('id,type,amount,description,date,status,accounts:account_id(nome,currency),categories:category_id(nome,icon)').eq('user_id',user.id).order('date',{ascending:false}).order('created_at',{ascending:false}).limit(8),
-    supabase.from('categories').select('id,nome,icon,cor').eq('user_id',user.id),
-    // Todas pendentes do restante do mês (para previsão)
-    supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date',ultimoDiaMes()),
-    // Cartões com vencimento (para alertas de fatura)
-    supabase.from('credit_cards').select('id,nome,vencimento_dia').eq('user_id',user.id).eq('ativo',true),
+    supabase.from('accounts').select('id,nome,currency,saldo_atual,color').eq('user_id',user.id).eq('active',true),                                                                                          // contas
+    supabase.from('transactions').select('type,amount,status,date,category_id,categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),                              // transacoesMes
+    supabase.from('card_transactions').select('valor_parcela,fatura_referencia,status,card_id').eq('user_id',user.id).eq('status','aberta').eq('fatura_referencia',ref),                                     // parcelasMes
+    supabase.from('transactions').select('id,description,amount,date,type,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date', (() => { const d=new Date(hoje()); d.setDate(d.getDate()+7); return d.toISOString().split('T')[0]; })()).order('date',{ascending:true}).limit(5), // transacoesPendentes
+    supabase.from('budgets').select('*,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',ref),                                                                                   // orcamentos
+    supabase.from('goals').select('*').eq('user_id',user.id).eq('ativo',true).order('data_alvo',{ascending:true}).limit(5),                                                                                  // metas
+    supabase.from('transactions').select('type,amount,recurrence_frequency').eq('user_id',user.id).eq('is_recurring',true).eq('recurrence_active',true),                                                     // recorrentes
+    supabase.from('transactions').select('id,type,amount,description,date,status,accounts:account_id(nome,currency),categories:category_id(nome,icon)').eq('user_id',user.id).order('date',{ascending:false}).order('created_at',{ascending:false}).limit(8), // ultimosLanc
+    supabase.from('categories').select('id,nome,icon,cor').eq('user_id',user.id),                                                                                                                            // categorias
+    supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date',ultimoDiaMes()),                 // pendentesRestantesMes
+    supabase.from('credit_cards').select('id,nome,vencimento_dia').eq('user_id',user.id).eq('ativo',true),                                                                                                   // cartoes
   ]);
 
   // ── KPIs ─────────────────────────────────────────
@@ -160,7 +158,7 @@ function renderAlertas(pendentes, cartoes, parcelasMes){
     // Calcular total da fatura (parcelas abertas do mês de referência)
     const ref = `${ano}-${String(mes).padStart(2,'0')}`;
     const totalFatura = parcelasMes
-      .filter(p => p.card_id === cartao.id || p.credit_cards?.id === cartao.id)
+      .filter(p => p.card_id === cartao.id)
       .reduce((s, p) => s + Number(p.valor_parcela || 0), 0);
 
     if(totalFatura <= 0) return;
