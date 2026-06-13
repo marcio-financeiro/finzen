@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Investimentos - FinZen</title>
-<link rel="stylesheet" href="../css/base.css?v=970">
-<link rel="stylesheet" href="../css/layout.css?v=970">
-<link rel="stylesheet" href="../css/components.css?v=970">
-<link rel="stylesheet" href="../css/mobile.css?v=970">
-<link rel="stylesheet" href="../css/navigation.css?v=970">
+<link rel="stylesheet" href="../css/base.css?v=1000">
+<link rel="stylesheet" href="../css/layout.css?v=1000">
+<link rel="stylesheet" href="../css/components.css?v=1000">
+<link rel="stylesheet" href="../css/mobile.css?v=1000">
+<link rel="stylesheet" href="../css/navigation.css?v=1000">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#4b84f3">
 <meta name="mobile-web-app-capable" content="yes">
@@ -40,6 +40,12 @@
   padding:10px 14px;background:var(--surface-2);
   border-radius:10px;margin:16px 0 6px;font-weight:800;font-size:13px;
 }
+.inv-collapsible{ cursor:pointer;user-select:none; }
+.inv-collapsible:hover{ background:var(--surface-3,rgba(75,132,243,.08)); }
+.inv-collapse-icon{ font-size:14px;transition:transform .2s;color:var(--muted); }
+.inv-class-body{ overflow:hidden;transition:max-height .3s ease; }
+.inv-class-body.collapsed{ display:none; }
+.inv-collapsible.collapsed .inv-collapse-icon{ transform:rotate(-90deg); }
 .inv-class-header .inv-class-pct{
   display:flex;gap:16px;font-size:12px;font-weight:700;
 }
@@ -310,7 +316,7 @@
   </main>
 </div>
 
-<script type="module" src="../js/navigation.js?v=970"></script>
-<script type="module" src="../js/investments.js?v=970"></script>
+<script type="module" src="../js/navigation.js?v=1000"></script>
+<script type="module" src="../js/investments.js?v=1000"></script>
 </body>
 </html>

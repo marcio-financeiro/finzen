@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extrato de Contas - FinZen</title>
+<link rel="stylesheet" href="../css/base.css?v=1000">
+<link rel="stylesheet" href="../css/layout.css?v=1000">
+<link rel="stylesheet" href="../css/components.css?v=1000">
+<link rel="stylesheet" href="../css/mobile.css?v=1000">
+<link rel="stylesheet" href="../css/navigation.css?v=1000">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#4b84f3">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FinZen">
+<link rel="apple-touch-icon" href="../icons/icon-192.png">
+
+<style>
+.stmt-filters{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;
+  padding:16px;border:1px solid var(--border);border-radius:14px;
+  margin-bottom:16px;background:var(--surface-2);
+}
+.stmt-filters label{ font-size:12px;color:var(--muted);font-weight:700; }
+.stmt-filters select, .stmt-filters input{
+  display:block;margin-top:4px;
+  padding:8px 10px;border:1px solid var(--border);border-radius:8px;
+  background:var(--surface);color:var(--text);font-size:13px;
+}
+.stmt-kpis{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;
+  margin-bottom:16px;
+}
+.stmt-kpi{
+  padding:14px 16px;border:1px solid var(--border);border-radius:12px;
+  background:var(--surface-2);
+}
+.stmt-kpi span{ font-size:11px;color:var(--muted);font-weight:700;display:block; }
+.stmt-kpi strong{ font-size:18px;font-family:var(--font-mono);display:block;margin-top:4px; }
+.stmt-entry{
+  display:grid;grid-template-columns:90px 1fr auto;gap:10px;align-items:start;
+  padding:12px 0;border-bottom:1px solid var(--border);
+}
+.stmt-entry:last-child{ border-bottom:none; }
+.stmt-date{ font-size:12px;color:var(--muted); }
+.stmt-desc strong{ display:block;font-size:13px; }
+.stmt-desc small{ color:var(--muted);font-size:11px; }
+.stmt-amount{ font-family:var(--font-mono);font-size:14px;text-align:right; }
+.stmt-saldo-col{ font-size:11px;color:var(--muted);text-align:right;margin-top:2px; }
+.stmt-empty{ padding:32px;text-align:center;color:var(--muted);font-size:14px; }
+</style>
+</head>
+
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+    <nav class="sidebar-nav"></nav>
+  </aside>
+
+  <main class="content">
+
+    <header class="topbar">
+      <div>
+        <h1>Extrato de Contas</h1>
+        <p id="userEmail" class="muted"></p>
+      </div>
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <div class="stmt-filters">
+      <div>
+        <label>Conta</label>
+        <select id="filtroConta"><option value="">Todas as contas</option></select>
+      </div>
+      <div>
+        <label>Mês</label>
+        <input type="month" id="filtroMes">
+      </div>
+      <div>
+        <label>Tipo</label>
+        <select id="filtroTipo">
+          <option value="">Todos</option>
+          <option value="receita">Receita</option>
+          <option value="despesa">Despesa</option>
+        </select>
+      </div>
+      <div>
+        <label>Status</label>
+        <select id="filtroStatus">
+          <option value="">Todos</option>
+          <option value="pago">Pago</option>
+          <option value="pendente">Pendente</option>
+        </select>
+      </div>
+      <button class="btn btn-primary compact" id="btnFiltrar">Filtrar</button>
+    </div>
+
+    <div class="stmt-kpis">
+      <div class="stmt-kpi">
+        <span>Saldo da conta</span>
+        <strong id="kpiSaldo" class="positive">R$ 0,00</strong>
+      </div>
+      <div class="stmt-kpi">
+        <span>Entradas no período</span>
+        <strong id="kpiEntradas" class="positive">R$ 0,00</strong>
+      </div>
+      <div class="stmt-kpi">
+        <span>Saídas no período</span>
+        <strong id="kpiSaidas" class="negative">R$ 0,00</strong>
+      </div>
+      <div class="stmt-kpi">
+        <span>Resultado</span>
+        <strong id="kpiResultado">R$ 0,00</strong>
+      </div>
+      <div class="stmt-kpi">
+        <span>Lançamentos</span>
+        <strong id="kpiQtd">0</strong>
+      </div>
+    </div>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Lançamentos</h2>
+        <span id="stmtPeriodo" class="muted" style="font-size:13px;"></span>
+      </div>
+      <div id="stmtLista" class="table-wrap">
+        <p class="muted" style="padding:24px">Selecione uma conta e período para ver o extrato.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<nav class="mobile-nav"></nav>
+
+<script type="module" src="../js/navigation.js?v=1000"></script>
+<script type="module" src="../js/account-statement.js?v=1000"></script>
+</body>
+</html>

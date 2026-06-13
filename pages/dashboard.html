@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard - FinZen</title>
 
-<link rel="stylesheet" href="../css/base.css?v=54">
-<link rel="stylesheet" href="../css/layout.css?v=54">
-<link rel="stylesheet" href="../css/components.css?v=54">
-<link rel="stylesheet" href="../css/mobile.css?v=54">
-<link rel="stylesheet" href="../css/navigation.css?v=9434">
+<link rel="stylesheet" href="../css/base.css?v=1000">
+<link rel="stylesheet" href="../css/layout.css?v=1000">
+<link rel="stylesheet" href="../css/components.css?v=1000">
+<link rel="stylesheet" href="../css/mobile.css?v=1000">
+<link rel="stylesheet" href="../css/navigation.css?v=1000">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#4b84f3">
 <meta name="mobile-web-app-capable" content="yes">
@@ -42,44 +42,29 @@
 
     <section class="kpi-grid">
 
-      <article class="kpi-card">
+      <article class="kpi-card kpi-clickable" onclick="location.href='./movements.html'">
         <span>Saldo total em contas</span>
         <strong id="saldoTotal">R$ 0,00</strong>
       </article>
 
-      <article class="kpi-card">
+      <article class="kpi-card kpi-clickable" onclick="location.href='./movements.html?tipo=receita'">
         <span>Receitas do mês</span>
         <strong id="receitasMes" class="positive">R$ 0,00</strong>
       </article>
 
-      <article class="kpi-card">
+      <article class="kpi-card kpi-clickable" onclick="location.href='./movements.html?tipo=despesa'">
         <span>Despesas do mês</span>
         <strong id="despesasMes" class="negative">R$ 0,00</strong>
       </article>
 
-      <article class="kpi-card">
+      <article class="kpi-card kpi-clickable" onclick="location.href='./movements.html'">
         <span>Resultado do mês</span>
         <strong id="resultadoMes">R$ 0,00</strong>
       </article>
 
-      <article class="kpi-card">
-        <span>Faturas abertas</span>
+      <article class="kpi-card kpi-clickable" onclick="location.href='./card-bills.html'">
+        <span>Faturas abertas (mês atual)</span>
         <strong id="faturasAbertas" class="negative">R$ 0,00</strong>
-      </article>
-
-      <article class="kpi-card">
-        <span>Limite total cartões</span>
-        <strong id="limiteTotal">R$ 0,00</strong>
-      </article>
-
-      <article class="kpi-card">
-        <span>Limite utilizado</span>
-        <strong id="limiteUtilizado" class="negative">R$ 0,00</strong>
-      </article>
-
-      <article class="kpi-card">
-        <span>Limite disponível</span>
-        <strong id="limiteDisponivel" class="positive">R$ 0,00</strong>
       </article>
 
     </section>
@@ -116,8 +101,8 @@
 
 <nav class="mobile-nav"></nav>
 
-<script type="module" src="../js/navigation.js?v=950"></script>
-<script type="module" src="../js/dashboard.js?v=9434"></script>
+<script type="module" src="../js/navigation.js?v=1000"></script>
+<script type="module" src="../js/dashboard.js?v=1000"></script>
 
 </body>
 </html>
