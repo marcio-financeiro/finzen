@@ -4,67 +4,81 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Movimentações - FinZen</title>
-<link rel="stylesheet" href="../css/base.css?v=933">
-<link rel="stylesheet" href="../css/layout.css?v=933">
-<link rel="stylesheet" href="../css/components.css?v=933">
-<link rel="stylesheet" href="../css/mobile.css?v=933">
-<link rel="stylesheet" href="../css/navigation.css?v=933">
+<link rel="stylesheet" href="../css/base.css?v=950">
+<link rel="stylesheet" href="../css/layout.css?v=950">
+<link rel="stylesheet" href="../css/components.css?v=950">
+<link rel="stylesheet" href="../css/mobile.css?v=950">
+<link rel="stylesheet" href="../css/navigation.css?v=950">
 
-<style id="finzen-mobile-flow-style">
+<style>
+  /* ── Fluxo do mês ── */
   .ff-flow-grid{
     display:grid;
-    grid-template-columns:repeat(4, minmax(0, 1fr));
+    grid-template-columns:repeat(4,minmax(0,1fr));
     gap:12px;
     padding:16px;
   }
-
   .ff-flow-main{
     grid-column:1 / -1;
     padding:18px;
     border:1px solid var(--border);
     border-radius:18px;
-    background:linear-gradient(135deg, rgba(79,142,247,.18), rgba(15,185,129,.10));
+    background:linear-gradient(135deg,rgba(79,142,247,.18),rgba(15,185,129,.10));
   }
-
   .ff-flow-main span,
-  .ff-flow-card span,
-  .ff-mobile-card span{
+  .ff-flow-card span{
     color:var(--muted);
     font-size:.86rem;
     font-weight:700;
   }
-
   .ff-flow-main strong{
     display:block;
     margin-top:8px;
     font-size:1.85rem;
     line-height:1.1;
   }
-
   .ff-flow-main small{
     display:block;
     margin-top:8px;
     color:var(--muted);
   }
-
   .ff-flow-card{
     padding:14px;
     border:1px solid var(--border);
     border-radius:16px;
     background:rgba(255,255,255,.025);
   }
-
   .ff-flow-card strong{
     display:block;
     margin-top:6px;
     font-size:1.05rem;
   }
-
-  .ff-mobile-list{
-    display:none;
-    padding:12px;
-    gap:12px;
+  .ff-flow-card.clickable{
+    cursor:pointer;
+    transition:transform .16s ease,border-color .16s ease,background .16s ease;
   }
+  .ff-flow-card.clickable:hover{
+    border-color:rgba(79,142,247,.55);
+    background:rgba(79,142,247,.07);
+  }
+  .ff-flow-card.clickable:active{ transform:scale(.985); }
+
+  /* ── Filtro de mês ── */
+  .ff-month-filter{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .ff-month-filter input[type="month"]{
+    width:auto;
+    padding:8px 12px;
+    font-size:13px;
+  }
+
+  /* ── Lista desktop / mobile ── */
+  .ff-desktop-table{ display:block; }
+  .ff-mobile-list{ display:none; padding:12px; gap:12px; }
 
   .ff-mobile-card{
     border:1px solid var(--border);
@@ -72,7 +86,10 @@
     padding:14px;
     background:rgba(255,255,255,.025);
   }
-
+  .ff-mobile-card.pendente{
+    border-color:rgba(245,166,35,.35);
+    background:rgba(245,166,35,.04);
+  }
   .ff-mobile-card-title{
     display:flex;
     justify-content:space-between;
@@ -80,33 +97,32 @@
     align-items:flex-start;
     margin-bottom:10px;
   }
-
-  .ff-mobile-card-title strong{
-    font-size:1rem;
-    line-height:1.25;
-  }
-
+  .ff-mobile-card-title strong{ font-size:1rem; line-height:1.25; }
   .ff-mobile-card-meta{
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:8px;
     margin-top:10px;
   }
-
+  .ff-mobile-card-meta span{ color:var(--muted); font-size:.86rem; font-weight:700; }
   .ff-mobile-card-actions{
     display:flex;
     gap:8px;
     flex-wrap:wrap;
     margin-top:12px;
   }
+  .ff-mobile-card-actions .btn{ flex:1; min-width:110px; }
 
-  .ff-mobile-card-actions .btn{
-    flex:1;
-    min-width:110px;
+  /* ── Linha pendente na tabela ── */
+  .data-table tr.row-pendente td{ background:rgba(245,166,35,.05); }
+  .data-table tr.row-pendente td:first-child{
+    border-left:3px solid var(--warning);
   }
 
-  .ff-desktop-table{
-    display:block;
+  /* ── Badge pendente ── */
+  .badge.pendente{
+    color:var(--warning);
+    background:var(--warning-dim);
   }
 
   @media(max-width:720px){
@@ -115,54 +131,17 @@
       padding:12px;
       gap:10px;
     }
-
-    .ff-flow-main{
-      padding:16px;
-    }
-
-    .ff-flow-main strong{
-      font-size:1.65rem;
-    }
-
-    .ff-flow-card{
-      padding:12px;
-    }
-
-    .ff-flow-card strong{
-      font-size:.98rem;
-    }
-
-    .ff-desktop-table{
-      display:none;
-    }
-
-    .ff-mobile-list{
-      display:grid;
-    }
-
-    .table-wrap{
-      overflow-x:hidden;
-    }
-
-    .data-table{
-      min-width:720px;
-    }
+    .ff-flow-main{ padding:16px; }
+    .ff-flow-main strong{ font-size:1.65rem; }
+    .ff-flow-card{ padding:12px; }
+    .ff-flow-card strong{ font-size:.98rem; }
+    .ff-desktop-table{ display:none; }
+    .ff-mobile-list{ display:grid; }
+    .table-wrap{ overflow-x:hidden; }
+    .data-table{ min-width:720px; }
   }
 
-  .ff-flow-card.clickable{
-    cursor:pointer;
-    transition:transform .16s ease, border-color .16s ease, background .16s ease;
-  }
-
-  .ff-flow-card.clickable:active{
-    transform:scale(.985);
-  }
-
-  .ff-flow-card.clickable:hover{
-    border-color:rgba(79,142,247,.55);
-    background:rgba(79,142,247,.07);
-  }
-
+  /* ── Modal de detalhe ── */
   .ff-detail-overlay{
     position:fixed;
     inset:0;
@@ -173,51 +152,34 @@
     justify-content:center;
     padding:18px;
   }
-
   .ff-detail-modal{
-    width:min(620px, 96vw);
+    width:min(620px,96vw);
     max-height:82vh;
     overflow:auto;
-    background:var(--surface, #111827);
-    border:1px solid var(--border, #2b3148);
+    background:var(--surface,#111827);
+    border:1px solid var(--border,#2b3148);
     border-radius:20px;
     box-shadow:0 24px 80px rgba(0,0,0,.45);
   }
-
   .ff-detail-header{
     padding:18px 20px;
-    border-bottom:1px solid var(--border, #2b3148);
+    border-bottom:1px solid var(--border,#2b3148);
     display:flex;
     justify-content:space-between;
     align-items:flex-start;
     gap:12px;
   }
-
-  .ff-detail-header h2{
-    margin:0;
-    font-size:1.1rem;
-  }
-
-  .ff-detail-header p{
-    margin:6px 0 0;
-    color:var(--muted);
-    font-size:.9rem;
-  }
-
+  .ff-detail-header h2{ margin:0; font-size:1.1rem; }
+  .ff-detail-header p{ margin:6px 0 0; color:var(--muted); font-size:.9rem; }
   .ff-detail-close{
     border:0;
     background:transparent;
     color:var(--text);
     font-size:28px;
     line-height:1;
+    cursor:pointer;
   }
-
-  .ff-detail-body{
-    padding:14px;
-    display:grid;
-    gap:10px;
-  }
-
+  .ff-detail-body{ padding:14px; display:grid; gap:10px; }
   .ff-detail-item{
     border:1px solid var(--border);
     border-radius:14px;
@@ -227,17 +189,8 @@
     justify-content:space-between;
     gap:12px;
   }
-
-  .ff-detail-item strong{
-    display:block;
-    margin-bottom:4px;
-  }
-
-  .ff-detail-item span{
-    color:var(--muted);
-    font-size:.86rem;
-  }
-
+  .ff-detail-item strong{ display:block; margin-bottom:4px; }
+  .ff-detail-item span{ color:var(--muted); font-size:.86rem; }
   .ff-detail-total{
     margin:4px 14px 16px;
     padding:14px;
@@ -251,11 +204,7 @@
   }
 
   @media(max-width:720px){
-    .ff-detail-overlay{
-      align-items:flex-end;
-      padding:0;
-    }
-
+    .ff-detail-overlay{ align-items:flex-end; padding:0; }
     .ff-detail-modal{
       width:100%;
       max-height:88vh;
@@ -264,21 +213,10 @@
       border-right:0;
       border-bottom:0;
     }
-
-    .ff-detail-item{
-      flex-direction:column;
-    }
-
-    .ff-detail-total{
-      position:sticky;
-      bottom:0;
-      margin:0;
-      border-radius:0;
-    }
+    .ff-detail-item{ flex-direction:column; }
+    .ff-detail-total{ position:sticky; bottom:0; margin:0; border-radius:0; }
   }
-
 </style>
-
 </head>
 
 <body>
@@ -297,6 +235,7 @@
       <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
     </header>
 
+    <!-- Formulário -->
     <section class="panel">
       <div class="panel-header">
         <h2 id="formTitle">Nova Movimentação</h2>
@@ -412,27 +351,40 @@
         </div>
 
         <button type="button" class="btn btn-primary" id="btnSaveMovement">Salvar Movimentação</button>
-        <button type="button" class="btn btn-secondary" id="btnGenerateRecurring">Gerar recorrentes do mês</button>
         <button type="button" class="btn btn-secondary" id="btnCancelEdit" style="display:none">Cancelar edição</button>
 
         <div id="movementMessage" class="message"></div>
       </div>
     </section>
 
-
-    <section class="panel" id="cashFlowMonthPanelFinZen">
+    <!-- Fluxo do mês (fixo no HTML, sem criação dinâmica) -->
+    <section class="panel">
       <div class="panel-header">
         <h2>Fluxo do Mês</h2>
       </div>
-
       <div id="cashFlowMonthListFinZen" class="table-wrap">
         <p class="muted" style="padding:18px">Calculando fluxo do mês...</p>
       </div>
     </section>
 
+    <!-- Próximas recorrências (fixo no HTML) -->
+    <section class="panel" id="upcomingRecurringPanelFinZen">
+      <div class="panel-header">
+        <h2>Próximas Recorrências</h2>
+      </div>
+      <div id="upcomingRecurringListFinZen" class="table-wrap">
+        <p class="muted" style="padding:18px">Carregando previsões...</p>
+      </div>
+    </section>
+
+    <!-- Lista de movimentações com filtro de mês -->
     <section class="panel">
       <div class="panel-header">
-        <h2>Movimentações Recentes</h2>
+        <h2>Movimentações</h2>
+        <div class="ff-month-filter">
+          <input type="month" id="filterMonth">
+          <button type="button" class="btn btn-secondary compact" id="btnClearFilter">Tudo</button>
+        </div>
       </div>
       <div id="movementList" class="table-wrap">
         <p class="muted" style="padding:18px">Carregando...</p>
@@ -443,7 +395,7 @@
 
 <nav class="mobile-nav"></nav>
 
-<script type="module" src="../js/navigation.js?v=933"></script>
-<script type="module" src="../js/movements.js?v=933"></script>
+<script type="module" src="../js/navigation.js?v=950"></script>
+<script type="module" src="../js/movements.js?v=950"></script>
 </body>
 </html>
