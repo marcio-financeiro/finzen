@@ -42,6 +42,8 @@ const groups = {
   account:          el('accountGroup'),
   fromAccount:      el('fromAccountGroup'),
   toAccount:        el('toAccountGroup'),
+  exchangeRate:     el('exchangeRateGroup'),
+  exchangePreview:  el('exchangePreviewGroup'),
   card:             el('cardGroup'),
   category:         el('categoryGroup'),
   installments:     el('installmentsGroup'),
@@ -52,6 +54,9 @@ const groups = {
   recurrenceUntil:  el('recurrenceUntilGroup'),
   notes:            el('notesGroup'),
 };
+
+const exchangeRateInput = el('exchangeRate');
+const exchangePreview   = el('exchangePreview');
 
 // ─────────────────────────────────────────────
 // AUTH
@@ -271,13 +276,16 @@ function updateFormVisibility(){
   const accountExpense = type === 'despesa' && method === 'conta';
   const income   = type === 'receita';
   const transfer = type === 'transferencia';
+  const cambio   = type === 'cambio';
 
   Object.values(groups).forEach(g => setDisplay(g, false));
 
   setDisplay(groups.paymentMethod,   type === 'despesa');
   setDisplay(groups.account,         income || accountExpense);
-  setDisplay(groups.fromAccount,     transfer);
-  setDisplay(groups.toAccount,       transfer);
+  setDisplay(groups.fromAccount,     transfer || cambio);
+  setDisplay(groups.toAccount,       transfer || cambio);
+  setDisplay(groups.exchangeRate,    cambio);
+  setDisplay(groups.exchangePreview, cambio);
   setDisplay(groups.card,            cardExpense);
   setDisplay(groups.category,        income || type === 'despesa');
   setDisplay(groups.installments,    cardExpense);
@@ -291,6 +299,7 @@ function updateFormVisibility(){
   fillCategories();
   fillInvoices();
   updatePreview();
+  updateExchangePreview();
 }
 
 function calculateCardValues(){
@@ -430,6 +439,7 @@ async function saveMovement(){
     return;
   }
 
+  if(type === 'cambio'){           await saveCambio(description, amount, date); return; }
   if(type === 'transferencia'){    await saveTransfer(description, amount, date); return; }
   if(type === 'despesa' && method === 'cartao'){ await saveCardPurchase(description, date); return; }
   await saveAccountTransaction(description, amount, date, notes);
@@ -538,6 +548,57 @@ async function saveTransfer(description, amount, date){
   if(error){ showMessage('Erro na transferência: '+error.message,'danger'); return; }
 
   showMessage('Transferência salva.','success');
+  clearForm();
+  await refreshAll();
+}
+
+function updateExchangePreview(){
+  if(movementType.value !== 'cambio') return;
+  const amount = Number(movementAmount.value || 0);
+  const rate   = Number(exchangeRateInput.value || 0);
+  if(!amount || !rate){ exchangePreview.value = 'Preencha valor e taxa'; return; }
+
+  const fromAcc = accounts.find(a => a.id === fromAccount.value);
+  const toAcc   = accounts.find(a => a.id === toAccount.value);
+  const fromCur = fromAcc?.currency || 'BRL';
+  const toCur   = toAcc?.currency || 'USD';
+
+  let converted;
+  if(fromCur === 'BRL' && toCur === 'USD'){
+    converted = amount / rate;
+    exchangePreview.value = `R$ ${amount.toFixed(2)} → US$ ${converted.toFixed(2)} (taxa ${rate.toFixed(4)})`;
+  }else if(fromCur === 'USD' && toCur === 'BRL'){
+    converted = amount * rate;
+    exchangePreview.value = `US$ ${amount.toFixed(2)} → R$ ${converted.toFixed(2)} (taxa ${rate.toFixed(4)})`;
+  }else{
+    exchangePreview.value = `${fromCur} → ${toCur}: conversão não suportada`;
+  }
+}
+
+async function saveCambio(description, amount, date){
+  if(!fromAccount.value || !toAccount.value){
+    showMessage('Selecione conta de origem e destino.','warning'); return;
+  }
+  if(fromAccount.value === toAccount.value){
+    showMessage('Origem e destino devem ser contas diferentes.','warning'); return;
+  }
+  const rate = Number(exchangeRateInput.value || 0);
+  if(!rate || rate <= 0){
+    showMessage('Informe a taxa de câmbio.','warning'); return;
+  }
+
+  const { error } = await supabase.rpc('create_currency_exchange',{
+    p_from_account_id: fromAccount.value,
+    p_to_account_id:   toAccount.value,
+    p_source_amount:   amount,
+    p_exchange_rate:   rate,
+    p_date:            date,
+    p_description:     description || 'Câmbio BRL/USD',
+  });
+
+  if(error){ showMessage('Erro no câmbio: '+error.message,'danger'); return; }
+
+  showMessage('Câmbio registrado com sucesso!','success');
   clearForm();
   await refreshAll();
 }
@@ -1127,6 +1188,12 @@ movementType.addEventListener('change', updateFormVisibility);
 paymentMethod.addEventListener('change', updateFormVisibility);
 movementCard.addEventListener('change', updateFormVisibility);
 movementDate.addEventListener('change', updateFormVisibility);
+if(exchangeRateInput){
+  exchangeRateInput.addEventListener('input', updateExchangePreview);
+  movementAmount.addEventListener('input', updateExchangePreview);
+  fromAccount.addEventListener('change', updateExchangePreview);
+  toAccount.addEventListener('change', updateExchangePreview);
+}
 movementInstallments.addEventListener('input', updatePreview);
 movementAmount.addEventListener('input', updatePreview);
 movementValueType.addEventListener('change', updatePreview);
@@ -1148,3 +1215,22 @@ updateFormVisibility();
 await renderCashFlowMonth();
 await loadUpcomingRecurring();
 await loadMovements();
+
+// Pré-selecionar tipo via URL (FAB do mobile)
+const urlParams = new URLSearchParams(window.location.search);
+const tipoParam = urlParams.get('tipo');
+if(tipoParam){
+  if(tipoParam === 'cartao'){
+    movementType.value = 'despesa';
+    updateFormVisibility();
+    paymentMethod.value = 'cartao';
+    updateFormVisibility();
+  }else{
+    movementType.value = tipoParam;
+    updateFormVisibility();
+  }
+  // Foca no campo descrição para lançamento rápido
+  movementDescription.focus();
+  // Limpa o param da URL sem recarregar
+  window.history.replaceState({}, '', window.location.pathname);
+}

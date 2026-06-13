@@ -292,6 +292,10 @@ function ensureFAB(){
         <span class="finzen-fab-icon" style="background:var(--purple)">⇄</span>
         <span>Transferência</span>
       </a>
+      <a class="finzen-fab-option" href="./movements.html?tipo=cambio" data-tipo="cambio">
+        <span class="finzen-fab-icon" style="background:#e67e22">💱</span>
+        <span>Câmbio</span>
+      </a>
     </div>
 
     <button class="finzen-fab-btn" id="finzenFabBtn" type="button" aria-label="Novo lançamento">

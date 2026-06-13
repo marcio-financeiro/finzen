@@ -166,6 +166,14 @@ async function carregarCorretoras(){
     .order('nome',{ascending:true});
   corretoras=data||[];
 
+  // Se nenhuma corretora com account_kind='broker', mostra todas as contas
+  if(!corretoras.length){
+    const {data:all}=await supabase.from('accounts').select('id,nome,bank,currency,saldo_atual')
+      .eq('user_id',user.id).eq('active',true)
+      .order('nome',{ascending:true});
+    corretoras=all||[];
+  }
+
   const {data:d2}=await supabase.from('accounts').select('id,nome,bank,currency,saldo_atual')
     .eq('user_id',user.id).eq('active',true).order('nome',{ascending:true});
   todasContas=d2||[];
@@ -355,14 +363,22 @@ async function salvarAtivo(){
   const contaId   = el('corretoraAtivo').value;
   const operacao  = el('operacaoAtivo').value;
   const qtd       = toNumber(el('quantidadeAtivo').value);
-  const preco     = toNumber(el('precoAtivo').value);
+  let   preco     = toNumber(el('precoAtivo').value);
   const moeda     = el('moedaAtivo').value||'BRL';
   const data      = el('dataAtivo').value||hojeISO();
   const obs       = el('obsAtivo').value.trim();
-  const valorTotal= qtd*preco;
+  const totalInf  = toNumber(el('valorTotalAtivo').value);
 
-  if(!ticker||!tipo||!contaId||!qtd||!preco){
-    msg('mensagemAtivo','Preencha ticker, tipo, corretora, quantidade e preço.','warning'); return;
+  // Se não informou preço mas informou total, calcula
+  if(!preco && totalInf && qtd){
+    preco = totalInf / qtd;
+    el('precoAtivo').value = preco.toFixed(6);
+  }
+
+  const valorTotal = totalInf || (qtd * preco);
+
+  if(!ticker||!tipo||!contaId||!qtd||(!preco&&!totalInf)){
+    msg('mensagemAtivo','Preencha ticker, tipo, corretora, quantidade e preço ou valor total.','warning'); return;
   }
 
   const conta = todasContas.find(c=>c.id===contaId)||corretoras.find(c=>c.id===contaId);
@@ -784,13 +800,20 @@ el('btnSalvarDolar').addEventListener('click',async()=>{
 el('filtroCorretora').addEventListener('change',renderizarCarteira);
 
 // Aporte — calcular valor total
-function recalcTotal(){
+// Cálculo bidirecional: preço ↔ total
+function recalcFromPrice(){
   const q=toNumber(el('quantidadeAtivo').value);
   const p=toNumber(el('precoAtivo').value);
-  el('valorTotalAtivo').value=q&&p?(q*p).toFixed(2):'';
+  if(q&&p) el('valorTotalAtivo').value=(q*p).toFixed(2);
 }
-el('quantidadeAtivo').addEventListener('input',recalcTotal);
-el('precoAtivo').addEventListener('input',recalcTotal);
+function recalcFromTotal(){
+  const q=toNumber(el('quantidadeAtivo').value);
+  const t=toNumber(el('valorTotalAtivo').value);
+  if(q&&t) el('precoAtivo').value=(t/q).toFixed(6);
+}
+el('quantidadeAtivo').addEventListener('input',recalcFromPrice);
+el('precoAtivo').addEventListener('input',recalcFromPrice);
+el('valorTotalAtivo').addEventListener('input',recalcFromTotal);
 
 // Ajuste de moeda pela corretora
 el('corretoraAtivo').addEventListener('change',()=>{
