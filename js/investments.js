@@ -1,309 +1,639 @@
-import { supabase } from './supabaseClient.js';
-import { navigate } from './router.js';
-import { formatCurrency } from './utils.js';
-import { listBrokerAccounts } from './services/accountService.js';
-import { DEFAULT_USD_BRL, formatPercent, formatUSD, getUsdBrlRate, saveUsdBrlRate } from './services/financeService.js';
-import { calculateAppliedValue, calculateBRLValue, calculateCurrentValue, listActiveInvestments, saveInvestmentPosition, softDeleteInvestment } from './services/investmentService.js';
+import { supabase }        from './supabaseClient.js';
+import { navigate }        from './router.js';
+import { formatCurrency }  from './utils.js';
+import { DEFAULT_USD_BRL, formatPercent, formatUSD, getUsdBrlRate, saveUsdBrlRate, toNumber } from './services/financeService.js';
 
-const userEmail = document.getElementById('userEmail');
-const btnLogout = document.getElementById('btnLogout');
-const btnSalvarAtivo = document.getElementById('btnSalvarAtivo');
+// ─────────────────────────────────────────────
+// DOM
+// ─────────────────────────────────────────────
+const el = id => document.getElementById(id);
 
-const tickerAtivo = document.getElementById('tickerAtivo');
-const nomeAtivo = document.getElementById('nomeAtivo');
-const tipoAtivo = document.getElementById('tipoAtivo');
-const quantidadeAtivo = document.getElementById('quantidadeAtivo');
-const precoMedioAtivo = document.getElementById('precoMedioAtivo');
-const cotacaoAtualAtivo = document.getElementById('cotacaoAtualAtivo');
-const moedaAtivo = document.getElementById('moedaAtivo');
-const corretoraAtivo = document.getElementById('corretoraAtivo');
+const userEmail        = el('userEmail');
+const btnLogout        = el('btnLogout');
+const btnAtualizar     = el('btnAtualizar');
+const btnSalvarDolar   = el('btnSalvarDolar');
+const dolarReferencia  = el('dolarReferencia');
+const ultimaAtualizacao= el('ultimaAtualizacao');
+const mensagemCotacao  = el('mensagemCotacao');
+const filtroCorretora  = el('filtroCorretora');
+const listaInvestimentos = el('listaInvestimentos');
 
-const dolarReferencia = document.getElementById('dolarReferencia');
-const btnSalvarDolar = document.getElementById('btnSalvarDolar');
-const mensagemDolar = document.getElementById('mensagemDolar');
+const kpiPatrimonio = el('kpiPatrimonio');
+const kpiAplicado   = el('kpiAplicado');
+const kpiResultado  = el('kpiResultado');
+const kpiUsd        = el('kpiUsd');
+const kpiUsdBrl     = el('kpiUsdBrl');
 
-const mensagemInvestimento = document.getElementById('mensagemInvestimento');
-const listaInvestimentos = document.getElementById('listaInvestimentos');
+const tickerAtivo    = el('tickerAtivo');
+const nomeAtivo      = el('nomeAtivo');
+const tipoAtivo      = el('tipoAtivo');
+const corretoraAtivo = el('corretoraAtivo');
+const quantidadeAtivo= el('quantidadeAtivo');
+const precoMedioAtivo= el('precoMedioAtivo');
+const moedaAtivo     = el('moedaAtivo');
+const cotacaoManual  = el('cotacaoManual');
+const btnSalvarAtivo = el('btnSalvarAtivo');
+const btnCancelarEdicao = el('btnCancelarEdicao');
+const mensagemAtivo  = el('mensagemAtivo');
+const formAtivoTitulo= el('formAtivoTitulo');
 
-const patrimonioInvestido = document.getElementById('patrimonioInvestido');
-const totalAplicado = document.getElementById('totalAplicado');
-const totalAtivos = document.getElementById('totalAtivos');
-const exteriorUsd = document.getElementById('exteriorUsd');
-const exteriorBrl = document.getElementById('exteriorBrl');
-
-const { data } = await supabase.auth.getSession();
-
-if(!data.session){
-  navigate('../login.html');
-}
-
-const user = data.session.user;
+// ─────────────────────────────────────────────
+// AUTH
+// ─────────────────────────────────────────────
+const { data: sessionData } = await supabase.auth.getSession();
+if(!sessionData.session){ navigate('../login.html'); }
+const user = sessionData.session.user;
 userEmail.innerText = user.email;
-
-let dolarAtual = DEFAULT_USD_BRL;
-let brokerAccounts = [];
 
 btnLogout.addEventListener('click', async () => {
   await supabase.auth.signOut();
   navigate('../login.html');
 });
 
-btnSalvarAtivo.addEventListener('click', salvarAtivo);
-if(btnSalvarDolar) btnSalvarDolar.addEventListener('click', salvarDolarReferencia);
-if(corretoraAtivo) corretoraAtivo.addEventListener('change', ajustarMoedaPelaCorretora);
+// ─────────────────────────────────────────────
+// ESTADO
+// ─────────────────────────────────────────────
+let dolarAtual   = DEFAULT_USD_BRL;
+let ativos       = [];
+let editandoId   = null;
 
-function mostrarMensagem(texto, tipo = 'info'){
-  mensagemInvestimento.className = `message ${tipo}`;
-  mensagemInvestimento.innerText = texto;
+// ─────────────────────────────────────────────
+// UTILITÁRIOS
+// ─────────────────────────────────────────────
+function msgCotacao(texto, tipo = 'info'){
+  mensagemCotacao.className = `message ${tipo}`;
+  mensagemCotacao.innerText = texto;
 }
 
-function mostrarMensagemDolar(texto, tipo = 'info'){
-  if(!mensagemDolar) return;
-  mensagemDolar.className = `message ${tipo}`;
-  mensagemDolar.innerText = texto;
+function msgAtivo(texto, tipo = 'info'){
+  mensagemAtivo.className = `message ${tipo}`;
+  mensagemAtivo.innerText = texto;
 }
 
-async function carregarDolarReferencia(){
+function isBR(tipo){
+  return ['acao_br','fii','etf_br'].includes(tipo);
+}
+
+function isEUA(tipo){
+  return ['acao_eua','etf_eua'].includes(tipo);
+}
+
+function isRendaFixa(tipo){
+  return tipo === 'renda_fixa';
+}
+
+function tipoLabel(tipo){
+  const map = {
+    acao_br:'Ação BR', fii:'FII', etf_br:'ETF BR',
+    etf_eua:'ETF EUA', acao_eua:'Ação EUA', renda_fixa:'Renda Fixa',
+    // legados
+    acao:'Ação', etf:'ETF', cripto:'Cripto', exterior:'Exterior',
+  };
+  return map[tipo] || tipo || '-';
+}
+
+function fmtMoeda(valor, moeda){
+  return moeda === 'USD' ? formatUSD(valor) : formatCurrency(valor, 'BRL');
+}
+
+function calcAplicado(a){
+  return toNumber(a.quantidade) * toNumber(a.preco_medio);
+}
+
+function calcAtual(a){
+  const preco = toNumber(a.cotacao_atual || a.preco_medio);
+  return toNumber(a.quantidade) * preco;
+}
+
+function calcBRL(a, valor){
+  return (a.moeda || 'BRL') === 'USD' ? valor * dolarAtual : valor;
+}
+
+// ─────────────────────────────────────────────
+// BUSCA DE COTAÇÕES
+// ─────────────────────────────────────────────
+
+// Ações/FIIs/ETFs brasileiros via brapi.dev
+async function fetchCotacaoBR(tickers){
+  if(!tickers.length) return {};
+  const symbols = tickers.join(',');
+  try{
+    const res = await fetch(`https://brapi.dev/api/quote/${symbols}?token=anonymous`);
+    if(!res.ok) throw new Error('brapi indisponível');
+    const json = await res.json();
+    const result = {};
+    (json.results || []).forEach(item => {
+      if(item.symbol && item.regularMarketPrice){
+        result[item.symbol.toUpperCase()] = toNumber(item.regularMarketPrice);
+      }
+    });
+    return result;
+  }catch(e){
+    // Fallback: Yahoo Finance via proxy público
+    try{
+      const r2 = await fetch(
+        `https://query1.finance.yahoo.com/v8/finance/chart/${tickers[0]}.SA?interval=1d&range=1d`
+      );
+      const j2 = await r2.json();
+      const price = j2?.chart?.result?.[0]?.meta?.regularMarketPrice;
+      if(price) return { [tickers[0].toUpperCase()]: toNumber(price) };
+    }catch(_){}
+    return {};
+  }
+}
+
+// Ações/ETFs americanos via Yahoo Finance
+async function fetchCotacaoEUA(tickers){
+  if(!tickers.length) return {};
+  const result = {};
+  // Busca um por vez para evitar bloqueio de CORS em múltiplos
+  for(const ticker of tickers){
+    try{
+      const res = await fetch(
+        `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`,
+        { mode:'cors' }
+      );
+      if(!res.ok) continue;
+      const json = await res.json();
+      const price = json?.chart?.result?.[0]?.meta?.regularMarketPrice;
+      if(price) result[ticker.toUpperCase()] = toNumber(price);
+    }catch(_){}
+  }
+  return result;
+}
+
+// Dólar via AwesomeAPI → fallback BCB
+async function fetchDolar(){
+  try{
+    const res = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
+    if(!res.ok) throw new Error();
+    const json = await res.json();
+    const rate = toNumber(json?.USDBRL?.bid);
+    if(rate > 0) return rate;
+  }catch(_){}
+
+  try{
+    const res = await fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados/ultimos/1?formato=json');
+    if(!res.ok) throw new Error();
+    const json = await res.json();
+    const rate = toNumber(json?.[0]?.valor?.replace(',','.'));
+    if(rate > 0) return rate;
+  }catch(_){}
+
+  return dolarAtual; // mantém o que estava
+}
+
+async function atualizarCotacoes(silencioso = false){
+  if(!silencioso){
+    btnAtualizar.disabled = true;
+    btnAtualizar.innerHTML = '<span class="inv-spinner"></span> Atualizando...';
+    msgCotacao('Buscando cotações...', 'info');
+  }
+
+  try{
+    // 1. Buscar dólar atualizado
+    const novoDolar = await fetchDolar();
+    if(novoDolar !== dolarAtual){
+      dolarAtual = novoDolar;
+      dolarReferencia.value = dolarAtual.toFixed(4);
+      // salvar no banco silenciosamente
+      try{ await saveUsdBrlRate(user.id, dolarAtual); }catch(_){}
+    }
+
+    // 2. Separar ativos por grupo
+    const tickersBR  = ativos.filter(a => isBR(a.tipo) && !isRendaFixa(a.tipo)).map(a => a.ticker.toUpperCase());
+    const tickersEUA = ativos.filter(a => isEUA(a.tipo)).map(a => a.ticker.toUpperCase());
+
+    // 3. Buscar cotações
+    const [cotsBR, cotsEUA] = await Promise.all([
+      fetchCotacaoBR([...new Set(tickersBR)]),
+      fetchCotacaoEUA([...new Set(tickersEUA)]),
+    ]);
+
+    const todasCotacoes = { ...cotsBR, ...cotsEUA };
+
+    // 4. Atualizar banco e estado local
+    let atualizados = 0;
+    const agora = new Date().toISOString();
+
+    for(const ativo of ativos){
+      if(isRendaFixa(ativo.tipo)) continue;
+
+      const ticker = ativo.ticker.toUpperCase();
+      const novaCot = todasCotacoes[ticker];
+
+      if(!novaCot) continue;
+
+      // Só atualiza se mudou mais de 0.01%
+      const atual = toNumber(ativo.cotacao_atual || 0);
+      if(atual > 0 && Math.abs(novaCot - atual) / atual < 0.0001) continue;
+
+      await supabase.from('investments')
+        .update({ cotacao_atual: novaCot, atualizado_em: agora })
+        .eq('id', ativo.id).eq('user_id', user.id);
+
+      ativo.cotacao_atual = novaCot;
+      ativo.atualizado_em = agora;
+      atualizados++;
+    }
+
+    const agora_br = new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+    ultimaAtualizacao.innerText = `Atualizado às ${agora_br} · ${atualizados} ativo(s)`;
+
+    if(!silencioso){
+      msgCotacao(
+        atualizados > 0
+          ? `${atualizados} cotação(ões) atualizada(s). Dólar: R$ ${dolarAtual.toFixed(4)}`
+          : `Cotações sem variação. Dólar: R$ ${dolarAtual.toFixed(4)}`,
+        'success'
+      );
+    }
+
+    renderizarTudo();
+  }catch(e){
+    if(!silencioso) msgCotacao('Erro ao buscar cotações: '+e.message, 'danger');
+  }finally{
+    btnAtualizar.disabled = false;
+    btnAtualizar.innerHTML = '🔄 Atualizar cotações';
+  }
+}
+
+// ─────────────────────────────────────────────
+// CARREGAR DADOS
+// ─────────────────────────────────────────────
+async function carregarDolar(){
   try{
     dolarAtual = await getUsdBrlRate(user.id);
-  }catch(error){
+  }catch(_){
     dolarAtual = DEFAULT_USD_BRL;
   }
-
-  if(dolarReferencia){
-    dolarReferencia.value = dolarAtual;
-  }
-}
-
-async function salvarDolarReferencia(){
-  try{
-    dolarAtual = await saveUsdBrlRate(user.id, dolarReferencia?.value || 0);
-    mostrarMensagemDolar('Dólar atualizado.', 'success');
-    await carregarInvestimentos();
-  }catch(error){
-    mostrarMensagemDolar('Erro ao salvar dólar: ' + error.message, 'danger');
-  }
+  dolarReferencia.value = dolarAtual;
 }
 
 async function carregarCorretoras(){
-  if(!corretoraAtivo) return;
+  const { data } = await supabase.from('accounts')
+    .select('id,nome,bank,currency')
+    .eq('user_id', user.id).eq('active', true)
+    .eq('account_kind','broker')
+    .order('nome', { ascending: true });
 
-  try{
-    brokerAccounts = await listBrokerAccounts(user.id);
-  }catch(error){
-    corretoraAtivo.innerHTML = '<option value="">Erro ao carregar corretoras</option>';
-    mostrarMensagem('Erro ao carregar corretoras: ' + error.message, 'danger');
+  const contas = data || [];
+
+  // Filtro
+  filtroCorretora.innerHTML = '<option value="">Todas as corretoras</option>' +
+    contas.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+
+  // Formulário
+  corretoraAtivo.innerHTML = '<option value="">Selecione a corretora</option>' +
+    contas.map(c =>
+      `<option value="${c.nome}" data-currency="${c.currency||'BRL'}">${c.nome} (${c.currency||'BRL'})</option>`
+    ).join('');
+}
+
+async function carregarAtivos(){
+  const { data, error } = await supabase.from('investments')
+    .select('*').eq('user_id', user.id).eq('ativo', true)
+    .order('corretora', { ascending: true })
+    .order('ticker',    { ascending: true });
+
+  if(error) throw error;
+  ativos = data || [];
+}
+
+// ─────────────────────────────────────────────
+// RENDERIZAR
+// ─────────────────────────────────────────────
+function renderizarTudo(){
+  renderizarKPIs();
+  renderizarCarteira();
+}
+
+function renderizarKPIs(){
+  const aplicadoBRL   = ativos.reduce((s,a) => s + calcBRL(a, calcAplicado(a)), 0);
+  const patrimonioBRL = ativos.reduce((s,a) => s + calcBRL(a, calcAtual(a)), 0);
+  const resultado     = patrimonioBRL - aplicadoBRL;
+
+  const usdTotal = ativos
+    .filter(a => (a.moeda||'BRL') === 'USD')
+    .reduce((s,a) => s + calcAtual(a), 0);
+
+  kpiPatrimonio.innerText = formatCurrency(patrimonioBRL, 'BRL');
+  kpiAplicado.innerText   = formatCurrency(aplicadoBRL,   'BRL');
+  kpiResultado.innerText  = formatCurrency(resultado,     'BRL');
+  kpiResultado.className  = resultado >= 0 ? 'inv-result-positive' : 'inv-result-negative';
+  kpiUsd.innerText        = formatUSD(usdTotal);
+  kpiUsdBrl.innerText     = formatCurrency(usdTotal * dolarAtual, 'BRL');
+}
+
+function renderizarCarteira(){
+  const filtro = filtroCorretora.value;
+  const lista  = filtro ? ativos.filter(a => a.corretora === filtro) : ativos;
+
+  if(!lista.length){
+    listaInvestimentos.innerHTML = '<p class="muted" style="padding:18px">Nenhum ativo cadastrado.</p>';
     return;
   }
 
-  if(!brokerAccounts.length){
-    corretoraAtivo.innerHTML = '<option value="">Cadastre uma corretora em Contas</option>';
-    return;
+  // Agrupar por corretora
+  const grupos = {};
+  lista.forEach(a => {
+    const c = a.corretora || 'Sem corretora';
+    if(!grupos[c]) grupos[c] = [];
+    grupos[c].push(a);
+  });
+
+  let html = '';
+
+  for(const [corretora, itens] of Object.entries(grupos)){
+    const totalCorretora = itens.reduce((s,a) => s + calcBRL(a, calcAtual(a)), 0);
+
+    html += `
+      <div class="inv-broker-title" style="padding:0 18px">
+        🏦 ${corretora} — ${formatCurrency(totalCorretora,'BRL')}
+      </div>
+    `;
+
+    // Desktop
+    html += `
+      <div class="inv-desktop">
+        <table class="data-table">
+          <thead><tr>
+            <th>Ticker</th><th>Nome</th><th>Tipo</th>
+            <th>Qtd</th><th>Preço médio</th><th>Cotação</th>
+            <th>Aplicado</th><th>Atual</th><th>Resultado</th><th>Ações</th>
+          </tr></thead>
+          <tbody>
+            ${itens.map(a => rowHtml(a)).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    // Mobile
+    html += `
+      <div class="inv-mobile-list">
+        ${itens.map(a => cardHtml(a)).join('')}
+      </div>
+    `;
   }
 
-  corretoraAtivo.innerHTML = `
-    <option value="">Selecione a corretora</option>
-    ${brokerAccounts.map(account => `
-      <option value="${account.nome}" data-currency="${account.currency || 'BRL'}">
-        ${account.nome} - ${account.currency || 'BRL'}
-      </option>
-    `).join('')}
+  listaInvestimentos.innerHTML = html;
+
+  listaInvestimentos.querySelectorAll('[data-editar]').forEach(btn => {
+    btn.addEventListener('click', () => editarAtivo(btn.dataset.editar));
+  });
+  listaInvestimentos.querySelectorAll('[data-excluir]').forEach(btn => {
+    btn.addEventListener('click', () => excluirAtivo(btn.dataset.excluir, btn.dataset.ticker));
+  });
+}
+
+function rowHtml(a){
+  const moeda     = a.moeda || 'BRL';
+  const aplicado  = calcAplicado(a);
+  const atual     = calcAtual(a);
+  const resultado = atual - aplicado;
+  const pct       = aplicado ? (resultado / aplicado) * 100 : 0;
+  const cotacao   = toNumber(a.cotacao_atual || a.preco_medio);
+  const temCotAuto= !isRendaFixa(a.tipo) && a.atualizado_em;
+
+  return `
+    <tr>
+      <td><strong>${a.ticker||'-'}</strong></td>
+      <td>${a.nome||'-'}</td>
+      <td>
+        ${tipoLabel(a.tipo)}
+        <span class="inv-quote-status ${temCotAuto?'auto':'manual'}">
+          ${temCotAuto?'auto':'manual'}
+        </span>
+      </td>
+      <td class="money">${toNumber(a.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:6})}</td>
+      <td class="money">${fmtMoeda(toNumber(a.preco_medio), moeda)}</td>
+      <td class="money">${fmtMoeda(cotacao, moeda)}</td>
+      <td class="money">
+        ${fmtMoeda(aplicado, moeda)}
+        ${moeda==='USD'?`<br><span class="muted">${formatCurrency(calcBRL(a,aplicado),'BRL')}</span>`:''}
+      </td>
+      <td class="money">
+        ${fmtMoeda(atual, moeda)}
+        ${moeda==='USD'?`<br><span class="muted">${formatCurrency(calcBRL(a,atual),'BRL')}</span>`:''}
+      </td>
+      <td class="money ${resultado>=0?'positive':'negative'}">
+        ${resultado>=0?'+':''}${fmtMoeda(resultado, moeda)}<br>
+        <span style="font-size:11px">${resultado>=0?'+':''}${formatPercent(pct)}</span>
+      </td>
+      <td>
+        <button type="button" class="btn btn-secondary compact" data-editar="${a.id}">Editar</button>
+        <button type="button" class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">Excluir</button>
+      </td>
+    </tr>
   `;
 }
 
-function ajustarMoedaPelaCorretora(){
-  const selected = corretoraAtivo?.options[corretoraAtivo.selectedIndex];
-  const currency = selected?.dataset?.currency;
+function cardHtml(a){
+  const moeda     = a.moeda || 'BRL';
+  const aplicado  = calcAplicado(a);
+  const atual     = calcAtual(a);
+  const resultado = atual - aplicado;
+  const pct       = aplicado ? (resultado / aplicado) * 100 : 0;
+  const cotacao   = toNumber(a.cotacao_atual || a.preco_medio);
 
-  if(currency && moedaAtivo){
-    moedaAtivo.value = currency;
+  return `
+    <article class="inv-mobile-card">
+      <div class="inv-mobile-card-top">
+        <div>
+          <div class="inv-ticker">${a.ticker||'-'}</div>
+          <div class="inv-nome">${a.nome||'-'} · ${tipoLabel(a.tipo)}</div>
+        </div>
+        <strong class="${resultado>=0?'positive':'negative'}">
+          ${resultado>=0?'+':''}${formatPercent(pct)}
+        </strong>
+      </div>
+      <div class="inv-mobile-grid">
+        <div><span>Qtd</span><strong class="money">${toNumber(a.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:6})}</strong></div>
+        <div><span>Cotação</span><strong class="money">${fmtMoeda(cotacao,moeda)}</strong></div>
+        <div><span>Aplicado</span><strong class="money">${fmtMoeda(aplicado,moeda)}</strong></div>
+        <div><span>Atual</span><strong class="money">${fmtMoeda(atual,moeda)}</strong></div>
+        <div><span>Resultado</span>
+          <strong class="money ${resultado>=0?'positive':'negative'}">
+            ${resultado>=0?'+':''}${fmtMoeda(resultado,moeda)}
+          </strong>
+        </div>
+        ${moeda==='USD'?`<div><span>Em BRL</span><strong class="money">${formatCurrency(calcBRL(a,atual),'BRL')}</strong></div>`:''}
+      </div>
+      <div class="inv-mobile-actions">
+        <button type="button" class="btn btn-secondary compact" data-editar="${a.id}">Editar</button>
+        <button type="button" class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">Excluir</button>
+      </div>
+    </article>
+  `;
+}
+
+// ─────────────────────────────────────────────
+// SALVAR / EDITAR / EXCLUIR
+// ─────────────────────────────────────────────
+async function salvarAtivo(){
+  const ticker    = tickerAtivo.value.trim().toUpperCase();
+  const nome      = nomeAtivo.value.trim();
+  const tipo      = tipoAtivo.value;
+  const corretora = corretoraAtivo.value;
+  const quantidade= toNumber(quantidadeAtivo.value);
+  const precoMedio= toNumber(precoMedioAtivo.value);
+  const moeda     = moedaAtivo.value || 'BRL';
+  const cotManual = cotacaoManual.value ? toNumber(cotacaoManual.value) : null;
+
+  if(!ticker || !tipo || !corretora || !quantidade || !precoMedio){
+    msgAtivo('Preencha ticker, tipo, corretora, quantidade e preço médio.','warning');
+    return;
+  }
+
+  msgAtivo('Salvando...','info');
+
+  try{
+    if(editandoId){
+      // Edição direta
+      const { error } = await supabase.from('investments').update({
+        ticker, nome, tipo, corretora, quantidade, preco_medio: precoMedio,
+        moeda, cotacao_atual: cotManual,
+        atualizado_em: cotManual ? new Date().toISOString() : null,
+      }).eq('id', editandoId).eq('user_id', user.id);
+
+      if(error) throw error;
+      msgAtivo('Ativo atualizado.','success');
+    }else{
+      // Verifica se já existe (mesmo ticker + corretora + moeda)
+      const { data: existing } = await supabase.from('investments')
+        .select('*').eq('user_id', user.id).eq('ativo', true)
+        .eq('ticker', ticker).eq('corretora', corretora).eq('moeda', moeda)
+        .maybeSingle();
+
+      if(existing){
+        // Consolidar pelo preço médio ponderado
+        const novaQtd = toNumber(existing.quantidade) + quantidade;
+        const novoPM  = ((toNumber(existing.quantidade) * toNumber(existing.preco_medio)) +
+                         (quantidade * precoMedio)) / novaQtd;
+
+        const { error } = await supabase.from('investments').update({
+          nome: nome || existing.nome,
+          tipo, quantidade: novaQtd, preco_medio: novoPM,
+          cotacao_atual: cotManual ?? existing.cotacao_atual,
+          atualizado_em: cotManual ? new Date().toISOString() : existing.atualizado_em,
+        }).eq('id', existing.id).eq('user_id', user.id);
+
+        if(error) throw error;
+        msgAtivo('Posição consolidada com preço médio ponderado.','success');
+      }else{
+        const { error } = await supabase.from('investments').insert({
+          user_id: user.id, ticker, nome, tipo, corretora,
+          quantidade, preco_medio: precoMedio, moeda,
+          cotacao_atual: cotManual,
+          atualizado_em: cotManual ? new Date().toISOString() : null,
+          exchange_rate: moeda === 'USD' ? dolarAtual : null,
+          ativo: true,
+        });
+
+        if(error) throw error;
+        msgAtivo('Ativo salvo com sucesso.','success');
+      }
+    }
+
+    limparFormulario();
+    await carregarAtivos();
+    renderizarTudo();
+
+    // Tenta buscar cotação do novo ativo automaticamente
+    if(!cotManual && !isRendaFixa(tipo)){
+      setTimeout(() => atualizarCotacoes(true), 800);
+    }
+  }catch(e){
+    msgAtivo('Erro ao salvar: '+e.message,'danger');
   }
 }
 
-async function salvarAtivo(){
-  mostrarMensagem('Salvando ativo...');
+function editarAtivo(id){
+  const a = ativos.find(x => x.id === id);
+  if(!a) return;
 
-  const ticker = tickerAtivo.value.trim().toUpperCase();
-  const nome = nomeAtivo.value.trim();
-  const tipo = tipoAtivo.value;
-  const quantidade = Number(quantidadeAtivo.value || 0);
-  const precoMedio = Number(precoMedioAtivo.value || 0);
-  const cotacaoAtual = cotacaoAtualAtivo.value ? Number(cotacaoAtualAtivo.value) : null;
-  const moeda = moedaAtivo.value || 'BRL';
-  const corretora = corretoraAtivo.value;
+  editandoId = id;
+  tickerAtivo.value    = a.ticker || '';
+  nomeAtivo.value      = a.nome || '';
+  tipoAtivo.value      = a.tipo || '';
+  corretoraAtivo.value = a.corretora || '';
+  quantidadeAtivo.value= a.quantidade || '';
+  precoMedioAtivo.value= a.preco_medio || '';
+  moedaAtivo.value     = a.moeda || 'BRL';
+  cotacaoManual.value  = a.cotacao_atual || '';
 
-  if(!ticker || !tipo || !quantidade || !precoMedio){
-    mostrarMensagem('Preencha ticker, tipo, quantidade e preço médio.', 'warning');
-    return;
-  }
-
-  if(!corretora){
-    mostrarMensagem('Selecione a corretora.', 'warning');
-    return;
-  }
-
-  try{
-    const { existing } = await saveInvestmentPosition({
-      userId:user.id,
-      ticker,
-      name:nome,
-      type:tipo,
-      quantity:quantidade,
-      averagePrice:precoMedio,
-      currentPrice:cotacaoAtual,
-      currency:moeda,
-      brokerName:corretora,
-      usdBrlRate:dolarAtual
-    });
-
-    limparFormulario();
-    mostrarMensagem(existing ? 'Ativo consolidado com posição existente.' : 'Ativo salvo com sucesso.', 'success');
-    await carregarInvestimentos();
-  }catch(error){
-    mostrarMensagem('Erro ao salvar: ' + error.message, 'danger');
-  }
+  formAtivoTitulo.innerText = `Editando: ${a.ticker}`;
+  btnSalvarAtivo.innerText  = 'Salvar Alterações';
+  btnCancelarEdicao.style.display = '';
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
 
 async function excluirAtivo(id, ticker){
-  const ok = confirm(`Excluir o ativo ${ticker}? Ele será removido da carteira ativa.`);
-
+  const ok = confirm(`Excluir ${ticker} da carteira?`);
   if(!ok) return;
 
-  try{
-    await softDeleteInvestment(user.id, id);
-    mostrarMensagem('Ativo excluído da carteira.', 'success');
-    await carregarInvestimentos();
-  }catch(error){
-    mostrarMensagem('Erro ao excluir ativo: ' + error.message, 'danger');
-  }
-}
+  const { error } = await supabase.from('investments')
+    .update({ ativo: false }).eq('id', id).eq('user_id', user.id);
 
-async function carregarInvestimentos(){
-  try{
-    const ativos = await listActiveInvestments(user.id);
+  if(error){ msgAtivo('Erro ao excluir: '+error.message,'danger'); return; }
 
-    renderizarResumo(ativos);
-    renderizarCarteira(ativos);
-  }catch(error){
-    listaInvestimentos.innerHTML = '<p class="muted">Erro ao carregar investimentos.</p>';
-    mostrarMensagem('Erro ao listar: ' + error.message, 'danger');
-  }
-}
-
-function valorAplicado(item){
-  return calculateAppliedValue(item);
-}
-
-function valorAtual(item){
-  return calculateCurrentValue(item);
-}
-
-function valorBRL(item, valor){
-  return calculateBRLValue(item, valor, dolarAtual);
-}
-
-function renderizarResumo(ativos){
-  const aplicadoBRL = ativos.reduce((soma, item) => soma + valorBRL(item, valorAplicado(item)), 0);
-  const patrimonioBRL = ativos.reduce((soma, item) => soma + valorBRL(item, valorAtual(item)), 0);
-
-  const exteriorTotalUsd = ativos
-    .filter(item => (item.moeda || 'BRL') === 'USD')
-    .reduce((soma, item) => soma + valorAtual(item), 0);
-
-  totalAplicado.innerText = formatCurrency(aplicadoBRL, 'BRL');
-  patrimonioInvestido.innerText = formatCurrency(patrimonioBRL, 'BRL');
-  totalAtivos.innerText = String(ativos.length);
-
-  if(exteriorUsd){
-    exteriorUsd.innerText = formatUSD(exteriorTotalUsd);
-  }
-
-  if(exteriorBrl){
-    exteriorBrl.innerText = formatCurrency(exteriorTotalUsd * dolarAtual, 'BRL');
-  }
-}
-
-function renderizarCarteira(ativos){
-  if(!ativos.length){
-    listaInvestimentos.innerHTML = '<p class="muted">Nenhum ativo cadastrado.</p>';
-    return;
-  }
-
-  listaInvestimentos.innerHTML = `
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Ticker</th>
-          <th>Nome</th>
-          <th>Tipo</th>
-          <th>Quantidade</th>
-          <th>Preço Médio</th>
-          <th>Cotação</th>
-          <th>Total Aplicado</th>
-          <th>Valor Atual</th>
-          <th>Resultado</th>
-          <th>Corretora</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${ativos.map(item => {
-          const quantidade = Number(item.quantidade || 0);
-          const precoMedio = Number(item.preco_medio || 0);
-          const cotacao = Number(item.cotacao_atual || item.preco_medio || 0);
-          const moeda = item.moeda || 'BRL';
-
-          const aplicado = valorAplicado(item);
-          const atual = valorAtual(item);
-          const resultado = atual - aplicado;
-          const percentual = aplicado ? (resultado / aplicado) * 100 : 0;
-
-          return `
-            <tr>
-              <td><strong>${item.ticker || '-'}</strong></td>
-              <td>${item.nome || '-'}</td>
-              <td>${item.tipo || '-'}</td>
-              <td class="money">${quantidade.toLocaleString('pt-BR')}</td>
-              <td class="money">${formatCurrency(precoMedio, moeda)}</td>
-              <td class="money">${formatCurrency(cotacao, moeda)}</td>
-              <td class="money">
-                ${formatCurrency(aplicado, moeda)}
-                ${moeda === 'USD' ? `<br><span class="muted">${formatCurrency(valorBRL(item, aplicado), 'BRL')}</span>` : ''}
-              </td>
-              <td class="money">
-                ${formatCurrency(atual, moeda)}
-                ${moeda === 'USD' ? `<br><span class="muted">${formatCurrency(valorBRL(item, atual), 'BRL')}</span>` : ''}
-              </td>
-              <td class="money ${resultado >= 0 ? 'positive' : 'negative'}">
-                ${formatCurrency(resultado, moeda)}<br>${formatPercent(percentual)}
-              </td>
-              <td>${item.corretora || '-'}</td>
-              <td>
-                <button type="button" class="btn btn-danger compact" onclick="window.excluirAtivoFinZen('${item.id}', '${item.ticker}')">
-                  Excluir
-                </button>
-              </td>
-            </tr>
-          `;
-        }).join('')}
-      </tbody>
-    </table>
-  `;
+  msgAtivo(`${ticker} removido da carteira.`,'success');
+  await carregarAtivos();
+  renderizarTudo();
 }
 
 function limparFormulario(){
+  editandoId = null;
   tickerAtivo.value = '';
-  nomeAtivo.value = '';
-  tipoAtivo.value = '';
+  nomeAtivo.value   = '';
+  tipoAtivo.value   = '';
+  corretoraAtivo.value = '';
   quantidadeAtivo.value = '';
   precoMedioAtivo.value = '';
-  cotacaoAtualAtivo.value = '';
-  moedaAtivo.value = 'BRL';
-  corretoraAtivo.value = '';
+  moedaAtivo.value  = 'BRL';
+  cotacaoManual.value = '';
+  formAtivoTitulo.innerText = 'Adicionar Ativo';
+  btnSalvarAtivo.innerText  = 'Salvar Ativo';
+  btnCancelarEdicao.style.display = 'none';
 }
 
-window.excluirAtivoFinZen = excluirAtivo;
+// ─────────────────────────────────────────────
+// EVENTOS
+// ─────────────────────────────────────────────
+btnAtualizar.addEventListener('click', () => atualizarCotacoes(false));
 
-await carregarDolarReferencia();
+btnSalvarDolar.addEventListener('click', async () => {
+  const val = toNumber(dolarReferencia.value);
+  if(val <= 0){ msgCotacao('Informe uma cotação válida.','warning'); return; }
+  try{
+    await saveUsdBrlRate(user.id, val);
+    dolarAtual = val;
+    renderizarTudo();
+    msgCotacao(`Dólar salvo: R$ ${val.toFixed(4)}`,'success');
+  }catch(e){
+    msgCotacao('Erro ao salvar dólar: '+e.message,'danger');
+  }
+});
+
+btnSalvarAtivo.addEventListener('click', salvarAtivo);
+btnCancelarEdicao.addEventListener('click', limparFormulario);
+filtroCorretora.addEventListener('change', renderizarCarteira);
+
+// Ajusta moeda automaticamente pela corretora
+corretoraAtivo.addEventListener('change', () => {
+  const opt = corretoraAtivo.options[corretoraAtivo.selectedIndex];
+  const currency = opt?.dataset?.currency;
+  if(currency) moedaAtivo.value = currency;
+});
+
+// ─────────────────────────────────────────────
+// INICIALIZAÇÃO
+// ─────────────────────────────────────────────
+await carregarDolar();
 await carregarCorretoras();
-await carregarInvestimentos();
+await carregarAtivos();
+renderizarTudo();
+
+// Atualiza cotações automaticamente ao abrir
+await atualizarCotacoes(true);
