@@ -102,8 +102,8 @@ async function carregarDashboard(){
   // ── Receita líquida recorrente ───────────────────
   renderReceitaLiquida(recorrentes||[]);
 
-  // ── Previsão 30 dias ─────────────────────────────
-  renderPrevisao(totalSaldo, recorrentes||[]);
+  // ── Previsão de saldo do mês ────────────────────
+  renderPrevisao(totalSaldo, receitas, despesas, tx.filter(t=>t.status==='pendente'));
 
   // ── Últimos lançamentos ──────────────────────────
   renderUltimos(ultimosLanc||[]);
@@ -293,61 +293,66 @@ function renderReceitaLiquida(recorrentes){
   `;
 }
 
-// ── Previsão 30 dias ──────────────────────────────────
-function renderPrevisao(saldoAtual, recorrentes){
-  const receitasMensal = recorrentes.filter(r=>r.type==='receita').reduce((s,r)=>s+Number(r.amount||0),0);
-  const despesasMensal = recorrentes.filter(r=>r.type==='despesa').reduce((s,r)=>s+Number(r.amount||0),0);
-  const liquidoDiario  = (receitasMensal - despesasMensal) / 30;
+// ── Previsão saldo do mês ─────────────────────────────
+function renderPrevisao(saldoAtual, receitasPagas, despesasPagas, txPendentes){
+  // Saldo inicial = saldo atual - resultado já registrado no mês
+  const resultadoAtual = receitasPagas - despesasPagas;
+  const saldoInicial   = saldoAtual - resultadoAtual;
 
-  // Gerar pontos dos próximos 30 dias
-  const pontos = Array.from({length:31},(_,i) => ({
-    dia: i,
-    saldo: saldoAtual + liquidoDiario * i
-  }));
+  // Pendentes restantes no mês (receitas e despesas)
+  const receitasPend  = txPendentes.filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
+  const despesasPend  = txPendentes.filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0);
+  const saldoPrevisto = saldoAtual + receitasPend - despesasPend;
 
-  const em30 = pontos[30].saldo;
-  const diff = em30 - saldoAtual;
-  const minV = Math.min(...pontos.map(p=>p.saldo));
-  const maxV = Math.max(...pontos.map(p=>p.saldo));
+  const diff = saldoPrevisto - saldoInicial;
+
+  // Linha do tempo: inicial → atual → previsto
+  const pontos3 = [saldoInicial, saldoAtual, saldoPrevisto];
+  const minV = Math.min(...pontos3);
+  const maxV = Math.max(...pontos3);
   const range = maxV - minV || 1;
+  const W=500, H=56, pad=6;
 
-  // SVG linha
-  const W=500, H=60, pad=4;
-  const pts = pontos.map(p => {
-    const x = (p.dia/30)*(W-pad*2)+pad;
-    const y = H - pad - ((p.saldo-minV)/range)*(H-pad*2);
+  const xs = [pad, W/2, W-pad];
+  const pts = pontos3.map((v,i) => {
+    const x = xs[i];
+    const y = H - pad - ((v-minV)/range)*(H-pad*2);
     return `${x},${y}`;
   }).join(' ');
 
-  const corLinha = diff >= 0 ? '#22c55e' : '#ef4444';
-  const svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:60px;display:block;">
-    <defs>
-      <linearGradient id="pgrd" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${corLinha}" stop-opacity=".25"/>
-        <stop offset="100%" stop-color="${corLinha}" stop-opacity="0"/>
-      </linearGradient>
-    </defs>
-    <polyline points="${pts}" fill="none" stroke="${corLinha}" stroke-width="2" stroke-linejoin="round"/>
+  const corLinha = saldoPrevisto >= saldoInicial ? '#22c55e' : '#ef4444';
+  const corAtual = saldoAtual >= 0 ? '#4b84f3' : '#ef4444';
+
+  // Posição Y do ponto atual para o círculo
+  const yAtual = H - pad - ((saldoAtual-minV)/range)*(H-pad*2);
+
+  const svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:56px;display:block;margin:12px 0;">
+    <polyline points="${pts}" fill="none" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <line x1="${pad}" y1="${H-pad-((saldoInicial-minV)/range)*(H-pad*2)}" x2="${W/2}" y2="${yAtual}"
+      stroke="${corLinha}" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="${xs[0]}" cy="${H-pad-((saldoInicial-minV)/range)*(H-pad*2)}" r="5" fill="var(--surface)" stroke="#4b84f3" stroke-width="2"/>
+    <circle cx="${xs[1]}" cy="${yAtual}" r="6" fill="${corAtual}" stroke="var(--surface)" stroke-width="2"/>
+    <circle cx="${xs[2]}" cy="${H-pad-((saldoPrevisto-minV)/range)*(H-pad*2)}" r="5" fill="var(--surface)" stroke="${corLinha}" stroke-width="2" stroke-dasharray="3 2"/>
   </svg>`;
 
   el('blocoPrevisao').innerHTML = `
     <div class="previsao-grid">
       <div class="previsao-kpi">
-        <span>Hoje</span>
-        <strong class="${saldoAtual>=0?'positive':'negative'}">${fmt(saldoAtual)}</strong>
+        <span>Início do mês</span>
+        <strong class="${saldoInicial>=0?'positive':'negative'}">${fmt(saldoInicial)}</strong>
       </div>
       <div class="previsao-kpi">
-        <span>Variação esperada</span>
-        <strong class="${diff>=0?'positive':'negative'}">${diff>=0?'+':''}${fmt(diff)}</strong>
+        <span>Saldo atual</span>
+        <strong class="${saldoAtual>=0?'positive':'negative'}" style="font-size:17px">${fmt(saldoAtual)}</strong>
       </div>
       <div class="previsao-kpi">
-        <span>Em 30 dias</span>
-        <strong class="${em30>=0?'positive':'negative'}">${fmt(em30)}</strong>
+        <span>Previsto fim do mês</span>
+        <strong class="${saldoPrevisto>=saldoInicial?'positive':'negative'}">${fmt(saldoPrevisto)}</strong>
       </div>
     </div>
     ${svg}
-    <p class="muted" style="font-size:11px;margin-top:8px;text-align:center">
-      Baseado em receitas e despesas recorrentes cadastradas
+    <p class="muted" style="font-size:11px;text-align:center">
+      Previsto = saldo atual ${receitasPend>0?`+ ${fmt(receitasPend)} a receber`:''} ${despesasPend>0?`− ${fmt(despesasPend)} a pagar`:''}
     </p>
   `;
 }
