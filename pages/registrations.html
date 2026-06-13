@@ -4,67 +4,180 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cadastros - FinZen</title>
-<link rel="stylesheet" href="../css/base.css?v=902">
-<link rel="stylesheet" href="../css/layout.css?v=902">
-<link rel="stylesheet" href="../css/components.css?v=902">
-<link rel="stylesheet" href="../css/mobile.css?v=902">
-<link rel="stylesheet" href="../css/navigation.css?v=902">
-</head>
+<link rel="stylesheet" href="../css/base.css?v=970">
+<link rel="stylesheet" href="../css/layout.css?v=970">
+<link rel="stylesheet" href="../css/components.css?v=970">
+<link rel="stylesheet" href="../css/mobile.css?v=970">
+<link rel="stylesheet" href="../css/navigation.css?v=970">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#4b84f3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="../icons/icon-192.png">
+<style>
+.reg-tabs{display:flex;gap:4px;padding:14px 18px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.reg-tab{padding:10px 18px;border:none;background:transparent;color:var(--muted);
+  font-weight:800;font-size:13px;cursor:pointer;border-bottom:3px solid transparent;
+  transition:color .15s,border-color .15s;margin-bottom:-1px;}
+.reg-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.reg-tab-content{display:none;padding:18px;}
+.reg-tab-content.active{display:block;}
 
+.reg-form{border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;
+  background:rgba(255,255,255,.02);}
+.reg-form h3{margin:0 0 14px;font-size:14px;}
+
+.reg-item{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:12px 14px;border-bottom:1px solid var(--border);}
+.reg-item:last-child{border-bottom:none;}
+.reg-item-info{flex:1;min-width:0;}
+.reg-item-name{font-weight:800;font-size:.95rem;}
+.reg-item-detail{color:var(--muted);font-size:.82rem;margin-top:3px;}
+.reg-item-actions{display:flex;gap:6px;flex-shrink:0;}
+.reg-item-badge{margin-left:8px;}
+
+.reg-color-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;border:1px solid var(--border);}
+
+@media(max-width:600px){
+  .reg-item{flex-wrap:wrap;}
+  .reg-item-actions{width:100%;margin-top:8px;}
+  .reg-item-actions .btn{flex:1;}
+}
+</style>
+</head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar">
-    <div class="sidebar-brand">FinZen</div>
-    <nav class="sidebar-nav"></nav>
-  </aside>
-
+  <aside class="sidebar"><div class="sidebar-brand">FinZen</div><nav class="sidebar-nav"></nav></aside>
   <main class="content">
     <header class="topbar">
-      <div>
-        <h1>Cadastros</h1>
-        <p id="userEmail" class="muted">Contas, cartões e categorias</p>
-      </div>
+      <div><h1>Cadastros</h1><p id="userEmail" class="muted"></p></div>
       <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
     </header>
 
-    <section class="panel">
-      <div style="padding:16px; display:flex; gap:10px; flex-wrap:wrap">
-        <button type="button" class="btn btn-primary compact tab-btn" data-tab="accounts">Contas</button>
-        <button type="button" class="btn btn-secondary compact tab-btn" data-tab="cards">Cartões</button>
-        <button type="button" class="btn btn-secondary compact tab-btn" data-tab="categories">Categorias</button>
+    <section class="panel" style="padding:0;">
+      <div class="reg-tabs">
+        <button class="reg-tab active" data-tab="contas">🏦 Contas</button>
+        <button class="reg-tab" data-tab="cartoes">💳 Cartões</button>
+        <button class="reg-tab" data-tab="categorias">🏷️ Categorias</button>
       </div>
-    </section>
 
-    <section class="panel tab-panel" id="tab-accounts">
-      <div class="panel-header"><h2>Contas</h2></div>
-      <div id="accountsList" class="table-wrap"><p class="muted" style="padding:18px">Carregando...</p></div>
-      <div style="padding:16px">
-        <a class="btn btn-secondary" href="./accounts.html">Abrir cadastro completo de contas</a>
+      <!-- ─── CONTAS ─── -->
+      <div class="reg-tab-content active" id="tab-contas">
+        <div class="reg-form" id="formConta">
+          <h3 id="formContaTitulo">Nova Conta</h3>
+          <div class="form-grid">
+            <div class="form-group"><label>Nome</label>
+              <input type="text" id="contaNome" placeholder="Ex: Itaú, Mercado Pago"></div>
+            <div class="form-group"><label>Banco / Instituição</label>
+              <input type="text" id="contaBanco" placeholder="Ex: Itaú, Nubank"></div>
+            <div class="form-group"><label>Tipo</label>
+              <select id="contaTipo">
+                <option value="">Selecione</option>
+                <option value="Conta Corrente">Conta Corrente</option>
+                <option value="Conta Digital">Conta Digital</option>
+                <option value="Conta Poupança">Conta Poupança</option>
+                <option value="Conta Internacional">Conta Internacional</option>
+                <option value="Corretora">Corretora</option>
+                <option value="Carteira">Carteira</option>
+              </select></div>
+            <div class="form-group"><label>Classificação</label>
+              <select id="contaKind">
+                <option value="bank">Banco / Conta</option>
+                <option value="broker">Corretora</option>
+              </select></div>
+            <div class="form-group"><label>Moeda</label>
+              <select id="contaMoeda">
+                <option value="BRL">BRL — Real</option>
+                <option value="USD">USD — Dólar</option>
+              </select></div>
+            <div class="form-group"><label>Saldo atual</label>
+              <input type="number" id="contaSaldo" placeholder="0,00" step="0.01"></div>
+            <div class="form-group"><label>Cor</label>
+              <input type="color" id="contaCor" value="#4f8ef7"></div>
+            <div class="form-group"><label>Status</label>
+              <select id="contaStatus">
+                <option value="true">Ativa</option>
+                <option value="false">Inativa</option>
+              </select></div>
+          </div>
+          <button type="button" class="btn btn-primary" id="btnSalvarConta">Salvar Conta</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelarConta" style="display:none">Cancelar</button>
+          <div id="msgConta" class="message"></div>
+        </div>
+        <div id="listaContas"><p class="muted">Carregando...</p></div>
       </div>
-    </section>
 
-    <section class="panel tab-panel" id="tab-cards" style="display:none">
-      <div class="panel-header"><h2>Cartões</h2></div>
-      <div id="cardsList" class="table-wrap"><p class="muted" style="padding:18px">Carregando...</p></div>
-      <div style="padding:16px">
-        <a class="btn btn-secondary" href="./cards.html">Abrir cadastro completo de cartões</a>
+      <!-- ─── CARTÕES ─── -->
+      <div class="reg-tab-content" id="tab-cartoes">
+        <div class="reg-form" id="formCartao">
+          <h3 id="formCartaoTitulo">Novo Cartão</h3>
+          <div class="form-grid">
+            <div class="form-group"><label>Nome do cartão</label>
+              <input type="text" id="cartaoNome" placeholder="Ex: Nubank Platinum"></div>
+            <div class="form-group"><label>Banco / Instituição</label>
+              <input type="text" id="cartaoBanco" placeholder="Ex: Nubank"></div>
+            <div class="form-group"><label>Bandeira</label>
+              <select id="cartaoBandeira">
+                <option value="">Selecione</option>
+                <option value="Visa">Visa</option>
+                <option value="Mastercard">Mastercard</option>
+                <option value="Elo">Elo</option>
+                <option value="Amex">Amex</option>
+                <option value="Hipercard">Hipercard</option>
+              </select></div>
+            <div class="form-group"><label>Limite</label>
+              <input type="number" id="cartaoLimite" placeholder="0,00" step="0.01" min="0"></div>
+            <div class="form-group"><label>Dia de fechamento</label>
+              <input type="number" id="cartaoFechamento" placeholder="Ex: 20" min="1" max="31"></div>
+            <div class="form-group"><label>Dia de vencimento</label>
+              <input type="number" id="cartaoVencimento" placeholder="Ex: 10" min="1" max="31"></div>
+            <div class="form-group"><label>Cor</label>
+              <input type="color" id="cartaoCor" value="#8b5cf6"></div>
+            <div class="form-group"><label>Status</label>
+              <select id="cartaoAtivo">
+                <option value="true">Ativo</option>
+                <option value="false">Inativo</option>
+              </select></div>
+          </div>
+          <button type="button" class="btn btn-primary" id="btnSalvarCartao">Salvar Cartão</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelarCartao" style="display:none">Cancelar</button>
+          <div id="msgCartao" class="message"></div>
+        </div>
+        <div id="listaCartoes"><p class="muted">Carregando...</p></div>
       </div>
-    </section>
 
-    <section class="panel tab-panel" id="tab-categories" style="display:none">
-      <div class="panel-header"><h2>Categorias</h2></div>
-      <div id="categoriesList" class="table-wrap"><p class="muted" style="padding:18px">Carregando...</p></div>
-      <div style="padding:16px">
-        <a class="btn btn-secondary" href="./categories.html">Abrir cadastro completo de categorias</a>
+      <!-- ─── CATEGORIAS ─── -->
+      <div class="reg-tab-content" id="tab-categorias">
+        <div class="reg-form" id="formCategoria">
+          <h3 id="formCategoriaTitulo">Nova Categoria</h3>
+          <div class="form-grid">
+            <div class="form-group"><label>Nome</label>
+              <input type="text" id="categoriaNome" placeholder="Ex: Alimentação"></div>
+            <div class="form-group"><label>Tipo</label>
+              <select id="categoriaTipo">
+                <option value="">Selecione</option>
+                <option value="receita">Receita</option>
+                <option value="despesa">Despesa</option>
+                <option value="investimento">Investimento</option>
+              </select></div>
+            <div class="form-group"><label>Ícone (emoji)</label>
+              <input type="text" id="categoriaIcon" placeholder="Ex: 🍔" maxlength="4"></div>
+            <div class="form-group"><label>Status</label>
+              <select id="categoriaAtivo">
+                <option value="true">Ativa</option>
+                <option value="false">Inativa</option>
+              </select></div>
+          </div>
+          <button type="button" class="btn btn-primary" id="btnSalvarCategoria">Salvar Categoria</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelarCategoria" style="display:none">Cancelar</button>
+          <div id="msgCategoria" class="message"></div>
+        </div>
+        <div id="listaCategorias"><p class="muted">Carregando...</p></div>
       </div>
-    </section>
 
+    </section>
   </main>
 </div>
-
-<nav class="mobile-nav"></nav>
-
-<script type="module" src="../js/navigation.js?v=902"></script>
-<script type="module" src="../js/registrations.js?v=902"></script>
+<script type="module" src="../js/navigation.js?v=970"></script>
+<script type="module" src="../js/registrations.js?v=970"></script>
 </body>
 </html>
