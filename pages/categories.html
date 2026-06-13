@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Categorias - FinZen</title>
-<link rel="stylesheet" href="../css/base.css?v=1000">
-<link rel="stylesheet" href="../css/layout.css?v=1000">
-<link rel="stylesheet" href="../css/components.css?v=1000">
-<link rel="stylesheet" href="../css/mobile.css?v=1000">
-<link rel="stylesheet" href="../css/navigation.css?v=1000">
+<link rel="stylesheet" href="../css/base.css?v=1010">
+<link rel="stylesheet" href="../css/layout.css?v=1010">
+<link rel="stylesheet" href="../css/components.css?v=1010">
+<link rel="stylesheet" href="../css/mobile.css?v=1010">
+<link rel="stylesheet" href="../css/navigation.css?v=1010">
 </head>
 
 <body>
@@ -56,8 +56,28 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="iconeCategoria">Ícone</label>
-          <input type="text" id="iconeCategoria" placeholder="Cole um emoji. Ex: 🍔, 🏠, 🚗, 💼">
+          <label>Ícone</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <div id="emojiPreview" style="font-size:28px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;
+              border:1px solid var(--border);border-radius:10px;cursor:pointer;background:var(--surface-2);" title="Clique para escolher">
+              😀
+            </div>
+            <input type="text" id="iconeCategoria" style="width:80px;" placeholder="ou cole"
+              maxlength="4" title="Cole um emoji diretamente">
+            <button type="button" id="btnEmojiPicker" class="btn btn-secondary compact">🙂 Escolher</button>
+          </div>
+          <div id="emojiPickerPanel" style="display:none;margin-top:8px;border:1px solid var(--border);
+            border-radius:14px;padding:12px;background:var(--surface-2);max-height:220px;overflow-y:auto;">
+            <div style="margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap;">
+              <button type="button" class="emoji-cat-btn active" data-cat="common" style="font-size:12px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);background:var(--accent);color:#fff;cursor:pointer;">Comuns</button>
+              <button type="button" class="emoji-cat-btn" data-cat="money" style="font-size:12px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;">Finanças</button>
+              <button type="button" class="emoji-cat-btn" data-cat="food" style="font-size:12px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;">Comida</button>
+              <button type="button" class="emoji-cat-btn" data-cat="home" style="font-size:12px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;">Casa/Vida</button>
+              <button type="button" class="emoji-cat-btn" data-cat="transport" style="font-size:12px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;">Transporte</button>
+              <button type="button" class="emoji-cat-btn" data-cat="fun" style="font-size:12px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;">Lazer</button>
+            </div>
+            <div id="emojiGrid" style="display:grid;grid-template-columns:repeat(auto-fill,36px);gap:4px;"></div>
+          </div>
         </div>
         <div class="form-group">
           <label for="corCategoria">Cor</label>
@@ -98,7 +118,7 @@
   <a href="./transactions.html">Lançar</a>
 </nav>
 
-<script type="module" src="../js/navigation.js?v=1000"></script>
-<script type="module" src="../js/categories.js?v=1000"></script>
+<script type="module" src="../js/navigation.js?v=1010"></script>
+<script type="module" src="../js/categories.js?v=1010"></script>
 </body>
 </html>
