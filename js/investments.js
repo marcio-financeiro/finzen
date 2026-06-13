@@ -64,7 +64,6 @@ function classeKey(t){
   if(t==='etf_br' || t==='etf') return 'ETFs BR';
   if(t==='acao_eua') return 'Ações EUA';
   if(t==='etf_eua') return 'ETFs EUA';
-  if(t==='exterior') return 'Exterior';
   if(t==='renda_fixa') return 'Renda Fixa';
   if(t==='cripto') return 'Cripto';
   return 'Outros';
@@ -657,7 +656,7 @@ async function salvarDividendo(){
 // ─────────────────────────────────────────────
 // Todas as classes possíveis no sistema
 const TODAS_CLASSES = [
-  'Ações BR','FIIs','ETFs BR','Ações EUA','ETFs EUA','Renda Fixa','Cripto','Exterior','Outros'
+  'Ações BR','FIIs','ETFs BR','Ações EUA','ETFs EUA','Renda Fixa','Cripto','Outros'
 ];
 
 function renderizarBalancear(){

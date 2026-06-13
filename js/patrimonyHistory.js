@@ -280,6 +280,7 @@ async function saveSnapshot(){
   showMessage('Patrimônio do mês salvo.', 'success');
   await loadHistory();
   await renderSummary();
+  renderGraficoEvolucao(user, supabase, 'graficoEvolucao');
 }
 
 async function loadHistory(){
@@ -336,3 +337,83 @@ btnSaveSnapshot.addEventListener('click', saveSnapshot);
 
 await calculateSnapshot();
 await loadHistory();
+renderGraficoEvolucao(user, supabase, 'graficoEvolucao');
+
+// ── Gráfico de evolução patrimonial ──────────────────
+export async function renderGraficoEvolucao(user, supabase, containerId){
+  const { data } = await supabase
+    .from('patrimony_history')
+    .select('reference_month,net_worth,accounts_total,investments_total,cards_total')
+    .eq('user_id', user.id)
+    .order('reference_month', { ascending: true })
+    .limit(24);
+
+  const container = document.getElementById(containerId);
+  if(!container) return;
+
+  if(!data || data.length < 2){
+    container.innerHTML = '<p class="muted" style="font-size:13px;padding:8px 0">Salve pelo menos 2 snapshots mensais para ver a evolução.</p>';
+    return;
+  }
+
+  const valores   = data.map(d => Number(d.net_worth||0));
+  const contas    = data.map(d => Number(d.accounts_total||0));
+  const investim  = data.map(d => Number(d.investments_total||0));
+  const labels    = data.map(d => {
+    const [a,m] = d.reference_month.split('-');
+    return new Date(Number(a),Number(m)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});
+  });
+
+  const minV  = Math.min(...valores, ...contas, ...investim, 0);
+  const maxV  = Math.max(...valores, ...contas, ...investim, 1);
+  const range = maxV - minV || 1;
+  const W = 600, H = 160, padL = 8, padR = 8, padT = 12, padB = 24;
+  const n = data.length;
+
+  function px(i){ return padL + (i/(n-1))*(W-padL-padR); }
+  function py(v){ return H - padB - ((v-minV)/range)*(H-padT-padB); }
+
+  function polyline(vals, cor, dash=''){
+    const pts = vals.map((v,i)=>`${px(i)},${py(v)}`).join(' ');
+    return `<polyline points="${pts}" fill="none" stroke="${cor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" ${dash?`stroke-dasharray="${dash}"`:''}/>`; 
+  }
+
+  function dot(vals, cor){
+    return vals.map((v,i)=>`<circle cx="${px(i)}" cy="${py(v)}" r="3.5" fill="${cor}" stroke="var(--surface)" stroke-width="1.5"/>`).join('');
+  }
+
+  // Linha zero
+  const y0 = py(0);
+  const zeroLine = minV < 0 ? `<line x1="${padL}" y1="${y0}" x2="${W-padR}" y2="${y0}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 3"/>` : '';
+
+  // Labels eixo X (máx 8 visíveis)
+  const step = Math.ceil(n/8);
+  const xLabels = labels.map((l,i) => i%step===0 || i===n-1
+    ? `<text x="${px(i)}" y="${H}" text-anchor="middle" fill="var(--muted)" font-size="9">${l}</text>`
+    : ''
+  ).join('');
+
+  // Variação total
+  const varTotal = valores[n-1] - valores[0];
+  const varPct   = valores[0]!==0 ? (varTotal/Math.abs(valores[0])*100).toFixed(1) : '—';
+  const varCor   = varTotal>=0 ? '#22c55e' : '#ef4444';
+
+  container.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;gap:16px;font-size:12px">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:2px;background:#4b84f3;display:inline-block;border-radius:1px"></span>Patrimônio</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:2px;background:#22c55e;display:inline-block;border-radius:1px"></span>Contas</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:2px;background:#7c5cfc;display:inline-block;border-radius:1px;border-top:2px dashed #7c5cfc"></span>Invest.</span>
+      </div>
+      <span style="font-size:12px;color:${varCor};font-weight:700">${varTotal>=0?'+':''}${formatCurrency(varTotal,'BRL')} (${varPct}%) no período</span>
+    </div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:160px;display:block;overflow:visible">
+      ${zeroLine}
+      ${polyline(contas,   '#22c55e')}
+      ${polyline(investim, '#7c5cfc', '6 3')}
+      ${polyline(valores,  '#4b84f3')}
+      ${dot(valores, '#4b84f3')}
+      ${xLabels}
+    </svg>
+  `;
+}

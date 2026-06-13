@@ -1,10 +1,11 @@
 import { APP_VERSION } from './config.js';
+import { supabase } from './supabaseClient.js';
 
 const NAV_GROUPS = [
   {
     label:'FinZen',
     items:[
-      {title:'Dashboard',      icon:'🏠', href:'./dashboard.html'},
+      {title:'Dashboard',      icon:'🏠', href:'./dashboard.html', badge:true},
       {title:'Movimentações',  icon:'💸', href:'./movements.html'},
       {title:'Extrato',        icon:'🧾', href:'./account-statement.html'},
       {title:'Cartões',        icon:'💳', href:'./cards.html'},
@@ -51,6 +52,33 @@ function isActive(href){
   return false;
 }
 
+// ── Badge de notificações ────────────────────────────
+async function carregarBadges(){
+  try{
+    const { data: sd } = await supabase.auth.getSession();
+    if(!sd?.session) return;
+    const user = sd.session.user;
+    const hoje = new Date().toISOString().split('T')[0];
+    const em7  = new Date(Date.now()+7*864e5).toISOString().split('T')[0];
+    const ref  = hoje.substring(0,7);
+
+    const [{ count: pendentes }, { count: faturas }] = await Promise.all([
+      supabase.from('transactions').select('*',{count:'exact',head:true})
+        .eq('user_id',user.id).eq('status','pendente').gte('date',hoje).lte('date',em7),
+      supabase.from('card_transactions').select('*',{count:'exact',head:true})
+        .eq('user_id',user.id).eq('status','aberta').eq('fatura_referencia',ref),
+    ]);
+
+    const total = (pendentes||0) + (faturas>0?1:0);
+    if(total > 0){
+      document.querySelectorAll('.nav-dashboard-badge').forEach(el=>{
+        el.textContent = total;
+        el.style.display = 'inline-flex';
+      });
+    }
+  }catch(_){}
+}
+
 function navHtml(){
   return NAV_GROUPS.map(group => `
     <div class="nav-section-label">${group.label}</div>
@@ -58,6 +86,7 @@ function navHtml(){
       <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">
         <span class="nav-icon">${item.icon}</span>
         <span>${item.title}</span>
+        ${item.badge ? '<span class="nav-badge nav-dashboard-badge" style="display:none">0</span>' : ''}
       </a>
     `).join('')}
   `).join('') + `<div class="nav-version">v${APP_VERSION}</div>`;
@@ -75,6 +104,13 @@ function injectStyles(){
     *::-webkit-scrollbar-thumb{ background:rgba(139,144,168,.28); border-radius:999px; border:2px solid transparent; background-clip:content-box; }
     *::-webkit-scrollbar-thumb:hover{ background:rgba(75,132,243,.45); border:2px solid transparent; background-clip:content-box; }
 
+    .nav-badge{
+      display:inline-flex;align-items:center;justify-content:center;
+      background:var(--danger,#ef4444);color:#fff;
+      font-size:9px;font-weight:800;border-radius:99px;
+      padding:1px 5px;margin-left:6px;min-width:16px;height:16px;
+      vertical-align:middle;line-height:1;
+    }
     .nav-version{
       margin-top:auto; padding:12px 16px;
       font-size:11px; color:var(--muted);
