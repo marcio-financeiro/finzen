@@ -1,264 +1,323 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
+import { APP_VERSION } from './config.js';
 
-const btnBackup = document.getElementById('btnBackup');
-const backupInfo = document.getElementById('backupInfo');
-const backupMessage = document.getElementById('backupMessage');
-const backupActions = document.getElementById('backupActions');
-const backupPreview = document.getElementById('backupPreview');
-const btnDownloadFallback = document.getElementById('btnDownloadFallback');
-const btnShareText = document.getElementById('btnShareText');
-const btnCopyBackup = document.getElementById('btnCopyBackup');
+// ── Auth Supabase ─────────────────────────────────────
+const { data: sessionData } = await supabase.auth.getSession();
+if(!sessionData.session){ navigate('../login.html'); }
+const user = sessionData.session.user;
 
-const tabelas = [
-  'accounts',
-  'categories',
-  'transactions',
-  'credit_cards',
-  'card_transactions',
-  'budgets',
-  'goals',
-  'investments',
-  'investment_transactions',
-  'allocation_targets'
+// ── Google Drive OAuth ────────────────────────────────
+const GOOGLE_CLIENT_ID = '549570181101-vne6d1fflafenipib75caddtc2f60cs2.apps.googleusercontent.com';
+const GOOGLE_SCOPE     = 'https://www.googleapis.com/auth/drive.file';
+const DRIVE_FOLDER     = 'FinZen Backups';
+
+let googleToken = null; // access_token após login Google
+
+// ── Tabelas ───────────────────────────────────────────
+const TABELAS = [
+  'accounts','categories','credit_cards','budgets','goals',
+  'investments','allocation_targets','transactions',
+  'card_transactions','investment_transactions',
+  'account_transfers','patrimony_history','user_settings',
 ];
 
-const nomes = {
-  accounts:'Contas',
-  categories:'Categorias',
-  transactions:'Lançamentos',
-  credit_cards:'Cartões',
-  card_transactions:'Compras/Faturas',
-  budgets:'Orçamentos',
-  goals:'Metas',
-  investments:'Investimentos',
+const NOMES = {
+  accounts:'Contas', categories:'Categorias', transactions:'Lançamentos',
+  credit_cards:'Cartões', card_transactions:'Compras/Faturas',
+  budgets:'Orçamentos', goals:'Metas', investments:'Investimentos',
   investment_transactions:'Movimentações/Proventos',
-  allocation_targets:'Alocação alvo'
+  allocation_targets:'Alocação alvo',
+  account_transfers:'Transferências entre contas',
+  patrimony_history:'Histórico patrimonial',
+  user_settings:'Configurações',
 };
 
-const { data: sessionData } = await supabase.auth.getSession();
-
-if(!sessionData.session){
-  navigate('../login.html');
-}
-
-const user = sessionData.session.user;
+const el  = id => document.getElementById(id);
 let ultimoBackupJson = '';
 let ultimoBackupNome = '';
 
-function mostrarMensagem(texto, tipo = 'info'){
-  backupMessage.className = `message ${tipo}`;
-  backupMessage.innerText = texto;
+function msg(texto, tipo='info'){
+  const e = el('backupMessage');
+  e.className = `message ${tipo}`;
+  e.innerText = texto;
 }
 
 function hojeArquivo(){
-  const agora = new Date();
-  const ano = agora.getFullYear();
-  const mes = String(agora.getMonth() + 1).padStart(2, '0');
-  const dia = String(agora.getDate()).padStart(2, '0');
-  const hora = String(agora.getHours()).padStart(2, '0');
-  const minuto = String(agora.getMinutes()).padStart(2, '0');
-
-  return `${ano}-${mes}-${dia}-${hora}${minuto}`;
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
 }
 
-async function buscarTabela(tabela){
-  const { data, error } = await supabase
-    .from(tabela)
-    .select('*')
-    .eq('user_id', user.id);
-
-  if(error){
-    return {
-      tabela,
-      data:[],
-      error:error.message
-    };
-  }
-
-  return {
-    tabela,
-    data:data || [],
-    error:null
-  };
+// ── Google Sign-In ────────────────────────────────────
+function iniciarGoogleLogin(){
+  return new Promise((resolve, reject) => {
+    // Usar Google Identity Services (GIS) popup
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: GOOGLE_SCOPE,
+      callback: (response) => {
+        if(response.error){ reject(new Error(response.error)); return; }
+        googleToken = response.access_token;
+        resolve(googleToken);
+      },
+    });
+    client.requestAccessToken({ prompt: 'consent' });
+  });
 }
 
-function baixarArquivo(){
-  if(!ultimoBackupJson || !ultimoBackupNome){
-    mostrarMensagem('Gere o backup primeiro.', 'warning');
-    return;
-  }
-
-  const blob = new Blob([ultimoBackupJson], { type:'application/json;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-
-  link.href = url;
-  link.download = ultimoBackupNome;
-  link.style.display = 'none';
-
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+async function garantirTokenGoogle(){
+  if(googleToken) return googleToken;
+  return await iniciarGoogleLogin();
 }
 
-async function compartilharTexto(){
-  if(!ultimoBackupJson){
-    mostrarMensagem('Gere o backup primeiro.', 'warning');
-    return;
+// ── Google Drive helpers ──────────────────────────────
+async function driveRequest(url, options={}){
+  const token = await garantirTokenGoogle();
+  const resp = await fetch(url, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      ...(options.headers||{}),
+    },
+  });
+  if(!resp.ok){
+    const err = await resp.json().catch(()=>({error:{message:resp.statusText}}));
+    throw new Error(err.error?.message || `Erro Drive: ${resp.status}`);
   }
-
-  try{
-    if(navigator.share){
-      await navigator.share({
-        title:'Backup FinZen',
-        text:ultimoBackupJson
-      });
-      mostrarMensagem('Backup compartilhado. Salve o conteúdo em um local seguro.', 'success');
-    }else{
-      mostrarMensagem('Compartilhamento não disponível neste navegador. Use copiar JSON.', 'warning');
-    }
-  }catch(error){
-    mostrarMensagem('Compartilhamento cancelado.', 'warning');
-  }
+  return resp.json();
 }
 
-async function copiarBackup(){
-  if(!ultimoBackupJson){
-    mostrarMensagem('Gere o backup primeiro.', 'warning');
-    return;
-  }
+async function encontrarOuCriarPasta(){
+  // Procurar pasta FinZen Backups
+  const busca = await driveRequest(
+    `https://www.googleapis.com/drive/v3/files?q=name='${DRIVE_FOLDER}' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`
+  );
+  if(busca.files?.length){ return busca.files[0].id; }
 
-  try{
-    await navigator.clipboard.writeText(ultimoBackupJson);
-    mostrarMensagem('JSON copiado. Cole em Notas, Arquivos, Drive ou e-mail.', 'success');
-  }catch(error){
-    backupPreview.style.display = 'block';
-    backupPreview.select();
-    mostrarMensagem('Não consegui copiar automaticamente. Selecione o texto exibido e copie manualmente.', 'warning');
-  }
+  // Criar pasta
+  const pasta = await driveRequest('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: DRIVE_FOLDER, mimeType: 'application/vnd.google-apps.folder' }),
+  });
+  return pasta.id;
 }
 
-async function gerarBackup(){
-  mostrarMensagem('Gerando backup...');
+async function salvarNoDrive(json, nomeArquivo){
+  msg('Conectando ao Google Drive...', 'info');
+  const pastaId = await encontrarOuCriarPasta();
 
-  const resultados = await Promise.all(tabelas.map(buscarTabela));
+  // Verificar se já existe arquivo com mesmo nome (para atualizar)
+  const busca = await driveRequest(
+    `https://www.googleapis.com/drive/v3/files?q=name='${nomeArquivo}' and '${pastaId}' in parents and trashed=false&fields=files(id)`
+  );
+
+  const blob = new Blob([json], { type:'application/json' });
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify({
+    name: nomeArquivo,
+    parents: busca.files?.length ? undefined : [pastaId],
+    mimeType: 'application/json',
+  })], { type:'application/json' }));
+  form.append('file', blob);
+
+  const token = await garantirTokenGoogle();
+  let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+  let method = 'POST';
+
+  if(busca.files?.length){
+    // Atualizar arquivo existente
+    url = `https://www.googleapis.com/upload/drive/v3/files/${busca.files[0].id}?uploadType=multipart`;
+    method = 'PATCH';
+  }
+
+  const resp = await fetch(url, {
+    method,
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: form,
+  });
+
+  if(!resp.ok){
+    const err = await resp.json().catch(()=>({error:{message:resp.statusText}}));
+    throw new Error(err.error?.message || 'Erro ao salvar no Drive');
+  }
+
+  return await resp.json();
+}
+
+// ── Gerar dados de backup ─────────────────────────────
+async function coletarDados(){
+  const resultados = await Promise.all(
+    TABELAS.map(async tabela => {
+      const { data, error } = await supabase.from(tabela).select('*').eq('user_id', user.id);
+      return { tabela, data: data||[], error: error?.message||null };
+    })
+  );
 
   const backup = {
-    app:'FinZen',
-    version:'7.5.1.2',
-    exported_at:new Date().toISOString(),
-    user_id:user.id,
-    tables:{},
-    errors:[]
+    app: 'FinZen',
+    version: APP_VERSION,
+    exported_at: new Date().toISOString(),
+    user_id: user.id,
+    tables: {},
+    errors: [],
   };
 
-  resultados.forEach(resultado => {
-    backup.tables[resultado.tabela] = resultado.data;
-
-    if(resultado.error){
-      backup.errors.push({
-        table:resultado.tabela,
-        message:resultado.error
-      });
-    }
+  let totalRegistros = 0;
+  resultados.forEach(r => {
+    backup.tables[r.tabela] = r.data;
+    totalRegistros += r.data.length;
+    if(r.error) backup.errors.push({ table: r.tabela, message: r.error });
   });
 
   ultimoBackupNome = `finzen-backup-${hojeArquivo()}.json`;
   ultimoBackupJson = JSON.stringify(backup, null, 2);
 
-  backupPreview.value = ultimoBackupJson;
-  backupPreview.style.display = 'block';
-  backupActions.style.display = 'flex';
-
-  const blob = new Blob([ultimoBackupJson], { type:'application/json' });
-  const file = new File([blob], ultimoBackupNome, { type:'application/json' });
-
-  try{
-    if(navigator.canShare && navigator.canShare({ files:[file] })){
-      await navigator.share({
-        title:'Backup FinZen',
-        text:'Backup dos dados do FinZen',
-        files:[file]
-      });
-
-      mostrarMensagem('Backup gerado. Escolha “Salvar em Arquivos” ou outro local seguro.', 'success');
-      await carregarInfo();
-      return;
-    }
-  }catch(error){
-    mostrarMensagem('Compartilhamento cancelado. Use os botões abaixo: baixar, compartilhar texto ou copiar JSON.', 'warning');
-    await carregarInfo();
-    return;
-  }
-
-  mostrarMensagem('Backup gerado. Use os botões abaixo para baixar, compartilhar texto ou copiar JSON.', 'success');
-  await carregarInfo();
+  return { resultados, totalRegistros };
 }
 
-async function carregarInfo(){
-  backupInfo.innerHTML = '<p class="muted">Carregando estatísticas...</p>';
+// ── Ação: Download local ──────────────────────────────
+async function backupLocal(){
+  el('btnBackupLocal').disabled = true;
+  el('btnBackupLocal').innerText = '⏳ Gerando...';
+  msg('Coletando dados...');
 
-  const resultados = await Promise.all(
-    tabelas.map(async tabela => {
-      const { count, error } = await supabase
-        .from(tabela)
-        .select('*', { count:'exact', head:true })
-        .eq('user_id', user.id);
+  try{
+    const { resultados, totalRegistros } = await coletarDados();
 
-      return {
-        tabela,
-        count:count || 0,
-        error:error?.message || null
-      };
-    })
-  );
+    const blob = new Blob([ultimoBackupJson], { type:'application/json;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = ultimoBackupNome;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
 
-  const total = resultados.reduce((soma, item) => soma + Number(item.count || 0), 0);
+    localStorage.setItem('finzen_ultimo_backup', new Date().toISOString());
+    el('backupActions').style.display = 'flex';
+    el('backupStats').innerHTML = renderStats(resultados, totalRegistros);
+    msg(`✅ Download iniciado — ${totalRegistros} registros em ${TABELAS.length} tabelas.`, 'success');
+    atualizarInfoUltimoBackup();
+  }catch(e){
+    msg('Erro: ' + e.message, 'danger');
+  }finally{
+    el('btnBackupLocal').disabled = false;
+    el('btnBackupLocal').innerText = '⬇️ Baixar JSON';
+  }
+}
 
-  backupInfo.innerHTML = `
-    <div class="kpi-grid" style="margin-bottom:18px">
-      <article class="kpi-card">
-        <span>Total de registros</span>
-        <strong>${total}</strong>
-      </article>
+// ── Ação: Salvar no Google Drive ──────────────────────
+async function backupDrive(){
+  el('btnBackupDrive').disabled = true;
+  el('btnBackupDrive').innerText = '⏳ Salvando...';
+  msg('');
 
-      <article class="kpi-card">
-        <span>Tabelas incluídas</span>
-        <strong>${tabelas.length}</strong>
-      </article>
+  try{
+    // Se ainda não coletou dados nesta sessão, coletar
+    if(!ultimoBackupJson){
+      msg('Coletando dados...');
+      await coletarDados();
+    }
+
+    msg('Autenticando com Google...', 'info');
+    const arquivo = await salvarNoDrive(ultimoBackupJson, ultimoBackupNome);
+
+    localStorage.setItem('finzen_ultimo_backup', new Date().toISOString());
+    localStorage.setItem('finzen_ultimo_backup_drive', ultimoBackupNome);
+    el('backupStats').innerHTML = renderStats(
+      TABELAS.map(t=>({ tabela:t, data: JSON.parse(ultimoBackupJson).tables[t]||[], error:null })),
+      JSON.parse(ultimoBackupJson) && Object.values(JSON.parse(ultimoBackupJson).tables).reduce((s,a)=>s+a.length,0)
+    );
+    msg(`✅ Backup salvo no Google Drive → pasta "${DRIVE_FOLDER}" → ${ultimoBackupNome}`, 'success');
+    atualizarInfoUltimoBackup();
+    el('driveStatus').innerHTML = `✅ Último backup no Drive: <strong>${ultimoBackupNome}</strong>`;
+    el('driveStatus').style.color = 'var(--success)';
+  }catch(e){
+    msg('Erro ao salvar no Drive: ' + e.message, 'danger');
+  }finally{
+    el('btnBackupDrive').disabled = false;
+    el('btnBackupDrive').innerText = '☁️ Salvar no Google Drive';
+  }
+}
+
+// ── Ações alternativas ────────────────────────────────
+async function compartilharTexto(){
+  if(!ultimoBackupJson){ msg('Gere o backup primeiro.', 'warning'); return; }
+  if(navigator.share){
+    try{ await navigator.share({ title:'Backup FinZen', text:ultimoBackupJson }); }
+    catch(_){ msg('Compartilhamento cancelado.', 'warning'); }
+  } else { msg('Compartilhamento não disponível. Use Copiar JSON.', 'warning'); }
+}
+
+async function copiarBackup(){
+  if(!ultimoBackupJson){ msg('Gere o backup primeiro.', 'warning'); return; }
+  try{
+    await navigator.clipboard.writeText(ultimoBackupJson);
+    msg('JSON copiado para a área de transferência.', 'success');
+  }catch(_){
+    const ta = el('backupPreview');
+    ta.value = ultimoBackupJson;
+    ta.style.display = 'block';
+    ta.select();
+    msg('Selecione o texto abaixo e copie manualmente.', 'warning');
+  }
+}
+
+function renderStats(resultados, total){
+  return `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div class="kpi-card"><span>Total de registros</span><strong>${total}</strong></div>
+      <div class="kpi-card"><span>Versão</span><strong>v${APP_VERSION}</strong></div>
     </div>
-
     <table class="data-table">
-      <thead>
-        <tr>
-          <th>Tabela</th>
-          <th>Registros</th>
-          <th>Status</th>
-        </tr>
-      </thead>
+      <thead><tr><th>Tabela</th><th>Registros</th><th>Status</th></tr></thead>
       <tbody>
-        ${resultados.map(item => `
+        ${resultados.map(r=>`
           <tr>
-            <td>${nomes[item.tabela] || item.tabela}</td>
-            <td class="money">${item.count}</td>
-            <td>
-              <span class="badge ${item.error ? 'danger' : 'success'}">
-                ${item.error ? 'erro' : 'ok'}
-              </span>
-            </td>
+            <td>${NOMES[r.tabela]||r.tabela}</td>
+            <td class="money">${r.data.length}</td>
+            <td><span class="badge ${r.error?'danger':'success'}">${r.error?'erro':'ok'}</span></td>
           </tr>
         `).join('')}
       </tbody>
-    </table>
-  `;
+    </table>`;
 }
 
-btnBackup.addEventListener('click', gerarBackup);
-btnDownloadFallback.addEventListener('click', baixarArquivo);
-btnShareText.addEventListener('click', compartilharTexto);
-btnCopyBackup.addEventListener('click', copiarBackup);
+function atualizarInfoUltimoBackup(){
+  const ultimo = localStorage.getItem('finzen_ultimo_backup');
+  const drive  = localStorage.getItem('finzen_ultimo_backup_drive');
+  const e = el('ultimoBackupInfo');
+  if(ultimo){
+    const d = new Date(ultimo);
+    e.innerText = `Último backup: ${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+  } else {
+    e.innerText = 'Nenhum backup realizado neste dispositivo ainda.';
+  }
+  if(drive && el('driveStatus')){
+    el('driveStatus').innerHTML = `☁️ Último no Drive: <strong>${drive}</strong>`;
+  }
+}
+
+// ── Carregar contagem inicial ─────────────────────────
+async function carregarInfo(){
+  const resultados = await Promise.all(
+    TABELAS.map(async tabela => {
+      const { count } = await supabase.from(tabela).select('*',{count:'exact',head:true}).eq('user_id',user.id);
+      return { tabela, data: Array(count||0).fill({}), error: null };
+    })
+  );
+  const total = resultados.reduce((s,r)=>s+r.data.length,0);
+  el('backupStats').innerHTML = renderStats(resultados, total);
+  atualizarInfoUltimoBackup();
+}
+
+// ── Eventos ───────────────────────────────────────────
+el('btnBackupLocal').addEventListener('click', backupLocal);
+el('btnBackupDrive').addEventListener('click', backupDrive);
+el('btnShareText').addEventListener('click', compartilharTexto);
+el('btnCopyBackup').addEventListener('click', copiarBackup);
 
 carregarInfo();

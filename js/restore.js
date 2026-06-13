@@ -1,199 +1,97 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 
-const backupFile = document.getElementById('backupFile');
-const backupText = document.getElementById('backupText');
-const btnValidateBackup = document.getElementById('btnValidateBackup');
-const btnRestoreBackup = document.getElementById('btnRestoreBackup');
-const restoreMode = document.getElementById('restoreMode');
-const replaceConfirmBox = document.getElementById('replaceConfirmBox');
-const replaceConfirm = document.getElementById('replaceConfirm');
-
-const restoreMessage = document.getElementById('restoreMessage');
-const backupSummary = document.getElementById('backupSummary');
-const restoreProgress = document.getElementById('restoreProgress');
-
-const tableOrderInsert = [
-  'accounts',
-  'categories',
-  'credit_cards',
-  'budgets',
-  'goals',
-  'investments',
-  'allocation_targets',
-  'transactions',
-  'card_transactions',
-  'investment_transactions'
-];
-
-const tableOrderDelete = [
-  'investment_transactions',
-  'card_transactions',
-  'transactions',
-  'allocation_targets',
-  'budgets',
-  'goals',
-  'investments',
-  'credit_cards',
-  'categories',
-  'accounts'
-];
-
-const nomes = {
-  accounts:'Contas',
-  categories:'Categorias',
-  transactions:'Lançamentos',
-  credit_cards:'Cartões',
-  card_transactions:'Compras/Faturas',
-  budgets:'Orçamentos',
-  goals:'Metas',
-  investments:'Investimentos',
-  investment_transactions:'Movimentações/Proventos',
-  allocation_targets:'Alocação alvo'
-};
-
-let parsedBackup = null;
-
+// ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
-
-if(!sessionData.session){
-  navigate('../login.html');
-}
-
+if(!sessionData.session){ navigate('../login.html'); }
 const user = sessionData.session.user;
 
-function mostrarMensagem(texto, tipo = 'info'){
-  restoreMessage.className = `message ${tipo}`;
-  restoreMessage.innerText = texto;
+const TABELAS_INSERT = [
+  'accounts','categories','credit_cards','budgets','goals',
+  'investments','allocation_targets','transactions',
+  'card_transactions','investment_transactions',
+  'account_transfers','patrimony_history','user_settings',
+];
+const TABELAS_DELETE = [...TABELAS_INSERT].reverse();
+
+const NOMES = {
+  accounts:'Contas', categories:'Categorias', transactions:'Lançamentos',
+  credit_cards:'Cartões', card_transactions:'Compras/Faturas',
+  budgets:'Orçamentos', goals:'Metas', investments:'Investimentos',
+  investment_transactions:'Movimentações/Proventos',
+  allocation_targets:'Alocação alvo',
+  account_transfers:'Transferências entre contas',
+  patrimony_history:'Histórico patrimonial',
+  user_settings:'Configurações',
+};
+
+const el = id => document.getElementById(id);
+let parsedBackup = null;
+
+function msgValidar(texto, tipo='info'){
+  const e = el('validateMessage');
+  e.className = `message ${tipo}`;
+  e.innerText = texto;
 }
 
-function mostrarProgresso(texto, tipo = 'info'){
-  restoreProgress.className = `message ${tipo}`;
-  restoreProgress.innerText = texto;
+function msgRestore(texto, tipo='info'){
+  const e = el('restoreMessage');
+  e.className = `message ${tipo}`;
+  e.innerText = texto;
+}
+
+function setProgress(pct, label){
+  el('progressBar').style.width = pct + '%';
+  el('progressLabel').innerText = label;
+  el('progressWrap').style.display = 'block';
 }
 
 function normalizarBackup(raw){
-  if(!raw || typeof raw !== 'object'){
-    throw new Error('Arquivo inválido.');
-  }
-
-  if(raw.tables && typeof raw.tables === 'object'){
-    return raw;
-  }
-
-  // Compatibilidade com backups antigos onde as tabelas ficam na raiz.
+  if(!raw || typeof raw !== 'object') throw new Error('Arquivo inválido.');
+  if(raw.tables && typeof raw.tables === 'object') return raw;
+  // Compatibilidade com backups antigos (tabelas na raiz)
   const tables = {};
-  tableOrderInsert.forEach(tabela => {
-    if(Array.isArray(raw[tabela])){
-      tables[tabela] = raw[tabela];
-    }
-  });
-
-  return {
-    app:'FinZen',
-    version:'legacy',
-    exported_at:null,
-    user_id:null,
-    tables,
-    errors:[]
-  };
+  TABELAS_INSERT.forEach(t => { if(Array.isArray(raw[t])) tables[t] = raw[t]; });
+  return { app:'FinZen', version:'legado', exported_at:null, user_id:null, tables, errors:[] };
 }
 
-async function lerArquivoComoTexto(file){
+async function lerArquivo(file){
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('Erro ao ler arquivo.'));
-
-    reader.readAsText(file);
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(new Error('Erro ao ler arquivo.'));
+    r.readAsText(file);
   });
 }
 
-async function obterTextoBackup(){
-  const file = backupFile.files?.[0];
-
-  if(file){
-    return await lerArquivoComoTexto(file);
-  }
-
-  const texto = backupText.value.trim();
-
-  if(texto){
-    return texto;
-  }
-
+async function obterTexto(){
+  const file = el('backupFile').files?.[0];
+  if(file) return await lerArquivo(file);
+  const texto = el('backupText').value.trim();
+  if(texto) return texto;
   throw new Error('Selecione um arquivo JSON ou cole o conteúdo do backup.');
 }
 
-function validarEstrutura(backup){
-  if(!backup.tables || typeof backup.tables !== 'object'){
-    throw new Error('Backup sem objeto tables.');
-  }
-
-  const tabelasEncontradas = Object.keys(backup.tables)
-    .filter(tabela => Array.isArray(backup.tables[tabela]));
-
-  if(!tabelasEncontradas.length){
-    throw new Error('Nenhuma tabela válida encontrada no backup.');
-  }
-
-  return tabelasEncontradas;
-}
-
-function limparCamposSistema(registro){
-  const clone = { ...registro };
-
-  // Força o backup restaurado a pertencer ao usuário logado.
-  clone.user_id = user.id;
-
-  return clone;
-}
-
-function prepararRegistros(tabela, registros){
-  if(!Array.isArray(registros)){
-    return [];
-  }
-
-  return registros.map(limparCamposSistema);
-}
-
 function renderResumo(backup){
-  const tabelas = tableOrderInsert.filter(tabela => Array.isArray(backup.tables[tabela]));
-  const total = tabelas.reduce((soma, tabela) => soma + backup.tables[tabela].length, 0);
+  const tabelas = TABELAS_INSERT.filter(t => Array.isArray(backup.tables[t]) && backup.tables[t].length > 0);
+  const total   = tabelas.reduce((s,t) => s + backup.tables[t].length, 0);
+  const exportedAt = backup.exported_at
+    ? new Date(backup.exported_at).toLocaleString('pt-BR')
+    : 'Data desconhecida';
 
-  backupSummary.innerHTML = `
-    <div class="kpi-grid" style="margin-bottom:18px">
-      <article class="kpi-card">
-        <span>Total de registros</span>
-        <strong>${total}</strong>
-      </article>
-
-      <article class="kpi-card">
-        <span>Tabelas no backup</span>
-        <strong>${tabelas.length}</strong>
-      </article>
-
-      <article class="kpi-card">
-        <span>Versão</span>
-        <strong>${backup.version || '-'}</strong>
-      </article>
+  el('backupSummary').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+      <div class="kpi-card"><span>Registros</span><strong>${total}</strong></div>
+      <div class="kpi-card"><span>Versão</span><strong>${backup.version||'-'}</strong></div>
+      <div class="kpi-card"><span>Exportado em</span><strong style="font-size:11px">${exportedAt}</strong></div>
     </div>
-
     <table class="data-table">
-      <thead>
-        <tr>
-          <th>Tabela</th>
-          <th>Registros</th>
-          <th>Status</th>
-        </tr>
-      </thead>
+      <thead><tr><th>Tabela</th><th>Registros</th></tr></thead>
       <tbody>
-        ${tabelas.map(tabela => `
+        ${tabelas.map(t=>`
           <tr>
-            <td>${nomes[tabela] || tabela}</td>
-            <td class="money">${backup.tables[tabela].length}</td>
-            <td><span class="badge success">ok</span></td>
+            <td>${NOMES[t]||t}</td>
+            <td class="money">${backup.tables[t].length}</td>
           </tr>
         `).join('')}
       </tbody>
@@ -203,101 +101,92 @@ function renderResumo(backup){
 
 async function validarBackup(){
   try{
-    mostrarMensagem('Validando backup...');
-    mostrarProgresso('');
+    msgValidar('Validando...');
+    el('backupSummary').innerHTML = '';
+    el('restoreSection').style.display = 'none';
 
-    const texto = await obterTextoBackup();
-    const raw = JSON.parse(texto);
+    const texto  = await obterTexto();
+    const raw    = JSON.parse(texto);
     const backup = normalizarBackup(raw);
 
-    validarEstrutura(backup);
+    const tabelas = TABELAS_INSERT.filter(t => Array.isArray(backup.tables[t]));
+    if(!tabelas.length) throw new Error('Nenhuma tabela válida encontrada.');
 
     parsedBackup = backup;
-    btnRestoreBackup.disabled = false;
-
     renderResumo(backup);
-    mostrarMensagem('Backup validado com sucesso.', 'success');
-  }catch(error){
+    el('restoreSection').style.display = 'block';
+    msgValidar('Backup válido. Escolha o modo de restauração abaixo.', 'success');
+  }catch(e){
     parsedBackup = null;
-    btnRestoreBackup.disabled = true;
-    backupSummary.innerHTML = '<p class="muted">Nenhum backup válido carregado.</p>';
-    mostrarMensagem('Erro ao validar: ' + error.message, 'danger');
-  }
-}
-
-async function apagarDadosAtuais(){
-  for(const tabela of tableOrderDelete){
-    mostrarProgresso(`Apagando ${nomes[tabela] || tabela}...`);
-
-    const { error } = await supabase
-      .from(tabela)
-      .delete()
-      .eq('user_id', user.id);
-
-    if(error){
-      throw new Error(`Erro ao apagar ${tabela}: ${error.message}`);
-    }
-  }
-}
-
-async function inserirTabela(tabela, registros){
-  if(!registros.length){
-    return;
-  }
-
-  mostrarProgresso(`Restaurando ${nomes[tabela] || tabela}...`);
-
-  const loteTamanho = 100;
-
-  for(let i = 0; i < registros.length; i += loteTamanho){
-    const lote = registros.slice(i, i + loteTamanho);
-
-    const { error } = await supabase
-      .from(tabela)
-      .upsert(lote, { onConflict:'id' });
-
-    if(error){
-      throw new Error(`Erro ao restaurar ${tabela}: ${error.message}`);
-    }
+    el('backupSummary').innerHTML = '<p class="muted">Nenhum backup válido carregado.</p>';
+    msgValidar('Erro: ' + e.message, 'danger');
   }
 }
 
 async function restaurarBackup(){
+  if(!parsedBackup){ msgRestore('Valide um backup antes de restaurar.', 'warning'); return; }
+
+  const modo = el('restoreMode').value;
+  if(modo === 'replace'){
+    const confirmacao = el('replaceConfirm').value.trim();
+    if(confirmacao !== 'RESTAURAR'){
+      msgRestore('Digite RESTAURAR no campo de confirmação para continuar.', 'warning');
+      return;
+    }
+  }
+
+  el('btnRestore').disabled = true;
+  el('progressWrap').style.display = 'block';
+  msgRestore('');
+
   try{
-    if(!parsedBackup){
-      mostrarProgresso('Valide um backup antes de restaurar.', 'warning');
-      return;
-    }
-
-    const modo = restoreMode.value;
-
-    if(modo === 'replace' && replaceConfirm.value.trim() !== 'RESTAURAR'){
-      mostrarProgresso('Para substituir tudo, digite RESTAURAR.', 'warning');
-      return;
-    }
-
-    btnRestoreBackup.disabled = true;
+    const tabelasNoBackup = TABELAS_INSERT.filter(t => Array.isArray(parsedBackup.tables[t]));
+    let passo = 0;
+    const totalPassos = (modo === 'replace' ? TABELAS_DELETE.length : 0) + tabelasNoBackup.length;
 
     if(modo === 'replace'){
-      await apagarDadosAtuais();
+      for(const tabela of TABELAS_DELETE){
+        passo++;
+        setProgress(Math.round(passo/totalPassos*100), `Apagando ${NOMES[tabela]||tabela}...`);
+        const { error } = await supabase.from(tabela).delete().eq('user_id', user.id);
+        if(error) throw new Error(`Erro ao apagar ${tabela}: ${error.message}`);
+      }
     }
 
-    for(const tabela of tableOrderInsert){
-      const registros = prepararRegistros(tabela, parsedBackup.tables[tabela] || []);
-      await inserirTabela(tabela, registros);
+    for(const tabela of tabelasNoBackup){
+      passo++;
+      const registros = (parsedBackup.tables[tabela]||[]).map(r => ({ ...r, user_id: user.id }));
+      if(!registros.length) continue;
+
+      setProgress(Math.round(passo/totalPassos*100), `Restaurando ${NOMES[tabela]||tabela} (${registros.length} registros)...`);
+
+      // Inserir em lotes de 100
+      for(let i = 0; i < registros.length; i += 100){
+        const lote = registros.slice(i, i+100);
+        const { error } = await supabase.from(tabela).upsert(lote, { onConflict:'id' });
+        if(error) throw new Error(`Erro ao restaurar ${tabela}: ${error.message}`);
+      }
     }
 
-    mostrarProgresso('Backup restaurado com sucesso.', 'success');
-  }catch(error){
-    mostrarProgresso(error.message, 'danger');
+    setProgress(100, 'Concluído!');
+    msgRestore(`✅ Backup restaurado com sucesso no modo "${modo === 'replace' ? 'Substituir tudo' : 'Mesclar'}"!`, 'success');
+
+  }catch(e){
+    msgRestore('Erro durante a restauração: ' + e.message, 'danger');
   }finally{
-    btnRestoreBackup.disabled = false;
+    el('btnRestore').disabled = false;
   }
 }
 
-restoreMode.addEventListener('change', () => {
-  replaceConfirmBox.style.display = restoreMode.value === 'replace' ? 'block' : 'none';
+// Mostrar/ocultar confirmação de substituição
+el('restoreMode').addEventListener('change', () => {
+  el('replaceConfirmBox').style.display = el('restoreMode').value === 'replace' ? 'block' : 'none';
 });
 
-btnValidateBackup.addEventListener('click', validarBackup);
-btnRestoreBackup.addEventListener('click', restaurarBackup);
+el('btnValidate').addEventListener('click', validarBackup);
+el('btnRestore').addEventListener('click', restaurarBackup);
+
+// Auto-validar ao selecionar arquivo
+el('backupFile').addEventListener('change', () => {
+  if(el('backupFile').files?.[0]) validarBackup();
+});
