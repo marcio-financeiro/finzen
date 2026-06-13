@@ -1,41 +1,7 @@
-import { supabase }        from './supabaseClient.js';
-import { navigate }        from './router.js';
-import { formatCurrency }  from './utils.js';
+import { supabase }       from './supabaseClient.js';
+import { navigate }       from './router.js';
+import { formatCurrency } from './utils.js';
 import { DEFAULT_USD_BRL, formatPercent, formatUSD, getUsdBrlRate, saveUsdBrlRate, toNumber } from './services/financeService.js';
-
-// ─────────────────────────────────────────────
-// DOM
-// ─────────────────────────────────────────────
-const el = id => document.getElementById(id);
-
-const userEmail        = el('userEmail');
-const btnLogout        = el('btnLogout');
-const btnAtualizar     = el('btnAtualizar');
-const btnSalvarDolar   = el('btnSalvarDolar');
-const dolarReferencia  = el('dolarReferencia');
-const ultimaAtualizacao= el('ultimaAtualizacao');
-const mensagemCotacao  = el('mensagemCotacao');
-const filtroCorretora  = el('filtroCorretora');
-const listaInvestimentos = el('listaInvestimentos');
-
-const kpiPatrimonio = el('kpiPatrimonio');
-const kpiAplicado   = el('kpiAplicado');
-const kpiResultado  = el('kpiResultado');
-const kpiUsd        = el('kpiUsd');
-const kpiUsdBrl     = el('kpiUsdBrl');
-
-const tickerAtivo    = el('tickerAtivo');
-const nomeAtivo      = el('nomeAtivo');
-const tipoAtivo      = el('tipoAtivo');
-const corretoraAtivo = el('corretoraAtivo');
-const quantidadeAtivo= el('quantidadeAtivo');
-const precoMedioAtivo= el('precoMedioAtivo');
-const moedaAtivo     = el('moedaAtivo');
-const cotacaoManual  = el('cotacaoManual');
-const btnSalvarAtivo = el('btnSalvarAtivo');
-const btnCancelarEdicao = el('btnCancelarEdicao');
-const mensagemAtivo  = el('mensagemAtivo');
-const formAtivoTitulo= el('formAtivoTitulo');
 
 // ─────────────────────────────────────────────
 // AUTH
@@ -43,218 +9,146 @@ const formAtivoTitulo= el('formAtivoTitulo');
 const { data: sessionData } = await supabase.auth.getSession();
 if(!sessionData.session){ navigate('../login.html'); }
 const user = sessionData.session.user;
-userEmail.innerText = user.email;
-
-btnLogout.addEventListener('click', async () => {
-  await supabase.auth.signOut();
-  navigate('../login.html');
+document.getElementById('userEmail').innerText = user.email;
+document.getElementById('btnLogout').addEventListener('click', async () => {
+  await supabase.auth.signOut(); navigate('../login.html');
 });
 
 // ─────────────────────────────────────────────
-// ESTADO
+// ESTADO GLOBAL
 // ─────────────────────────────────────────────
-let dolarAtual   = DEFAULT_USD_BRL;
-let ativos       = [];
-let editandoId   = null;
+let dolarAtual  = DEFAULT_USD_BRL;
+let ativos      = [];   // investments table
+let corretoras  = [];   // broker accounts
+let todasContas = [];   // all active accounts
+let pesos       = {};   // { ticker: { classeIdeal, ativoIdeal } }
+let editandoId  = null;
+
+const el = id => document.getElementById(id);
+
+// ─────────────────────────────────────────────
+// ABAS
+// ─────────────────────────────────────────────
+document.querySelectorAll('.inv-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.inv-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.inv-tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    el('tab-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'dividendos') carregarDividendos();
+    if(btn.dataset.tab === 'balancear')  renderizarBalancear();
+    if(btn.dataset.tab === 'aportar')    carregarTransacoes();
+  });
+});
 
 // ─────────────────────────────────────────────
 // UTILITÁRIOS
 // ─────────────────────────────────────────────
-function msgCotacao(texto, tipo = 'info'){
-  mensagemCotacao.className = `message ${tipo}`;
-  mensagemCotacao.innerText = texto;
+function hojeISO(){ return new Date().toISOString().split('T')[0]; }
+function fmtData(d){ if(!d) return '-'; const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; }
+function fmtMoeda(v,m){ return m==='USD'?formatUSD(v):formatCurrency(v,'BRL'); }
+function calcAplicado(a){ return toNumber(a.quantidade)*toNumber(a.preco_medio); }
+function calcAtual(a){ return toNumber(a.quantidade)*toNumber(a.cotacao_atual||a.preco_medio); }
+function calcBRL(a,v){ return (a.moeda||'BRL')==='USD'?v*dolarAtual:v; }
+function isBR(t){ return ['acao_br','fii','etf_br'].includes(t); }
+function isEUA(t){ return ['acao_eua','etf_eua'].includes(t); }
+function isRF(t){ return t==='renda_fixa'; }
+function tipoLabel(t){
+  return {acao_br:'Ação BR',fii:'FII',etf_br:'ETF BR',acao_eua:'Ação EUA',
+    etf_eua:'ETF EUA',renda_fixa:'Renda Fixa',acao:'Ação',etf:'ETF',exterior:'Exterior'}[t]||t||'-';
 }
-
-function msgAtivo(texto, tipo = 'info'){
-  mensagemAtivo.className = `message ${tipo}`;
-  mensagemAtivo.innerText = texto;
+function classeKey(t){
+  if(t==='fii') return 'FIIs';
+  if(['acao_br'].includes(t)) return 'Ações BR';
+  if(['etf_br'].includes(t)) return 'ETFs BR';
+  if(['acao_eua','etf_eua','exterior'].includes(t)) return 'Exterior';
+  if(t==='renda_fixa') return 'Renda Fixa';
+  return 'Outros';
 }
-
-function isBR(tipo){
-  return ['acao_br','fii','etf_br'].includes(tipo);
-}
-
-function isEUA(tipo){
-  return ['acao_eua','etf_eua'].includes(tipo);
-}
-
-function isRendaFixa(tipo){
-  return tipo === 'renda_fixa';
-}
-
-function tipoLabel(tipo){
-  const map = {
-    acao_br:'Ação BR', fii:'FII', etf_br:'ETF BR',
-    etf_eua:'ETF EUA', acao_eua:'Ação EUA', renda_fixa:'Renda Fixa',
-    // legados
-    acao:'Ação', etf:'ETF', cripto:'Cripto', exterior:'Exterior',
-  };
-  return map[tipo] || tipo || '-';
-}
-
-function fmtMoeda(valor, moeda){
-  return moeda === 'USD' ? formatUSD(valor) : formatCurrency(valor, 'BRL');
-}
-
-function calcAplicado(a){
-  return toNumber(a.quantidade) * toNumber(a.preco_medio);
-}
-
-function calcAtual(a){
-  const preco = toNumber(a.cotacao_atual || a.preco_medio);
-  return toNumber(a.quantidade) * preco;
-}
-
-function calcBRL(a, valor){
-  return (a.moeda || 'BRL') === 'USD' ? valor * dolarAtual : valor;
+function msg(elId,texto,tipo='info'){
+  const e=el(elId); if(!e) return;
+  e.className=`message ${tipo}`; e.innerText=texto;
 }
 
 // ─────────────────────────────────────────────
-// BUSCA DE COTAÇÕES
+// COTAÇÕES — brapi.dev + Yahoo Finance
 // ─────────────────────────────────────────────
-
-// Ações/FIIs/ETFs brasileiros via brapi.dev
-async function fetchCotacaoBR(tickers){
+async function fetchBR(tickers){
   if(!tickers.length) return {};
-  const symbols = tickers.join(',');
   try{
-    const res = await fetch(`https://brapi.dev/api/quote/${symbols}?token=anonymous`);
-    if(!res.ok) throw new Error('brapi indisponível');
-    const json = await res.json();
-    const result = {};
-    (json.results || []).forEach(item => {
-      if(item.symbol && item.regularMarketPrice){
-        result[item.symbol.toUpperCase()] = toNumber(item.regularMarketPrice);
-      }
-    });
-    return result;
-  }catch(e){
-    // Fallback: Yahoo Finance via proxy público
-    try{
-      const r2 = await fetch(
-        `https://query1.finance.yahoo.com/v8/finance/chart/${tickers[0]}.SA?interval=1d&range=1d`
-      );
-      const j2 = await r2.json();
-      const price = j2?.chart?.result?.[0]?.meta?.regularMarketPrice;
-      if(price) return { [tickers[0].toUpperCase()]: toNumber(price) };
-    }catch(_){}
-    return {};
-  }
+    const r = await fetch(`https://brapi.dev/api/quote/${[...new Set(tickers)].join(',')}?token=anonymous`);
+    if(!r.ok) throw new Error();
+    const j = await r.json();
+    const out={};
+    (j.results||[]).forEach(i=>{ if(i.symbol&&i.regularMarketPrice) out[i.symbol.toUpperCase()]=toNumber(i.regularMarketPrice); });
+    return out;
+  }catch(_){ return {}; }
 }
 
-// Ações/ETFs americanos via Yahoo Finance
-async function fetchCotacaoEUA(tickers){
-  if(!tickers.length) return {};
-  const result = {};
-  // Busca um por vez para evitar bloqueio de CORS em múltiplos
-  for(const ticker of tickers){
+async function fetchEUA(tickers){
+  const out={};
+  for(const t of [...new Set(tickers)]){
     try{
-      const res = await fetch(
-        `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`,
-        { mode:'cors' }
-      );
-      if(!res.ok) continue;
-      const json = await res.json();
-      const price = json?.chart?.result?.[0]?.meta?.regularMarketPrice;
-      if(price) result[ticker.toUpperCase()] = toNumber(price);
+      const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${t}?interval=1d&range=1d`,{mode:'cors'});
+      if(!r.ok) continue;
+      const j = await r.json();
+      const p = j?.chart?.result?.[0]?.meta?.regularMarketPrice;
+      if(p) out[t.toUpperCase()]=toNumber(p);
     }catch(_){}
   }
-  return result;
+  return out;
 }
 
-// Dólar via AwesomeAPI → fallback BCB
 async function fetchDolar(){
   try{
-    const res = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
-    if(!res.ok) throw new Error();
-    const json = await res.json();
-    const rate = toNumber(json?.USDBRL?.bid);
-    if(rate > 0) return rate;
+    const r = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
+    const j = await r.json();
+    const v = toNumber(j?.USDBRL?.bid);
+    if(v>0) return v;
   }catch(_){}
-
-  try{
-    const res = await fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados/ultimos/1?formato=json');
-    if(!res.ok) throw new Error();
-    const json = await res.json();
-    const rate = toNumber(json?.[0]?.valor?.replace(',','.'));
-    if(rate > 0) return rate;
-  }catch(_){}
-
-  return dolarAtual; // mantém o que estava
+  return dolarAtual;
 }
 
-async function atualizarCotacoes(silencioso = false){
+async function atualizarCotacoes(silencioso=false){
   if(!silencioso){
-    btnAtualizar.disabled = true;
-    btnAtualizar.innerHTML = '<span class="inv-spinner"></span> Atualizando...';
-    msgCotacao('Buscando cotações...', 'info');
+    el('btnAtualizar').disabled=true;
+    el('btnAtualizar').innerHTML='<span class="inv-spinner"></span> Atualizando...';
+    msg('mensagemCotacao','Buscando cotações...','info');
   }
-
   try{
-    // 1. Buscar dólar atualizado
     const novoDolar = await fetchDolar();
-    if(novoDolar !== dolarAtual){
-      dolarAtual = novoDolar;
-      dolarReferencia.value = dolarAtual.toFixed(4);
-      // salvar no banco silenciosamente
-      try{ await saveUsdBrlRate(user.id, dolarAtual); }catch(_){}
+    if(Math.abs(novoDolar-dolarAtual)>0.001){
+      dolarAtual=novoDolar;
+      el('dolarReferencia').value=dolarAtual.toFixed(4);
+      try{ await saveUsdBrlRate(user.id,dolarAtual); }catch(_){}
     }
 
-    // 2. Separar ativos por grupo
-    const tickersBR  = ativos.filter(a => isBR(a.tipo) && !isRendaFixa(a.tipo)).map(a => a.ticker.toUpperCase());
-    const tickersEUA = ativos.filter(a => isEUA(a.tipo)).map(a => a.ticker.toUpperCase());
+    const tickBR  = ativos.filter(a=>isBR(a.tipo)).map(a=>a.ticker.toUpperCase());
+    const tickEUA = ativos.filter(a=>isEUA(a.tipo)).map(a=>a.ticker.toUpperCase());
+    const [cotsBR,cotsEUA] = await Promise.all([fetchBR(tickBR),fetchEUA(tickEUA)]);
+    const cots = {...cotsBR,...cotsEUA};
 
-    // 3. Buscar cotações
-    const [cotsBR, cotsEUA] = await Promise.all([
-      fetchCotacaoBR([...new Set(tickersBR)]),
-      fetchCotacaoEUA([...new Set(tickersEUA)]),
-    ]);
-
-    const todasCotacoes = { ...cotsBR, ...cotsEUA };
-
-    // 4. Atualizar banco e estado local
-    let atualizados = 0;
-    const agora = new Date().toISOString();
-
-    for(const ativo of ativos){
-      if(isRendaFixa(ativo.tipo)) continue;
-
-      const ticker = ativo.ticker.toUpperCase();
-      const novaCot = todasCotacoes[ticker];
-
-      if(!novaCot) continue;
-
-      // Só atualiza se mudou mais de 0.01%
-      const atual = toNumber(ativo.cotacao_atual || 0);
-      if(atual > 0 && Math.abs(novaCot - atual) / atual < 0.0001) continue;
-
-      await supabase.from('investments')
-        .update({ cotacao_atual: novaCot, atualizado_em: agora })
-        .eq('id', ativo.id).eq('user_id', user.id);
-
-      ativo.cotacao_atual = novaCot;
-      ativo.atualizado_em = agora;
-      atualizados++;
+    let n=0; const agora=new Date().toISOString();
+    for(const a of ativos){
+      if(isRF(a.tipo)) continue;
+      const nova = cots[a.ticker.toUpperCase()];
+      if(!nova) continue;
+      const atual=toNumber(a.cotacao_atual||0);
+      if(atual>0&&Math.abs(nova-atual)/atual<0.0001) continue;
+      await supabase.from('investments').update({cotacao_atual:nova,atualizado_em:agora})
+        .eq('id',a.id).eq('user_id',user.id);
+      a.cotacao_atual=nova; a.atualizado_em=agora; n++;
     }
 
-    const agora_br = new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
-    ultimaAtualizacao.innerText = `Atualizado às ${agora_br} · ${atualizados} ativo(s)`;
-
-    if(!silencioso){
-      msgCotacao(
-        atualizados > 0
-          ? `${atualizados} cotação(ões) atualizada(s). Dólar: R$ ${dolarAtual.toFixed(4)}`
-          : `Cotações sem variação. Dólar: R$ ${dolarAtual.toFixed(4)}`,
-        'success'
-      );
-    }
-
+    const hr=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    el('ultimaAtualizacao').innerText=`Atualizado ${hr} · ${n} ativo(s)`;
+    if(!silencioso) msg('mensagemCotacao',`${n} cotação(ões) atualizada(s). USD/BRL: ${dolarAtual.toFixed(4)}`,'success');
     renderizarTudo();
   }catch(e){
-    if(!silencioso) msgCotacao('Erro ao buscar cotações: '+e.message, 'danger');
+    if(!silencioso) msg('mensagemCotacao','Erro: '+e.message,'danger');
   }finally{
-    btnAtualizar.disabled = false;
-    btnAtualizar.innerHTML = '🔄 Atualizar cotações';
+    el('btnAtualizar').disabled=false;
+    el('btnAtualizar').innerHTML='🔄 Atualizar cotações';
   }
 }
 
@@ -262,370 +156,679 @@ async function atualizarCotacoes(silencioso = false){
 // CARREGAR DADOS
 // ─────────────────────────────────────────────
 async function carregarDolar(){
-  try{
-    dolarAtual = await getUsdBrlRate(user.id);
-  }catch(_){
-    dolarAtual = DEFAULT_USD_BRL;
-  }
-  dolarReferencia.value = dolarAtual;
+  try{ dolarAtual=await getUsdBrlRate(user.id); }catch(_){}
+  el('dolarReferencia').value=dolarAtual;
 }
 
 async function carregarCorretoras(){
-  const { data } = await supabase.from('accounts')
-    .select('id,nome,bank,currency')
-    .eq('user_id', user.id).eq('active', true)
-    .eq('account_kind','broker')
-    .order('nome', { ascending: true });
+  const {data}=await supabase.from('accounts').select('id,nome,bank,currency,saldo_atual')
+    .eq('user_id',user.id).eq('active',true).eq('account_kind','broker')
+    .order('nome',{ascending:true});
+  corretoras=data||[];
 
-  const contas = data || [];
+  const {data:d2}=await supabase.from('accounts').select('id,nome,bank,currency,saldo_atual')
+    .eq('user_id',user.id).eq('active',true).order('nome',{ascending:true});
+  todasContas=d2||[];
 
-  // Filtro
-  filtroCorretora.innerHTML = '<option value="">Todas as corretoras</option>' +
-    contas.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+  // Filtro carteira
+  el('filtroCorretora').innerHTML='<option value="">Todas as corretoras</option>'+
+    corretoras.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
 
-  // Formulário
-  corretoraAtivo.innerHTML = '<option value="">Selecione a corretora</option>' +
-    contas.map(c =>
-      `<option value="${c.nome}" data-currency="${c.currency||'BRL'}">${c.nome} (${c.currency||'BRL'})</option>`
-    ).join('');
+  // Select aporte
+  el('corretoraAtivo').innerHTML='<option value="">Selecione a corretora</option>'+
+    corretoras.map(c=>`<option value="${c.id}" data-currency="${c.currency||'BRL'}" data-nome="${c.nome}">
+      ${c.nome} — saldo: ${formatCurrency(c.saldo_atual||0,c.currency||'BRL')}</option>`).join('');
+
+  // Select dividendo conta destino
+  el('divConta').innerHTML='<option value="">Selecione a conta</option>'+
+    todasContas.map(c=>`<option value="${c.id}">${c.nome} (${formatCurrency(c.saldo_atual||0,c.currency||'BRL')})</option>`).join('');
 }
 
 async function carregarAtivos(){
-  const { data, error } = await supabase.from('investments')
-    .select('*').eq('user_id', user.id).eq('ativo', true)
-    .order('corretora', { ascending: true })
-    .order('ticker',    { ascending: true });
-
+  const {data,error}=await supabase.from('investments').select('*')
+    .eq('user_id',user.id).eq('ativo',true)
+    .order('corretora',{ascending:true}).order('ticker',{ascending:true});
   if(error) throw error;
-  ativos = data || [];
+  ativos=data||[];
+
+  // Preencher select de ativos nos dividendos
+  el('divAtivo').innerHTML='<option value="">Selecione o ativo</option>'+
+    ativos.map(a=>`<option value="${a.id}" data-qty="${a.quantidade}">${a.ticker} — ${a.nome||''}</option>`).join('');
+}
+
+async function carregarPesos(){
+  const {data}=await supabase.from('user_settings')
+    .select('setting_key,setting_value').eq('user_id',user.id)
+    .like('setting_key','inv_peso_%');
+  pesos={};
+  (data||[]).forEach(r=>{ pesos[r.setting_key]=JSON.parse(r.setting_value||'{}'); });
 }
 
 // ─────────────────────────────────────────────
-// RENDERIZAR
+// KPIs
+// ─────────────────────────────────────────────
+function renderizarKPIs(){
+  const aplicBRL  = ativos.reduce((s,a)=>s+calcBRL(a,calcAplicado(a)),0);
+  const patrimBRL = ativos.reduce((s,a)=>s+calcBRL(a,calcAtual(a)),0);
+  const resultado = patrimBRL-aplicBRL;
+  const pct       = aplicBRL?resultado/aplicBRL*100:0;
+  const usdTotal  = ativos.filter(a=>(a.moeda||'BRL')==='USD').reduce((s,a)=>s+calcAtual(a),0);
+
+  el('kpiPatrimonio').innerText=formatCurrency(patrimBRL,'BRL');
+  el('kpiAplicado').innerText=formatCurrency(aplicBRL,'BRL');
+  el('kpiResultado').innerText=formatCurrency(resultado,'BRL');
+  el('kpiResultado').className=resultado>=0?'positive':'negative';
+  el('kpiResultadoPct').innerText=(resultado>=0?'+':'')+formatPercent(pct);
+  el('kpiUsd').innerText=formatUSD(usdTotal);
+  el('kpiUsdBrl').innerText=formatCurrency(usdTotal*dolarAtual,'BRL');
+}
+
+// ─────────────────────────────────────────────
+// CARTEIRA (aba 1)
+// ─────────────────────────────────────────────
+function renderizarCarteira(){
+  const filtro = el('filtroCorretora').value;
+  const lista  = filtro ? ativos.filter(a=>a.corretora===filtro||
+    corretoras.find(c=>c.id===a.corretora_id)?.nome===filtro) : ativos;
+
+  const patrimTotal = lista.reduce((s,a)=>s+calcBRL(a,calcAtual(a)),0);
+
+  // Agrupar por classe
+  const classes={};
+  lista.forEach(a=>{
+    const k=classeKey(a.tipo);
+    if(!classes[k]) classes[k]={ativos:[],total:0};
+    classes[k].ativos.push(a);
+    classes[k].total+=calcBRL(a,calcAtual(a));
+  });
+
+  if(!lista.length){ el('listaCarteira').innerHTML='<p class="muted">Nenhum ativo cadastrado.</p>'; return; }
+
+  let html='';
+  for(const [classe,grupo] of Object.entries(classes)){
+    const pctReal = patrimTotal?grupo.total/patrimTotal*100:0;
+    const pesoChave = `inv_peso_classe_${classe.replace(/\s/g,'_')}`;
+    const pesoObj   = pesos[pesoChave]||{};
+    const pctIdeal  = toNumber(pesoObj.ideal||0);
+    const over      = pctIdeal>0 && pctReal>pctIdeal*1.05;
+
+    html+=`
+      <div class="inv-class-header">
+        <span>📁 ${classe} — ${formatCurrency(grupo.total,'BRL')}</span>
+        <div class="inv-class-pct">
+          <span>Real: <strong>${formatPercent(pctReal)}</strong></span>
+          ${pctIdeal?`<span>Ideal: <strong>${formatPercent(pctIdeal)}</strong></span>`:''}
+        </div>
+      </div>
+      ${pctIdeal?`<div class="inv-pct-bar-wrap"><div class="inv-pct-bar${over?' over':''}" style="width:${Math.min(pctReal/pctIdeal*100,200)}%"></div></div>`:''}
+    `;
+
+    // Tabela desktop
+    html+=`<div class="inv-desktop-table"><table class="data-table">
+      <thead><tr>
+        <th>Ticker</th><th>Nome</th><th>Qtd</th>
+        <th>P. Médio</th><th>Cotação</th>
+        <th>Aplicado</th><th>Atual</th><th>Resultado</th>
+        <th>% Carteira</th><th>% Ideal</th><th>Comprar?</th><th>Ações</th>
+      </tr></thead><tbody>`;
+
+    grupo.ativos.forEach(a=>{
+      const m       = a.moeda||'BRL';
+      const aplic   = calcAplicado(a);
+      const atual   = calcAtual(a);
+      const res     = atual-aplic;
+      const pct     = aplic?res/aplic*100:0;
+      const pctCart = patrimTotal?calcBRL(a,atual)/patrimTotal*100:0;
+      const pk      = `inv_peso_${a.ticker}`;
+      const pideal  = toNumber((pesos[pk]||{}).ideal||0);
+      const diff    = pideal-pctCart;
+      const comprar = pideal>0?(diff>1?'sim':diff<-1?'vender':'ok'):'';
+
+      html+=`<tr>
+        <td><strong>${a.ticker}</strong></td>
+        <td>${a.nome||'-'}</td>
+        <td class="money">${toNumber(a.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:6})}</td>
+        <td class="money">${fmtMoeda(toNumber(a.preco_medio),m)}</td>
+        <td class="money">${fmtMoeda(toNumber(a.cotacao_atual||a.preco_medio),m)}
+          ${a.atualizado_em?'<span style="font-size:9px;color:var(--success)"> ✓auto</span>':''}
+        </td>
+        <td class="money">${fmtMoeda(aplic,m)}${m==='USD'?`<br><small class="muted">${formatCurrency(calcBRL(a,aplic),'BRL')}</small>`:''}
+        </td>
+        <td class="money">${fmtMoeda(atual,m)}${m==='USD'?`<br><small class="muted">${formatCurrency(calcBRL(a,atual),'BRL')}</small>`:''}
+        </td>
+        <td class="money ${res>=0?'positive':'negative'}">
+          ${res>=0?'+':''}${fmtMoeda(res,m)}<br>
+          <small>${res>=0?'+':''}${formatPercent(pct)}</small>
+        </td>
+        <td>${formatPercent(pctCart)}</td>
+        <td>${pideal?formatPercent(pideal):'-'}</td>
+        <td>${comprar==='sim'?'<span class="badge-comprar">✅ Sim</span>':comprar==='vender'?'<span class="badge-vender">⬇ Reduzir</span>':comprar==='ok'?'<span class="badge-nao">— Ok</span>':'-'}</td>
+        <td>
+          <button class="btn btn-secondary compact" data-editar="${a.id}">Editar</button>
+          <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">Excluir</button>
+        </td>
+      </tr>`;
+    });
+    html+=`</tbody></table></div>`;
+
+    // Cards mobile
+    html+=`<div class="inv-mobile-list">`;
+    grupo.ativos.forEach(a=>{
+      const m=a.moeda||'BRL';
+      const aplic=calcAplicado(a); const atual=calcAtual(a);
+      const res=atual-aplic; const pct=aplic?res/aplic*100:0;
+      html+=`<div class="inv-mobile-card">
+        <div class="inv-mobile-top">
+          <div><div class="inv-ticker">${a.ticker}</div><div class="inv-nome">${a.nome||tipoLabel(a.tipo)}</div></div>
+          <strong class="${res>=0?'positive':'negative'}">${res>=0?'+':''}${formatPercent(pct)}</strong>
+        </div>
+        <div class="inv-mobile-grid">
+          <div><span>Qtd</span><strong>${toNumber(a.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:4})}</strong></div>
+          <div><span>Cotação</span><strong class="money">${fmtMoeda(toNumber(a.cotacao_atual||a.preco_medio),m)}</strong></div>
+          <div><span>Aplicado</span><strong class="money">${fmtMoeda(aplic,m)}</strong></div>
+          <div><span>Atual</span><strong class="money">${fmtMoeda(atual,m)}</strong></div>
+          <div><span>Resultado</span><strong class="money ${res>=0?'positive':'negative'}">${res>=0?'+':''}${fmtMoeda(res,m)}</strong></div>
+          ${m==='USD'?`<div><span>Em BRL</span><strong class="money">${formatCurrency(calcBRL(a,atual),'BRL')}</strong></div>`:''}
+        </div>
+        <div class="inv-mobile-actions">
+          <button class="btn btn-secondary compact" data-editar="${a.id}">Editar</button>
+          <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">Excluir</button>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  el('listaCarteira').innerHTML=html;
+
+  el('listaCarteira').querySelectorAll('[data-editar]').forEach(b=>b.addEventListener('click',()=>editarAtivo(b.dataset.editar)));
+  el('listaCarteira').querySelectorAll('[data-excluir]').forEach(b=>b.addEventListener('click',()=>excluirAtivo(b.dataset.excluir,b.dataset.ticker)));
+}
+
+// ─────────────────────────────────────────────
+// APORTAR (aba 2)
+// ─────────────────────────────────────────────
+async function salvarAtivo(){
+  const ticker    = el('tickerAtivo').value.trim().toUpperCase();
+  const nome      = el('nomeAtivo').value.trim();
+  const tipo      = el('tipoAtivo').value;
+  const contaId   = el('corretoraAtivo').value;
+  const operacao  = el('operacaoAtivo').value;
+  const qtd       = toNumber(el('quantidadeAtivo').value);
+  const preco     = toNumber(el('precoAtivo').value);
+  const moeda     = el('moedaAtivo').value||'BRL';
+  const data      = el('dataAtivo').value||hojeISO();
+  const obs       = el('obsAtivo').value.trim();
+  const valorTotal= qtd*preco;
+
+  if(!ticker||!tipo||!contaId||!qtd||!preco){
+    msg('mensagemAtivo','Preencha ticker, tipo, corretora, quantidade e preço.','warning'); return;
+  }
+
+  const conta = todasContas.find(c=>c.id===contaId)||corretoras.find(c=>c.id===contaId);
+  if(!conta){ msg('mensagemAtivo','Conta não encontrada.','danger'); return; }
+
+  // Verificar saldo
+  if(operacao==='compra'&&toNumber(conta.saldo_atual)<valorTotal){
+    msg('mensagemAtivo',`Saldo insuficiente na conta (${formatCurrency(conta.saldo_atual||0,moeda)}).`,'warning'); return;
+  }
+
+  msg('mensagemAtivo','Salvando...','info');
+
+  try{
+    if(editandoId){
+      // Edição simples do ativo
+      const {error}=await supabase.from('investments').update({
+        ticker,nome,tipo,moeda,
+        quantidade:qtd,preco_medio:preco,
+        cotacao_atual:preco,
+      }).eq('id',editandoId).eq('user_id',user.id);
+      if(error) throw error;
+      msg('mensagemAtivo','Ativo atualizado.','success');
+      limparFormAtivo();
+    }else{
+      // Registrar transação
+      await supabase.from('investment_transactions').insert({
+        user_id:user.id, ticker, tipo_ativo:tipo,
+        tipo_movimento:operacao, quantidade:qtd,
+        preco_unitario:preco, valor_total:valorTotal,
+        moeda, account_id:contaId,
+        exchange_rate:moeda==='USD'?dolarAtual:null,
+        data_movimento:data, observacao:obs,
+      });
+
+      // Atualizar/criar posição
+      const {data:existing}=await supabase.from('investments').select('*')
+        .eq('user_id',user.id).eq('ativo',true).eq('ticker',ticker).eq('moeda',moeda).maybeSingle();
+
+      if(operacao==='compra'){
+        if(existing){
+          const novaQtd = toNumber(existing.quantidade)+qtd;
+          const novoPM  = (toNumber(existing.quantidade)*toNumber(existing.preco_medio)+qtd*preco)/novaQtd;
+          await supabase.from('investments').update({
+            nome:nome||existing.nome, tipo, quantidade:novaQtd, preco_medio:novoPM,
+          }).eq('id',existing.id).eq('user_id',user.id);
+        }else{
+          await supabase.from('investments').insert({
+            user_id:user.id,ticker,nome,tipo,moeda,
+            quantidade:qtd,preco_medio:preco,cotacao_atual:preco,
+            corretora:conta.nome,exchange_rate:moeda==='USD'?dolarAtual:null,ativo:true,
+          });
+        }
+      }else{
+        // Venda — reduz posição
+        if(existing){
+          const novaQtd=toNumber(existing.quantidade)-qtd;
+          if(novaQtd<=0){
+            await supabase.from('investments').update({ativo:false}).eq('id',existing.id).eq('user_id',user.id);
+          }else{
+            await supabase.from('investments').update({quantidade:novaQtd}).eq('id',existing.id).eq('user_id',user.id);
+          }
+        }
+      }
+
+      // Debitar/creditar conta
+      const novoSaldo = operacao==='compra'
+        ? toNumber(conta.saldo_atual)-valorTotal
+        : toNumber(conta.saldo_atual)+valorTotal;
+
+      await supabase.from('accounts').update({saldo_atual:novoSaldo}).eq('id',contaId).eq('user_id',user.id);
+
+      // Registrar em transactions para aparecer no dashboard
+      await supabase.from('transactions').insert({
+        user_id:user.id, account_id:contaId,
+        type: operacao==='compra'?'despesa':'receita',
+        amount:valorTotal,
+        description:`${operacao==='compra'?'Compra':'Venda'} ${ticker} (${qtd}x ${fmtMoeda(preco,moeda)})`,
+        date:data, status:'pago',
+        notes:obs||`${tipoLabel(tipo)} via ${conta.nome}`,
+      });
+
+      msg('mensagemAtivo',`${operacao==='compra'?'Compra':'Venda'} de ${ticker} registrada. Saldo debitado da conta.`,'success');
+      limparFormAtivo();
+    }
+
+    await carregarAtivos();
+    await carregarCorretoras();
+    renderizarTudo();
+    carregarTransacoes();
+  }catch(e){
+    msg('mensagemAtivo','Erro: '+e.message,'danger');
+  }
+}
+
+function editarAtivo(id){
+  const a=ativos.find(x=>x.id===id); if(!a) return;
+  editandoId=id;
+
+  // Muda para aba aportar
+  document.querySelectorAll('.inv-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.inv-tab-content').forEach(c=>c.classList.remove('active'));
+  document.querySelector('[data-tab="aportar"]').classList.add('active');
+  el('tab-aportar').classList.add('active');
+
+  el('tickerAtivo').value=a.ticker||'';
+  el('nomeAtivo').value=a.nome||'';
+  el('tipoAtivo').value=a.tipo||'';
+  el('quantidadeAtivo').value=a.quantidade||'';
+  el('precoAtivo').value=a.preco_medio||'';
+  el('moedaAtivo').value=a.moeda||'BRL';
+  el('btnSalvarAtivo').innerText='Salvar Alterações';
+  el('btnCancelarEdicao').style.display='';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function excluirAtivo(id,ticker){
+  if(!confirm(`Excluir ${ticker} da carteira?`)) return;
+  const {error}=await supabase.from('investments').update({ativo:false}).eq('id',id).eq('user_id',user.id);
+  if(error){ msg('mensagemAtivo','Erro: '+error.message,'danger'); return; }
+  msg('mensagemAtivo',`${ticker} removido.`,'success');
+  await carregarAtivos(); renderizarTudo();
+}
+
+function limparFormAtivo(){
+  editandoId=null;
+  ['tickerAtivo','nomeAtivo','quantidadeAtivo','precoAtivo','valorTotalAtivo','obsAtivo'].forEach(id=>{
+    const e=el(id); if(e) e.value='';
+  });
+  el('tipoAtivo').value='';
+  el('corretoraAtivo').value='';
+  el('operacaoAtivo').value='compra';
+  el('moedaAtivo').value='BRL';
+  el('dataAtivo').value=hojeISO();
+  el('btnSalvarAtivo').innerText='Salvar Aporte';
+  el('btnCancelarEdicao').style.display='none';
+}
+
+async function carregarTransacoes(){
+  const {data,error}=await supabase.from('investment_transactions')
+    .select('*').eq('user_id',user.id)
+    .order('data_movimento',{ascending:false}).limit(30);
+
+  const lista=el('listaTransacoes');
+  if(error||!data?.length){
+    lista.innerHTML='<p class="muted" style="padding:12px">Nenhuma transação registrada.</p>'; return;
+  }
+
+  lista.innerHTML=`<table class="data-table">
+    <thead><tr><th>Data</th><th>Ticker</th><th>Operação</th><th>Qtd</th><th>Preço</th><th>Total</th></tr></thead>
+    <tbody>${data.map(t=>`<tr>
+      <td>${fmtData(t.data_movimento)}</td>
+      <td><strong>${t.ticker}</strong></td>
+      <td><span class="badge ${t.tipo_movimento==='compra'?'success':'danger'}">${t.tipo_movimento}</span></td>
+      <td class="money">${toNumber(t.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:6})}</td>
+      <td class="money">${fmtMoeda(toNumber(t.preco_unitario),t.moeda||'BRL')}</td>
+      <td class="money">${fmtMoeda(toNumber(t.valor_total),t.moeda||'BRL')}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// ─────────────────────────────────────────────
+// DIVIDENDOS (aba 3)
+// ─────────────────────────────────────────────
+async function carregarDividendos(){
+  const ano=el('filtroAnoDiv')?.value||new Date().getFullYear();
+
+  // KPIs
+  const {data:divData}=await supabase.from('dividends').select('*').eq('user_id',user.id);
+  const todos=divData||[];
+  const agora=new Date();
+  const mesAtual=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}`;
+
+  const divMes=todos.filter(d=>d.data_pagamento?.startsWith(mesAtual)).reduce((s,d)=>s+toNumber(d.valor_total),0);
+  const divAno=todos.filter(d=>d.data_pagamento?.startsWith(String(ano))).reduce((s,d)=>s+toNumber(d.valor_total),0);
+  const divTot=todos.reduce((s,d)=>s+toNumber(d.valor_total),0);
+
+  el('divMes').innerText=formatCurrency(divMes,'BRL');
+  el('divAno').innerText=formatCurrency(divAno,'BRL');
+  el('divTotal').innerText=formatCurrency(divTot,'BRL');
+
+  // Lista
+  const {data,error}=await supabase.from('dividends').select('*')
+    .eq('user_id',user.id).order('data_pagamento',{ascending:false}).limit(50);
+
+  const lista=el('listaDividendos');
+  if(error||!data?.length){
+    lista.innerHTML='<p class="muted" style="padding:12px">Nenhum provento registrado.</p>'; return;
+  }
+
+  lista.innerHTML=`<table class="data-table">
+    <thead><tr><th>Data</th><th>Ativo</th><th>Tipo</th><th>Valor/cota</th><th>Qtd cotas</th><th>Total</th><th>Conta</th></tr></thead>
+    <tbody>${data.map(d=>{
+      const a=ativos.find(x=>x.id===d.investment_id);
+      const c=todasContas.find(x=>x.id===d.account_id);
+      return `<tr>
+        <td>${fmtData(d.data_pagamento)}</td>
+        <td><strong>${d.ticker||a?.ticker||'-'}</strong></td>
+        <td><span class="badge neutral">${d.tipo||'-'}</span></td>
+        <td class="money">${formatCurrency(toNumber(d.valor_por_cota),'BRL')}</td>
+        <td class="money">${toNumber(d.quantidade_cotas).toLocaleString('pt-BR',{maximumFractionDigits:4})}</td>
+        <td class="money positive">+${formatCurrency(toNumber(d.valor_total),'BRL')}</td>
+        <td>${c?.nome||'-'}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+async function salvarDividendo(){
+  const ativoId  = el('divAtivo').value;
+  const tipo     = el('divTipo').value;
+  const valCota  = toNumber(el('divValorCota').value);
+  const qtdCotas = toNumber(el('divQtdCotas').value);
+  const valTotal = toNumber(el('divValorTotal').value)||(valCota*qtdCotas);
+  const contaId  = el('divConta').value;
+  const dataPag  = el('divData').value||hojeISO();
+  const obs      = el('divObs').value.trim();
+
+  if(!ativoId||!tipo||(!valCota&&!valTotal)||!contaId){
+    msg('mensagemDiv','Preencha ativo, tipo, valor e conta.','warning'); return;
+  }
+
+  const ativo=ativos.find(a=>a.id===ativoId);
+  const conta=todasContas.find(c=>c.id===contaId);
+  if(!ativo||!conta){ msg('mensagemDiv','Ativo ou conta não encontrados.','danger'); return; }
+
+  const total=valTotal||(valCota*toNumber(ativo.quantidade));
+
+  msg('mensagemDiv','Registrando...','info');
+  try{
+    // Inserir dividendo
+    const {error:e1}=await supabase.from('dividends').insert({
+      user_id:user.id, investment_id:ativoId, ticker:ativo.ticker,
+      tipo, valor_por_cota:valCota, quantidade_cotas:qtdCotas||ativo.quantidade,
+      valor_total:total, account_id:contaId, data_pagamento:dataPag, observacao:obs,
+    });
+    if(e1) throw e1;
+
+    // Creditar na conta
+    const novoSaldo=toNumber(conta.saldo_atual)+total;
+    await supabase.from('accounts').update({saldo_atual:novoSaldo}).eq('id',contaId).eq('user_id',user.id);
+
+    // Registrar como receita nas transações
+    await supabase.from('transactions').insert({
+      user_id:user.id, account_id:contaId,
+      type:'receita', amount:total,
+      description:`Dividendo ${ativo.ticker} (${tipo})`,
+      date:dataPag, status:'pago',
+      notes:obs||`Provento de ${ativo.ticker}`,
+    });
+
+    msg('mensagemDiv',`Dividendo de ${formatCurrency(total,'BRL')} registrado e creditado na conta.`,'success');
+
+    // Limpar
+    ['divValorCota','divQtdCotas','divValorTotal','divObs'].forEach(id=>{ const e=el(id); if(e) e.value=''; });
+    el('divAtivo').value=''; el('divData').value=hojeISO();
+
+    await carregarCorretoras();
+    carregarDividendos();
+  }catch(e){
+    msg('mensagemDiv','Erro: '+e.message,'danger');
+  }
+}
+
+// ─────────────────────────────────────────────
+// BALANCEAR (aba 4)
+// ─────────────────────────────────────────────
+function renderizarBalancear(){
+  const classes={};
+  ativos.forEach(a=>{
+    const k=classeKey(a.tipo);
+    if(!classes[k]) classes[k]=[];
+    classes[k].push(a);
+  });
+
+  let html='';
+  for(const [classe,lista] of Object.entries(classes)){
+    const ck=`inv_peso_classe_${classe.replace(/\s/g,'_')}`;
+    const cideal=toNumber((pesos[ck]||{}).ideal||0);
+
+    html+=`<div class="bal-classe-row">
+      <strong>📁 ${classe}</strong>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label style="margin:0;color:var(--muted);font-size:12px;">% ideal da carteira</label>
+        <input type="number" class="bal-classe-input" data-classe="${ck}"
+          style="width:70px;padding:6px 8px;font-size:13px;" value="${cideal||''}" placeholder="0" min="0" max="100" step="0.1">
+      </div>
+    </div>`;
+
+    html+=`<div style="padding:0 4px;">`;
+    lista.forEach(a=>{
+      const pk=`inv_peso_${a.ticker}`;
+      const pideal=toNumber((pesos[pk]||{}).ideal||0);
+      html+=`<div class="bal-row">
+        <span><strong>${a.ticker}</strong> <small class="muted">${a.nome||tipoLabel(a.tipo)}</small></span>
+        <span>${formatCurrency(calcBRL(a,calcAtual(a)),'BRL')}</span>
+        <span class="muted" style="font-size:12px;">% na carteira</span>
+        <input type="number" class="bal-ativo-input" data-ticker="${pk}"
+          value="${pideal||''}" placeholder="0" min="0" max="100" step="0.1">
+        <span></span>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  el('balClasses').innerHTML=html;
+}
+
+async function salvarPesos(){
+  const inputs=[...document.querySelectorAll('.bal-classe-input,.bal-ativo-input')];
+  msg('mensagemBal','Salvando pesos...','info');
+  try{
+    for(const inp of inputs){
+      const key=inp.dataset.classe||inp.dataset.ticker;
+      const val=toNumber(inp.value);
+      await supabase.from('user_settings').upsert({
+        user_id:user.id, setting_key:key,
+        setting_value:JSON.stringify({ideal:val}),
+        updated_at:new Date().toISOString(),
+      },{onConflict:'user_id,setting_key'});
+      pesos[key]={ideal:val};
+    }
+    msg('mensagemBal','Pesos salvos com sucesso.','success');
+    renderizarCarteira(); // atualiza badges
+  }catch(e){
+    msg('mensagemBal','Erro ao salvar: '+e.message,'danger');
+  }
+}
+
+function calcularBalanceamento(){
+  const aporte=toNumber(el('balValorAporte').value);
+  if(!aporte){ msg('mensagemBal','Informe o valor do aporte.','warning'); return; }
+
+  const patrimAtual=ativos.reduce((s,a)=>s+calcBRL(a,calcAtual(a)),0);
+  const novoTotal  =patrimAtual+aporte;
+
+  // Sugestões por ativo
+  const sugestoes=[];
+
+  ativos.forEach(a=>{
+    const pk=`inv_peso_${a.ticker}`;
+    const pideal=toNumber((pesos[pk]||{}).ideal||0);
+    if(!pideal) return;
+
+    const valorIdeal  =novoTotal*(pideal/100);
+    const valorAtual  =calcBRL(a,calcAtual(a));
+    const diferenca   =valorIdeal-valorAtual;
+    const cotacao     =toNumber(a.cotacao_atual||a.preco_medio);
+    const moeda       =a.moeda||'BRL';
+    const cotBRL      =moeda==='USD'?cotacao*dolarAtual:cotacao;
+    const qtdSugerida =cotBRL>0?Math.floor(diferenca/cotBRL):0;
+
+    if(diferenca>0&&qtdSugerida>0){
+      sugestoes.push({
+        ticker:a.ticker, nome:a.nome||'', tipo:tipoLabel(a.tipo),
+        pideal, valorIdeal, valorAtual, diferenca,
+        cotacao:fmtMoeda(cotacao,moeda), qtdSugerida,
+        valorSugerido:qtdSugerida*cotBRL, moeda,
+      });
+    }
+  });
+
+  sugestoes.sort((a,b)=>b.diferenca-a.diferenca);
+
+  const totalSugerido=sugestoes.reduce((s,x)=>s+x.valorSugerido,0);
+  const sobra=aporte-totalSugerido;
+
+  if(!sugestoes.length){
+    el('balResultado').innerHTML='<p class="muted" style="margin-top:16px">Carteira já está balanceada ou nenhum ativo tem % ideal definido.</p>';
+    return;
+  }
+
+  el('balResultado').innerHTML=`
+    <div class="bal-sugestao">
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <div><strong>Sugestão de aporte: ${formatCurrency(aporte,'BRL')}</strong></div>
+        <div class="muted" style="font-size:12px;">Sobra: ${formatCurrency(sobra,'BRL')}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 80px 100px 80px 100px;gap:8px;
+        font-size:11px;font-weight:800;color:var(--muted);padding-bottom:8px;border-bottom:1px solid var(--border);">
+        <span>Ativo</span><span>% Ideal</span><span>Falta</span><span>Qtd</span><span>Valor</span>
+      </div>
+      ${sugestoes.map(s=>`
+        <div class="bal-sugestao-item" style="display:grid;grid-template-columns:1fr 80px 100px 80px 100px;gap:8px;">
+          <span><strong>${s.ticker}</strong> <span class="muted" style="font-size:11px">${s.tipo}</span></span>
+          <span>${formatPercent(s.pideal)}</span>
+          <span class="positive">+${formatCurrency(s.diferenca,'BRL')}</span>
+          <span><strong>${s.qtdSugerida}</strong> cotas</span>
+          <span class="money">${formatCurrency(s.valorSugerido,'BRL')}</span>
+        </div>
+      `).join('')}
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);
+        display:flex;justify-content:space-between;font-weight:800;">
+        <span>Total a aportar</span>
+        <span class="money positive">${formatCurrency(totalSugerido,'BRL')}</span>
+      </div>
+    </div>
+  `;
+  msg('mensagemBal','','info');
+}
+
+// ─────────────────────────────────────────────
+// RENDER TUDO
 // ─────────────────────────────────────────────
 function renderizarTudo(){
   renderizarKPIs();
   renderizarCarteira();
 }
 
-function renderizarKPIs(){
-  const aplicadoBRL   = ativos.reduce((s,a) => s + calcBRL(a, calcAplicado(a)), 0);
-  const patrimonioBRL = ativos.reduce((s,a) => s + calcBRL(a, calcAtual(a)), 0);
-  const resultado     = patrimonioBRL - aplicadoBRL;
-
-  const usdTotal = ativos
-    .filter(a => (a.moeda||'BRL') === 'USD')
-    .reduce((s,a) => s + calcAtual(a), 0);
-
-  kpiPatrimonio.innerText = formatCurrency(patrimonioBRL, 'BRL');
-  kpiAplicado.innerText   = formatCurrency(aplicadoBRL,   'BRL');
-  kpiResultado.innerText  = formatCurrency(resultado,     'BRL');
-  kpiResultado.className  = resultado >= 0 ? 'inv-result-positive' : 'inv-result-negative';
-  kpiUsd.innerText        = formatUSD(usdTotal);
-  kpiUsdBrl.innerText     = formatCurrency(usdTotal * dolarAtual, 'BRL');
-}
-
-function renderizarCarteira(){
-  const filtro = filtroCorretora.value;
-  const lista  = filtro ? ativos.filter(a => a.corretora === filtro) : ativos;
-
-  if(!lista.length){
-    listaInvestimentos.innerHTML = '<p class="muted" style="padding:18px">Nenhum ativo cadastrado.</p>';
-    return;
-  }
-
-  // Agrupar por corretora
-  const grupos = {};
-  lista.forEach(a => {
-    const c = a.corretora || 'Sem corretora';
-    if(!grupos[c]) grupos[c] = [];
-    grupos[c].push(a);
-  });
-
-  let html = '';
-
-  for(const [corretora, itens] of Object.entries(grupos)){
-    const totalCorretora = itens.reduce((s,a) => s + calcBRL(a, calcAtual(a)), 0);
-
-    html += `
-      <div class="inv-broker-title" style="padding:0 18px">
-        🏦 ${corretora} — ${formatCurrency(totalCorretora,'BRL')}
-      </div>
-    `;
-
-    // Desktop
-    html += `
-      <div class="inv-desktop">
-        <table class="data-table">
-          <thead><tr>
-            <th>Ticker</th><th>Nome</th><th>Tipo</th>
-            <th>Qtd</th><th>Preço médio</th><th>Cotação</th>
-            <th>Aplicado</th><th>Atual</th><th>Resultado</th><th>Ações</th>
-          </tr></thead>
-          <tbody>
-            ${itens.map(a => rowHtml(a)).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    // Mobile
-    html += `
-      <div class="inv-mobile-list">
-        ${itens.map(a => cardHtml(a)).join('')}
-      </div>
-    `;
-  }
-
-  listaInvestimentos.innerHTML = html;
-
-  listaInvestimentos.querySelectorAll('[data-editar]').forEach(btn => {
-    btn.addEventListener('click', () => editarAtivo(btn.dataset.editar));
-  });
-  listaInvestimentos.querySelectorAll('[data-excluir]').forEach(btn => {
-    btn.addEventListener('click', () => excluirAtivo(btn.dataset.excluir, btn.dataset.ticker));
-  });
-}
-
-function rowHtml(a){
-  const moeda     = a.moeda || 'BRL';
-  const aplicado  = calcAplicado(a);
-  const atual     = calcAtual(a);
-  const resultado = atual - aplicado;
-  const pct       = aplicado ? (resultado / aplicado) * 100 : 0;
-  const cotacao   = toNumber(a.cotacao_atual || a.preco_medio);
-  const temCotAuto= !isRendaFixa(a.tipo) && a.atualizado_em;
-
-  return `
-    <tr>
-      <td><strong>${a.ticker||'-'}</strong></td>
-      <td>${a.nome||'-'}</td>
-      <td>
-        ${tipoLabel(a.tipo)}
-        <span class="inv-quote-status ${temCotAuto?'auto':'manual'}">
-          ${temCotAuto?'auto':'manual'}
-        </span>
-      </td>
-      <td class="money">${toNumber(a.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:6})}</td>
-      <td class="money">${fmtMoeda(toNumber(a.preco_medio), moeda)}</td>
-      <td class="money">${fmtMoeda(cotacao, moeda)}</td>
-      <td class="money">
-        ${fmtMoeda(aplicado, moeda)}
-        ${moeda==='USD'?`<br><span class="muted">${formatCurrency(calcBRL(a,aplicado),'BRL')}</span>`:''}
-      </td>
-      <td class="money">
-        ${fmtMoeda(atual, moeda)}
-        ${moeda==='USD'?`<br><span class="muted">${formatCurrency(calcBRL(a,atual),'BRL')}</span>`:''}
-      </td>
-      <td class="money ${resultado>=0?'positive':'negative'}">
-        ${resultado>=0?'+':''}${fmtMoeda(resultado, moeda)}<br>
-        <span style="font-size:11px">${resultado>=0?'+':''}${formatPercent(pct)}</span>
-      </td>
-      <td>
-        <button type="button" class="btn btn-secondary compact" data-editar="${a.id}">Editar</button>
-        <button type="button" class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">Excluir</button>
-      </td>
-    </tr>
-  `;
-}
-
-function cardHtml(a){
-  const moeda     = a.moeda || 'BRL';
-  const aplicado  = calcAplicado(a);
-  const atual     = calcAtual(a);
-  const resultado = atual - aplicado;
-  const pct       = aplicado ? (resultado / aplicado) * 100 : 0;
-  const cotacao   = toNumber(a.cotacao_atual || a.preco_medio);
-
-  return `
-    <article class="inv-mobile-card">
-      <div class="inv-mobile-card-top">
-        <div>
-          <div class="inv-ticker">${a.ticker||'-'}</div>
-          <div class="inv-nome">${a.nome||'-'} · ${tipoLabel(a.tipo)}</div>
-        </div>
-        <strong class="${resultado>=0?'positive':'negative'}">
-          ${resultado>=0?'+':''}${formatPercent(pct)}
-        </strong>
-      </div>
-      <div class="inv-mobile-grid">
-        <div><span>Qtd</span><strong class="money">${toNumber(a.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:6})}</strong></div>
-        <div><span>Cotação</span><strong class="money">${fmtMoeda(cotacao,moeda)}</strong></div>
-        <div><span>Aplicado</span><strong class="money">${fmtMoeda(aplicado,moeda)}</strong></div>
-        <div><span>Atual</span><strong class="money">${fmtMoeda(atual,moeda)}</strong></div>
-        <div><span>Resultado</span>
-          <strong class="money ${resultado>=0?'positive':'negative'}">
-            ${resultado>=0?'+':''}${fmtMoeda(resultado,moeda)}
-          </strong>
-        </div>
-        ${moeda==='USD'?`<div><span>Em BRL</span><strong class="money">${formatCurrency(calcBRL(a,atual),'BRL')}</strong></div>`:''}
-      </div>
-      <div class="inv-mobile-actions">
-        <button type="button" class="btn btn-secondary compact" data-editar="${a.id}">Editar</button>
-        <button type="button" class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">Excluir</button>
-      </div>
-    </article>
-  `;
-}
-
-// ─────────────────────────────────────────────
-// SALVAR / EDITAR / EXCLUIR
-// ─────────────────────────────────────────────
-async function salvarAtivo(){
-  const ticker    = tickerAtivo.value.trim().toUpperCase();
-  const nome      = nomeAtivo.value.trim();
-  const tipo      = tipoAtivo.value;
-  const corretora = corretoraAtivo.value;
-  const quantidade= toNumber(quantidadeAtivo.value);
-  const precoMedio= toNumber(precoMedioAtivo.value);
-  const moeda     = moedaAtivo.value || 'BRL';
-  const cotManual = cotacaoManual.value ? toNumber(cotacaoManual.value) : null;
-
-  if(!ticker || !tipo || !corretora || !quantidade || !precoMedio){
-    msgAtivo('Preencha ticker, tipo, corretora, quantidade e preço médio.','warning');
-    return;
-  }
-
-  msgAtivo('Salvando...','info');
-
-  try{
-    if(editandoId){
-      // Edição direta
-      const { error } = await supabase.from('investments').update({
-        ticker, nome, tipo, corretora, quantidade, preco_medio: precoMedio,
-        moeda, cotacao_atual: cotManual,
-        atualizado_em: cotManual ? new Date().toISOString() : null,
-      }).eq('id', editandoId).eq('user_id', user.id);
-
-      if(error) throw error;
-      msgAtivo('Ativo atualizado.','success');
-    }else{
-      // Verifica se já existe (mesmo ticker + corretora + moeda)
-      const { data: existing } = await supabase.from('investments')
-        .select('*').eq('user_id', user.id).eq('ativo', true)
-        .eq('ticker', ticker).eq('corretora', corretora).eq('moeda', moeda)
-        .maybeSingle();
-
-      if(existing){
-        // Consolidar pelo preço médio ponderado
-        const novaQtd = toNumber(existing.quantidade) + quantidade;
-        const novoPM  = ((toNumber(existing.quantidade) * toNumber(existing.preco_medio)) +
-                         (quantidade * precoMedio)) / novaQtd;
-
-        const { error } = await supabase.from('investments').update({
-          nome: nome || existing.nome,
-          tipo, quantidade: novaQtd, preco_medio: novoPM,
-          cotacao_atual: cotManual ?? existing.cotacao_atual,
-          atualizado_em: cotManual ? new Date().toISOString() : existing.atualizado_em,
-        }).eq('id', existing.id).eq('user_id', user.id);
-
-        if(error) throw error;
-        msgAtivo('Posição consolidada com preço médio ponderado.','success');
-      }else{
-        const { error } = await supabase.from('investments').insert({
-          user_id: user.id, ticker, nome, tipo, corretora,
-          quantidade, preco_medio: precoMedio, moeda,
-          cotacao_atual: cotManual,
-          atualizado_em: cotManual ? new Date().toISOString() : null,
-          exchange_rate: moeda === 'USD' ? dolarAtual : null,
-          ativo: true,
-        });
-
-        if(error) throw error;
-        msgAtivo('Ativo salvo com sucesso.','success');
-      }
-    }
-
-    limparFormulario();
-    await carregarAtivos();
-    renderizarTudo();
-
-    // Tenta buscar cotação do novo ativo automaticamente
-    if(!cotManual && !isRendaFixa(tipo)){
-      setTimeout(() => atualizarCotacoes(true), 800);
-    }
-  }catch(e){
-    msgAtivo('Erro ao salvar: '+e.message,'danger');
-  }
-}
-
-function editarAtivo(id){
-  const a = ativos.find(x => x.id === id);
-  if(!a) return;
-
-  editandoId = id;
-  tickerAtivo.value    = a.ticker || '';
-  nomeAtivo.value      = a.nome || '';
-  tipoAtivo.value      = a.tipo || '';
-  corretoraAtivo.value = a.corretora || '';
-  quantidadeAtivo.value= a.quantidade || '';
-  precoMedioAtivo.value= a.preco_medio || '';
-  moedaAtivo.value     = a.moeda || 'BRL';
-  cotacaoManual.value  = a.cotacao_atual || '';
-
-  formAtivoTitulo.innerText = `Editando: ${a.ticker}`;
-  btnSalvarAtivo.innerText  = 'Salvar Alterações';
-  btnCancelarEdicao.style.display = '';
-  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-}
-
-async function excluirAtivo(id, ticker){
-  const ok = confirm(`Excluir ${ticker} da carteira?`);
-  if(!ok) return;
-
-  const { error } = await supabase.from('investments')
-    .update({ ativo: false }).eq('id', id).eq('user_id', user.id);
-
-  if(error){ msgAtivo('Erro ao excluir: '+error.message,'danger'); return; }
-
-  msgAtivo(`${ticker} removido da carteira.`,'success');
-  await carregarAtivos();
-  renderizarTudo();
-}
-
-function limparFormulario(){
-  editandoId = null;
-  tickerAtivo.value = '';
-  nomeAtivo.value   = '';
-  tipoAtivo.value   = '';
-  corretoraAtivo.value = '';
-  quantidadeAtivo.value = '';
-  precoMedioAtivo.value = '';
-  moedaAtivo.value  = 'BRL';
-  cotacaoManual.value = '';
-  formAtivoTitulo.innerText = 'Adicionar Ativo';
-  btnSalvarAtivo.innerText  = 'Salvar Ativo';
-  btnCancelarEdicao.style.display = 'none';
-}
-
 // ─────────────────────────────────────────────
 // EVENTOS
 // ─────────────────────────────────────────────
-btnAtualizar.addEventListener('click', () => atualizarCotacoes(false));
+el('btnAtualizar').addEventListener('click',()=>atualizarCotacoes(false));
+el('btnSalvarDolar').addEventListener('click',async()=>{
+  const v=toNumber(el('dolarReferencia').value);
+  if(v<=0){ msg('mensagemCotacao','Informe uma cotação válida.','warning'); return; }
+  await saveUsdBrlRate(user.id,v); dolarAtual=v; renderizarTudo();
+  msg('mensagemCotacao',`Dólar salvo: R$ ${v.toFixed(4)}`,'success');
+});
+el('filtroCorretora').addEventListener('change',renderizarCarteira);
 
-btnSalvarDolar.addEventListener('click', async () => {
-  const val = toNumber(dolarReferencia.value);
-  if(val <= 0){ msgCotacao('Informe uma cotação válida.','warning'); return; }
-  try{
-    await saveUsdBrlRate(user.id, val);
-    dolarAtual = val;
-    renderizarTudo();
-    msgCotacao(`Dólar salvo: R$ ${val.toFixed(4)}`,'success');
-  }catch(e){
-    msgCotacao('Erro ao salvar dólar: '+e.message,'danger');
+// Aporte — calcular valor total
+function recalcTotal(){
+  const q=toNumber(el('quantidadeAtivo').value);
+  const p=toNumber(el('precoAtivo').value);
+  el('valorTotalAtivo').value=q&&p?(q*p).toFixed(2):'';
+}
+el('quantidadeAtivo').addEventListener('input',recalcTotal);
+el('precoAtivo').addEventListener('input',recalcTotal);
+
+// Ajuste de moeda pela corretora
+el('corretoraAtivo').addEventListener('change',()=>{
+  const opt=el('corretoraAtivo').options[el('corretoraAtivo').selectedIndex];
+  if(opt?.dataset?.currency) el('moedaAtivo').value=opt.dataset.currency;
+});
+
+el('btnSalvarAtivo').addEventListener('click',salvarAtivo);
+el('btnCancelarEdicao').addEventListener('click',limparFormAtivo);
+
+// Dividendos — preencher quantidade automaticamente
+el('divAtivo').addEventListener('change',()=>{
+  const opt=el('divAtivo').options[el('divAtivo').selectedIndex];
+  if(opt?.dataset?.qty) el('divQtdCotas').value=opt.dataset.qty;
+});
+el('divValorCota').addEventListener('input',()=>{
+  const v=toNumber(el('divValorCota').value);
+  const q=toNumber(el('divQtdCotas').value);
+  if(v&&q) el('divValorTotal').value=(v*q).toFixed(2);
+});
+el('btnSalvarDiv').addEventListener('click',salvarDividendo);
+
+// Filtro ano dividendos
+const anoAtual=new Date().getFullYear();
+const selAno=el('filtroAnoDiv');
+if(selAno){
+  for(let y=anoAtual;y>=anoAtual-5;y--){
+    selAno.innerHTML+=`<option value="${y}">${y}</option>`;
   }
-});
+  selAno.addEventListener('change',carregarDividendos);
+}
 
-btnSalvarAtivo.addEventListener('click', salvarAtivo);
-btnCancelarEdicao.addEventListener('click', limparFormulario);
-filtroCorretora.addEventListener('change', renderizarCarteira);
+// Balancear
+el('btnSalvarPesos').addEventListener('click',salvarPesos);
+el('btnCalcularBal').addEventListener('click',calcularBalanceamento);
 
-// Ajusta moeda automaticamente pela corretora
-corretoraAtivo.addEventListener('change', () => {
-  const opt = corretoraAtivo.options[corretoraAtivo.selectedIndex];
-  const currency = opt?.dataset?.currency;
-  if(currency) moedaAtivo.value = currency;
-});
+el('dataAtivo').value=hojeISO();
+el('divData').value=hojeISO();
 
 // ─────────────────────────────────────────────
 // INICIALIZAÇÃO
@@ -633,7 +836,6 @@ corretoraAtivo.addEventListener('change', () => {
 await carregarDolar();
 await carregarCorretoras();
 await carregarAtivos();
+await carregarPesos();
 renderizarTudo();
-
-// Atualiza cotações automaticamente ao abrir
 await atualizarCotacoes(true);
