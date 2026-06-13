@@ -11,6 +11,9 @@ const NAV_GROUPS = [
       {title:'Faturas',        icon:'📄', href:'./card-bills.html'},
       {title:'Investimentos',  icon:'📈', href:'./investments.html'},
       {title:'Patrimônio',     icon:'💎', href:'./patrimony-history.html'},
+      {title:'Orçamento',      icon:'🎯', href:'./budgets.html'},
+      {title:'Metas',          icon:'🏆', href:'./goals.html'},
+      {title:'Relatório',      icon:'📊', href:'./reports.html'},
       {title:'Cadastros',      icon:'⚙️', href:'./registrations.html'}
     ]
   },

@@ -1,194 +1,197 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { confirmarExclusao } from './confirmModal.js';
 
-const userEmail = document.getElementById('userEmail');
-const btnLogout = document.getElementById('btnLogout');
-const btnSalvarMeta = document.getElementById('btnSalvarMeta');
+const { data: sd } = await supabase.auth.getSession();
+if(!sd.session){ navigate('../login.html'); }
+const user = sd.session.user;
+document.getElementById('userEmail').innerText = user.email;
+document.getElementById('btnLogout').addEventListener('click', async()=>{ await supabase.auth.signOut(); navigate('../login.html'); });
 
-const nomeMeta = document.getElementById('nomeMeta');
-const descricaoMeta = document.getElementById('descricaoMeta');
-const valorAlvo = document.getElementById('valorAlvo');
-const valorAtual = document.getElementById('valorAtual');
-const dataAlvo = document.getElementById('dataAlvo');
-const categoriaMeta = document.getElementById('categoriaMeta');
-const corMeta = document.getElementById('corMeta');
+const el = id => document.getElementById(id);
+let editandoId = null;
 
-const mensagemMeta = document.getElementById('mensagemMeta');
-const listaMetas = document.getElementById('listaMetas');
-const totalAlvo = document.getElementById('totalAlvo');
-const totalAtual = document.getElementById('totalAtual');
-const totalFaltante = document.getElementById('totalFaltante');
+function msg(t,tipo='info'){ const e=el('mensagemMeta'); e.className=`message ${tipo}`; e.innerText=t; }
 
-const { data } = await supabase.auth.getSession();
-
-if(!data.session){
-  navigate('../login.html');
+function diasRestantes(iso){
+  if(!iso) return null;
+  const diff = new Date(iso+'T00:00:00') - new Date(new Date().toISOString().split('T')[0]+'T00:00:00');
+  return Math.ceil(diff/(1000*60*60*24));
 }
 
-const user = data.session.user;
-userEmail.innerText = user.email;
-
-btnLogout.addEventListener('click', async () => {
-  await supabase.auth.signOut();
-  navigate('../login.html');
-});
-
-btnSalvarMeta.addEventListener('click', salvarMeta);
-
-function mostrarMensagem(texto, tipo = 'info'){
-  mensagemMeta.className = `message ${tipo}`;
-  mensagemMeta.innerText = texto;
+function fmtData(iso){
+  if(!iso) return '-';
+  const [a,m,d]=iso.split('-'); return `${d}/${m}/${a}`;
 }
 
-function formatarData(dataISO){
-  if(!dataISO) return '-';
-  const [ano, mes, dia] = dataISO.split('-');
-  return `${dia}/${mes}/${ano}`;
+function statusMeta(pct, iso){
+  if(pct>=100) return {texto:'✅ Concluída',classe:'success'};
+  const dias = diasRestantes(iso);
+  if(dias!==null && dias<0) return {texto:'⏰ Vencida',classe:'danger'};
+  if(pct>=80) return {texto:'🔥 Avançada',classe:'success'};
+  if(pct>=40) return {texto:'▶ Em andamento',classe:'neutral'};
+  return {texto:'🌱 Inicial',classe:'neutral'};
 }
 
-function calcularDiasRestantes(dataISO){
-  if(!dataISO) return '-';
-  const hoje = new Date();
-  const alvo = new Date(dataISO + 'T00:00:00');
-  const dias = Math.ceil((alvo - hoje) / (1000 * 60 * 60 * 24));
-  if(dias < 0) return 'vencida';
-  if(dias === 0) return 'hoje';
-  return `${dias} dias`;
-}
+// ── Salvar / Editar ───────────────────────────────────
+async function salvar(){
+  const nome      = el('nomeMeta').value.trim();
+  const descricao = el('descricaoMeta').value.trim();
+  const alvo      = Number(el('valorAlvo').value||0);
+  const atual     = Number(el('valorAtual').value||0);
+  const dataAlvo  = el('dataAlvo').value||null;
+  const categoria = el('categoriaMeta').value||'geral';
+  const cor       = el('corMeta').value||'#22c55e';
 
-function statusMeta(percentual, dataISO){
-  const dias = calcularDiasRestantes(dataISO);
-  if(percentual >= 100) return { texto:'concluída', classe:'success' };
-  if(dias === 'vencida') return { texto:'vencida', classe:'danger' };
-  if(percentual >= 80) return { texto:'avançada', classe:'success' };
-  if(percentual >= 40) return { texto:'em andamento', classe:'neutral' };
-  return { texto:'inicial', classe:'neutral' };
-}
+  if(!nome||!alvo){ msg('Preencha nome e valor alvo.','warning'); return; }
 
-async function salvarMeta(){
-  mostrarMensagem('Salvando meta...');
+  const payload = { user_id:user.id, nome, descricao, valor_alvo:alvo, valor_atual:atual, data_alvo:dataAlvo, categoria, cor, ativo:true };
 
-  const nome = nomeMeta.value.trim();
-  const descricao = descricaoMeta.value.trim();
-  const alvo = Number(valorAlvo.value || 0);
-  const atual = Number(valorAtual.value || 0);
-  const dataAlvoValor = dataAlvo.value || null;
-  const categoria = categoriaMeta.value || 'geral';
-  const cor = corMeta.value || '#22c55e';
-
-  if(!nome || !alvo){
-    mostrarMensagem('Preencha nome da meta e valor alvo.', 'warning');
-    return;
+  let error;
+  if(editandoId){
+    ({ error } = await supabase.from('goals').update(payload).eq('id',editandoId).eq('user_id',user.id));
+  } else {
+    ({ error } = await supabase.from('goals').insert(payload));
   }
 
-  const { error } = await supabase.from('goals').insert({
-    user_id:user.id,
-    nome,
-    descricao,
-    valor_alvo:alvo,
-    valor_atual:atual,
-    data_alvo:dataAlvoValor,
-    categoria,
-    cor,
-    ativo:true
-  });
-
-  if(error){
-    mostrarMensagem('Erro ao salvar: ' + error.message, 'danger');
-    return;
-  }
-
-  limparFormulario();
-  mostrarMensagem('Meta salva com sucesso.', 'success');
-  await carregarMetas();
+  if(error){ msg('Erro: '+error.message,'danger'); return; }
+  msg(editandoId?'Meta atualizada!':'Meta salva!','success');
+  limpar();
+  await carregar();
 }
 
-async function carregarMetas(){
-  const { data, error } = await supabase
-    .from('goals')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('ativo', true)
-    .order('created_at', { ascending:false });
-
-  if(error){
-    listaMetas.innerHTML = '<p class="muted">Erro ao carregar metas.</p>';
-    mostrarMensagem('Erro ao listar: ' + error.message, 'danger');
-    return;
-  }
-
-  const metas = data || [];
-  renderizarResumo(metas);
-  renderizarMetas(metas);
+function limpar(){
+  editandoId = null;
+  ['nomeMeta','descricaoMeta','valorAlvo','valorAtual','dataAlvo'].forEach(id=>{ el(id).value=''; });
+  el('categoriaMeta').value='geral';
+  el('corMeta').value='#22c55e';
+  el('btnSalvarMeta').innerText='+ Salvar Meta';
+  el('btnCancelarEdicao').style.display='none';
 }
 
-function renderizarResumo(metas){
-  const alvo = metas.reduce((soma, meta) => soma + Number(meta.valor_alvo || 0), 0);
-  const atual = metas.reduce((soma, meta) => soma + Number(meta.valor_atual || 0), 0);
-  const faltante = Math.max(alvo - atual, 0);
+window.editarMeta = async function(id){
+  const { data } = await supabase.from('goals').select('*').eq('id',id).single();
+  if(!data) return;
+  editandoId = id;
+  el('nomeMeta').value      = data.nome||'';
+  el('descricaoMeta').value = data.descricao||'';
+  el('valorAlvo').value     = data.valor_alvo||'';
+  el('valorAtual').value    = data.valor_atual||'';
+  el('dataAlvo').value      = data.data_alvo||'';
+  el('categoriaMeta').value = data.categoria||'geral';
+  el('corMeta').value       = data.cor||'#22c55e';
+  el('btnSalvarMeta').innerText='Salvar Alterações';
+  el('btnCancelarEdicao').style.display='inline-block';
+  el('nomeMeta').focus();
+  el('nomeMeta').scrollIntoView({behavior:'smooth'});
+};
 
-  totalAlvo.innerText = formatCurrency(alvo, 'BRL');
-  totalAtual.innerText = formatCurrency(atual, 'BRL');
-  totalFaltante.innerText = formatCurrency(faltante, 'BRL');
+window.atualizarValor = async function(id, nomeExibir){
+  const novoValor = prompt(`Novo valor acumulado para "${nomeExibir}" (R$):`);
+  if(novoValor===null) return;
+  const valor = parseFloat(novoValor.replace(',','.'));
+  if(isNaN(valor)||valor<0){ alert('Valor inválido.'); return; }
+  await supabase.from('goals').update({valor_atual:valor}).eq('id',id).eq('user_id',user.id);
+  await carregar();
+};
+
+window.excluirMeta = async function(id, nome){
+  if(!await confirmarExclusao(`Excluir a meta <strong>${nome}</strong>?`)) return;
+  await supabase.from('goals').update({ativo:false}).eq('id',id).eq('user_id',user.id);
+  await carregar();
+};
+
+// ── Carregar ──────────────────────────────────────────
+async function carregar(){
+  const { data, error } = await supabase.from('goals').select('*').eq('user_id',user.id).eq('ativo',true).order('created_at',{ascending:false});
+  if(error){ el('listaMetas').innerHTML='<p class="muted">Erro ao carregar.</p>'; return; }
+  const metas = data||[];
+  renderKpis(metas);
+  renderMetas(metas);
 }
 
-function renderizarMetas(metas){
+function renderKpis(metas){
+  const alvo    = metas.reduce((s,m)=>s+Number(m.valor_alvo||0),0);
+  const atual   = metas.reduce((s,m)=>s+Number(m.valor_atual||0),0);
+  const falta   = Math.max(alvo-atual,0);
+  el('totalAlvo').innerText    = formatCurrency(alvo,'BRL');
+  el('totalAtual').innerText   = formatCurrency(atual,'BRL');
+  el('totalFaltante').innerText= formatCurrency(falta,'BRL');
+}
+
+function renderMetas(metas){
   if(!metas.length){
-    listaMetas.innerHTML = '<p class="muted">Nenhuma meta cadastrada.</p>';
+    el('listaMetas').innerHTML='<p class="muted" style="padding:16px">Nenhuma meta cadastrada.</p>';
     return;
   }
 
-  listaMetas.innerHTML = `
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th></th>
-          <th>Meta</th>
-          <th>Categoria</th>
-          <th>Atual</th>
-          <th>Alvo</th>
-          <th>Falta</th>
-          <th>Progresso</th>
-          <th>Data Alvo</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${metas.map(meta => {
-          const alvo = Number(meta.valor_alvo || 0);
-          const atual = Number(meta.valor_atual || 0);
-          const falta = Math.max(alvo - atual, 0);
-          const percentual = alvo > 0 ? Math.min((atual / alvo) * 100, 100) : 0;
-          const status = statusMeta(percentual, meta.data_alvo);
+  el('listaMetas').innerHTML = metas.map(m => {
+    const alvo   = Number(m.valor_alvo||0);
+    const atual  = Number(m.valor_atual||0);
+    const falta  = Math.max(alvo-atual,0);
+    const pct    = alvo>0?Math.min(atual/alvo*100,100):0;
+    const status = statusMeta(pct, m.data_alvo);
+    const dias   = diasRestantes(m.data_alvo);
+    const diasStr= dias===null?''
+      :dias<0?`<span class="negative" style="font-size:11px">vencida há ${Math.abs(dias)} dias</span>`
+      :dias===0?`<span class="negative" style="font-size:11px">vence hoje</span>`
+      :`<span class="muted" style="font-size:11px">${dias} dias restantes</span>`;
 
-          return `
-            <tr>
-              <td><span class="color-dot" style="background:${meta.cor || '#22c55e'}"></span></td>
-              <td><strong>${meta.nome}</strong><br><span class="muted">${meta.descricao || ''}</span></td>
-              <td>${meta.categoria || 'geral'}</td>
-              <td class="money positive">${formatCurrency(atual, 'BRL')}</td>
-              <td class="money">${formatCurrency(alvo, 'BRL')}</td>
-              <td class="money">${formatCurrency(falta, 'BRL')}</td>
-              <td>${percentual.toFixed(0)}%</td>
-              <td>${formatarData(meta.data_alvo)}<br><span class="muted">${calcularDiasRestantes(meta.data_alvo)}</span></td>
-              <td><span class="badge ${status.classe}">${status.texto}</span></td>
-            </tr>
-          `;
-        }).join('')}
-      </tbody>
-    </table>
-  `;
+    // Projeção mensal (quanto precisa poupar por mês)
+    let projecao = '';
+    if(dias!==null && dias>0 && falta>0){
+      const meses = Math.ceil(dias/30);
+      const porMes = falta/meses;
+      projecao = `<span class="muted" style="font-size:11px">Poupar ${formatCurrency(porMes,'BRL')}/mês para atingir no prazo</span>`;
+    }
+
+    return `
+      <div style="padding:16px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:12px">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+              <span style="width:12px;height:12px;border-radius:50%;background:${m.cor||'#22c55e'};display:inline-block;flex-shrink:0"></span>
+              <strong style="font-size:14px">${m.nome}</strong>
+              <span class="badge ${status.classe}" style="font-size:10px">${status.texto}</span>
+            </div>
+            ${m.descricao?`<p class="muted" style="font-size:12px;margin:2px 0 0 20px">${m.descricao}</p>`:''}
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button class="btn btn-secondary compact" onclick="atualizarValor('${m.id}','${m.nome.replace(/'/g,"\\'")}')">💰 Aportar</button>
+            <button class="btn btn-secondary compact" onclick="editarMeta('${m.id}')">✏️</button>
+            <button class="btn btn-danger compact" onclick="excluirMeta('${m.id}','${m.nome.replace(/'/g,"\\'")}')">✕</button>
+          </div>
+        </div>
+
+        <!-- Barra de progresso -->
+        <div style="height:10px;background:var(--border);border-radius:99px;overflow:hidden;margin-bottom:6px">
+          <div style="height:10px;border-radius:99px;background:${m.cor||'#22c55e'};width:${pct}%;transition:width .4s"></div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+          <div style="display:flex;gap:16px">
+            <span class="muted">Atual: <strong class="positive">${formatCurrency(atual,'BRL')}</strong></span>
+            <span class="muted">Alvo: <strong>${formatCurrency(alvo,'BRL')}</strong></span>
+            ${falta>0?`<span class="muted">Falta: <strong class="negative">${formatCurrency(falta,'BRL')}</strong></span>`:''}
+          </div>
+          <div style="text-align:right">
+            <strong style="font-size:14px;color:${m.cor||'#22c55e'}">${pct.toFixed(1)}%</strong>
+          </div>
+        </div>
+
+        ${m.data_alvo?`
+          <div style="margin-top:6px;display:flex;justify-content:space-between;align-items:center;font-size:12px">
+            <span class="muted">Prazo: ${fmtData(m.data_alvo)} ${diasStr}</span>
+            ${projecao}
+          </div>
+        `:''}
+      </div>
+    `;
+  }).join('');
 }
 
-function limparFormulario(){
-  nomeMeta.value = '';
-  descricaoMeta.value = '';
-  valorAlvo.value = '';
-  valorAtual.value = '';
-  dataAlvo.value = '';
-  categoriaMeta.value = 'geral';
-  corMeta.value = '#22c55e';
-}
+el('btnSalvarMeta').addEventListener('click', salvar);
+el('btnCancelarEdicao').addEventListener('click', limpar);
 
-carregarMetas();
+carregar();
