@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Backup - FinZen</title>
+
+<link rel="stylesheet" href="../css/base.css?v=7512">
+<link rel="stylesheet" href="../css/layout.css?v=7512">
+<link rel="stylesheet" href="../css/components.css?v=7512">
+<link rel="stylesheet" href="../css/mobile.css?v=7512">
+<link rel="stylesheet" href="../css/navigation.css?v=7512">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+    <nav class="sidebar-nav"></nav>
+  </aside>
+
+  <main class="content">
+
+    <header class="topbar">
+      <div>
+        <h1>Backup e Restore</h1>
+        <p class="muted">Exporte seus dados do FinZen em JSON</p>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Backup dos Dados</h2>
+      </div>
+
+      <div style="padding:20px">
+        <p class="muted">
+          Baixe, compartilhe ou copie uma cópia local dos seus dados cadastrados no Supabase.
+        </p>
+
+        <button id="btnBackup" class="btn btn-primary">
+          📥 Gerar Backup
+        </button>
+
+        <div id="backupMessage" class="message"></div>
+
+        <div id="backupActions" style="display:none;margin-top:16px;gap:8px;flex-wrap:wrap">
+          <button id="btnDownloadFallback" class="btn btn-secondary">⬇️ Baixar JSON</button>
+          <button id="btnShareText" class="btn btn-secondary">📤 Compartilhar texto</button>
+          <button id="btnCopyBackup" class="btn btn-secondary">📋 Copiar JSON</button>
+        </div>
+
+        <textarea
+          id="backupPreview"
+          style="display:none;width:100%;min-height:220px;margin-top:16px"
+          readonly></textarea>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Informações do Backup</h2>
+      </div>
+
+      <div id="backupInfo" style="padding:20px">
+        Carregando...
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+<nav class="mobile-nav"></nav>
+
+<script type="module" src="../js/navigation.js?v=7512"></script>
+<script type="module" src="../js/backup.js?v=7512"></script>
+
+</body>
+</html>

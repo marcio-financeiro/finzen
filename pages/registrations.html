@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadastros - FinZen</title>
+<link rel="stylesheet" href="../css/base.css?v=902">
+<link rel="stylesheet" href="../css/layout.css?v=902">
+<link rel="stylesheet" href="../css/components.css?v=902">
+<link rel="stylesheet" href="../css/mobile.css?v=902">
+<link rel="stylesheet" href="../css/navigation.css?v=902">
+</head>
+
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+    <nav class="sidebar-nav"></nav>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1>Cadastros</h1>
+        <p id="userEmail" class="muted">Contas, cartões e categorias</p>
+      </div>
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <section class="panel">
+      <div style="padding:16px; display:flex; gap:10px; flex-wrap:wrap">
+        <button type="button" class="btn btn-primary compact tab-btn" data-tab="accounts">Contas</button>
+        <button type="button" class="btn btn-secondary compact tab-btn" data-tab="cards">Cartões</button>
+        <button type="button" class="btn btn-secondary compact tab-btn" data-tab="categories">Categorias</button>
+      </div>
+    </section>
+
+    <section class="panel tab-panel" id="tab-accounts">
+      <div class="panel-header"><h2>Contas</h2></div>
+      <div id="accountsList" class="table-wrap"><p class="muted" style="padding:18px">Carregando...</p></div>
+      <div style="padding:16px">
+        <a class="btn btn-secondary" href="./accounts.html">Abrir cadastro completo de contas</a>
+      </div>
+    </section>
+
+    <section class="panel tab-panel" id="tab-cards" style="display:none">
+      <div class="panel-header"><h2>Cartões</h2></div>
+      <div id="cardsList" class="table-wrap"><p class="muted" style="padding:18px">Carregando...</p></div>
+      <div style="padding:16px">
+        <a class="btn btn-secondary" href="./cards.html">Abrir cadastro completo de cartões</a>
+      </div>
+    </section>
+
+    <section class="panel tab-panel" id="tab-categories" style="display:none">
+      <div class="panel-header"><h2>Categorias</h2></div>
+      <div id="categoriesList" class="table-wrap"><p class="muted" style="padding:18px">Carregando...</p></div>
+      <div style="padding:16px">
+        <a class="btn btn-secondary" href="./categories.html">Abrir cadastro completo de categorias</a>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<nav class="mobile-nav"></nav>
+
+<script type="module" src="../js/navigation.js?v=902"></script>
+<script type="module" src="../js/registrations.js?v=902"></script>
+</body>
+</html>

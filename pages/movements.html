@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movimentações - FinZen</title>
+<link rel="stylesheet" href="../css/base.css?v=933">
+<link rel="stylesheet" href="../css/layout.css?v=933">
+<link rel="stylesheet" href="../css/components.css?v=933">
+<link rel="stylesheet" href="../css/mobile.css?v=933">
+<link rel="stylesheet" href="../css/navigation.css?v=933">
+
+<style id="finzen-mobile-flow-style">
+  .ff-flow-grid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:12px;
+    padding:16px;
+  }
+
+  .ff-flow-main{
+    grid-column:1 / -1;
+    padding:18px;
+    border:1px solid var(--border);
+    border-radius:18px;
+    background:linear-gradient(135deg, rgba(79,142,247,.18), rgba(15,185,129,.10));
+  }
+
+  .ff-flow-main span,
+  .ff-flow-card span,
+  .ff-mobile-card span{
+    color:var(--muted);
+    font-size:.86rem;
+    font-weight:700;
+  }
+
+  .ff-flow-main strong{
+    display:block;
+    margin-top:8px;
+    font-size:1.85rem;
+    line-height:1.1;
+  }
+
+  .ff-flow-main small{
+    display:block;
+    margin-top:8px;
+    color:var(--muted);
+  }
+
+  .ff-flow-card{
+    padding:14px;
+    border:1px solid var(--border);
+    border-radius:16px;
+    background:rgba(255,255,255,.025);
+  }
+
+  .ff-flow-card strong{
+    display:block;
+    margin-top:6px;
+    font-size:1.05rem;
+  }
+
+  .ff-mobile-list{
+    display:none;
+    padding:12px;
+    gap:12px;
+  }
+
+  .ff-mobile-card{
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:14px;
+    background:rgba(255,255,255,.025);
+  }
+
+  .ff-mobile-card-title{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:flex-start;
+    margin-bottom:10px;
+  }
+
+  .ff-mobile-card-title strong{
+    font-size:1rem;
+    line-height:1.25;
+  }
+
+  .ff-mobile-card-meta{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-top:10px;
+  }
+
+  .ff-mobile-card-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:12px;
+  }
+
+  .ff-mobile-card-actions .btn{
+    flex:1;
+    min-width:110px;
+  }
+
+  .ff-desktop-table{
+    display:block;
+  }
+
+  @media(max-width:720px){
+    .ff-flow-grid{
+      grid-template-columns:1fr 1fr;
+      padding:12px;
+      gap:10px;
+    }
+
+    .ff-flow-main{
+      padding:16px;
+    }
+
+    .ff-flow-main strong{
+      font-size:1.65rem;
+    }
+
+    .ff-flow-card{
+      padding:12px;
+    }
+
+    .ff-flow-card strong{
+      font-size:.98rem;
+    }
+
+    .ff-desktop-table{
+      display:none;
+    }
+
+    .ff-mobile-list{
+      display:grid;
+    }
+
+    .table-wrap{
+      overflow-x:hidden;
+    }
+
+    .data-table{
+      min-width:720px;
+    }
+  }
+
+  .ff-flow-card.clickable{
+    cursor:pointer;
+    transition:transform .16s ease, border-color .16s ease, background .16s ease;
+  }
+
+  .ff-flow-card.clickable:active{
+    transform:scale(.985);
+  }
+
+  .ff-flow-card.clickable:hover{
+    border-color:rgba(79,142,247,.55);
+    background:rgba(79,142,247,.07);
+  }
+
+  .ff-detail-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.62);
+    z-index:99999;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+  }
+
+  .ff-detail-modal{
+    width:min(620px, 96vw);
+    max-height:82vh;
+    overflow:auto;
+    background:var(--surface, #111827);
+    border:1px solid var(--border, #2b3148);
+    border-radius:20px;
+    box-shadow:0 24px 80px rgba(0,0,0,.45);
+  }
+
+  .ff-detail-header{
+    padding:18px 20px;
+    border-bottom:1px solid var(--border, #2b3148);
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+  }
+
+  .ff-detail-header h2{
+    margin:0;
+    font-size:1.1rem;
+  }
+
+  .ff-detail-header p{
+    margin:6px 0 0;
+    color:var(--muted);
+    font-size:.9rem;
+  }
+
+  .ff-detail-close{
+    border:0;
+    background:transparent;
+    color:var(--text);
+    font-size:28px;
+    line-height:1;
+  }
+
+  .ff-detail-body{
+    padding:14px;
+    display:grid;
+    gap:10px;
+  }
+
+  .ff-detail-item{
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:12px;
+    background:rgba(255,255,255,.025);
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+  }
+
+  .ff-detail-item strong{
+    display:block;
+    margin-bottom:4px;
+  }
+
+  .ff-detail-item span{
+    color:var(--muted);
+    font-size:.86rem;
+  }
+
+  .ff-detail-total{
+    margin:4px 14px 16px;
+    padding:14px;
+    border-radius:14px;
+    background:rgba(79,142,247,.12);
+    border:1px solid rgba(79,142,247,.25);
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    font-weight:800;
+  }
+
+  @media(max-width:720px){
+    .ff-detail-overlay{
+      align-items:flex-end;
+      padding:0;
+    }
+
+    .ff-detail-modal{
+      width:100%;
+      max-height:88vh;
+      border-radius:22px 22px 0 0;
+      border-left:0;
+      border-right:0;
+      border-bottom:0;
+    }
+
+    .ff-detail-item{
+      flex-direction:column;
+    }
+
+    .ff-detail-total{
+      position:sticky;
+      bottom:0;
+      margin:0;
+      border-radius:0;
+    }
+  }
+
+</style>
+
+</head>
+
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+    <nav class="sidebar-nav"></nav>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1>Movimentações</h1>
+        <p id="userEmail" class="muted">Receitas, despesas, cartão e transferências</p>
+      </div>
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2 id="formTitle">Nova Movimentação</h2>
+      </div>
+
+      <div style="padding:20px">
+        <div class="form-grid compact-form">
+
+          <div class="form-group">
+            <label for="movementType">Tipo</label>
+            <select id="movementType">
+              <option value="">Selecione</option>
+              <option value="receita">Receita</option>
+              <option value="despesa">Despesa</option>
+              <option value="transferencia">Transferência</option>
+            </select>
+          </div>
+
+          <div class="form-group always-visible">
+            <label for="movementDescription">Descrição</label>
+            <input type="text" id="movementDescription" placeholder="Ex: Mercado, salário, pix">
+          </div>
+
+          <div class="form-group always-visible">
+            <label for="movementAmount">Valor</label>
+            <input type="number" id="movementAmount" min="0" step="0.01" placeholder="0,00">
+          </div>
+
+          <div class="form-group always-visible">
+            <label for="movementDate">Data</label>
+            <input type="date" id="movementDate">
+          </div>
+
+          <div class="form-group conditional" id="paymentMethodGroup">
+            <label for="paymentMethod">Forma de pagamento</label>
+            <select id="paymentMethod">
+              <option value="conta">Conta</option>
+              <option value="cartao">Cartão de Crédito</option>
+            </select>
+          </div>
+
+          <div class="form-group conditional" id="accountGroup">
+            <label for="movementAccount">Conta</label>
+            <select id="movementAccount"></select>
+          </div>
+
+          <div class="form-group conditional" id="fromAccountGroup">
+            <label for="fromAccount">Conta origem</label>
+            <select id="fromAccount"></select>
+          </div>
+
+          <div class="form-group conditional" id="toAccountGroup">
+            <label for="toAccount">Conta destino</label>
+            <select id="toAccount"></select>
+          </div>
+
+          <div class="form-group conditional" id="cardGroup">
+            <label for="movementCard">Cartão</label>
+            <select id="movementCard"></select>
+          </div>
+
+          <div class="form-group conditional" id="categoryGroup">
+            <label for="movementCategory">Categoria</label>
+            <select id="movementCategory"></select>
+          </div>
+
+          <div class="form-group conditional" id="installmentsGroup">
+            <label for="movementInstallments">Parcelas</label>
+            <input type="number" id="movementInstallments" min="1" max="60" value="1">
+          </div>
+
+          <div class="form-group conditional" id="valueTypeGroup">
+            <label for="movementValueType">Valor informado</label>
+            <select id="movementValueType">
+              <option value="total">Valor total da compra</option>
+              <option value="parcela">Valor de cada parcela</option>
+            </select>
+            <small id="movementValuePreview" class="muted">Informe valor e parcelas.</small>
+          </div>
+
+          <div class="form-group conditional" id="invoiceGroup">
+            <label for="movementInvoice">Fatura inicial</label>
+            <select id="movementInvoice"></select>
+          </div>
+
+          <div class="form-group conditional" id="statusGroup">
+            <label for="movementStatus">Status</label>
+            <select id="movementStatus">
+              <option value="pago">Pago</option>
+              <option value="pendente">Pendente</option>
+            </select>
+          </div>
+
+          <div class="form-group conditional" id="recurrenceGroup">
+            <label for="movementRecurrence">Recorrência</label>
+            <select id="movementRecurrence">
+              <option value="nao">Não recorrente</option>
+              <option value="mensal">Mensal</option>
+              <option value="semanal">Semanal</option>
+              <option value="anual">Anual</option>
+            </select>
+          </div>
+
+          <div class="form-group conditional" id="recurrenceUntilGroup">
+            <label for="movementRecurrenceUntil">Repetir até</label>
+            <input type="date" id="movementRecurrenceUntil">
+          </div>
+
+          <div class="form-group full conditional" id="notesGroup">
+            <label for="movementNotes">Observação</label>
+            <input type="text" id="movementNotes" placeholder="Opcional">
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary" id="btnSaveMovement">Salvar Movimentação</button>
+        <button type="button" class="btn btn-secondary" id="btnGenerateRecurring">Gerar recorrentes do mês</button>
+        <button type="button" class="btn btn-secondary" id="btnCancelEdit" style="display:none">Cancelar edição</button>
+
+        <div id="movementMessage" class="message"></div>
+      </div>
+    </section>
+
+
+    <section class="panel" id="cashFlowMonthPanelFinZen">
+      <div class="panel-header">
+        <h2>Fluxo do Mês</h2>
+      </div>
+
+      <div id="cashFlowMonthListFinZen" class="table-wrap">
+        <p class="muted" style="padding:18px">Calculando fluxo do mês...</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Movimentações Recentes</h2>
+      </div>
+      <div id="movementList" class="table-wrap">
+        <p class="muted" style="padding:18px">Carregando...</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<nav class="mobile-nav"></nav>
+
+<script type="module" src="../js/navigation.js?v=933"></script>
+<script type="module" src="../js/movements.js?v=933"></script>
+</body>
+</html>

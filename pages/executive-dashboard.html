@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Dashboard Executivo - FinZen</title>
+
+<link rel="stylesheet" href="../css/base.css?v=801">
+<link rel="stylesheet" href="../css/layout.css?v=801">
+<link rel="stylesheet" href="../css/components.css?v=801">
+<link rel="stylesheet" href="../css/mobile.css?v=801">
+<link rel="stylesheet" href="../css/navigation.css?v=801">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+    <nav class="sidebar-nav"></nav>
+  </aside>
+
+  <main class="content">
+
+    <header class="topbar">
+      <div>
+        <h1>Dashboard Executivo</h1>
+        <p id="userEmail" class="muted">Visão consolidada da sua vida financeira</p>
+      </div>
+
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <section class="kpi-grid">
+      <article class="kpi-card">
+        <span>Patrimônio Total</span>
+        <strong id="patrimonioTotal">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Saldo em Contas</span>
+        <strong id="saldoContas">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Dividendos do Mês</span>
+        <strong id="dividendosMes" class="positive">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Meta Mais Próxima</span>
+        <strong id="metaProxima">-</strong>
+      </article>
+    </section>
+
+    <section class="kpi-grid">
+      <article class="kpi-card">
+        <span>Receitas do Mês</span>
+        <strong id="receitasMes" class="positive">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Despesas do Mês</span>
+        <strong id="despesasMes" class="negative">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Faturas Abertas</span>
+        <strong id="faturasAbertas" class="warning">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Classe Defasada</span>
+        <strong id="classeDefasada">-</strong>
+      </article>
+    </section>
+
+    <section class="kpi-grid">
+      <article class="kpi-card">
+        <span>Categorias Estouradas</span>
+        <strong id="categoriasEstouradas" class="negative">0</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Categorias em Atenção</span>
+        <strong id="categoriasAtencao" class="warning">0</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Disponível no Orçamento</span>
+        <strong id="orcamentoDisponivel" class="positive">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Maior Risco</span>
+        <strong id="maiorRiscoOrcamento">-</strong>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Saúde do Orçamento</h2>
+      </div>
+
+      <div id="budgetHealthTable" class="table-wrap">
+        <p class="muted" style="padding:18px">Carregando orçamento inteligente...</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Alertas de Orçamento</h2>
+      </div>
+
+      <div id="budgetHealthAlerts" style="padding:18px">
+        <p class="muted">Carregando alertas...</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Atalhos rápidos</h2>
+      </div>
+
+      <div style="padding:18px;display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn btn-primary" href="./transactions.html">＋ Novo Lançamento</a>
+        <a class="btn btn-secondary" href="./card-purchases.html">💳 Nova Compra</a>
+        <a class="btn btn-secondary" href="./asset-transactions.html">📈 Nova Movimentação</a>
+        <a class="btn btn-secondary" href="./goals.html">🎯 Nova Meta</a>
+      </div>
+    </section>
+
+    <section class="kpi-grid">
+      <article class="panel">
+        <div class="panel-header">
+          <h2>Receitas x Despesas</h2>
+        </div>
+        <div style="padding:18px">
+          <canvas id="incomeExpenseChart"></canvas>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <h2>Alocação da Carteira</h2>
+        </div>
+        <div style="padding:18px">
+          <canvas id="allocationChart"></canvas>
+        </div>
+      </article>
+    </section>
+
+    <section class="kpi-grid">
+      <article class="panel">
+        <div class="panel-header">
+          <h2>Dividendos por Mês</h2>
+        </div>
+        <div style="padding:18px">
+          <canvas id="dividendChart"></canvas>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <h2>Alertas FinZen</h2>
+        </div>
+        <div id="alertasFinzen" style="padding:18px"></div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Resumo Executivo</h2>
+      </div>
+
+      <div id="resumoExecutivo" class="table-wrap"></div>
+    </section>
+
+  </main>
+
+</div>
+
+<nav class="mobile-nav"></nav>
+
+<script type="module" src="../js/navigation.js?v=801"></script>
+<script type="module" src="../js/executiveDashboard.js?v=801"></script>
+<script type="module" src="../js/budgetHealth.js?v=801"></script>
+
+</body>
+</html>

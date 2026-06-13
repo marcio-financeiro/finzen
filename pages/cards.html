@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cartões - FinZen</title>
+
+<link rel="stylesheet" href="../css/base.css?v=50">
+<link rel="stylesheet" href="../css/layout.css?v=50">
+<link rel="stylesheet" href="../css/components.css?v=50">
+<link rel="stylesheet" href="../css/mobile.css?v=50">
+<link rel="stylesheet" href="../css/navigation.css?v=742">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+
+    <nav class="sidebar-nav">
+      <a href="./dashboard.html">Dashboard</a>
+      <a href="./accounts.html">Contas</a>
+      <a href="./categories.html">Categorias</a>
+      <a href="./transactions.html">Lançamentos</a>
+      <a class="active" href="./cards.html">Cartões</a>
+      <a href="./budgets.html">Orçamento</a>
+      <a href="./investments.html">Investimentos</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+
+    <header class="topbar">
+      <div>
+        <h1>Cartões</h1>
+        <p id="userEmail" class="muted"></p>
+      </div>
+
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Novo Cartão</h2>
+      </div>
+
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label for="nomeCartao">Nome do cartão</label>
+          <input type="text" id="nomeCartao" placeholder="Ex: Nubank Platinum">
+        </div>
+
+        <div class="form-group">
+          <label for="bancoCartao">Banco / Instituição</label>
+          <input type="text" id="bancoCartao" placeholder="Ex: Nubank, Itaú, Inter">
+        </div>
+
+        <div class="form-group">
+          <label for="limiteCartao">Limite</label>
+          <input type="number" id="limiteCartao" placeholder="0,00" step="0.01">
+        </div>
+
+        <div class="form-group">
+          <label for="fechamentoCartao">Dia de fechamento</label>
+          <input type="number" id="fechamentoCartao" placeholder="Ex: 20" min="1" max="31">
+        </div>
+
+        <div class="form-group">
+          <label for="vencimentoCartao">Dia de vencimento</label>
+          <input type="number" id="vencimentoCartao" placeholder="Ex: 10" min="1" max="31">
+        </div>
+
+        <div class="form-group">
+          <label for="bandeiraCartao">Bandeira</label>
+          <select id="bandeiraCartao">
+            <option value="">Selecione</option>
+            <option value="Visa">Visa</option>
+            <option value="Mastercard">Mastercard</option>
+            <option value="Elo">Elo</option>
+            <option value="Amex">Amex</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="corCartao">Cor</label>
+          <input type="color" id="corCartao" value="#7c5cfc">
+        </div>
+
+        <div class="form-group">
+          <label for="statusCartao">Status</label>
+          <select id="statusCartao">
+            <option value="true">Ativo</option>
+            <option value="false">Inativo</option>
+          </select>
+        </div>
+
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btnSalvarCartao">Salvar Cartão</button>
+
+      <div id="mensagemCartao" class="message"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Meus Cartões</h2>
+      </div>
+
+      <div id="listaCartoes" class="table-wrap"></div>
+    </section>
+
+  </main>
+
+</div>
+
+<nav class="mobile-nav">
+  <a href="./dashboard.html">Início</a>
+  <a href="./accounts.html">Contas</a>
+  <a href="./transactions.html">Lançar</a>
+  <a class="active" href="./cards.html">Cartões</a>
+</nav>
+
+<script type="module" src="../js/navigation.js?v=742"></script>
+<script type="module" src="../js/cards.js?v=50"></script>
+
+</body>
+</html>

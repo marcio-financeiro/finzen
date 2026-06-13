@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contas - FinZen</title>
+<link rel="stylesheet" href="../css/base.css?v=942">
+<link rel="stylesheet" href="../css/layout.css?v=942">
+<link rel="stylesheet" href="../css/components.css?v=942">
+<link rel="stylesheet" href="../css/mobile.css?v=942">
+<link rel="stylesheet" href="../css/navigation.css?v=942">
+</head>
+
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+    <nav class="sidebar-nav">
+      <a href="./dashboard.html">Dashboard</a>
+      <a class="active" href="./accounts.html">Contas</a>
+      <a href="./categories.html">Categorias</a>
+      <a href="./transactions.html">Lançamentos</a>
+      <a href="./cards.html">Cartões</a>
+      <a href="./budgets.html">Orçamento</a>
+      <a href="./investments.html">Investimentos</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1>Contas</h1>
+        <p id="userEmail" class="muted"></p>
+      </div>
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Nova Conta</h2>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="nomeConta">Nome da conta</label>
+          <input type="text" id="nomeConta" placeholder="Ex: Conta Nubank">
+        </div>
+        <div class="form-group">
+          <label for="bancoConta">Banco / Instituição</label>
+          <input type="text" id="bancoConta" placeholder="Ex: Nubank, Itaú, Nomad">
+        </div>
+        <div class="form-group">
+          <label for="accountKindConta">Uso da conta</label>
+          <select id="accountKindConta">
+            <option value="bank">Banco / Carteira</option>
+            <option value="broker">Corretora / Investimento</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="tipoConta">Tipo</label>
+          <select id="tipoConta">
+            <option value="">Selecione</option>
+            <option value="Conta Corrente">Conta Corrente</option>
+            <option value="Poupança">Poupança</option>
+            <option value="Carteira">Carteira</option>
+            <option value="Corretora">Corretora</option>
+            <option value="Conta Internacional">Conta Internacional</option>
+            <option value="Conta Digital">Conta Digital</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="moedaConta">Moeda</label>
+          <select id="moedaConta">
+            <option value="BRL">BRL - Real</option>
+            <option value="USD">USD - Dólar</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="corConta">Cor</label>
+          <input type="color" id="corConta" value="#4f8ef7">
+        </div>
+        <div class="form-group">
+          <label for="saldoInicial">Saldo inicial</label>
+          <input type="number" id="saldoInicial" placeholder="0,00" step="0.01">
+        </div>
+        <div class="form-group">
+          <label for="statusConta">Status</label>
+          <select id="statusConta">
+            <option value="true">Ativa</option>
+            <option value="false">Inativa</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btnSalvarConta">Salvar Conta</button>
+      <div id="mensagemConta" class="message"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Minhas Contas</h2>
+      </div>
+      <div id="listaContas" class="table-wrap"></div>
+    </section>
+  </main>
+</div>
+
+<nav class="mobile-nav">
+  <a href="./dashboard.html">Início</a>
+  <a class="active" href="./accounts.html">Contas</a>
+  <a href="./categories.html">Categorias</a>
+  <a href="./transactions.html">Lançar</a>
+</nav>
+
+<script type="module" src="../js/navigation.js?v=942"></script>
+<script type="module" src="../js/accounts.js?v=942"></script>
+</body>
+</html>

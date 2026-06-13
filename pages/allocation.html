@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alocação - FinZen</title>
+
+<link rel="stylesheet" href="../css/base.css?v=64">
+<link rel="stylesheet" href="../css/layout.css?v=64">
+<link rel="stylesheet" href="../css/components.css?v=64">
+<link rel="stylesheet" href="../css/mobile.css?v=64">
+<link rel="stylesheet" href="../css/navigation.css?v=742">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+
+    <nav class="sidebar-nav">
+      <a href="./dashboard.html">Dashboard</a>
+      <a href="./accounts.html">Contas</a>
+      <a href="./categories.html">Categorias</a>
+      <a href="./transactions.html">Lançamentos</a>
+      <a href="./cards.html">Cartões</a>
+      <a href="./card-purchases.html">Compras no Cartão</a>
+      <a href="./card-bills.html">Faturas</a>
+      <a href="./budgets.html">Orçamento</a>
+      <a href="./goals.html">Metas</a>
+      <a href="./investments.html">Investimentos</a>
+      <a href="./asset-transactions.html">Movimentações</a>
+      <a href="./dividends.html">Dividendos</a>
+      <a class="active" href="./allocation.html">Alocação</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+
+    <header class="topbar">
+      <div>
+        <h1>Alocação da Carteira</h1>
+        <p id="userEmail" class="muted"></p>
+      </div>
+
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <section class="kpi-grid">
+      <article class="kpi-card">
+        <span>Patrimônio analisado</span>
+        <strong id="patrimonioTotal">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Total alocado no alvo</span>
+        <strong id="totalAlvo">0%</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Classe mais defasada</span>
+        <strong id="classeDefasada">-</strong>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Definir Alocação Alvo</h2>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="classeAlvo">Classe</label>
+          <select id="classeAlvo">
+            <option value="">Selecione</option>
+            <option value="acao">Ações Brasil</option>
+            <option value="fii">FIIs</option>
+            <option value="etf">ETFs</option>
+            <option value="renda_fixa">Renda Fixa</option>
+            <option value="cripto">Cripto</option>
+            <option value="exterior">Exterior</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="percentualAlvo">Percentual alvo</label>
+          <input type="number" id="percentualAlvo" placeholder="0" step="0.01">
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btnSalvarAlvo">Salvar Alvo</button>
+      <button type="button" class="btn btn-secondary" id="btnCriarPadrao">Criar Alocação Padrão</button>
+
+      <div id="mensagemAlocacao" class="message"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Sugestão de Aporte</h2>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="valorAporte">Valor do aporte</label>
+          <input type="number" id="valorAporte" placeholder="Ex: 1000" step="0.01">
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btnCalcularAporte">Calcular Sugestão</button>
+
+      <div id="sugestaoAporte" class="table-wrap"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Atual x Ideal</h2>
+      </div>
+
+      <div id="tabelaAlocacao" class="table-wrap"></div>
+    </section>
+
+  </main>
+
+</div>
+
+<nav class="mobile-nav">
+  <a href="./dashboard.html">Início</a>
+  <a href="./investments.html">Carteira</a>
+  <a href="./dividends.html">Proventos</a>
+  <a class="active" href="./allocation.html">Alocação</a>
+</nav>
+
+<script type="module" src="../js/navigation.js?v=742"></script>
+<script type="module" src="../js/allocation.js?v=64"></script>
+
+</body>
+</html>

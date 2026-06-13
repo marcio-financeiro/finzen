@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Histórico Patrimonial - FinZen</title>
+
+<link rel="stylesheet" href="../css/base.css?v=920">
+<link rel="stylesheet" href="../css/layout.css?v=920">
+<link rel="stylesheet" href="../css/components.css?v=920">
+<link rel="stylesheet" href="../css/mobile.css?v=920">
+<link rel="stylesheet" href="../css/navigation.css?v=920">
+</head>
+
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+    <nav class="sidebar-nav"></nav>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1>Histórico Patrimonial</h1>
+        <p id="userEmail" class="muted">Evolução simples do seu patrimônio</p>
+      </div>
+
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Resumo Atual</h2>
+      </div>
+
+      <div style="padding:20px">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <span>Patrimônio atual</span>
+            <strong id="currentNetWorth">R$ 0,00</strong>
+          </div>
+
+          <div class="kpi-card">
+            <span>Mês anterior</span>
+            <strong id="previousNetWorth">R$ 0,00</strong>
+          </div>
+
+          <div class="kpi-card">
+            <span>Evolução em R$</span>
+            <strong id="evolutionAmount">R$ 0,00</strong>
+          </div>
+
+          <div class="kpi-card">
+            <span>Evolução em %</span>
+            <strong id="evolutionPercent">0,00%</strong>
+          </div>
+        </div>
+
+        <div style="margin-top:18px; display:flex; gap:12px; flex-wrap:wrap">
+          <button type="button" class="btn btn-primary" id="btnSaveSnapshot">
+            Salvar Patrimônio do Mês
+          </button>
+
+          <button type="button" class="btn btn-secondary" id="btnReload">
+            Atualizar Cálculo
+          </button>
+        </div>
+
+        <div id="patrimonyMessage" class="message"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Composição</h2>
+      </div>
+
+      <div id="compositionList" class="table-wrap">
+        <p class="muted" style="padding:18px">Carregando...</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Histórico</h2>
+      </div>
+
+      <div id="historyList" class="table-wrap">
+        <p class="muted" style="padding:18px">Carregando histórico...</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<nav class="mobile-nav"></nav>
+
+<script type="module" src="../js/navigation.js?v=920"></script>
+<script type="module" src="../js/patrimonyHistory.js?v=920"></script>
+</body>
+</html>

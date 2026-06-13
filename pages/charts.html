@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central de Gráficos - FinZen</title>
+
+<link rel="stylesheet" href="../css/base.css?v=742">
+<link rel="stylesheet" href="../css/layout.css?v=742">
+<link rel="stylesheet" href="../css/components.css?v=742">
+<link rel="stylesheet" href="../css/mobile.css?v=742">
+<link rel="stylesheet" href="../css/navigation.css?v=742">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+    <nav class="sidebar-nav"></nav>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1>Central de Gráficos</h1>
+        <p class="muted">Visualize seus indicadores financeiros</p>
+      </div>
+    </header>
+
+    <section class="kpi-grid">
+      <article class="panel">
+        <div class="panel-header"><h2>Receitas x Despesas</h2></div>
+        <div style="padding:18px"><canvas id="incomeExpenseChart"></canvas></div>
+      </article>
+      <article class="panel">
+        <div class="panel-header"><h2>Despesas por Categoria</h2></div>
+        <div style="padding:18px"><canvas id="categoryChart"></canvas></div>
+      </article>
+    </section>
+
+    <section class="kpi-grid">
+      <article class="panel">
+        <div class="panel-header"><h2>Alocação da Carteira</h2></div>
+        <div style="padding:18px"><canvas id="allocationChart"></canvas></div>
+      </article>
+      <article class="panel">
+        <div class="panel-header"><h2>Dividendos por Mês</h2></div>
+        <div style="padding:18px"><canvas id="dividendChart"></canvas></div>
+      </article>
+    </section>
+
+  </main>
+</div>
+
+<nav class="mobile-nav"></nav>
+
+<script type="module" src="../js/navigation.js?v=742"></script>
+<script type="module" src="../js/charts.js?v=742"></script>
+
+</body>
+</html>

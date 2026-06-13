@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Patrimonial - FinZen</title>
+
+<link rel="stylesheet" href="../css/base.css?v=65">
+<link rel="stylesheet" href="../css/layout.css?v=65">
+<link rel="stylesheet" href="../css/components.css?v=65">
+<link rel="stylesheet" href="../css/mobile.css?v=65">
+<link rel="stylesheet" href="../css/navigation.css?v=742">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+
+    <nav class="sidebar-nav">
+      <a href="./dashboard.html">Dashboard</a>
+      <a href="./accounts.html">Contas</a>
+      <a href="./categories.html">Categorias</a>
+      <a href="./transactions.html">Lançamentos</a>
+      <a href="./cards.html">Cartões</a>
+      <a href="./card-purchases.html">Compras no Cartão</a>
+      <a href="./card-bills.html">Faturas</a>
+      <a href="./budgets.html">Orçamento</a>
+      <a href="./goals.html">Metas</a>
+      <a href="./investments.html">Investimentos</a>
+      <a href="./asset-transactions.html">Movimentações</a>
+      <a href="./dividends.html">Dividendos</a>
+      <a href="./allocation.html">Alocação</a>
+      <a class="active" href="./wealth-dashboard.html">Patrimônio</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+
+    <header class="topbar">
+      <div>
+        <h1>Dashboard Patrimonial</h1>
+        <p id="userEmail" class="muted"></p>
+      </div>
+
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <section class="kpi-grid">
+      <article class="kpi-card">
+        <span>Patrimônio investido</span>
+        <strong id="patrimonioInvestido">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Total aplicado</span>
+        <strong id="totalAplicado">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Resultado</span>
+        <strong id="resultadoInvestimentos">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Dividendos no mês</span>
+        <strong id="dividendosMes" class="positive">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Dividendos no ano</span>
+        <strong id="dividendosAno" class="positive">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Yield aproximado</span>
+        <strong id="yieldAno">0,00%</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Meta mais próxima</span>
+        <strong id="metaProxima">-</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Classe mais defasada</span>
+        <strong id="classeDefasada">-</strong>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Resumo por Classe</h2>
+      </div>
+
+      <div id="resumoClasses" class="table-wrap"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Metas Financeiras</h2>
+      </div>
+
+      <div id="resumoMetas" class="table-wrap"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Últimos Proventos</h2>
+      </div>
+
+      <div id="ultimosProventos" class="table-wrap"></div>
+    </section>
+
+  </main>
+
+</div>
+
+<nav class="mobile-nav">
+  <a href="./dashboard.html">Início</a>
+  <a href="./investments.html">Carteira</a>
+  <a href="./allocation.html">Alocação</a>
+  <a class="active" href="./wealth-dashboard.html">Patrimônio</a>
+</nav>
+
+<script type="module" src="../js/navigation.js?v=742"></script>
+<script type="module" src="../js/wealthDashboard.js?v=65"></script>
+
+</body>
+</html>

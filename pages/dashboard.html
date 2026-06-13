@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - FinZen</title>
+
+<link rel="stylesheet" href="../css/base.css?v=54">
+<link rel="stylesheet" href="../css/layout.css?v=54">
+<link rel="stylesheet" href="../css/components.css?v=54">
+<link rel="stylesheet" href="../css/mobile.css?v=54">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+
+    <nav class="sidebar-nav">
+      <a class="active" href="./dashboard.html">Dashboard</a>
+      <a href="./accounts.html">Contas</a>
+      <a href="./categories.html">Categorias</a>
+      <a href="./transactions.html">Lançamentos</a>
+      <a href="./cards.html">Cartões</a>
+      <a href="./card-purchases.html">Compras no Cartão</a>
+      <a href="./card-bills.html">Faturas</a>
+      <a href="./budgets.html">Orçamento</a>
+      <a href="./investments.html">Investimentos</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+
+    <header class="topbar">
+      <div>
+        <h1>Dashboard</h1>
+        <p id="userEmail" class="muted"></p>
+      </div>
+
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <section class="kpi-grid">
+
+      <article class="kpi-card">
+        <span>Saldo total em contas</span>
+        <strong id="saldoTotal">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Receitas do mês</span>
+        <strong id="receitasMes" class="positive">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Despesas do mês</span>
+        <strong id="despesasMes" class="negative">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Resultado do mês</span>
+        <strong id="resultadoMes">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Faturas abertas</span>
+        <strong id="faturasAbertas" class="negative">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Limite total cartões</span>
+        <strong id="limiteTotal">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Limite utilizado</span>
+        <strong id="limiteUtilizado" class="negative">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Limite disponível</span>
+        <strong id="limiteDisponivel" class="positive">R$ 0,00</strong>
+      </article>
+
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Resumo por Conta</h2>
+      </div>
+
+      <div id="resumoContas" class="table-wrap"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Faturas em Aberto</h2>
+      </div>
+
+      <div id="resumoFaturas" class="table-wrap"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Últimos Lançamentos</h2>
+      </div>
+
+      <div id="ultimosLancamentos" class="table-wrap"></div>
+    </section>
+
+  </main>
+
+</div>
+
+<nav class="mobile-nav">
+  <a class="active" href="./dashboard.html">Início</a>
+  <a href="./transactions.html">Lançar</a>
+  <a href="./cards.html">Cartões</a>
+  <a href="./card-bills.html">Faturas</a>
+</nav>
+
+<script type="module" src="../js/dashboard.js?v=9432"></script>
+
+</body>
+</html>

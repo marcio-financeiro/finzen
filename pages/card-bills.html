@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faturas do Cartão - FinZen</title>
+
+<link rel="stylesheet" href="../css/base.css?v=52">
+<link rel="stylesheet" href="../css/layout.css?v=52">
+<link rel="stylesheet" href="../css/components.css?v=52">
+<link rel="stylesheet" href="../css/mobile.css?v=52">
+<link rel="stylesheet" href="../css/navigation.css?v=742">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+
+    <nav class="sidebar-nav">
+      <a href="./dashboard.html">Dashboard</a>
+      <a href="./accounts.html">Contas</a>
+      <a href="./categories.html">Categorias</a>
+      <a href="./transactions.html">Lançamentos</a>
+      <a href="./cards.html">Cartões</a>
+      <a href="./card-purchases.html">Compras no Cartão</a>
+      <a class="active" href="./card-bills.html">Faturas</a>
+      <a href="./budgets.html">Orçamento</a>
+      <a href="./investments.html">Investimentos</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+
+    <header class="topbar">
+      <div>
+        <h1>Faturas do Cartão</h1>
+        <p id="userEmail" class="muted"></p>
+      </div>
+
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Filtros</h2>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="filtroCartao">Cartão</label>
+          <select id="filtroCartao">
+            <option value="">Todos os cartões</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="contaPagamento">Conta para pagamento</label>
+          <select id="contaPagamento">
+            <option value="">Selecione a conta ao pagar</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="mensagemFatura" class="message"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Faturas Abertas</h2>
+      </div>
+
+      <div id="listaFaturas" class="table-wrap"></div>
+    </section>
+
+  </main>
+
+</div>
+
+<nav class="mobile-nav">
+  <a href="./dashboard.html">Início</a>
+  <a href="./cards.html">Cartões</a>
+  <a href="./card-purchases.html">Compras</a>
+  <a class="active" href="./card-bills.html">Faturas</a>
+</nav>
+
+<script type="module" src="../js/navigation.js?v=742"></script>
+<script type="module" src="../js/cardBills.js?v=52"></script>
+
+</body>
+</html>

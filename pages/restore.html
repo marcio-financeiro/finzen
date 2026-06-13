@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Restore - FinZen</title>
+
+<link rel="stylesheet" href="../css/base.css?v=752">
+<link rel="stylesheet" href="../css/layout.css?v=752">
+<link rel="stylesheet" href="../css/components.css?v=752">
+<link rel="stylesheet" href="../css/mobile.css?v=752">
+<link rel="stylesheet" href="../css/navigation.css?v=752">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+    <nav class="sidebar-nav"></nav>
+  </aside>
+
+  <main class="content">
+
+    <header class="topbar">
+      <div>
+        <h1>Restaurar Backup</h1>
+        <p class="muted">Importe um backup JSON do FinZen</p>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>1. Carregar Backup</h2>
+      </div>
+
+      <div style="padding:20px">
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="backupFile">Arquivo JSON</label>
+            <input type="file" id="backupFile" accept=".json,application/json">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="backupText">Ou cole o JSON aqui</label>
+          <textarea id="backupText" placeholder="Cole o conteúdo do backup JSON aqui..." style="min-height:180px"></textarea>
+        </div>
+
+        <button id="btnValidateBackup" class="btn btn-primary">
+          🔎 Validar Backup
+        </button>
+
+        <div id="restoreMessage" class="message"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>2. Resumo do Backup</h2>
+      </div>
+
+      <div id="backupSummary" style="padding:20px">
+        <p class="muted">Nenhum backup validado ainda.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>3. Restaurar Dados</h2>
+      </div>
+
+      <div style="padding:20px">
+        <div class="form-group">
+          <label for="restoreMode">Modo de restauração</label>
+          <select id="restoreMode">
+            <option value="merge">Mesclar com dados atuais</option>
+            <option value="replace">Substituir tudo do usuário</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="replaceConfirmBox" style="display:none">
+          <label for="replaceConfirm">Confirmação para substituir tudo</label>
+          <input type="text" id="replaceConfirm" placeholder="Digite RESTAURAR">
+        </div>
+
+        <button id="btnRestoreBackup" class="btn btn-danger" disabled>
+          📤 Restaurar Backup
+        </button>
+
+        <div id="restoreProgress" class="message"></div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+<nav class="mobile-nav"></nav>
+
+<script type="module" src="../js/navigation.js?v=752"></script>
+<script type="module" src="../js/restore.js?v=752"></script>
+
+</body>
+</html>

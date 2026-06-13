@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Busca Global - FinZen</title>
+
+<link rel="stylesheet" href="../css/base.css?v=742">
+<link rel="stylesheet" href="../css/layout.css?v=742">
+<link rel="stylesheet" href="../css/components.css?v=742">
+<link rel="stylesheet" href="../css/mobile.css?v=742">
+<link rel="stylesheet" href="../css/navigation.css?v=742">
+</head>
+
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+    <nav class="sidebar-nav"></nav>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1>Busca Global</h1>
+        <p class="muted">Encontre qualquer informação cadastrada</p>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="searchInput">Pesquisar</label>
+          <input type="text" id="searchInput" placeholder="Ex: BBAS3, Reserva, Nubank...">
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header"><h2>Resultados</h2></div>
+      <div id="results" style="padding:18px"></div>
+    </section>
+
+  </main>
+</div>
+
+<nav class="mobile-nav"></nav>
+
+<script type="module" src="../js/navigation.js?v=742"></script>
+<script type="module" src="../js/search.js?v=742"></script>
+
+</body>
+</html>

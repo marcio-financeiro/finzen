@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movimentações de Investimentos - FinZen</title>
+
+<link rel="stylesheet" href="../css/base.css?v=61">
+<link rel="stylesheet" href="../css/layout.css?v=61">
+<link rel="stylesheet" href="../css/components.css?v=61">
+<link rel="stylesheet" href="../css/mobile.css?v=61">
+<link rel="stylesheet" href="../css/navigation.css?v=943">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+
+    <nav class="sidebar-nav">
+      <a href="./dashboard.html">Dashboard</a>
+      <a href="./accounts.html">Contas</a>
+      <a href="./categories.html">Categorias</a>
+      <a href="./transactions.html">Lançamentos</a>
+      <a href="./cards.html">Cartões</a>
+      <a href="./card-purchases.html">Compras no Cartão</a>
+      <a href="./card-bills.html">Faturas</a>
+      <a href="./budgets.html">Orçamento</a>
+      <a href="./goals.html">Metas</a>
+      <a href="./investments.html">Investimentos</a>
+      <a class="active" href="./asset-transactions.html">Movimentações</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+
+    <header class="topbar">
+      <div>
+        <h1>Movimentações de Investimentos</h1>
+        <p id="userEmail" class="muted"></p>
+      </div>
+
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Nova Movimentação</h2>
+      </div>
+
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label for="ativoMovimento">Ativo</label>
+          <select id="ativoMovimento">
+            <option value="">Carregando ativos...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="tipoMovimento">Tipo</label>
+          <select id="tipoMovimento">
+            <option value="">Selecione</option>
+            <option value="compra">Compra</option>
+            <option value="venda">Venda</option>
+            <option value="dividendo">Dividendo</option>
+            <option value="jcp">JCP</option>
+            <option value="rendimento_fii">Rendimento FII</option>
+            <option value="aporte">Aporte</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="quantidadeMovimento">Quantidade</label>
+          <input type="number" id="quantidadeMovimento" placeholder="0" step="0.000001">
+        </div>
+
+        <div class="form-group">
+          <label for="precoMovimento">Preço unitário</label>
+          <input type="number" id="precoMovimento" placeholder="0,00" step="0.000001">
+        </div>
+
+        <div class="form-group">
+          <label for="valorTotalMovimento">Valor total</label>
+          <input type="number" id="valorTotalMovimento" placeholder="0,00" step="0.01">
+        </div>
+
+        <div class="form-group">
+          <label for="dataMovimento">Data</label>
+          <input type="date" id="dataMovimento">
+        </div>
+
+        <div class="form-group">
+          <label for="observacaoMovimento">Observação</label>
+          <input type="text" id="observacaoMovimento" placeholder="Opcional">
+        </div>
+
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btnSalvarMovimento">Salvar Movimentação</button>
+
+      <div id="mensagemMovimento" class="message"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Histórico</h2>
+      </div>
+
+      <div id="listaMovimentos" class="table-wrap"></div>
+    </section>
+
+  </main>
+
+</div>
+
+<nav class="mobile-nav">
+  <a href="./dashboard.html">Início</a>
+  <a href="./investments.html">Carteira</a>
+  <a class="active" href="./asset-transactions.html">Mov.</a>
+  <a href="./transactions.html">Lançar</a>
+</nav>
+
+<script type="module" src="../js/navigation.js?v=943"></script>
+<script type="module" src="../js/assetTransactions.js?v=943"></script>
+
+</body>
+</html>

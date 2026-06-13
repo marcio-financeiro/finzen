@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Transferências - FinZen</title>
+
+<link rel="stylesheet" href="../css/base.css?v=811">
+<link rel="stylesheet" href="../css/layout.css?v=811">
+<link rel="stylesheet" href="../css/components.css?v=811">
+<link rel="stylesheet" href="../css/mobile.css?v=811">
+<link rel="stylesheet" href="../css/navigation.css?v=811">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+    <nav class="sidebar-nav"></nav>
+  </aside>
+
+  <main class="content">
+
+    <header class="topbar">
+      <div>
+        <h1>Transferências</h1>
+        <p id="userEmail" class="muted">Movimente valores entre suas contas</p>
+      </div>
+
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Nova Transferência</h2>
+      </div>
+
+      <div style="padding:20px">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="fromAccount">Conta de origem</label>
+            <select id="fromAccount"></select>
+          </div>
+
+          <div class="form-group">
+            <label for="toAccount">Conta de destino</label>
+            <select id="toAccount"></select>
+          </div>
+
+          <div class="form-group">
+            <label for="transferAmount">Valor</label>
+            <input type="number" id="transferAmount" min="0" step="0.01" placeholder="Ex: 500,00">
+          </div>
+
+          <div class="form-group">
+            <label for="transferDate">Data</label>
+            <input type="date" id="transferDate">
+          </div>
+
+          <div class="form-group full">
+            <label for="transferDescription">Descrição</label>
+            <input type="text" id="transferDescription" placeholder="Ex: Transferência para corretora">
+          </div>
+        </div>
+
+        <button id="btnTransferir" class="btn btn-primary">
+          🔁 Transferir
+        </button>
+
+        <div id="transferMessage" class="message"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Últimas Transferências</h2>
+      </div>
+
+      <div id="listaTransferencias" class="table-wrap">
+        <p class="muted" style="padding:18px">Carregando transferências...</p>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+<nav class="mobile-nav"></nav>
+
+<script type="module" src="../js/navigation.js?v=811"></script>
+<script type="module" src="../js/transfers.js?v=811"></script>
+
+</body>
+</html>

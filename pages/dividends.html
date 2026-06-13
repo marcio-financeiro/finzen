@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dividendos - FinZen</title>
+
+<link rel="stylesheet" href="../css/base.css?v=63">
+<link rel="stylesheet" href="../css/layout.css?v=63">
+<link rel="stylesheet" href="../css/components.css?v=63">
+<link rel="stylesheet" href="../css/mobile.css?v=63">
+<link rel="stylesheet" href="../css/navigation.css?v=742">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+
+    <nav class="sidebar-nav">
+      <a href="./dashboard.html">Dashboard</a>
+      <a href="./accounts.html">Contas</a>
+      <a href="./categories.html">Categorias</a>
+      <a href="./transactions.html">Lançamentos</a>
+      <a href="./cards.html">Cartões</a>
+      <a href="./card-purchases.html">Compras no Cartão</a>
+      <a href="./card-bills.html">Faturas</a>
+      <a href="./budgets.html">Orçamento</a>
+      <a href="./goals.html">Metas</a>
+      <a href="./investments.html">Investimentos</a>
+      <a href="./asset-transactions.html">Movimentações</a>
+      <a class="active" href="./dividends.html">Dividendos</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+
+    <header class="topbar">
+      <div>
+        <h1>Dividendos e Rendimentos</h1>
+        <p id="userEmail" class="muted"></p>
+      </div>
+
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <section class="kpi-grid">
+      <article class="kpi-card">
+        <span>Total recebido no mês</span>
+        <strong id="totalMes" class="positive">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Total recebido no ano</span>
+        <strong id="totalAno" class="positive">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Dividendos no mês</span>
+        <strong id="dividendosMes">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>JCP no mês</span>
+        <strong id="jcpMes">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Rendimentos FII no mês</span>
+        <strong id="fiiMes">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Imposto retido no ano</span>
+        <strong id="impostoAno" class="negative">R$ 0,00</strong>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Filtros</h2>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="anoFiltro">Ano</label>
+          <input type="number" id="anoFiltro" min="2000" max="2100">
+        </div>
+
+        <div class="form-group">
+          <label for="tipoFiltro">Tipo</label>
+          <select id="tipoFiltro">
+            <option value="">Todos</option>
+            <option value="dividendo">Dividendos</option>
+            <option value="jcp">JCP</option>
+            <option value="rendimento_fii">Rendimentos FII</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="ativoFiltro">Ativo</label>
+          <select id="ativoFiltro">
+            <option value="">Todos os ativos</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btnFiltrar">Aplicar Filtros</button>
+
+      <div id="mensagemDividendos" class="message"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Histórico de Proventos</h2>
+      </div>
+
+      <div id="listaDividendos" class="table-wrap"></div>
+    </section>
+
+  </main>
+
+</div>
+
+<nav class="mobile-nav">
+  <a href="./dashboard.html">Início</a>
+  <a href="./investments.html">Carteira</a>
+  <a href="./asset-transactions.html">Mov.</a>
+  <a class="active" href="./dividends.html">Proventos</a>
+</nav>
+
+<script type="module" src="../js/navigation.js?v=742"></script>
+<script type="module" src="../js/dividends.js?v=63"></script>
+
+</body>
+</html>

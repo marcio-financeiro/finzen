@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investimentos - FinZen</title>
+
+<link rel="stylesheet" href="../css/base.css?v=9432">
+<link rel="stylesheet" href="../css/layout.css?v=9432">
+<link rel="stylesheet" href="../css/components.css?v=9432">
+<link rel="stylesheet" href="../css/mobile.css?v=9432">
+<link rel="stylesheet" href="../css/navigation.css?v=9432">
+
+<style id="investment-9432-style">
+  .fx-compact{
+    padding:16px;
+    display:flex;
+    align-items:flex-end;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .fx-field{
+    max-width:220px;
+    min-width:180px;
+    margin:0;
+  }
+  .fx-message{
+    padding:0 16px 16px;
+  }
+  @media(max-width:720px){
+    .fx-compact{
+      display:grid;
+      grid-template-columns:1fr auto;
+      align-items:end;
+    }
+    .fx-field{
+      max-width:none;
+      min-width:0;
+    }
+  }
+</style>
+
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+
+    <nav class="sidebar-nav">
+      <a href="./dashboard.html">Dashboard</a>
+      <a href="./accounts.html">Contas</a>
+      <a href="./categories.html">Categorias</a>
+      <a href="./transactions.html">Lançamentos</a>
+      <a href="./cards.html">Cartões</a>
+      <a href="./card-purchases.html">Compras no Cartão</a>
+      <a href="./card-bills.html">Faturas</a>
+      <a href="./budgets.html">Orçamento</a>
+      <a href="./goals.html">Metas</a>
+      <a class="active" href="./investments.html">Investimentos</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+
+    <header class="topbar">
+      <div>
+        <h1>Investimentos</h1>
+        <p id="userEmail" class="muted"></p>
+      </div>
+
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <section class="kpi-grid">
+      <article class="kpi-card">
+        <span>Patrimônio investido</span>
+        <strong id="patrimonioInvestido">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Total aplicado</span>
+        <strong id="totalAplicado">R$ 0,00</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Quantidade de ativos</span>
+        <strong id="totalAtivos">0</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span>Exterior</span>
+        <strong id="exteriorUsd">US$ 0,00</strong>
+        <small id="exteriorBrl" class="muted">R$ 0,00</small>
+      </article>
+    </section>
+
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Dólar de Referência</h2>
+      </div>
+
+      <div class="fx-compact">
+        <div class="form-group fx-field">
+          <label for="dolarReferencia">USD/BRL</label>
+          <input type="number" id="dolarReferencia" placeholder="5,15" step="0.0001">
+        </div>
+
+        <button type="button" class="btn btn-secondary compact" id="btnSalvarDolar">Salvar</button>
+      </div>
+
+      <div id="mensagemDolar" class="message fx-message"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Novo Ativo</h2>
+      </div>
+
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label for="tickerAtivo">Ticker</label>
+          <input type="text" id="tickerAtivo" placeholder="Ex: BBAS3, BTLG11, VOO">
+        </div>
+
+        <div class="form-group">
+          <label for="nomeAtivo">Nome</label>
+          <input type="text" id="nomeAtivo" placeholder="Ex: Banco do Brasil">
+        </div>
+
+        <div class="form-group">
+          <label for="tipoAtivo">Tipo</label>
+          <select id="tipoAtivo">
+            <option value="">Selecione</option>
+            <option value="acao">Ação</option>
+            <option value="fii">FII</option>
+            <option value="etf">ETF</option>
+            <option value="renda_fixa">Renda Fixa</option>
+            <option value="cripto">Cripto</option>
+            <option value="exterior">Exterior</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="quantidadeAtivo">Quantidade</label>
+          <input type="number" id="quantidadeAtivo" placeholder="0" step="0.000001">
+        </div>
+
+        <div class="form-group">
+          <label for="precoMedioAtivo">Preço médio</label>
+          <input type="number" id="precoMedioAtivo" placeholder="0,00" step="0.000001">
+        </div>
+
+        <div class="form-group">
+          <label for="cotacaoAtualAtivo">Cotação atual</label>
+          <input type="number" id="cotacaoAtualAtivo" placeholder="Opcional" step="0.000001">
+        </div>
+
+        <div class="form-group">
+          <label for="moedaAtivo">Moeda</label>
+          <select id="moedaAtivo">
+            <option value="BRL">BRL - Real</option>
+            <option value="USD">USD - Dólar</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="corretoraAtivo">Corretora</label>
+          <select id="corretoraAtivo">
+            <option value="">Carregando corretoras...</option>
+          </select>
+        </div>
+
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btnSalvarAtivo">Salvar Ativo</button>
+
+      <div id="mensagemInvestimento" class="message"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Minha Carteira</h2>
+      </div>
+
+      <div id="listaInvestimentos" class="table-wrap"></div>
+    </section>
+
+  </main>
+
+</div>
+
+<nav class="mobile-nav">
+  <a href="./dashboard.html">Início</a>
+  <a href="./transactions.html">Lançar</a>
+  <a href="./budgets.html">Orçamento</a>
+  <a class="active" href="./investments.html">Investir</a>
+</nav>
+
+<script type="module" src="../js/navigation.js?v=9432"></script>
+<script type="module" src="../js/investments.js?v=9432"></script>
+
+</body>
+</html>
