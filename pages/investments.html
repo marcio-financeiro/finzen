@@ -4,42 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Investimentos - FinZen</title>
-
-<link rel="stylesheet" href="../css/base.css?v=9432">
-<link rel="stylesheet" href="../css/layout.css?v=9432">
-<link rel="stylesheet" href="../css/components.css?v=9432">
-<link rel="stylesheet" href="../css/mobile.css?v=9432">
-<link rel="stylesheet" href="../css/navigation.css?v=9432">
-
-<style id="investment-9432-style">
-  .fx-compact{
-    padding:16px;
-    display:flex;
-    align-items:flex-end;
-    gap:12px;
-    flex-wrap:wrap;
-  }
-  .fx-field{
-    max-width:220px;
-    min-width:180px;
-    margin:0;
-  }
-  .fx-message{
-    padding:0 16px 16px;
-  }
-  @media(max-width:720px){
-    .fx-compact{
-      display:grid;
-      grid-template-columns:1fr auto;
-      align-items:end;
-    }
-    .fx-field{
-      max-width:none;
-      min-width:0;
-    }
-  }
-</style>
-
+<link rel="stylesheet" href="../css/base.css?v=960">
+<link rel="stylesheet" href="../css/layout.css?v=960">
+<link rel="stylesheet" href="../css/components.css?v=960">
+<link rel="stylesheet" href="../css/mobile.css?v=960">
+<link rel="stylesheet" href="../css/navigation.css?v=960">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#4b84f3">
 <meta name="mobile-web-app-capable" content="yes">
@@ -47,153 +16,220 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FinZen">
 <link rel="apple-touch-icon" href="../icons/icon-192.png">
+<style>
+  /* KPI resultado */
+  .inv-result-positive{ color:var(--success)!important; }
+  .inv-result-negative{ color:var(--danger)!important; }
+
+  /* Grupo por corretora */
+  .inv-broker-title{
+    font-size:11px;font-weight:800;letter-spacing:2px;
+    text-transform:uppercase;color:var(--muted);
+    margin:24px 0 8px;
+  }
+
+  /* Card de ativo mobile */
+  .inv-mobile-list{ display:none; gap:12px; padding:12px; }
+  .inv-mobile-card{
+    border:1px solid var(--border);border-radius:16px;
+    padding:14px;background:rgba(255,255,255,.025);
+  }
+  .inv-mobile-card-top{
+    display:flex;justify-content:space-between;
+    align-items:flex-start;gap:8px;margin-bottom:10px;
+  }
+  .inv-ticker{ font-weight:900;font-size:1.05rem; }
+  .inv-nome{ color:var(--muted);font-size:.83rem;margin-top:2px; }
+  .inv-mobile-grid{
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:8px;margin-top:8px;
+  }
+  .inv-mobile-grid span{ color:var(--muted);font-size:.8rem;font-weight:700; }
+  .inv-mobile-grid strong{ display:block;font-size:.9rem; }
+  .inv-mobile-actions{ display:flex;gap:8px;margin-top:12px; }
+  .inv-mobile-actions .btn{ flex:1;margin:0; }
+
+  /* Status cotação */
+  .inv-quote-status{
+    font-size:11px;padding:2px 8px;border-radius:999px;
+    font-weight:700;
+  }
+  .inv-quote-status.auto{
+    background:var(--success-dim);color:var(--success);
+  }
+  .inv-quote-status.manual{
+    background:var(--warning-dim);color:var(--warning);
+  }
+
+  /* Botão atualizar */
+  .inv-update-bar{
+    display:flex;align-items:center;gap:12px;
+    padding:12px 18px;flex-wrap:wrap;
+  }
+  .inv-update-bar small{ color:var(--muted);font-size:12px; }
+
+  /* Spinner */
+  .inv-spinner{
+    display:inline-block;width:14px;height:14px;
+    border:2px solid rgba(255,255,255,.2);
+    border-top-color:#fff;border-radius:50%;
+    animation:spin .7s linear infinite;vertical-align:middle;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* Desktop/mobile toggle */
+  .inv-desktop{ display:block; }
+  @media(max-width:720px){
+    .inv-desktop{ display:none; }
+    .inv-mobile-list{ display:grid; }
+  }
+
+  /* Formulário compacto */
+  .inv-form-note{
+    color:var(--muted);font-size:12px;
+    padding:0 18px 14px;line-height:1.5;
+  }
+</style>
 </head>
-
 <body>
-
 <div class="app-shell">
-
   <aside class="sidebar">
     <div class="sidebar-brand">FinZen</div>
-
     <nav class="sidebar-nav"></nav>
   </aside>
 
   <main class="content">
-
     <header class="topbar">
       <div>
         <h1>Investimentos</h1>
         <p id="userEmail" class="muted"></p>
       </div>
-
       <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
     </header>
 
+    <!-- KPIs -->
     <section class="kpi-grid">
       <article class="kpi-card">
-        <span>Patrimônio investido</span>
-        <strong id="patrimonioInvestido">R$ 0,00</strong>
+        <span>Patrimônio atual</span>
+        <strong id="kpiPatrimonio">R$ 0,00</strong>
       </article>
-
       <article class="kpi-card">
         <span>Total aplicado</span>
-        <strong id="totalAplicado">R$ 0,00</strong>
+        <strong id="kpiAplicado">R$ 0,00</strong>
       </article>
-
       <article class="kpi-card">
-        <span>Quantidade de ativos</span>
-        <strong id="totalAtivos">0</strong>
+        <span>Resultado total</span>
+        <strong id="kpiResultado">R$ 0,00</strong>
       </article>
-
       <article class="kpi-card">
-        <span>Exterior</span>
-        <strong id="exteriorUsd">US$ 0,00</strong>
-        <small id="exteriorBrl" class="muted">R$ 0,00</small>
+        <span>Exterior (Nomad)</span>
+        <strong id="kpiUsd">US$ 0,00</strong>
+        <small id="kpiUsdBrl" class="muted">R$ 0,00</small>
       </article>
     </section>
 
-
+    <!-- Barra de atualização -->
     <section class="panel">
-      <div class="panel-header">
-        <h2>Dólar de Referência</h2>
-      </div>
-
-      <div class="fx-compact">
-        <div class="form-group fx-field">
-          <label for="dolarReferencia">USD/BRL</label>
-          <input type="number" id="dolarReferencia" placeholder="5,15" step="0.0001">
+      <div class="inv-update-bar">
+        <button type="button" class="btn btn-secondary compact" id="btnAtualizar">
+          🔄 Atualizar cotações
+        </button>
+        <div>
+          <label style="margin:0;font-size:12px;font-weight:700;color:var(--muted)">USD/BRL</label>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+            <input type="number" id="dolarReferencia" step="0.0001"
+              style="width:100px;padding:6px 10px;font-size:13px;" placeholder="5,15">
+            <button type="button" class="btn btn-secondary compact" id="btnSalvarDolar"
+              style="margin:0">Salvar</button>
+          </div>
         </div>
-
-        <button type="button" class="btn btn-secondary compact" id="btnSalvarDolar">Salvar</button>
+        <small id="ultimaAtualizacao">Cotações não atualizadas</small>
       </div>
-
-      <div id="mensagemDolar" class="message fx-message"></div>
+      <div id="mensagemCotacao" class="message" style="padding:0 18px 12px"></div>
     </section>
 
-    <section class="panel">
-      <div class="panel-header">
-        <h2>Novo Ativo</h2>
-      </div>
-
-      <div class="form-grid">
-
-        <div class="form-group">
-          <label for="tickerAtivo">Ticker</label>
-          <input type="text" id="tickerAtivo" placeholder="Ex: BBAS3, BTLG11, VOO">
-        </div>
-
-        <div class="form-group">
-          <label for="nomeAtivo">Nome</label>
-          <input type="text" id="nomeAtivo" placeholder="Ex: Banco do Brasil">
-        </div>
-
-        <div class="form-group">
-          <label for="tipoAtivo">Tipo</label>
-          <select id="tipoAtivo">
-            <option value="">Selecione</option>
-            <option value="acao">Ação</option>
-            <option value="fii">FII</option>
-            <option value="etf">ETF</option>
-            <option value="renda_fixa">Renda Fixa</option>
-            <option value="cripto">Cripto</option>
-            <option value="exterior">Exterior</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="quantidadeAtivo">Quantidade</label>
-          <input type="number" id="quantidadeAtivo" placeholder="0" step="0.000001">
-        </div>
-
-        <div class="form-group">
-          <label for="precoMedioAtivo">Preço médio</label>
-          <input type="number" id="precoMedioAtivo" placeholder="0,00" step="0.000001">
-        </div>
-
-        <div class="form-group">
-          <label for="cotacaoAtualAtivo">Cotação atual</label>
-          <input type="number" id="cotacaoAtualAtivo" placeholder="Opcional" step="0.000001">
-        </div>
-
-        <div class="form-group">
-          <label for="moedaAtivo">Moeda</label>
-          <select id="moedaAtivo">
-            <option value="BRL">BRL - Real</option>
-            <option value="USD">USD - Dólar</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="corretoraAtivo">Corretora</label>
-          <select id="corretoraAtivo">
-            <option value="">Carregando corretoras...</option>
-          </select>
-        </div>
-
-      </div>
-
-      <button type="button" class="btn btn-primary" id="btnSalvarAtivo">Salvar Ativo</button>
-
-      <div id="mensagemInvestimento" class="message"></div>
-    </section>
-
+    <!-- Carteira -->
     <section class="panel">
       <div class="panel-header">
         <h2>Minha Carteira</h2>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="filtroCorretora" style="padding:6px 10px;font-size:13px;width:auto;">
+            <option value="">Todas as corretoras</option>
+          </select>
+        </div>
       </div>
+      <div id="listaInvestimentos" class="table-wrap">
+        <p class="muted" style="padding:18px">Carregando...</p>
+      </div>
+    </section>
 
-      <div id="listaInvestimentos" class="table-wrap"></div>
+    <!-- Novo ativo -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2 id="formAtivoTitulo">Adicionar Ativo</h2>
+      </div>
+      <p class="inv-form-note">
+        Para ações/FIIs/ETFs brasileiros use o ticker sem o sufixo de mercado (ex: BBAS3, MXRF11).<br>
+        Para ativos americanos use o ticker da bolsa (ex: VOO, AAPL). Renda Fixa não busca cotação automática.
+      </p>
+      <div class="form-grid" style="padding:0 18px;">
+        <div class="form-group">
+          <label>Ticker / Código</label>
+          <input type="text" id="tickerAtivo" placeholder="Ex: BBAS3, VOO, TESOURO SELIC">
+        </div>
+        <div class="form-group">
+          <label>Nome</label>
+          <input type="text" id="nomeAtivo" placeholder="Ex: Banco do Brasil">
+        </div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="tipoAtivo">
+            <option value="">Selecione</option>
+            <option value="acao_br">Ação BR</option>
+            <option value="fii">FII</option>
+            <option value="etf_br">ETF BR</option>
+            <option value="etf_eua">ETF EUA</option>
+            <option value="acao_eua">Ação EUA</option>
+            <option value="renda_fixa">Renda Fixa</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Corretora</label>
+          <select id="corretoraAtivo">
+            <option value="">Selecione</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Quantidade</label>
+          <input type="number" id="quantidadeAtivo" placeholder="0" step="0.000001" min="0">
+        </div>
+        <div class="form-group">
+          <label>Preço médio de compra</label>
+          <input type="number" id="precoMedioAtivo" placeholder="0,00" step="0.000001" min="0">
+        </div>
+        <div class="form-group">
+          <label>Moeda</label>
+          <select id="moedaAtivo">
+            <option value="BRL">BRL — Real</option>
+            <option value="USD">USD — Dólar</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Cotação manual (opcional)</label>
+          <input type="number" id="cotacaoManual" placeholder="Deixe vazio para buscar automático" step="0.000001" min="0">
+        </div>
+      </div>
+      <div style="padding:0 18px 18px;">
+        <button type="button" class="btn btn-primary" id="btnSalvarAtivo">Salvar Ativo</button>
+        <button type="button" class="btn btn-secondary" id="btnCancelarEdicao" style="display:none">Cancelar</button>
+        <div id="mensagemAtivo" class="message"></div>
+      </div>
     </section>
 
   </main>
-
 </div>
 
-<nav class="mobile-nav"></nav>
-
-<script type="module" src="../js/navigation.js?v=950"></script>
-<script type="module" src="../js/investments.js?v=9433"></script>
-
+<script type="module" src="../js/navigation.js?v=960"></script>
+<script type="module" src="../js/investments.js?v=960"></script>
 </body>
 </html>
