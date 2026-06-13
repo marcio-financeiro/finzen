@@ -19,62 +19,149 @@
 <link rel="apple-touch-icon" href="../icons/icon-192.png">
 
 <style>
-.dash-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
-.dash-kpi{padding:16px 18px;border:1px solid var(--border);border-radius:16px;background:var(--surface-2);cursor:pointer;transition:transform .15s,box-shadow .15s;}
-.dash-kpi:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(75,132,243,.18);}
-.dash-kpi span{font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px;}
-.dash-kpi strong{font-size:20px;font-family:var(--font-mono);display:block;letter-spacing:-.03em;}
-.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
-@media(max-width:800px){.dash-grid{grid-template-columns:1fr;}}
-.dash-block{border:1px solid var(--border);border-radius:16px;background:var(--surface-2);overflow:hidden;}
-.dash-block-header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);}
-.dash-block-header h2{font-size:13px;font-weight:800;margin:0;}
-.dash-block-body{padding:16px 18px;}
-.pizza-wrap{display:flex;gap:20px;align-items:center;flex-wrap:wrap;}
-.pizza-svg{flex-shrink:0;}
-.pizza-legend{flex:1;min-width:120px;}
-.pizza-item{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;}
-.pizza-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.pizza-label{flex:1;color:var(--text);}
-.pizza-pct{color:var(--muted);font-size:11px;font-weight:700;}
-.orcamento-item{margin-bottom:14px;}
-.orcamento-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:12px;}
-.orcamento-label{font-weight:700;}
-.orcamento-bar-wrap{height:6px;background:var(--border);border-radius:99px;overflow:hidden;}
-.orcamento-bar{height:6px;border-radius:99px;background:var(--accent);transition:width .4s ease;}
-.orcamento-bar.warn{background:var(--warning,#f59e0b);}
-.orcamento-bar.over{background:var(--danger);}
-.meta-item{margin-bottom:14px;}
-.meta-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:12px;}
-.meta-label{font-weight:700;display:flex;align-items:center;gap:6px;}
-.meta-bar-wrap{height:8px;background:var(--border);border-radius:99px;overflow:hidden;}
-.meta-bar{height:8px;border-radius:99px;transition:width .4s ease;}
-.previsao-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;}
-.previsao-kpi{text-align:center;}
-.previsao-kpi span{font-size:10px;color:var(--muted);font-weight:700;display:block;}
-.previsao-kpi strong{font-size:14px;font-family:var(--font-mono);}
-.alerta-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
-.alerta-item:last-child{border-bottom:none;}
-.alerta-icon{font-size:18px;flex-shrink:0;}
-.alerta-info{flex:1;}
-.alerta-info strong{display:block;font-size:13px;}
-.alerta-info small{color:var(--muted);font-size:11px;}
-.alerta-valor{font-family:var(--font-mono);font-size:13px;font-weight:700;}
-.rl-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
-.rl-row:last-child{border-bottom:none;}
-.rl-total{display:flex;justify-content:space-between;align-items:center;padding:12px 0 0;font-size:15px;font-weight:800;}
-.dash-full{margin-bottom:16px;}
+/* ── KPI Grid ── */
+.dash-kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px;
+  margin-bottom:20px;
+}
+.dash-kpi{
+  padding:16px 18px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:var(--surface-2);
+  cursor:pointer;
+  transition:transform .15s,box-shadow .15s;
+}
+.dash-kpi:hover{ transform:translateY(-2px);box-shadow:0 4px 16px rgba(75,132,243,.18); }
+.dash-kpi span{ font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px; }
+.dash-kpi strong{ font-size:20px;font-family:var(--font-mono);display:block;letter-spacing:-.03em; }
+
+/* ── Grid 2 colunas ── */
+.dash-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-bottom:16px;
+}
+@media(max-width:800px){ .dash-grid{ grid-template-columns:1fr; } }
+
+/* ── Bloco genérico ── */
+.dash-block{
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:var(--surface-2);
+  overflow:hidden;
+}
+.dash-block-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 18px;border-bottom:1px solid var(--border);
+}
+.dash-block-header h2{ font-size:13px;font-weight:800;margin:0; }
+.dash-block-body{ padding:16px 18px; }
+
+/* ── Pizza gráfico ── */
+.pizza-wrap{
+  display:flex;gap:20px;align-items:center;flex-wrap:wrap;
+}
+.pizza-svg{ flex-shrink:0; }
+.pizza-legend{ flex:1;min-width:120px; }
+.pizza-item{
+  display:flex;align-items:center;gap:8px;
+  margin-bottom:8px;font-size:12px;
+}
+.pizza-dot{ width:10px;height:10px;border-radius:50%;flex-shrink:0; }
+.pizza-label{ flex:1;color:var(--text); }
+.pizza-pct{ color:var(--muted);font-size:11px;font-weight:700; }
+
+/* ── Orçamento / saúde ── */
+.orcamento-item{
+  margin-bottom:14px;
+}
+.orcamento-row{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:4px;font-size:12px;
+}
+.orcamento-label{ font-weight:700; }
+.orcamento-bar-wrap{
+  height:6px;background:var(--border);border-radius:99px;overflow:hidden;
+}
+.orcamento-bar{
+  height:6px;border-radius:99px;background:var(--accent);transition:width .4s ease;
+}
+.orcamento-bar.warn{ background:var(--warning,#f59e0b); }
+.orcamento-bar.over{ background:var(--danger); }
+
+/* ── Metas ── */
+.meta-item{
+  margin-bottom:14px;
+}
+.meta-row{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:4px;font-size:12px;
+}
+.meta-label{ font-weight:700;display:flex;align-items:center;gap:6px; }
+.meta-bar-wrap{
+  height:8px;background:var(--border);border-radius:99px;overflow:hidden;
+}
+.meta-bar{
+  height:8px;border-radius:99px;transition:width .4s ease;
+}
+
+/* ── Previsão ── */
+.previsao-grid{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;
+  margin-bottom:14px;
+}
+.previsao-kpi{ text-align:center; }
+.previsao-kpi span{ font-size:10px;color:var(--muted);font-weight:700;display:block; }
+.previsao-kpi strong{ font-size:14px;font-family:var(--font-mono); }
+
+/* Linha do tempo previsão */
+.previsao-linha{
+  height:40px;position:relative;margin-top:4px;
+}
+.previsao-svg{ width:100%;height:40px; }
+
+/* ── Alertas ── */
+.alerta-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;
+}
+.alerta-item:last-child{ border-bottom:none; }
+.alerta-icon{ font-size:18px;flex-shrink:0; }
+.alerta-info{ flex:1; }
+.alerta-info strong{ display:block;font-size:13px; }
+.alerta-info small{ color:var(--muted);font-size:11px; }
+.alerta-valor{ font-family:var(--font-mono);font-size:13px;font-weight:700; }
+
+/* ── Receita líquida ── */
+.rl-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;
+}
+.rl-row:last-child{ border-bottom:none; }
+.rl-total{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 0 0;font-size:15px;font-weight:800;
+}
+
+/* ── Full-width panels ── */
+.dash-full{ margin-bottom:16px; }
 </style>
 </head>
 
 <body>
 <div class="app-shell">
+
   <aside class="sidebar">
     <div class="sidebar-brand">FinZen</div>
     <nav class="sidebar-nav"></nav>
   </aside>
 
   <main class="content">
+
     <header class="topbar">
       <div>
         <h1>Dashboard</h1>
@@ -83,6 +170,7 @@
       <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
     </header>
 
+    <!-- KPIs principais -->
     <div class="dash-kpi-grid">
       <div class="dash-kpi" onclick="location.href='./movements.html'">
         <span>Saldo em contas</span>
@@ -106,6 +194,7 @@
       </div>
     </div>
 
+    <!-- Alertas de vencimento -->
     <div class="dash-full">
       <div class="dash-block">
         <div class="dash-block-header">
@@ -118,7 +207,10 @@
       </div>
     </div>
 
+    <!-- Grid 2 colunas: pizza + orçamento -->
     <div class="dash-grid">
+
+      <!-- Despesas por categoria -->
       <div class="dash-block">
         <div class="dash-block-header">
           <h2>🍕 Despesas por Categoria</h2>
@@ -128,6 +220,8 @@
           <p class="muted" style="font-size:13px">Carregando...</p>
         </div>
       </div>
+
+      <!-- Saúde do orçamento -->
       <div class="dash-block">
         <div class="dash-block-header">
           <h2>📊 Saúde do Orçamento</h2>
@@ -137,9 +231,13 @@
           <p class="muted" style="font-size:13px">Carregando...</p>
         </div>
       </div>
+
     </div>
 
+    <!-- Grid 2 colunas: metas + receita líquida -->
     <div class="dash-grid">
+
+      <!-- Progresso de metas -->
       <div class="dash-block">
         <div class="dash-block-header">
           <h2>🎯 Metas</h2>
@@ -149,6 +247,8 @@
           <p class="muted" style="font-size:13px">Carregando...</p>
         </div>
       </div>
+
+      <!-- Receita líquida recorrente -->
       <div class="dash-block">
         <div class="dash-block-header">
           <h2>💼 Receita Líquida Recorrente</h2>
@@ -157,12 +257,14 @@
           <p class="muted" style="font-size:13px">Carregando...</p>
         </div>
       </div>
+
     </div>
 
+    <!-- Previsão de saldo 30 dias -->
     <div class="dash-full">
       <div class="dash-block">
         <div class="dash-block-header">
-          <h2>📈 Previsão de Saldo — próximos 30 dias</h2>
+          <h2>📈 Previsão de Saldo do Mês</h2>
         </div>
         <div class="dash-block-body" id="blocoPrevisao">
           <p class="muted" style="font-size:13px">Carregando...</p>
@@ -170,6 +272,7 @@
       </div>
     </div>
 
+    <!-- Últimos lançamentos -->
     <div class="dash-full">
       <div class="dash-block">
         <div class="dash-block-header">
@@ -186,6 +289,7 @@
 </div>
 
 <nav class="mobile-nav"></nav>
+
 <script type="module" src="../js/navigation.js?v=1020"></script>
 <script type="module" src="../js/dashboard.js?v=1020"></script>
 </body>
