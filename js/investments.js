@@ -59,10 +59,13 @@ function tipoLabel(t){
 }
 function classeKey(t){
   if(t==='fii') return 'FIIs';
-  if(['acao_br'].includes(t)) return 'Ações BR';
-  if(['etf_br'].includes(t)) return 'ETFs BR';
-  if(['acao_eua','etf_eua','exterior'].includes(t)) return 'Exterior';
+  if(t==='acao_br' || t==='acao') return 'Ações BR';
+  if(t==='etf_br' || t==='etf') return 'ETFs BR';
+  if(t==='acao_eua') return 'Ações EUA';
+  if(t==='etf_eua') return 'ETFs EUA';
+  if(t==='exterior') return 'Exterior';
   if(t==='renda_fixa') return 'Renda Fixa';
+  if(t==='cripto') return 'Cripto';
   return 'Outros';
 }
 function msg(elId,texto,tipo='info'){
@@ -260,15 +263,20 @@ function renderizarCarteira(){
     const pctIdeal  = toNumber(pesoObj.ideal||0);
     const over      = pctIdeal>0 && pctReal>pctIdeal*1.05;
 
+    const colId = `col-carteira-${classe.replace(/\s/g,'_')}`;
     html+=`
-      <div class="inv-class-header">
+      <div class="inv-class-header inv-collapsible" onclick="document.getElementById('${colId}').classList.toggle('collapsed')">
         <span>📁 ${classe} — ${formatCurrency(grupo.total,'BRL')}</span>
-        <div class="inv-class-pct">
-          <span>Real: <strong>${formatPercent(pctReal)}</strong></span>
-          ${pctIdeal?`<span>Ideal: <strong>${formatPercent(pctIdeal)}</strong></span>`:''}
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="inv-class-pct">
+            <span>Real: <strong>${formatPercent(pctReal)}</strong></span>
+            ${pctIdeal?`<span>Ideal: <strong>${formatPercent(pctIdeal)}</strong></span>`:''}
+          </div>
+          <span class="inv-collapse-icon">▾</span>
         </div>
       </div>
       ${pctIdeal?`<div class="inv-pct-bar-wrap"><div class="inv-pct-bar${over?' over':''}" style="width:${Math.min(pctReal/pctIdeal*100,200)}%"></div></div>`:''}
+      <div id="${colId}" class="inv-class-body collapsed">
     `;
 
     // Tabela desktop
@@ -344,7 +352,8 @@ function renderizarCarteira(){
         </div>
       </div>`;
     });
-    html+=`</div>`;
+    html+=`</div>`; // inv-mobile-list
+    html+=`</div>`; // inv-class-body
   }
 
   el('listaCarteira').innerHTML=html;
@@ -645,41 +654,56 @@ async function salvarDividendo(){
 // ─────────────────────────────────────────────
 // BALANCEAR (aba 4)
 // ─────────────────────────────────────────────
+// Todas as classes possíveis no sistema
+const TODAS_CLASSES = [
+  'Ações BR','FIIs','ETFs BR','Ações EUA','ETFs EUA','Renda Fixa','Cripto','Exterior','Outros'
+];
+
 function renderizarBalancear(){
-  const classes={};
+  const porClasse={};
+  // Inicializar todas as classes (mesmo sem ativos)
+  TODAS_CLASSES.forEach(k=>{ porClasse[k]=[]; });
   ativos.forEach(a=>{
     const k=classeKey(a.tipo);
-    if(!classes[k]) classes[k]=[];
-    classes[k].push(a);
+    if(!porClasse[k]) porClasse[k]=[];
+    porClasse[k].push(a);
   });
 
   let html='';
-  for(const [classe,lista] of Object.entries(classes)){
+  for(const [classe,lista] of Object.entries(porClasse)){
     const ck=`inv_peso_classe_${classe.replace(/\s/g,'_')}`;
     const cideal=toNumber((pesos[ck]||{}).ideal||0);
+    const colId=`col-bal-${classe.replace(/\s/g,'_')}`;
+    const temAtivos=lista.length>0;
 
-    html+=`<div class="bal-classe-row">
-      <strong>📁 ${classe}</strong>
+    html+=`<div class="bal-classe-row inv-collapsible" onclick="document.getElementById('${colId}').classList.toggle('collapsed')">
+      <span><strong>📁 ${classe}</strong>${!temAtivos?'<small class="muted" style="margin-left:8px">sem ativos</small>':''}</span>
       <div style="display:flex;align-items:center;gap:8px;">
-        <label style="margin:0;color:var(--muted);font-size:12px;">% ideal da carteira</label>
+        <label style="margin:0;color:var(--muted);font-size:12px;">% ideal</label>
         <input type="number" class="bal-classe-input" data-classe="${ck}"
-          style="width:70px;padding:6px 8px;font-size:13px;" value="${cideal||''}" placeholder="0" min="0" max="100" step="0.1">
+          style="width:70px;padding:6px 8px;font-size:13px;" value="${cideal||''}" placeholder="0" min="0" max="100" step="0.1"
+          onclick="event.stopPropagation()">
+        <span class="inv-collapse-icon">▾</span>
       </div>
     </div>`;
 
-    html+=`<div style="padding:0 4px;">`;
-    lista.forEach(a=>{
-      const pk=`inv_peso_${a.ticker}`;
-      const pideal=toNumber((pesos[pk]||{}).ideal||0);
-      html+=`<div class="bal-row">
-        <span><strong>${a.ticker}</strong> <small class="muted">${a.nome||tipoLabel(a.tipo)}</small></span>
-        <span>${formatCurrency(calcBRL(a,calcAtual(a)),'BRL')}</span>
-        <span class="muted" style="font-size:12px;">% na carteira</span>
-        <input type="number" class="bal-ativo-input" data-ticker="${pk}"
-          value="${pideal||''}" placeholder="0" min="0" max="100" step="0.1">
-        <span></span>
-      </div>`;
-    });
+    html+=`<div id="${colId}" class="inv-class-body collapsed" style="padding:0 4px;">`;
+    if(temAtivos){
+      lista.forEach(a=>{
+        const pk=`inv_peso_${a.ticker}`;
+        const pideal=toNumber((pesos[pk]||{}).ideal||0);
+        html+=`<div class="bal-row">
+          <span><strong>${a.ticker}</strong> <small class="muted">${a.nome||tipoLabel(a.tipo)}</small></span>
+          <span>${formatCurrency(calcBRL(a,calcAtual(a)),'BRL')}</span>
+          <span class="muted" style="font-size:12px;">% na carteira</span>
+          <input type="number" class="bal-ativo-input" data-ticker="${pk}"
+            value="${pideal||''}" placeholder="0" min="0" max="100" step="0.1">
+          <span></span>
+        </div>`;
+      });
+    } else {
+      html+=`<p class="muted" style="padding:8px 4px;font-size:13px;">Nenhum ativo nesta classe. Defina o % ideal acima para incluir na sugestão de aporte.</p>`;
+    }
     html+=`</div>`;
   }
 
@@ -714,9 +738,10 @@ function calcularBalanceamento(){
   const patrimAtual=ativos.reduce((s,a)=>s+calcBRL(a,calcAtual(a)),0);
   const novoTotal  =patrimAtual+aporte;
 
-  // Sugestões por ativo
+  // Sugestões por ativo (incluindo classes sem ativos com % ideal definido)
   const sugestoes=[];
 
+  // Sugestões baseadas em ativos individuais
   ativos.forEach(a=>{
     const pk=`inv_peso_${a.ticker}`;
     const pideal=toNumber((pesos[pk]||{}).ideal||0);
@@ -736,6 +761,25 @@ function calcularBalanceamento(){
         pideal, valorIdeal, valorAtual, diferenca,
         cotacao:fmtMoeda(cotacao,moeda), qtdSugerida,
         valorSugerido:qtdSugerida*cotBRL, moeda,
+      });
+    }
+  });
+
+  // Sugestões baseadas em classes sem ativos mas com % ideal definido
+  TODAS_CLASSES.forEach(classe=>{
+    const ck=`inv_peso_classe_${classe.replace(/\s/g,'_')}`;
+    const cideal=toNumber((pesos[ck]||{}).ideal||0);
+    if(!cideal) return;
+    // Verificar se a classe tem ativos — se tiver, já foi coberta acima
+    const temAtivos=ativos.some(a=>classeKey(a.tipo)===classe);
+    if(temAtivos) return;
+    const valorIdeal=novoTotal*(cideal/100);
+    if(valorIdeal>0){
+      sugestoes.push({
+        ticker:'—', nome:`Sem ativo cadastrado em ${classe}`, tipo:classe,
+        pideal:cideal, valorIdeal, valorAtual:0, diferenca:valorIdeal,
+        cotacao:'—', qtdSugerida:0,
+        valorSugerido:valorIdeal, moeda:'BRL', semAtivo:true,
       });
     }
   });
@@ -760,7 +804,15 @@ function calcularBalanceamento(){
         font-size:11px;font-weight:800;color:var(--muted);padding-bottom:8px;border-bottom:1px solid var(--border);">
         <span>Ativo</span><span>% Ideal</span><span>Falta</span><span>Qtd</span><span>Valor</span>
       </div>
-      ${sugestoes.map(s=>`
+      ${sugestoes.map(s=>s.semAtivo?`
+        <div class="bal-sugestao-item" style="display:grid;grid-template-columns:1fr 80px 100px 80px 100px;gap:8px;opacity:.75;background:var(--surface-2,rgba(255,200,0,.04));border-radius:6px;padding:4px 0;">
+          <span><strong>${s.tipo}</strong> <span class="muted" style="font-size:11px">⚠️ sem ativo cadastrado</span></span>
+          <span>${formatPercent(s.pideal)}</span>
+          <span class="positive">+${formatCurrency(s.diferenca,'BRL')}</span>
+          <span class="muted">—</span>
+          <span class="money">${formatCurrency(s.valorSugerido,'BRL')}</span>
+        </div>
+      `:`
         <div class="bal-sugestao-item" style="display:grid;grid-template-columns:1fr 80px 100px 80px 100px;gap:8px;">
           <span><strong>${s.ticker}</strong> <span class="muted" style="font-size:11px">${s.tipo}</span></span>
           <span>${formatPercent(s.pideal)}</span>
@@ -823,6 +875,24 @@ el('corretoraAtivo').addEventListener('change',()=>{
 
 el('btnSalvarAtivo').addEventListener('click',salvarAtivo);
 el('btnCancelarEdicao').addEventListener('click',limparFormAtivo);
+
+// Auto-preencher dados ao informar ticker já cadastrado
+el('tickerAtivo').addEventListener('blur', ()=>{
+  if(editandoId) return; // não interferir em edição
+  const ticker = el('tickerAtivo').value.trim().toUpperCase();
+  if(!ticker) return;
+  const existente = ativos.find(a=>a.ticker.toUpperCase()===ticker);
+  if(!existente) return;
+  // Preencher nome e tipo se ainda estiverem vazios
+  if(!el('nomeAtivo').value) el('nomeAtivo').value = existente.nome||'';
+  if(!el('tipoAtivo').value) el('tipoAtivo').value = existente.tipo||'';
+  if(!el('moedaAtivo').value || el('moedaAtivo').value==='BRL') el('moedaAtivo').value = existente.moeda||'BRL';
+  // Selecionar corretora usada anteriormente
+  if(!el('corretoraAtivo').value && existente.corretora_id){
+    el('corretoraAtivo').value = existente.corretora_id;
+  }
+  msg('mensagemAtivo',`Ativo ${ticker} já cadastrado — dados preenchidos automaticamente.`,'info');
+});
 
 // Dividendos — preencher quantidade automaticamente
 el('divAtivo').addEventListener('change',()=>{

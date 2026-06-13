@@ -1,9 +1,12 @@
+import { APP_VERSION } from './config.js';
+
 const NAV_GROUPS = [
   {
     label:'FinZen',
     items:[
       {title:'Dashboard',      icon:'🏠', href:'./dashboard.html'},
       {title:'Movimentações',  icon:'💸', href:'./movements.html'},
+      {title:'Extrato',        icon:'🧾', href:'./account-statement.html'},
       {title:'Cartões',        icon:'💳', href:'./cards.html'},
       {title:'Faturas',        icon:'📄', href:'./card-bills.html'},
       {title:'Investimentos',  icon:'📈', href:'./investments.html'},
@@ -54,7 +57,7 @@ function navHtml(){
         <span>${item.title}</span>
       </a>
     `).join('')}
-  `).join('');
+  `).join('') + `<div class="nav-version">v${APP_VERSION}</div>`;
 }
 
 function injectStyles(){
@@ -68,6 +71,12 @@ function injectStyles(){
     *::-webkit-scrollbar-track{ background:transparent; }
     *::-webkit-scrollbar-thumb{ background:rgba(139,144,168,.28); border-radius:999px; border:2px solid transparent; background-clip:content-box; }
     *::-webkit-scrollbar-thumb:hover{ background:rgba(75,132,243,.45); border:2px solid transparent; background-clip:content-box; }
+
+    .nav-version{
+      margin-top:auto; padding:12px 16px;
+      font-size:11px; color:var(--muted);
+      opacity:.55; letter-spacing:.5px;
+    }
 
     .mobile-menu-button{
       position:fixed;

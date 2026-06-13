@@ -122,11 +122,15 @@ async function calcularTotalContas(){
 }
 
 async function calcularCartoesAbertos(){
+  const hoje = new Date();
+  const refAtual = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
+
   const { data, error } = await supabase
     .from('card_transactions')
-    .select('valor_parcela, valor_total, status')
+    .select('valor_parcela, valor_total, status, fatura_referencia')
     .eq('user_id', user.id)
-    .eq('status', 'aberta');
+    .eq('status', 'aberta')
+    .eq('fatura_referencia', refAtual);
 
   if(error){
     throw new Error('Erro ao calcular cartões: ' + error.message);

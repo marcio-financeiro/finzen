@@ -11,9 +11,6 @@ const despesasMes = document.getElementById('despesasMes');
 const resultadoMes = document.getElementById('resultadoMes');
 
 const faturasAbertas = document.getElementById('faturasAbertas');
-const limiteTotal = document.getElementById('limiteTotal');
-const limiteUtilizado = document.getElementById('limiteUtilizado');
-const limiteDisponivel = document.getElementById('limiteDisponivel');
 
 const resumoContas = document.getElementById('resumoContas');
 const resumoFaturas = document.getElementById('resumoFaturas');
@@ -191,9 +188,6 @@ async function carregarCartoesEFaturas(){
 
   if(erroCartoes || erroParcelas){
     faturasAbertas.innerText = formatCurrency(0);
-    limiteTotal.innerText = formatCurrency(0);
-    limiteUtilizado.innerText = formatCurrency(0);
-    limiteDisponivel.innerText = formatCurrency(0);
     resumoFaturas.innerHTML = '<p class="muted">Erro ao carregar cartões ou faturas.</p>';
     return;
   }
@@ -201,24 +195,12 @@ async function carregarCartoesEFaturas(){
   const listaCartoes = cartoes || [];
   const listaParcelas = parcelas || [];
 
-  const totalLimite = listaCartoes.reduce(
-    (soma, cartao) => soma + Number(cartao.limite || 0),
-    0
-  );
-
   const totalFaturas = listaParcelas.reduce(
     (soma, parcela) => soma + Number(parcela.valor_parcela || 0),
     0
   );
 
-  const disponivel = totalLimite - totalFaturas;
-
   faturasAbertas.innerText = formatCurrency(totalFaturas, 'BRL');
-  limiteTotal.innerText = formatCurrency(totalLimite, 'BRL');
-  limiteUtilizado.innerText = formatCurrency(totalFaturas, 'BRL');
-  limiteDisponivel.innerText = formatCurrency(disponivel, 'BRL');
-
-  aplicarClasseResultado(limiteDisponivel, disponivel);
 
   renderizarFaturas(listaParcelas);
 }
