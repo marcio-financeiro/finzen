@@ -59,6 +59,7 @@ async function carregarDashboard(){
     { data: recorrentes },
     { data: ultimosLanc },
     { data: categorias },
+    { data: pendentesRestantesMes },
   ] = await Promise.all([
     supabase.from('accounts').select('id,nome,currency,saldo_atual,color').eq('user_id',user.id).eq('active',true),
     supabase.from('transactions').select('type,amount,status,date,category_id,categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),
@@ -69,6 +70,8 @@ async function carregarDashboard(){
     supabase.from('transactions').select('type,amount,recurrence_frequency').eq('user_id',user.id).eq('is_recurring',true).eq('recurrence_active',true),
     supabase.from('transactions').select('id,type,amount,description,date,status,accounts:account_id(nome,currency),categories:category_id(nome,icon)').eq('user_id',user.id).order('date',{ascending:false}).order('created_at',{ascending:false}).limit(8),
     supabase.from('categories').select('id,nome,icon,cor').eq('user_id',user.id),
+    // Todas pendentes do restante do mês (para previsão)
+    supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date',ultimoDiaMes()),
   ]);
 
   // ── KPIs ─────────────────────────────────────────
@@ -103,7 +106,7 @@ async function carregarDashboard(){
   renderReceitaLiquida(recorrentes||[]);
 
   // ── Previsão de saldo do mês ────────────────────
-  renderPrevisao(totalSaldo, receitas, despesas, tx.filter(t=>t.status==='pendente'));
+  renderPrevisao(totalSaldo, receitas, despesas, pendentesRestantesMes||[], totalFaturas);
 
   // ── Últimos lançamentos ──────────────────────────
   renderUltimos(ultimosLanc||[]);
@@ -294,15 +297,16 @@ function renderReceitaLiquida(recorrentes){
 }
 
 // ── Previsão saldo do mês ─────────────────────────────
-function renderPrevisao(saldoAtual, receitasPagas, despesasPagas, txPendentes){
+function renderPrevisao(saldoAtual, receitasPagas, despesasPagas, txPendentes, faturasCartao){
   // Saldo inicial = saldo atual - resultado já registrado no mês
   const resultadoAtual = receitasPagas - despesasPagas;
   const saldoInicial   = saldoAtual - resultadoAtual;
 
-  // Pendentes restantes no mês (receitas e despesas)
+  // Pendentes restantes no mês (receitas e despesas) + faturas de cartão abertas
   const receitasPend  = txPendentes.filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
   const despesasPend  = txPendentes.filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0);
-  const saldoPrevisto = saldoAtual + receitasPend - despesasPend;
+  const faturas       = Number(faturasCartao||0);
+  const saldoPrevisto = saldoAtual + receitasPend - despesasPend - faturas;
 
   const diff = saldoPrevisto - saldoInicial;
 
@@ -352,7 +356,7 @@ function renderPrevisao(saldoAtual, receitasPagas, despesasPagas, txPendentes){
     </div>
     ${svg}
     <p class="muted" style="font-size:11px;text-align:center">
-      Previsto = saldo atual ${receitasPend>0?`+ ${fmt(receitasPend)} a receber`:''} ${despesasPend>0?`− ${fmt(despesasPend)} a pagar`:''}
+      ${receitasPend>0?`+${fmt(receitasPend)} a receber `:''}${despesasPend>0?`−${fmt(despesasPend)} a pagar `:''}${faturas>0?`−${fmt(faturas)} faturas cartão`:''}
     </p>
   `;
 }
