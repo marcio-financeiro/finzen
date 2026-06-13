@@ -4,54 +4,44 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Metas - FinZen</title>
-<link rel="stylesheet" href="../css/base.css?v=1020">
-<link rel="stylesheet" href="../css/layout.css?v=1020">
-<link rel="stylesheet" href="../css/components.css?v=1020">
-<link rel="stylesheet" href="../css/mobile.css?v=1020">
-<link rel="stylesheet" href="../css/navigation.css?v=1020">
+<link rel="stylesheet" href="../css/base.css?v=1030">
+<link rel="stylesheet" href="../css/layout.css?v=1030">
+<link rel="stylesheet" href="../css/components.css?v=1030">
+<link rel="stylesheet" href="../css/mobile.css?v=1030">
+<link rel="stylesheet" href="../css/navigation.css?v=1030">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#4b84f3">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 <div class="app-shell">
   <aside class="sidebar">
     <div class="sidebar-brand">FinZen</div>
-    <nav class="sidebar-nav">
-      <a href="./dashboard.html">Dashboard</a>
-      <a href="./accounts.html">Contas</a>
-      <a href="./categories.html">Categorias</a>
-      <a href="./transactions.html">Lançamentos</a>
-      <a href="./cards.html">Cartões</a>
-      <a href="./card-purchases.html">Compras no Cartão</a>
-      <a href="./card-bills.html">Faturas</a>
-      <a href="./budgets.html">Orçamento</a>
-      <a class="active" href="./goals.html">Metas</a>
-      <a href="./investments.html">Investimentos</a>
-    </nav>
+    <nav class="sidebar-nav"></nav>
   </aside>
 
   <main class="content">
     <header class="topbar">
-      <div>
-        <h1>Metas Financeiras</h1>
-        <p id="userEmail" class="muted"></p>
-      </div>
+      <div><h1>Metas Financeiras</h1><p id="userEmail" class="muted"></p></div>
       <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
     </header>
 
-    <section class="kpi-grid">
+    <section class="kpi-grid" style="margin-bottom:20px">
       <article class="kpi-card"><span>Total Alvo</span><strong id="totalAlvo">R$ 0,00</strong></article>
       <article class="kpi-card"><span>Total Acumulado</span><strong id="totalAtual" class="positive">R$ 0,00</strong></article>
       <article class="kpi-card"><span>Falta para concluir</span><strong id="totalFaltante">R$ 0,00</strong></article>
     </section>
 
-    <section class="panel">
-      <div class="panel-header"><h2>Nova Meta</h2></div>
-      <div class="form-grid">
+    <section class="panel" style="margin-bottom:16px">
+      <div class="panel-header"><h2 id="tituloForm">Nova Meta</h2></div>
+      <div class="form-grid" style="padding:16px 20px">
         <div class="form-group">
-          <label for="nomeMeta">Nome da meta</label>
+          <label>Nome da meta</label>
           <input type="text" id="nomeMeta" placeholder="Ex: Reserva de emergência">
         </div>
         <div class="form-group">
-          <label for="categoriaMeta">Categoria</label>
+          <label>Categoria</label>
           <select id="categoriaMeta">
             <option value="geral">Geral</option>
             <option value="reserva">Reserva de emergência</option>
@@ -62,45 +52,45 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="valorAlvo">Valor alvo</label>
-          <input type="number" id="valorAlvo" placeholder="0,00" step="0.01">
+          <label>Valor alvo (R$)</label>
+          <input type="number" id="valorAlvo" placeholder="0,00" step="0.01" min="0">
         </div>
         <div class="form-group">
-          <label for="valorAtual">Valor atual</label>
-          <input type="number" id="valorAtual" placeholder="0,00" step="0.01">
+          <label>Valor atual (R$)</label>
+          <input type="number" id="valorAtual" placeholder="0,00" step="0.01" min="0">
         </div>
         <div class="form-group">
-          <label for="dataAlvo">Data alvo</label>
+          <label>Data alvo</label>
           <input type="date" id="dataAlvo">
         </div>
         <div class="form-group">
-          <label for="corMeta">Cor</label>
+          <label>Cor</label>
           <input type="color" id="corMeta" value="#22c55e">
         </div>
-        <div class="form-group">
-          <label for="descricaoMeta">Descrição</label>
-          <input type="text" id="descricaoMeta" placeholder="Opcional">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Descrição (opcional)</label>
+          <input type="text" id="descricaoMeta" placeholder="Detalhes da meta">
         </div>
       </div>
-      <button type="button" class="btn btn-primary" id="btnSalvarMeta">Salvar Meta</button>
-      <div id="mensagemMeta" class="message"></div>
+      <div style="padding:0 20px 16px;display:flex;gap:8px">
+        <button id="btnSalvarMeta" class="btn btn-primary">+ Salvar Meta</button>
+        <button id="btnCancelarEdicao" class="btn btn-secondary" style="display:none">Cancelar</button>
+      </div>
+      <div id="mensagemMeta" class="message" style="margin:0 20px 16px"></div>
     </section>
 
     <section class="panel">
       <div class="panel-header"><h2>Minhas Metas</h2></div>
-      <div id="listaMetas" class="table-wrap"></div>
+      <div id="listaMetas" style="padding:0 20px 8px">
+        <p class="muted" style="padding:16px 0">Carregando...</p>
+      </div>
     </section>
+
   </main>
 </div>
 
-<nav class="mobile-nav">
-  <a href="./dashboard.html">Início</a>
-  <a href="./transactions.html">Lançar</a>
-  <a href="./budgets.html">Orçamento</a>
-  <a class="active" href="./goals.html">Metas</a>
-</nav>
-
-<script type="module" src="../js/navigation.js?v=1020"></script>
-<script type="module" src="../js/goals.js?v=1020"></script>
+<nav class="mobile-nav"></nav>
+<script type="module" src="../js/navigation.js?v=1030"></script>
+<script type="module" src="../js/goals.js?v=1030"></script>
 </body>
 </html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório - FinZen</title>
+<link rel="stylesheet" href="../css/base.css?v=1030">
+<link rel="stylesheet" href="../css/layout.css?v=1030">
+<link rel="stylesheet" href="../css/components.css?v=1030">
+<link rel="stylesheet" href="../css/mobile.css?v=1030">
+<link rel="stylesheet" href="../css/navigation.css?v=1030">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#4b84f3">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:800px){.dash-grid{grid-template-columns:1fr;}}
+.dash-block{border:1px solid var(--border);border-radius:16px;background:var(--surface-2);overflow:hidden;}
+.dash-block-header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);}
+.dash-block-header h2{font-size:13px;font-weight:800;margin:0;}
+.dash-block-body{padding:16px 18px;}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+    <nav class="sidebar-nav"></nav>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1>Relatório Mensal</h1>
+        <p id="userEmail" class="muted"></p>
+      </div>
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <!-- Filtro -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      <div>
+        <label style="font-size:12px;color:var(--muted);font-weight:700;display:block;margin-bottom:4px">Período</label>
+        <input type="month" id="filtroMes" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)">
+      </div>
+      <div style="margin-top:18px">
+        <button id="btnExportarPDF" class="btn btn-secondary">📄 Exportar PDF</button>
+      </div>
+      <p id="periodoLabel" class="muted" style="margin-top:18px;font-size:13px"></p>
+    </div>
+
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">
+      <div class="dash-block" style="padding:16px 18px">
+        <span style="font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px">Receitas</span>
+        <strong id="kpiReceitas" class="positive" style="font-size:20px;font-family:var(--font-mono)">R$ 0,00</strong>
+      </div>
+      <div class="dash-block" style="padding:16px 18px">
+        <span style="font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px">Despesas</span>
+        <strong id="kpiDespesas" class="negative" style="font-size:20px;font-family:var(--font-mono)">R$ 0,00</strong>
+      </div>
+      <div class="dash-block" style="padding:16px 18px">
+        <span style="font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px">Faturas Cartão</span>
+        <strong id="kpiFaturas" class="negative" style="font-size:20px;font-family:var(--font-mono)">R$ 0,00</strong>
+      </div>
+      <div class="dash-block" style="padding:16px 18px">
+        <span style="font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px">Resultado</span>
+        <strong id="kpiResultado" style="font-size:20px;font-family:var(--font-mono)">R$ 0,00</strong>
+      </div>
+    </div>
+
+    <!-- Gráfico 12 meses -->
+    <div class="dash-block" style="margin-bottom:16px">
+      <div class="dash-block-header"><h2>📊 Receita vs Despesa — últimos 12 meses</h2></div>
+      <div class="dash-block-body" id="grafico12meses">
+        <p class="muted" style="font-size:13px">Carregando...</p>
+      </div>
+    </div>
+
+    <!-- Pizza + tabela -->
+    <div class="dash-grid">
+      <div class="dash-block">
+        <div class="dash-block-header"><h2>🍕 Despesas por Categoria</h2></div>
+        <div class="dash-block-body" id="pizzaCategorias">
+          <p class="muted" style="font-size:13px">Carregando...</p>
+        </div>
+      </div>
+      <div class="dash-block">
+        <div class="dash-block-header"><h2>📋 Resumo por Categoria</h2></div>
+        <div class="dash-block-body" style="padding:0" id="tabelaCategorias">
+          <p class="muted" style="padding:16px;font-size:13px">Carregando...</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<nav class="mobile-nav"></nav>
+<script type="module" src="../js/navigation.js?v=1030"></script>
+<script type="module" src="../js/reports.js?v=1030"></script>
+</body>
+</html>
