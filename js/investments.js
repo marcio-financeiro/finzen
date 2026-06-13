@@ -1,6 +1,9 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { listBrokerAccounts } from './services/accountService.js';
+import { DEFAULT_USD_BRL, formatPercent, formatUSD, getUsdBrlRate, saveUsdBrlRate } from './services/financeService.js';
+import { calculateAppliedValue, calculateBRLValue, calculateCurrentValue, listActiveInvestments, saveInvestmentPosition, softDeleteInvestment } from './services/investmentService.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -37,7 +40,7 @@ if(!data.session){
 const user = data.session.user;
 userEmail.innerText = user.email;
 
-let dolarAtual = 5.15;
+let dolarAtual = DEFAULT_USD_BRL;
 let brokerAccounts = [];
 
 btnLogout.addEventListener('click', async () => {
@@ -60,32 +63,11 @@ function mostrarMensagemDolar(texto, tipo = 'info'){
   mensagemDolar.innerText = texto;
 }
 
-function formatarPercentual(valor){
-  if(!Number.isFinite(valor)) return '0,00%';
-
-  return valor.toLocaleString('pt-BR', {
-    minimumFractionDigits:2,
-    maximumFractionDigits:2
-  }) + '%';
-}
-
-function usd(value){
-  return 'US$ ' + Number(value || 0).toLocaleString('pt-BR', {
-    minimumFractionDigits:2,
-    maximumFractionDigits:2
-  });
-}
-
 async function carregarDolarReferencia(){
-  const { data, error } = await supabase
-    .from('user_settings')
-    .select('setting_value')
-    .eq('user_id', user.id)
-    .eq('setting_key', 'usd_brl')
-    .maybeSingle();
-
-  if(!error && data?.setting_value){
-    dolarAtual = Number(data.setting_value || 5.15);
+  try{
+    dolarAtual = await getUsdBrlRate(user.id);
+  }catch(error){
+    dolarAtual = DEFAULT_USD_BRL;
   }
 
   if(dolarReferencia){
@@ -94,50 +76,25 @@ async function carregarDolarReferencia(){
 }
 
 async function salvarDolarReferencia(){
-  const valor = Number(dolarReferencia?.value || 0);
-
-  if(!valor){
-    mostrarMensagemDolar('Informe uma cotação válida.', 'warning');
-    return;
-  }
-
-  const { error } = await supabase
-    .from('user_settings')
-    .upsert({
-      user_id:user.id,
-      setting_key:'usd_brl',
-      setting_value:String(valor),
-      updated_at:new Date().toISOString()
-    }, { onConflict:'user_id,setting_key' });
-
-  if(error){
+  try{
+    dolarAtual = await saveUsdBrlRate(user.id, dolarReferencia?.value || 0);
+    mostrarMensagemDolar('Dólar atualizado.', 'success');
+    await carregarInvestimentos();
+  }catch(error){
     mostrarMensagemDolar('Erro ao salvar dólar: ' + error.message, 'danger');
-    return;
   }
-
-  dolarAtual = valor;
-  mostrarMensagemDolar('Dólar atualizado.', 'success');
-  await carregarInvestimentos();
 }
 
 async function carregarCorretoras(){
   if(!corretoraAtivo) return;
 
-  const { data, error } = await supabase
-    .from('accounts')
-    .select('id,nome,bank,currency,saldo_atual')
-    .eq('user_id', user.id)
-    .eq('active', true)
-    .eq('account_kind', 'broker')
-    .order('nome', { ascending:true });
-
-  if(error){
+  try{
+    brokerAccounts = await listBrokerAccounts(user.id);
+  }catch(error){
     corretoraAtivo.innerHTML = '<option value="">Erro ao carregar corretoras</option>';
     mostrarMensagem('Erro ao carregar corretoras: ' + error.message, 'danger');
     return;
   }
-
-  brokerAccounts = data || [];
 
   if(!brokerAccounts.length){
     corretoraAtivo.innerHTML = '<option value="">Cadastre uma corretora em Contas</option>';
@@ -185,73 +142,26 @@ async function salvarAtivo(){
     return;
   }
 
-  const { data: existente, error: erroBusca } = await supabase
-    .from('investments')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('ativo', true)
-    .eq('ticker', ticker)
-    .eq('corretora', corretora)
-    .eq('moeda', moeda)
-    .maybeSingle();
+  try{
+    const { existing } = await saveInvestmentPosition({
+      userId:user.id,
+      ticker,
+      name:nome,
+      type:tipo,
+      quantity:quantidade,
+      averagePrice:precoMedio,
+      currentPrice:cotacaoAtual,
+      currency:moeda,
+      brokerName:corretora,
+      usdBrlRate:dolarAtual
+    });
 
-  if(erroBusca){
-    mostrarMensagem('Erro ao verificar ativo existente: ' + erroBusca.message, 'danger');
-    return;
-  }
-
-  let error = null;
-
-  if(existente){
-    const qtdAntiga = Number(existente.quantidade || 0);
-    const pmAntigo = Number(existente.preco_medio || 0);
-    const novaQtd = qtdAntiga + quantidade;
-    const novoPM = novaQtd ? ((qtdAntiga * pmAntigo) + (quantidade * precoMedio)) / novaQtd : precoMedio;
-
-    const update = await supabase
-      .from('investments')
-      .update({
-        nome:nome || existente.nome,
-        tipo:tipo,
-        quantidade:novaQtd,
-        preco_medio:novoPM,
-        cotacao_atual:cotacaoAtual ?? existente.cotacao_atual,
-        exchange_rate:moeda === 'USD' ? dolarAtual : null,
-        atualizado_em:new Date().toISOString()
-      })
-      .eq('id', existente.id)
-      .eq('user_id', user.id);
-
-    error = update.error;
-  }else{
-    const insert = await supabase
-      .from('investments')
-      .insert({
-        user_id:user.id,
-        ticker:ticker,
-        nome:nome,
-        tipo:tipo,
-        quantidade:quantidade,
-        preco_medio:precoMedio,
-        moeda:moeda,
-        corretora:corretora,
-        exchange_rate:moeda === 'USD' ? dolarAtual : null,
-        cotacao_atual:cotacaoAtual,
-        atualizado_em:cotacaoAtual ? new Date().toISOString() : null,
-        ativo:true
-      });
-
-    error = insert.error;
-  }
-
-  if(error){
+    limparFormulario();
+    mostrarMensagem(existing ? 'Ativo consolidado com posição existente.' : 'Ativo salvo com sucesso.', 'success');
+    await carregarInvestimentos();
+  }catch(error){
     mostrarMensagem('Erro ao salvar: ' + error.message, 'danger');
-    return;
   }
-
-  limparFormulario();
-  mostrarMensagem(existente ? 'Ativo consolidado com posição existente.' : 'Ativo salvo com sucesso.', 'success');
-  await carregarInvestimentos();
 }
 
 async function excluirAtivo(id, ticker){
@@ -259,52 +169,37 @@ async function excluirAtivo(id, ticker){
 
   if(!ok) return;
 
-  const { error } = await supabase
-    .from('investments')
-    .update({ ativo:false })
-    .eq('id', id)
-    .eq('user_id', user.id);
-
-  if(error){
+  try{
+    await softDeleteInvestment(user.id, id);
+    mostrarMensagem('Ativo excluído da carteira.', 'success');
+    await carregarInvestimentos();
+  }catch(error){
     mostrarMensagem('Erro ao excluir ativo: ' + error.message, 'danger');
-    return;
   }
-
-  mostrarMensagem('Ativo excluído da carteira.', 'success');
-  await carregarInvestimentos();
 }
 
 async function carregarInvestimentos(){
-  const { data, error } = await supabase
-    .from('investments')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('ativo', true)
-    .order('ticker', { ascending:true });
+  try{
+    const ativos = await listActiveInvestments(user.id);
 
-  if(error){
+    renderizarResumo(ativos);
+    renderizarCarteira(ativos);
+  }catch(error){
     listaInvestimentos.innerHTML = '<p class="muted">Erro ao carregar investimentos.</p>';
     mostrarMensagem('Erro ao listar: ' + error.message, 'danger');
-    return;
   }
-
-  const ativos = data || [];
-
-  renderizarResumo(ativos);
-  renderizarCarteira(ativos);
 }
 
 function valorAplicado(item){
-  return Number(item.quantidade || 0) * Number(item.preco_medio || 0);
+  return calculateAppliedValue(item);
 }
 
 function valorAtual(item){
-  const cotacao = Number(item.cotacao_atual || item.preco_medio || 0);
-  return Number(item.quantidade || 0) * cotacao;
+  return calculateCurrentValue(item);
 }
 
 function valorBRL(item, valor){
-  return (item.moeda || 'BRL') === 'USD' ? valor * dolarAtual : valor;
+  return calculateBRLValue(item, valor, dolarAtual);
 }
 
 function renderizarResumo(ativos){
@@ -320,7 +215,7 @@ function renderizarResumo(ativos){
   totalAtivos.innerText = String(ativos.length);
 
   if(exteriorUsd){
-    exteriorUsd.innerText = usd(exteriorTotalUsd);
+    exteriorUsd.innerText = formatUSD(exteriorTotalUsd);
   }
 
   if(exteriorBrl){
@@ -380,7 +275,7 @@ function renderizarCarteira(ativos){
                 ${moeda === 'USD' ? `<br><span class="muted">${formatCurrency(valorBRL(item, atual), 'BRL')}</span>` : ''}
               </td>
               <td class="money ${resultado >= 0 ? 'positive' : 'negative'}">
-                ${formatCurrency(resultado, moeda)}<br>${formatarPercentual(percentual)}
+                ${formatCurrency(resultado, moeda)}<br>${formatPercent(percentual)}
               </td>
               <td>${item.corretora || '-'}</td>
               <td>
