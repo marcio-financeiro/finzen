@@ -155,6 +155,44 @@ function injectStyles(){
       text-decoration:none;
     }
 
+    .sidebar-nav::before{
+      content:none !important;
+    }
+
+    .sidebar-nav .nav-section-label{
+      display:block;
+      box-sizing:border-box;
+      width:100%;
+      padding:16px 20px 6px;
+      margin:0;
+      font-size:10px;
+      font-weight:800;
+      letter-spacing:2px;
+      line-height:1.2;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+
+    .sidebar-nav .nav-icon,
+    .drawer-nav .nav-icon{
+      width:20px;
+      min-width:20px;
+      text-align:center;
+      display:inline-block;
+    }
+
+    .drawer-nav .nav-section-label{
+      display:block;
+      padding:14px 10px 6px;
+      margin:0;
+      font-size:10px;
+      font-weight:800;
+      letter-spacing:2px;
+      line-height:1.2;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+
     .drawer-nav a.active{
       background:rgba(79,142,247,.16);
       color:var(--text);
