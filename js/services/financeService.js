@@ -43,6 +43,27 @@ export function convertToBRL(value, currency = DEFAULT_CURRENCY, usdBrlRate = DE
   return toNumber(value);
 }
 
+export function calculateCurrencyExchange({ sourceAmount, exchangeRate, fromCurrency, toCurrency }){
+  const amount = toNumber(sourceAmount);
+  const rate = toNumber(exchangeRate);
+  const from = normalizeCurrency(fromCurrency);
+  const to = normalizeCurrency(toCurrency);
+
+  if(amount <= 0 || rate <= 0 || from === to){
+    return 0;
+  }
+
+  if(from === 'BRL' && to === 'USD'){
+    return amount / rate;
+  }
+
+  if(from === 'USD' && to === 'BRL'){
+    return amount * rate;
+  }
+
+  throw new Error('Nesta versão, a conversão suporta apenas BRL e USD.');
+}
+
 export async function getUsdBrlRate(userId){
   const { data, error } = await supabase
     .from('user_settings')
