@@ -74,6 +74,57 @@
       </div>
     </section>
 
+
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Conversão Cambial</h2>
+        <p class="muted">Converta saldo entre contas de corretora. Exemplo: Nomad BRL → Nomad USD.</p>
+      </div>
+
+      <div style="padding:20px">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="exchangeFromAccount">Conta de origem</label>
+            <select id="exchangeFromAccount"></select>
+          </div>
+
+          <div class="form-group">
+            <label for="exchangeToAccount">Conta de destino</label>
+            <select id="exchangeToAccount"></select>
+          </div>
+
+          <div class="form-group">
+            <label for="exchangeAmount">Valor de origem</label>
+            <input type="number" id="exchangeAmount" min="0" step="0.01" placeholder="Ex: 1000,00">
+          </div>
+
+          <div class="form-group">
+            <label for="exchangeRate">Taxa USD/BRL</label>
+            <input type="number" id="exchangeRate" min="0" step="0.0001" placeholder="Ex: 5,7300">
+          </div>
+
+          <div class="form-group">
+            <label for="exchangeDate">Data</label>
+            <input type="date" id="exchangeDate">
+          </div>
+
+          <div class="form-group full">
+            <label for="exchangeDescription">Descrição</label>
+            <input type="text" id="exchangeDescription" placeholder="Ex: Conversão Nomad BRL para USD">
+          </div>
+        </div>
+
+        <p id="exchangePreview" class="muted" style="margin:0 0 14px">Informe origem, destino, valor e taxa para ver a prévia.</p>
+
+        <button id="btnConverterCambio" class="btn btn-secondary">
+          💱 Converter saldo
+        </button>
+
+        <div id="exchangeMessage" class="message"></div>
+      </div>
+    </section>
+
     <section class="panel">
       <div class="panel-header">
         <h2>Últimas Transferências</h2>
@@ -84,14 +135,25 @@
       </div>
     </section>
 
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Últimas Conversões Cambiais</h2>
+      </div>
+
+      <div id="listaConversoes" class="table-wrap">
+        <p class="muted" style="padding:18px">Carregando conversões...</p>
+      </div>
+    </section>
+
   </main>
 
 </div>
 
 <nav class="mobile-nav"></nav>
 
-<script type="module" src="../js/navigation.js?v=9433"></script>
-<script type="module" src="../js/transfers.js?v=9433"></script>
+<script type="module" src="../js/navigation.js?v=944a"></script>
+<script type="module" src="../js/transfers.js?v=944a"></script>
 
 </body>
 </html>
