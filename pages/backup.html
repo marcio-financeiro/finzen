@@ -3,81 +3,104 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Backup - FinZen</title>
-
-<link rel="stylesheet" href="../css/base.css?v=1010">
-<link rel="stylesheet" href="../css/layout.css?v=1010">
-<link rel="stylesheet" href="../css/components.css?v=1010">
-<link rel="stylesheet" href="../css/mobile.css?v=1010">
-<link rel="stylesheet" href="../css/navigation.css?v=1010">
+<link rel="stylesheet" href="../css/base.css?v=1020">
+<link rel="stylesheet" href="../css/layout.css?v=1020">
+<link rel="stylesheet" href="../css/components.css?v=1020">
+<link rel="stylesheet" href="../css/mobile.css?v=1020">
+<link rel="stylesheet" href="../css/navigation.css?v=1020">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#4b84f3">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+.backup-options{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;
+}
+@media(max-width:600px){ .backup-options{ grid-template-columns:1fr; } }
+.backup-option{
+  border:1px solid var(--border);border-radius:16px;padding:20px;
+  background:var(--surface-2);text-align:center;
+}
+.backup-option h3{ font-size:14px;margin:10px 0 6px; }
+.backup-option p{ font-size:12px;color:var(--muted);margin-bottom:14px; }
+.backup-option .icon{ font-size:32px; }
+.drive-status{
+  font-size:12px;color:var(--muted);margin-top:8px;min-height:18px;
+}
+</style>
 </head>
-
 <body>
-
 <div class="app-shell">
-
   <aside class="sidebar">
     <div class="sidebar-brand">FinZen</div>
     <nav class="sidebar-nav"></nav>
   </aside>
 
   <main class="content">
-
     <header class="topbar">
       <div>
-        <h1>Backup e Restore</h1>
-        <p class="muted">Exporte seus dados do FinZen em JSON</p>
+        <h1>Backup</h1>
+        <p id="ultimoBackupInfo" class="muted">Carregando...</p>
       </div>
+      <a href="./restore.html" class="btn btn-secondary compact">↩ Restaurar</a>
     </header>
 
-    <section class="panel">
-      <div class="panel-header">
-        <h2>Backup dos Dados</h2>
+    <!-- Opções de backup -->
+    <div class="backup-options">
+
+      <div class="backup-option">
+        <div class="icon">⬇️</div>
+        <h3>Download local</h3>
+        <p>Baixa um arquivo JSON para o seu dispositivo. Salve em local seguro.</p>
+        <button id="btnBackupLocal" class="btn btn-primary" style="width:100%">⬇️ Baixar JSON</button>
       </div>
 
-      <div style="padding:20px">
-        <p class="muted">
-          Baixe, compartilhe ou copie uma cópia local dos seus dados cadastrados no Supabase.
-        </p>
-
-        <button id="btnBackup" class="btn btn-primary">
-          📥 Gerar Backup
+      <div class="backup-option">
+        <div class="icon">☁️</div>
+        <h3>Google Drive</h3>
+        <p>Salva automaticamente na pasta <strong>FinZen Backups</strong> do seu Google Drive.</p>
+        <button id="btnBackupDrive" class="btn btn-primary" style="width:100%;background:var(--surface-3);border:1px solid #4285f4;color:#4285f4">
+          <svg style="width:16px;height:16px;vertical-align:middle;margin-right:6px" viewBox="0 0 48 48">
+            <path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#34A853" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          Salvar no Drive
         </button>
-
-        <div id="backupMessage" class="message"></div>
-
-        <div id="backupActions" style="display:none;margin-top:16px;gap:8px;flex-wrap:wrap">
-          <button id="btnDownloadFallback" class="btn btn-secondary">⬇️ Baixar JSON</button>
-          <button id="btnShareText" class="btn btn-secondary">📤 Compartilhar texto</button>
-          <button id="btnCopyBackup" class="btn btn-secondary">📋 Copiar JSON</button>
-        </div>
-
-        <textarea
-          id="backupPreview"
-          style="display:none;width:100%;min-height:220px;margin-top:16px"
-          readonly></textarea>
+        <div id="driveStatus" class="drive-status"></div>
       </div>
-    </section>
 
+    </div>
+
+    <div id="backupMessage" class="message"></div>
+
+    <!-- Ações alternativas (após gerar backup) -->
+    <div id="backupActions" style="display:none;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      <button id="btnShareText" class="btn btn-secondary compact">📤 Compartilhar</button>
+      <button id="btnCopyBackup" class="btn btn-secondary compact">📋 Copiar JSON</button>
+    </div>
+    <textarea id="backupPreview"
+      style="display:none;width:100%;min-height:140px;margin-bottom:16px;font-size:11px;font-family:monospace"
+      readonly></textarea>
+
+    <!-- Dados incluídos -->
     <section class="panel">
-      <div class="panel-header">
-        <h2>Informações do Backup</h2>
-      </div>
-
-      <div id="backupInfo" style="padding:20px">
-        Carregando...
+      <div class="panel-header"><h2>Dados incluídos no backup</h2></div>
+      <div id="backupStats" style="padding:20px">
+        <p class="muted">Carregando...</p>
       </div>
     </section>
 
   </main>
-
 </div>
 
 <nav class="mobile-nav"></nav>
 
-<script type="module" src="../js/navigation.js?v=1010"></script>
-<script type="module" src="../js/backup.js?v=1010"></script>
-
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script type="module" src="../js/navigation.js?v=1020"></script>
+<script type="module" src="../js/backup.js?v=1020"></script>
 </body>
 </html>

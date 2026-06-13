@@ -3,106 +3,109 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Restore - FinZen</title>
-
-<link rel="stylesheet" href="../css/base.css?v=1010">
-<link rel="stylesheet" href="../css/layout.css?v=1010">
-<link rel="stylesheet" href="../css/components.css?v=1010">
-<link rel="stylesheet" href="../css/mobile.css?v=1010">
-<link rel="stylesheet" href="../css/navigation.css?v=1010">
+<title>Restaurar Backup - FinZen</title>
+<link rel="stylesheet" href="../css/base.css?v=1020">
+<link rel="stylesheet" href="../css/layout.css?v=1020">
+<link rel="stylesheet" href="../css/components.css?v=1020">
+<link rel="stylesheet" href="../css/mobile.css?v=1020">
+<link rel="stylesheet" href="../css/navigation.css?v=1020">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#4b84f3">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+.progress-wrap{
+  margin-top:16px;background:var(--border);border-radius:99px;height:10px;overflow:hidden;display:none;
+}
+.progress-bar{
+  height:10px;border-radius:99px;background:var(--accent);transition:width .3s ease;width:0%;
+}
+.progress-label{
+  font-size:12px;color:var(--muted);margin-top:6px;display:block;
+}
+</style>
 </head>
-
 <body>
-
 <div class="app-shell">
-
   <aside class="sidebar">
     <div class="sidebar-brand">FinZen</div>
     <nav class="sidebar-nav"></nav>
   </aside>
 
   <main class="content">
-
     <header class="topbar">
       <div>
         <h1>Restaurar Backup</h1>
-        <p class="muted">Importe um backup JSON do FinZen</p>
+        <p class="muted">Importe um backup JSON para recuperar seus dados</p>
       </div>
+      <a href="./backup.html" class="btn btn-secondary compact">💾 Fazer Backup</a>
     </header>
 
+    <!-- Passo 1: Carregar arquivo -->
     <section class="panel">
-      <div class="panel-header">
-        <h2>1. Carregar Backup</h2>
-      </div>
-
+      <div class="panel-header"><h2>1. Carregar backup</h2></div>
       <div style="padding:20px">
-
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="backupFile">Arquivo JSON</label>
-            <input type="file" id="backupFile" accept=".json,application/json">
-          </div>
-        </div>
-
         <div class="form-group">
-          <label for="backupText">Ou cole o JSON aqui</label>
-          <textarea id="backupText" placeholder="Cole o conteúdo do backup JSON aqui..." style="min-height:180px"></textarea>
+          <label>Selecionar arquivo JSON</label>
+          <input type="file" id="backupFile" accept=".json" style="padding:8px">
         </div>
-
-        <button id="btnValidateBackup" class="btn btn-primary">
-          🔎 Validar Backup
-        </button>
-
-        <div id="restoreMessage" class="message"></div>
+        <div class="form-group">
+          <label>Ou cole o conteúdo do JSON aqui</label>
+          <textarea id="backupText" rows="5" style="width:100%;font-size:12px;font-family:monospace"
+            placeholder='{"app":"FinZen","version":"..."}'></textarea>
+        </div>
+        <button id="btnValidate" class="btn btn-primary">🔍 Validar Backup</button>
+        <div id="validateMessage" class="message" style="margin-top:12px"></div>
       </div>
     </section>
 
+    <!-- Resumo do backup carregado -->
     <section class="panel">
-      <div class="panel-header">
-        <h2>2. Resumo do Backup</h2>
-      </div>
-
+      <div class="panel-header"><h2>2. Resumo do backup</h2></div>
       <div id="backupSummary" style="padding:20px">
-        <p class="muted">Nenhum backup validado ainda.</p>
+        <p class="muted">Nenhum backup carregado ainda.</p>
       </div>
     </section>
 
-    <section class="panel">
-      <div class="panel-header">
-        <h2>3. Restaurar Dados</h2>
-      </div>
-
+    <!-- Passo 3: Restaurar -->
+    <section class="panel" id="restoreSection" style="display:none">
+      <div class="panel-header"><h2>3. Restaurar</h2></div>
       <div style="padding:20px">
+
         <div class="form-group">
-          <label for="restoreMode">Modo de restauração</label>
+          <label>Modo de restauração</label>
           <select id="restoreMode">
-            <option value="merge">Mesclar com dados atuais</option>
-            <option value="replace">Substituir tudo do usuário</option>
+            <option value="merge">Mesclar — adiciona dados sem apagar os existentes</option>
+            <option value="replace">Substituir tudo — apaga todos os dados e reimporta</option>
           </select>
         </div>
 
-        <div class="form-group" id="replaceConfirmBox" style="display:none">
-          <label for="replaceConfirm">Confirmação para substituir tudo</label>
-          <input type="text" id="replaceConfirm" placeholder="Digite RESTAURAR">
+        <div id="replaceConfirmBox" style="display:none;margin-bottom:16px;padding:14px;border:1px solid var(--danger);border-radius:12px;background:rgba(239,68,68,.06)">
+          <p style="color:var(--danger);font-size:13px;font-weight:700;margin-bottom:8px">
+            ⚠️ Atenção: esta ação apagará TODOS os seus dados atuais antes de importar o backup.
+          </p>
+          <div class="form-group" style="margin:0">
+            <label style="color:var(--danger)">Digite RESTAURAR para confirmar</label>
+            <input type="text" id="replaceConfirm" placeholder="RESTAURAR" style="border-color:var(--danger)">
+          </div>
         </div>
 
-        <button id="btnRestoreBackup" class="btn btn-danger" disabled>
-          📤 Restaurar Backup
-        </button>
+        <button id="btnRestore" class="btn btn-primary">↩ Restaurar Backup</button>
 
-        <div id="restoreProgress" class="message"></div>
+        <div id="progressWrap" class="progress-wrap">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
+        <span id="progressLabel" class="progress-label"></span>
+
+        <div id="restoreMessage" class="message" style="margin-top:12px"></div>
       </div>
     </section>
 
   </main>
-
 </div>
 
 <nav class="mobile-nav"></nav>
-
-<script type="module" src="../js/navigation.js?v=1010"></script>
-<script type="module" src="../js/restore.js?v=1010"></script>
-
+<script type="module" src="../js/navigation.js?v=1020"></script>
+<script type="module" src="../js/restore.js?v=1020"></script>
 </body>
 </html>
