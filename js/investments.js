@@ -1,3 +1,4 @@
+import { confirmarExclusao } from './confirmModal.js';
 import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
@@ -504,7 +505,7 @@ function editarAtivo(id){
 }
 
 async function excluirAtivo(id,ticker){
-  if(!confirm(`Excluir ${ticker} da carteira?`)) return;
+  if(!await confirmarExclusao(`Excluir <strong>${ticker}</strong> da carteira?`)) return;
   const {error}=await supabase.from('investments').update({ativo:false}).eq('id',id).eq('user_id',user.id);
   if(error){ msg('mensagemAtivo','Erro: '+error.message,'danger'); return; }
   msg('mensagemAtivo',`${ticker} removido.`,'success');

@@ -1,3 +1,4 @@
+import { confirmarExclusao } from './confirmModal.js';
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
@@ -251,8 +252,9 @@ function atualizarPreviaCambio(){
 }
 
 async function excluirTransferencia(id){
-  const confirmar = confirm(
-    'Excluir esta transferência?\n\nO saldo será revertido automaticamente: a origem recebe de volta e o destino perde o valor.'
+  const confirmar = await confirmarExclusao(
+    'Excluir esta transferência?',
+    'O saldo será revertido automaticamente: a origem recebe de volta e o destino perde o valor.'
   );
 
   if(!confirmar){

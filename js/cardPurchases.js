@@ -160,6 +160,11 @@ async function salvarCompra(){
     return;
   }
 
+  if(!categoryId){
+    mostrarMensagem('Selecione uma categoria para a compra.', 'warning');
+    return;
+  }
+
   if(parcelas < 1 || parcelas > 60){
     mostrarMensagem('Parcelas deve ser entre 1 e 60.', 'warning');
     return;

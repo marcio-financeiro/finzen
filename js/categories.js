@@ -34,6 +34,77 @@ btnLogout.addEventListener('click', async () => {
   navigate('../login.html');
 });
 
+
+// ── Emoji Picker ──────────────────────────────
+const EMOJIS = {
+  common:    ['😀','😊','🙂','❤️','⭐','✅','🔥','💡','📌','🎯','🏆','💎','🌟','✨','🎁','📅','📊','📋','🔑','🔒'],
+  money:     ['💰','💵','💳','🏦','📈','📉','💹','🪙','💸','🤑','💼','🧾','📑','🏧','💴','💶','💷','🪙','📊','🏠'],
+  food:      ['🍔','🍕','🍣','🥗','🍱','☕','🍺','🛒','🍎','🥩','🍰','🍜','🌮','🥪','🍷','🧃','🫕','🥘','🍿','🎂'],
+  home:      ['🏠','🏡','💊','🏥','👕','✂️','🪴','🐶','🐱','👶','🎓','📚','🧹','🛋️','🔌','💻','📱','🪑','🛁','🧺'],
+  transport: ['🚗','🚕','🚌','✈️','🚂','⛽','🛵','🚲','🚁','🛳️','🚚','🏎️','🛺','🚡','⚓','🛣️','🪂','🚦','🅿️','🗺️'],
+  fun:       ['🎮','🎬','🎵','🎸','🏖️','⚽','🎭','🎨','🎲','🃏','🎳','🏋️','🧘','🎪','🎠','🎡','🎢','🤿','🪁','🧩'],
+};
+
+function initEmojiPicker(){
+  const preview   = document.getElementById('emojiPreview');
+  const input     = document.getElementById('iconeCategoria');
+  const btnPicker = document.getElementById('btnEmojiPicker');
+  const panel     = document.getElementById('emojiPickerPanel');
+  const grid      = document.getElementById('emojiGrid');
+  if(!preview || !btnPicker || !panel || !grid) return;
+
+  function setEmoji(emoji){
+    input.value  = emoji;
+    preview.textContent = emoji;
+    panel.style.display = 'none';
+  }
+
+  function renderGrid(cat){
+    grid.innerHTML = (EMOJIS[cat]||[]).map(e=>
+      `<button type="button" title="${e}" onclick="(function(){
+        document.getElementById('iconeCategoria').value='${e}';
+        document.getElementById('emojiPreview').textContent='${e}';
+        document.getElementById('emojiPickerPanel').style.display='none';
+      })()" style="font-size:20px;width:34px;height:34px;border:none;background:transparent;
+        cursor:pointer;border-radius:6px;line-height:1;" onmouseover="this.style.background='var(--surface-3,rgba(75,132,243,.12))'"
+        onmouseout="this.style.background='transparent'">${e}</button>`
+    ).join('');
+  }
+
+  renderGrid('common');
+
+  document.querySelectorAll('.emoji-cat-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.emoji-cat-btn').forEach(b=>{
+        b.style.background='var(--surface)'; b.style.color='var(--text)';
+      });
+      btn.style.background='var(--accent)'; btn.style.color='#fff';
+      renderGrid(btn.dataset.cat);
+    });
+  });
+
+  btnPicker.addEventListener('click',()=>{
+    panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+  });
+
+  input.addEventListener('input',()=>{
+    if(input.value) preview.textContent = input.value;
+  });
+
+  // Fechar ao clicar fora
+  document.addEventListener('click',(e)=>{
+    if(!panel.contains(e.target) && e.target!==btnPicker && e.target!==preview){
+      panel.style.display='none';
+    }
+  });
+
+  preview.addEventListener('click',()=>{
+    panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+  });
+}
+
+initEmojiPicker();
+
 btnSalvarCategoria.addEventListener('click', salvarCategoria);
 btnCriarPadrao.addEventListener('click', criarCategoriasPadrao);
 
@@ -42,7 +113,7 @@ async function salvarCategoria(){
 
   const nome = nomeCategoria.value.trim();
   const tipo = tipoCategoria.value;
-  const icon = iconeCategoria.value.trim();
+  const icon = iconeCategoria.value.trim() || document.getElementById('emojiPreview')?.textContent?.trim() || '';
   const cor = corCategoria.value || '#4f8ef7';
   const budget = orcamentoCategoria.value ? Number(orcamentoCategoria.value) : null;
   const ativo = statusCategoria.value === 'true';
@@ -167,6 +238,7 @@ function limparFormulario(){
   nomeCategoria.value = '';
   tipoCategoria.value = '';
   iconeCategoria.value = '';
+  const ep=document.getElementById('emojiPreview'); if(ep) ep.textContent='😀';
   corCategoria.value = '#4f8ef7';
   orcamentoCategoria.value = '';
   statusCategoria.value = 'true';

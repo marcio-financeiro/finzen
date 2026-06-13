@@ -1,3 +1,4 @@
+import { confirmarExclusao } from './confirmModal.js';
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
@@ -122,7 +123,7 @@ async function salvarConta(){
 }
 
 async function excluirConta(id,nome){
-  if(!confirm(`Excluir a conta "${nome}"?`)) return;
+  if(!await confirmarExclusao(`Excluir a conta <strong>${nome}</strong>?`)) return;
   const {error}=await supabase.from('accounts').delete().eq('id',id).eq('user_id',user.id);
   if(error){ msg('msgConta','Erro: '+error.message,'danger'); return; }
   msg('msgConta',`Conta "${nome}" excluída.`,'success');
@@ -230,7 +231,7 @@ async function salvarCartao(){
 }
 
 async function excluirCartao(id,nome){
-  if(!confirm(`Excluir o cartão "${nome}"? Faturas associadas serão perdidas.`)) return;
+  if(!await confirmarExclusao(`Excluir o cartão <strong>${nome}</strong>?`, 'Faturas associadas serão perdidas.')) return;
   const {error}=await supabase.from('credit_cards').delete().eq('id',id).eq('user_id',user.id);
   if(error){ msg('msgCartao','Erro: '+error.message,'danger'); return; }
   msg('msgCartao',`Cartão "${nome}" excluído.`,'success');
@@ -338,7 +339,7 @@ async function salvarCategoria(){
 }
 
 async function excluirCategoria(id,nome){
-  if(!confirm(`Excluir a categoria "${nome}"?`)) return;
+  if(!await confirmarExclusao(`Excluir a categoria <strong>${nome}</strong>?`)) return;
   const {error}=await supabase.from('categories').delete().eq('id',id).eq('user_id',user.id);
   if(error){ msg('msgCategoria','Erro: '+error.message,'danger'); return; }
   msg('msgCategoria',`Categoria "${nome}" excluída.`,'success');
