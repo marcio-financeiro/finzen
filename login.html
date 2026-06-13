@@ -15,6 +15,23 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FinZen">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
+<style>
+  /* Fix autofill do Chrome/Safari que deixa fundo branco */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus{
+    -webkit-box-shadow:0 0 0 100px var(--surface-2) inset !important;
+    -webkit-text-fill-color:#ffffff !important;
+    caret-color:#ffffff !important;
+    border-color:var(--border) !important;
+    transition:background-color 5000s ease-in-out 0s;
+  }
+  .auth-card input{
+    background:var(--surface-2) !important;
+    color:#ffffff !important;
+    -webkit-text-fill-color:#ffffff !important;
+  }
+</style>
 </head>
 
 <body>
