@@ -248,6 +248,15 @@ textarea:focus{
   letter-spacing:-0.04em;
 }
 
+.kpi-clickable{
+  cursor:pointer;
+  transition:transform .15s, box-shadow .15s;
+}
+.kpi-clickable:hover{
+  transform:translateY(-2px);
+  box-shadow:0 4px 16px rgba(75,132,243,.18);
+}
+
 .table-wrap{
   overflow-x:auto;
 }
