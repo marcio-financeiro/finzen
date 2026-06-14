@@ -98,7 +98,7 @@ async function carregarDashboard(){
   renderPizza(pagas.filter(t=>t.type==='despesa'));
 
   // ── Saúde do orçamento ───────────────────────────
-  renderOrcamento(orcamentos||[], pagas.filter(t=>t.type==='despesa'));
+  renderOrcamento(orcamentos||[], pagas.filter(t=>t.type==='despesa'), parcelasMes||[]);
 
   // ── Metas ────────────────────────────────────────
   renderMetas(metas||[]);
@@ -251,7 +251,7 @@ function renderPizza(despesasMes){
 }
 
 // ── Orçamento ─────────────────────────────────────────
-function renderOrcamento(orcamentos, despesasMes){
+function renderOrcamento(orcamentos, despesasMes, parcelasMes){
   if(!orcamentos.length){
     el('blocoOrcamento').innerHTML = `<p class="muted" style="font-size:13px">
       Nenhum orçamento configurado para este mês.
