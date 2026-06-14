@@ -133,7 +133,7 @@ export async function coletarContexto(userId) {
   };
 }
 
-// ── Chama Claude AI e faz streaming ──────────────────────────────────────
+// ── Chama Claude AI via Vercel Function (sem CORS) ───────────────────────
 export async function analisarComIA(contexto, onChunk, onDone) {
   const fmt = v => Number(v).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
 
@@ -178,59 +178,50 @@ Gere uma análise em **3 seções obrigatórias**, em português brasileiro, cur
 Em 2-3 frases, diga se o mês vai fechar positivo ou negativo, baseado nos dados reais. Se negativo, diga em quantos dias aproximadamente o saldo pode ficar crítico.
 
 ### ⚠️ Alertas prioritários
-Liste de 2 a 4 alertas concretos com base nos dados. Use emojis. Seja específico com valores. Exemplos de alertas relevantes: fatura alta se aproximando, despesas acima da média histórica, orçamento em risco, saldo insuficiente para cobrir pendências.
+Liste de 2 a 4 alertas concretos com base nos dados. Use emojis. Seja específico com valores.
 
 ### 💡 Recomendações
 Liste de 2 a 3 ações práticas e específicas que o usuário pode tomar agora. Baseie-se nos dados reais, não em conselhos genéricos.
 
 Seja objetivo, use valores em R$, e não repita dados óbvios. Tom: direto e útil, como um consultor financeiro experiente.`;
 
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: ANTHROPIC_MODEL,
-        max_tokens: 1000,
-        stream: true,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+  const response = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  });
 
-    if (!response.ok) throw new Error(`API error: ${response.status}`);
+  if (!response.ok) throw new Error(`Erro ${response.status}`);
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let textoCompleto = '';
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let textoCompleto = '';
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const linhas = buffer.split('\n');
-      buffer = linhas.pop();
+    buffer += decoder.decode(value, { stream: true });
+    const linhas = buffer.split('\n');
+    buffer = linhas.pop();
 
-      for (const linha of linhas) {
-        if (!linha.startsWith('data: ')) continue;
-        const raw = linha.slice(6).trim();
-        if (raw === '[DONE]') continue;
-        try {
-          const json = JSON.parse(raw);
-          const delta = json?.delta?.text || '';
-          if (delta) {
-            textoCompleto += delta;
-            onChunk(delta);
-          }
-        } catch(_) {}
-      }
+    for (const linha of linhas) {
+      if (!linha.startsWith('data: ')) continue;
+      const raw = linha.slice(6).trim();
+      if (raw === '[DONE]') continue;
+      try {
+        const json = JSON.parse(raw);
+        const delta = json?.delta?.text || '';
+        if (delta) {
+          textoCompleto += delta;
+          onChunk(delta);
+        }
+      } catch(_) {}
     }
-
-    onDone(textoCompleto);
-  } catch (err) {
-    throw new Error('Erro ao conectar com IA: ' + err.message);
   }
+
+  onDone(textoCompleto);
 }
 
 // ── Renderiza markdown simples ────────────────────────────────────────────
