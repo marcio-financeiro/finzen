@@ -908,9 +908,14 @@ async function loadUpcomingRecurring(){
     return;
   }
 
+  // Filtro de mês
+  const filtroMes = el('filterRecorrencia')?.value || '';
+
   const previews = [];
   for(const model of models||[]){
-    nextOccurrencesFromModel(model,3).forEach(date => {
+    nextOccurrencesFromModel(model, filtroMes ? 12 : 3).forEach(date => {
+      // Se tem filtro, só inclui datas do mês selecionado
+      if(filtroMes && String(date).slice(0,7) !== filtroMes) return;
       previews.push({
         date, type:model.type, description:model.description,
         amount:Number(model.amount||0),
@@ -924,11 +929,22 @@ async function loadUpcomingRecurring(){
   previews.sort((a,b) => String(a.date).localeCompare(String(b.date)));
 
   if(!previews.length){
-    upcomingRecurringList.innerHTML = '<p class="muted" style="padding:18px">Nenhuma próxima recorrência prevista.</p>';
+    upcomingRecurringList.innerHTML = `<p class="muted" style="padding:18px">${filtroMes ? `Nenhuma recorrência prevista para ${filtroMes.split('-').reverse().join('/')}.` : 'Nenhuma próxima recorrência prevista.'}</p>`;
     return;
   }
 
-  upcomingRecurringList.innerHTML = `
+  // Totalizar por tipo
+  const totalReceitas = previews.filter(p=>p.type==='receita').reduce((s,p)=>s+p.amount,0);
+  const totalDespesas = previews.filter(p=>p.type==='despesa').reduce((s,p)=>s+p.amount,0);
+  const resumo = filtroMes ? `
+    <div style="display:flex;gap:16px;padding:12px 16px;font-size:12px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+      <span>📅 <strong>${previews.length}</strong> recorrências</span>
+      <span class="positive">↑ Receitas: <strong>${formatCurrency(totalReceitas,'BRL')}</strong></span>
+      <span class="negative">↓ Despesas: <strong>${formatCurrency(totalDespesas,'BRL')}</strong></span>
+      <span>💰 Saldo previsto: <strong class="${totalReceitas-totalDespesas>=0?'positive':'negative'}">${formatCurrency(totalReceitas-totalDespesas,'BRL')}</strong></span>
+    </div>` : '';
+
+  upcomingRecurringList.innerHTML = resumo + `
     <div class="ff-desktop-table">
       <table class="data-table">
         <thead><tr>
@@ -936,7 +952,7 @@ async function loadUpcomingRecurring(){
           <th>Categoria</th><th>Frequência</th><th>Valor</th>
         </tr></thead>
         <tbody>
-          ${previews.slice(0,12).map(item => `
+          ${previews.slice(0, filtroMes ? 999 : 12).map(item => `
             <tr>
               <td>${shortDateBR(item.date)}</td>
               <td>${item.description}</td>
@@ -952,7 +968,7 @@ async function loadUpcomingRecurring(){
       </table>
     </div>
     <div class="ff-mobile-list">
-      ${previews.slice(0,12).map(item => `
+      ${previews.slice(0, filtroMes ? 999 : 12).map(item => `
         <article class="ff-mobile-card">
           <div class="ff-mobile-card-title">
             <strong>${item.description}</strong>
@@ -1206,6 +1222,18 @@ btnClearFilter.addEventListener('click', () => {
   filterMonth.value = '';
   loadMovements();
 });
+
+// Filtro de recorrências
+const filterRecorrencia  = el('filterRecorrencia');
+const btnClearRecorrencia = el('btnClearRecorrencia');
+if(filterRecorrencia){
+  filterRecorrencia.value = currentMonthValue();
+  filterRecorrencia.addEventListener('change', loadUpcomingRecurring);
+  btnClearRecorrencia?.addEventListener('click', () => {
+    filterRecorrencia.value = '';
+    loadUpcomingRecurring();
+  });
+}
 
 // ─────────────────────────────────────────────
 // INICIALIZAÇÃO
