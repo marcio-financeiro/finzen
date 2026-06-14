@@ -269,7 +269,7 @@ function renderizarCarteira(){
         <th>Ticker</th><th>Nome</th><th>Qtd</th>
         <th>P. Médio</th><th>Cotação</th>
         <th>Aplicado</th><th>Atual</th><th>Resultado</th>
-        <th>% Carteira</th><th>% Ideal</th><th>Comprar?</th><th>Ações</th>
+        <th>% Classe</th><th>% Ideal</th><th>Comprar?</th><th>Ações</th>
       </tr></thead><tbody>`;
 
     grupo.ativos.forEach(a=>{
@@ -278,7 +278,8 @@ function renderizarCarteira(){
       const atual   = calcAtual(a);
       const res     = atual-aplic;
       const pct     = aplic?res/aplic*100:0;
-      const pctCart = patrimTotal?calcBRL(a,atual)/patrimTotal*100:0;
+      // % dentro da classe (não da carteira total)
+      const pctCart = grupo.total?calcBRL(a,atual)/grupo.total*100:0;
       const pk      = `inv_peso_${a.ticker}`;
       const pideal  = toNumber((pesos[pk]||{}).ideal||0);
       const diff    = pideal-pctCart;
@@ -679,7 +680,7 @@ function renderizarBalancear(){
         html+=`<div class="bal-row">
           <span><strong>${a.ticker}</strong> <small class="muted">${a.nome||tipoLabel(a.tipo)}</small></span>
           <span>${formatCurrency(calcBRL(a,calcAtual(a)),'BRL')}</span>
-          <span class="muted" style="font-size:12px;">% na carteira</span>
+          <span class="muted" style="font-size:12px;">% na classe</span>
           <input type="number" class="bal-ativo-input" data-ticker="${pk}"
             value="${pideal||''}" placeholder="0" min="0" max="100" step="0.1">
           <span></span>
