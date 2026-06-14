@@ -298,7 +298,8 @@ function editarCategoria(c){
   editandoCategoria=c.id;
   el('categoriaNome').value=c.nome||'';
   el('categoriaTipo').value=c.tipo||'';
-  el('categoriaIcon').value=c.icon||'';
+  el('iconeCategoria').value=c.icon||'';
+  const ep=document.getElementById('emojiPreview'); if(ep&&c.icon) ep.textContent=c.icon;
   el('categoriaAtivo').value=String(c.ativo!==false);
   el('formCategoriaTitulo').innerText='Editar Categoria';
   el('btnSalvarCategoria').innerText='Salvar Alterações';
@@ -309,7 +310,8 @@ function editarCategoria(c){
 function limparFormCategoria(){
   editandoCategoria=null;
   el('categoriaNome').value=''; el('categoriaTipo').value='';
-  el('categoriaIcon').value=''; el('categoriaAtivo').value='true';
+  el('iconeCategoria').value=''; el('categoriaAtivo').value='true';
+  const ep=document.getElementById('emojiPreview'); if(ep) ep.textContent='😀';
   el('formCategoriaTitulo').innerText='Nova Categoria';
   el('btnSalvarCategoria').innerText='Salvar Categoria';
   el('btnCancelarCategoria').style.display='none';
@@ -318,7 +320,7 @@ function limparFormCategoria(){
 async function salvarCategoria(){
   const nome=el('categoriaNome').value.trim();
   const tipo=el('categoriaTipo').value;
-  const icon=el('categoriaIcon').value.trim();
+  const icon=(el('iconeCategoria').value.trim()) || (document.getElementById('emojiPreview')?.textContent?.trim()||'');
   const ativo=el('categoriaAtivo').value==='true';
 
   if(!nome||!tipo){ msg('msgCategoria','Preencha nome e tipo.','warning'); return; }
@@ -337,6 +339,75 @@ async function salvarCategoria(){
   limparFormCategoria();
   await carregarCategorias();
 }
+
+// ── Emoji Picker ──────────────────────────────────────
+const EMOJIS = {
+  common:    ['😀','😊','🙂','❤️','⭐','✅','🔥','💡','📌','🎯','🏆','💎','🌟','✨','🎁','📅','📊','📋','🔑','🔒'],
+  money:     ['💰','💵','💳','🏦','📈','📉','💹','🪙','💸','🤑','💼','🧾','📑','🏧','💴','💶','💷','🪙','📊','🏠'],
+  food:      ['🍔','🍕','🍣','🥗','🍱','☕','🍺','🛒','🍎','🥩','🍰','🍜','🌮','🥪','🍷','🧃','🫕','🥘','🍿','🎂'],
+  home:      ['🏠','🏡','💊','🏥','👕','✂️','🪴','🐶','🐱','👶','🎓','📚','🧹','🛋️','🔌','💻','📱','🪑','🛁','🧺'],
+  transport: ['🚗','🚕','🚌','✈️','🚂','⛽','🛵','🚲','🚁','🛳️','🚚','🏎️','🛺','🚡','⚓','🛣️','🪂','🚦','🅿️','🗺️'],
+  fun:       ['🎮','🎬','🎵','🎸','🏖️','⚽','🎭','🎨','🎲','🃏','🎳','🏋️','🧘','🎪','🎠','🎡','🎢','🤿','🪁','🧩'],
+};
+
+function initEmojiPicker(){
+  const preview   = document.getElementById('emojiPreview');
+  const input     = document.getElementById('iconeCategoria');
+  const btnPicker = document.getElementById('btnEmojiPicker');
+  const panel     = document.getElementById('emojiPickerPanel');
+  const grid      = document.getElementById('emojiGrid');
+  if(!preview||!btnPicker||!panel||!grid) return;
+
+  function renderGrid(cat){
+    grid.innerHTML=(EMOJIS[cat]||[]).map(e=>
+      `<button type="button" title="${e}"
+        style="font-size:20px;width:36px;height:36px;border:none;background:transparent;
+          cursor:pointer;border-radius:6px;line-height:1;"
+        onmouseover="this.style.background='rgba(79,132,243,.15)'"
+        onmouseout="this.style.background='transparent'"
+        data-emoji="${e}">${e}</button>`
+    ).join('');
+    grid.querySelectorAll('button[data-emoji]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        input.value=btn.dataset.emoji;
+        preview.textContent=btn.dataset.emoji;
+        panel.style.display='none';
+      });
+    });
+  }
+
+  renderGrid('common');
+
+  document.querySelectorAll('.emoji-cat-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.emoji-cat-btn').forEach(b=>{
+        b.style.background='var(--surface)'; b.style.color='var(--text)';
+      });
+      btn.style.background='var(--accent)'; btn.style.color='#fff';
+      renderGrid(btn.dataset.cat);
+    });
+  });
+
+  btnPicker.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    panel.style.display=panel.style.display==='none'?'block':'none';
+  });
+
+  input.addEventListener('input',()=>{ if(input.value) preview.textContent=input.value; });
+
+  document.addEventListener('click',(e)=>{
+    if(!panel.contains(e.target)&&e.target!==btnPicker&&e.target!==preview){
+      panel.style.display='none';
+    }
+  });
+
+  preview.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    panel.style.display=panel.style.display==='none'?'block':'none';
+  });
+}
+
+initEmojiPicker();
 
 async function excluirCategoria(id,nome){
   if(!await confirmarExclusao(`Excluir a categoria <strong>${nome}</strong>?`)) return;

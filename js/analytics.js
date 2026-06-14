@@ -95,8 +95,9 @@ async function carregar() {
         .eq('user_id', user.id).eq('active', true),
 
       supabase.from('investments')
-        .select('classe_ativo,valor_atual,rendimento_total')
-        .eq('user_id', user.id).eq('ativo', true),
+        .select('tipo,quantidade,preco_medio,cotacao_atual')
+        .eq('user_id', user.id)
+        .eq('ativo', true),
 
       // Patrimônio: calcula dinamicamente por mês
       supabase.from('transactions')
@@ -152,8 +153,11 @@ async function carregar() {
     // ── Dados de investimentos por classe ─────────────
     const invClasse = {};
     (investimentos||[]).forEach(i => {
-      const c = i.classe_ativo || 'Outros';
-      invClasse[c] = (invClasse[c]||0) + Number(i.valor_atual||0);
+      const classe    = i.tipo || 'Outros';
+      const qtd       = Number(i.quantidade||0);
+      const cotacao   = Number(i.cotacao_atual||i.preco_medio||0);
+      const valorAtual = qtd * cotacao;
+      invClasse[classe] = (invClasse[classe]||0) + valorAtual;
     });
 
     // ── Patrimônio histórico — calculado dinamicamente ──
