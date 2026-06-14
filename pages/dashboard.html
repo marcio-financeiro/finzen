@@ -149,6 +149,69 @@
 
 /* ── Full-width panels ── */
 .dash-full{ margin-bottom:16px; }
+
+/* ── Cashflow AI ── */
+.cfai-block{
+  border:1px solid rgba(79,124,255,.35);
+  border-radius:16px;
+  background:linear-gradient(135deg,rgba(79,124,255,.06) 0%,rgba(124,92,252,.06) 100%);
+  overflow:hidden;
+  margin-bottom:16px;
+}
+.cfai-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 18px;border-bottom:1px solid rgba(79,124,255,.2);
+}
+.cfai-header h2{ font-size:13px;font-weight:800;margin:0;display:flex;align-items:center;gap:8px; }
+.cfai-badge{
+  font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;
+  background:rgba(79,124,255,.15);color:#4b84f3;letter-spacing:.04em;
+}
+.cfai-body{ padding:18px; }
+.cfai-placeholder{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;padding:24px;text-align:center;
+}
+.cfai-placeholder p{ color:var(--muted);font-size:13px;max-width:320px;line-height:1.6; }
+.cfai-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 20px;border-radius:10px;border:none;
+  background:linear-gradient(135deg,#4b84f3,#7c5cfc);
+  color:#fff;font-size:13px;font-weight:700;cursor:pointer;
+  transition:opacity .15s,transform .1s;
+}
+.cfai-btn:hover:not(:disabled){ opacity:.88; }
+.cfai-btn:active:not(:disabled){ transform:scale(.97); }
+.cfai-btn:disabled{ opacity:.45;cursor:not-allowed; }
+.cfai-spinner{
+  width:14px;height:14px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;
+  animation:cfai-spin .7s linear infinite;
+  display:inline-block;
+}
+@keyframes cfai-spin{ to{transform:rotate(360deg)} }
+.cfai-output{ font-size:13px;line-height:1.7;color:var(--text); }
+.cfai-h4{ font-size:13px;font-weight:800;margin:16px 0 8px;color:var(--text); }
+.cfai-h4:first-child{ margin-top:0; }
+.cfai-ul{ padding-left:18px;margin:6px 0;display:flex;flex-direction:column;gap:5px; }
+.cfai-p{ margin:6px 0; }
+.cfai-cursor{
+  display:inline-block;width:2px;height:13px;
+  background:#4b84f3;margin-left:2px;vertical-align:middle;
+  animation:cfai-blink .7s step-end infinite;
+}
+@keyframes cfai-blink{ 0%,100%{opacity:1}50%{opacity:0} }
+.cfai-footer{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:16px;padding-top:12px;border-top:1px solid rgba(79,124,255,.15);
+  font-size:11px;color:var(--muted);
+}
+.cfai-refresh{
+  background:none;border:1px solid var(--border);border-radius:6px;
+  color:var(--muted);font-size:11px;padding:4px 10px;cursor:pointer;
+  transition:color .15s,border-color .15s;
+}
+.cfai-refresh:hover{ color:var(--text);border-color:var(--accent); }
 </style>
 </head>
 
@@ -272,6 +335,22 @@
       </div>
     </div>
 
+    <!-- Previsão IA de Fluxo de Caixa -->
+    <div class="cfai-block" id="cfaiBlock">
+      <div class="cfai-header">
+        <h2>🤖 Previsão Inteligente de Fluxo de Caixa <span class="cfai-badge">IA</span></h2>
+      </div>
+      <div class="cfai-body" id="cfaiBody">
+        <div class="cfai-placeholder" id="cfaiPlaceholder">
+          <p>Analise seus dados financeiros com IA e receba previsões, alertas de risco e recomendações personalizadas para o mês.</p>
+          <button class="cfai-btn" id="cfaiBtnAnalisar" onclick="window.cfaiAnalisar()">
+            ✨ Analisar meu fluxo de caixa
+          </button>
+        </div>
+        <div class="cfai-output" id="cfaiOutput" style="display:none"></div>
+      </div>
+    </div>
+
     <!-- Últimos lançamentos -->
     <div class="dash-full">
       <div class="dash-block">
@@ -292,5 +371,113 @@
 
 <script type="module" src="../js/navigation.js?v=1020"></script>
 <script type="module" src="../js/dashboard.js?v=1020"></script>
+<script type="module">
+  import { coletarContexto, analisarComIA, renderMd } from '../js/cashflowAI.js';
+  import { supabase } from '../js/supabaseClient.js';
+
+  const LS_KEY = 'finzen_cfai_cache';
+  const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hora
+
+  function salvarCache(texto) {
+    localStorage.setItem(LS_KEY, JSON.stringify({ texto, ts: Date.now() }));
+  }
+
+  function carregarCache() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return null;
+      const { texto, ts } = JSON.parse(raw);
+      if (Date.now() - ts > CACHE_TTL_MS) return null;
+      return texto;
+    } catch(_) { return null; }
+  }
+
+  function mostrarResultado(texto, tempoLabel) {
+    const output = document.getElementById('cfaiOutput');
+    const placeholder = document.getElementById('cfaiPlaceholder');
+    placeholder.style.display = 'none';
+    output.style.display = 'block';
+    output.innerHTML = renderMd(texto) + `
+      <div class="cfai-footer">
+        <span>Gerado em ${tempoLabel}</span>
+        <button class="cfai-refresh" onclick="window.cfaiAnalisar(true)">🔄 Atualizar análise</button>
+      </div>`;
+  }
+
+  window.cfaiAnalisar = async function(forcar = false) {
+    const btn = document.getElementById('cfaiBtnAnalisar');
+    const output = document.getElementById('cfaiOutput');
+    const placeholder = document.getElementById('cfaiPlaceholder');
+
+    // Verificar cache (a menos que forçado)
+    if (!forcar) {
+      const cached = carregarCache();
+      if (cached) {
+        const agora = new Date();
+        mostrarResultado(cached, agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) + ' (cache)');
+        return;
+      }
+    }
+
+    // Iniciar análise
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="cfai-spinner"></span> Analisando...'; }
+    placeholder.style.display = 'flex';
+    output.style.display = 'none';
+    output.innerHTML = '';
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Sessão expirada. Faça login novamente.');
+
+      const contexto = await coletarContexto(session.user.id);
+
+      // Mostrar output com cursor piscante
+      placeholder.style.display = 'none';
+      output.style.display = 'block';
+      output.innerHTML = '<span class="cfai-cursor"></span>';
+
+      let textoAcumulado = '';
+
+      await analisarComIA(
+        contexto,
+        // onChunk — streaming
+        (delta) => {
+          textoAcumulado += delta;
+          output.innerHTML = renderMd(textoAcumulado) + '<span class="cfai-cursor"></span>';
+          output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        },
+        // onDone
+        (textoFinal) => {
+          salvarCache(textoFinal);
+          const agora = new Date();
+          mostrarResultado(textoFinal, agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }));
+        }
+      );
+
+    } catch(err) {
+      placeholder.style.display = 'flex';
+      output.style.display = 'none';
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '✨ Analisar meu fluxo de caixa';
+      }
+      // Mostrar erro discreto
+      const errEl = document.createElement('p');
+      errEl.style.cssText = 'color:var(--danger);font-size:12px;margin-top:8px;text-align:center';
+      errEl.textContent = '⚠️ ' + err.message;
+      document.getElementById('cfaiPlaceholder').appendChild(errEl);
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '✨ Analisar meu fluxo de caixa'; }
+    }
+  };
+
+  // Carregar cache automaticamente se existir
+  const cached = carregarCache();
+  if (cached) {
+    const { ts } = JSON.parse(localStorage.getItem(LS_KEY));
+    const hora = new Date(ts).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+    mostrarResultado(cached, hora + ' (cache)');
+  }
+</script>
 </body>
 </html>
