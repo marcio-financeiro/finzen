@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Importar Extrato - FinZen</title>
+<link rel="stylesheet" href="../css/base.css?v=1050">
+<link rel="stylesheet" href="../css/layout.css?v=1050">
+<link rel="stylesheet" href="../css/components.css?v=1050">
+<link rel="stylesheet" href="../css/mobile.css?v=1050">
+<link rel="stylesheet" href="../css/navigation.css?v=1050">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#4b84f3">
+<style>
+/* ── Upload zone ── */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 16px;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--accent);
+  background: rgba(79,132,243,.05);
+}
+.upload-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+.upload-icon { font-size: 48px; margin-bottom: 12px; }
+.upload-zone h3 { font-size: 16px; margin-bottom: 6px; }
+.upload-zone p  { font-size: 13px; color: var(--muted); }
+
+/* ── Loading ── */
+#loadingImport {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.spin {
+  width: 24px; height: 24px;
+  border: 2px solid rgba(255,255,255,.15);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
+
+/* ── Stats ── */
+#statsImport {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── Tabela de preview ── */
+#tabelaPreview {
+  display: none;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+#tabelaPreview th {
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  border-bottom: 1px solid var(--border);
+}
+#tabelaPreview td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  vertical-align: middle;
+}
+#tabelaPreview tr:hover td { background: rgba(255,255,255,.02); }
+tr.row-manual td:first-child { border-left: 2px solid #f59e0b; }
+
+/* ── Legenda ── */
+.legenda {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.legenda span { display: flex; align-items: center; gap: 4px; }
+
+/* ── Bancos suportados ── */
+.banco-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.banco-chip {
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  background: var(--surface-2, rgba(255,255,255,.05));
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+    <nav class="sidebar-nav"></nav>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1>📥 Importar Extrato</h1>
+        <p id="userEmail" class="muted"></p>
+      </div>
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <!-- Instruções -->
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-header"><h2>Como funciona</h2></div>
+      <div style="padding:16px 20px;font-size:13px;color:var(--muted);line-height:1.8">
+        <p>1. Exporte o extrato do seu banco em formato <strong style="color:var(--text)">OFX</strong> ou <strong style="color:var(--text)">CSV</strong></p>
+        <p>2. Selecione a conta de destino e carregue o arquivo</p>
+        <p>3. Revise as categorias sugeridas automaticamente</p>
+        <p>4. Corrija as que precisar — o FinZen aprende para as próximas importações</p>
+        <div class="banco-chips">
+          <span class="banco-chip">🏦 Itaú (OFX)</span>
+          <span class="banco-chip">💜 Nubank (CSV)</span>
+          <span class="banco-chip">🟠 Inter (CSV)</span>
+          <span class="banco-chip">🔵 Bradesco (OFX)</span>
+          <span class="banco-chip">🟡 BB (OFX)</span>
+          <span class="banco-chip">🔴 Santander (OFX)</span>
+          <span class="banco-chip">⚫ C6 Bank (CSV)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload -->
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-header"><h2>Selecionar arquivo</h2></div>
+      <div style="padding:16px 20px">
+
+        <div class="form-group" style="margin-bottom:16px">
+          <label>Conta de destino</label>
+          <select id="selectConta" style="max-width:360px">
+            <option value="">Carregando contas...</option>
+          </select>
+        </div>
+
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="inputArquivo" accept=".ofx,.qfx,.csv">
+          <div class="upload-icon">📂</div>
+          <h3>Arraste o arquivo aqui ou clique para selecionar</h3>
+          <p>Formatos aceitos: OFX, QFX, CSV</p>
+        </div>
+
+        <div id="loadingImport">
+          <div class="spin"></div>
+          <span>Processando arquivo...</span>
+        </div>
+
+        <div id="msgImport" class="message" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <!-- Revisão -->
+    <div id="secaoRevisao" style="display:none">
+      <div class="panel">
+        <div class="panel-header" style="flex-wrap:wrap;gap:8px">
+          <h2>Revisar transações</h2>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary compact" id="btnCancelar">Cancelar</button>
+            <button class="btn btn-primary" id="btnImportar">✅ Confirmar importação</button>
+          </div>
+        </div>
+        <div style="padding:12px 20px">
+
+          <div id="statsImport"></div>
+
+          <div class="legenda">
+            <span>🧠 Regra aprendida</span>
+            <span>📋 Regra padrão</span>
+            <span>✏️ Precisa categorizar</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-left:2px solid #f59e0b"></span> Sem categoria</span>
+          </div>
+
+          <div style="overflow-x:auto">
+            <table id="tabelaPreview">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="checkAll" checked style="width:16px;height:16px"></th>
+                  <th>Data</th>
+                  <th>Descrição</th>
+                  <th>Tipo</th>
+                  <th>Valor</th>
+                  <th>Categoria</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="tbodyPreview"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<nav class="mobile-nav"></nav>
+<script type="module" src="../js/navigation.js?v=1050"></script>
+<script type="module" src="../js/importer.js?v=1050"></script>
+<script>
+  // Drag & drop visual
+  const zone = document.getElementById('uploadZone');
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', ()=> zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer?.files[0];
+    if(file){
+      const input = document.getElementById('inputArquivo');
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      input.dispatchEvent(new Event('change'));
+    }
+  });
+</script>
+</body>
+</html>
