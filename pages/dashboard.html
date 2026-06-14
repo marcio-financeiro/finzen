@@ -530,7 +530,22 @@
     if (!body || !icon) return;
     const collapsed = body.classList.toggle('ia-body-collapsed');
     icon.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+    localStorage.setItem('finzen_ia_' + bodyId, collapsed ? 'closed' : 'open');
   };
+
+  // Iniciar blocos de IA sempre fechados por padrão
+  ['cfaiBody', 'anaiBody'].forEach(bodyId => {
+    const iconId = bodyId === 'cfaiBody' ? 'cfaiToggle' : 'anaiToggle';
+    const estado = localStorage.getItem('finzen_ia_' + bodyId);
+    const body   = document.getElementById(bodyId);
+    const icon   = document.getElementById(iconId);
+    if(!body || !icon) return;
+    // Só abre se o usuário explicitamente abriu antes
+    if(estado !== 'open') {
+      body.classList.add('ia-body-collapsed');
+      icon.style.transform = 'rotate(-90deg)';
+    }
+  });
 </script>
 <script type="module">
   import { coletarContexto, analisarComIA, renderMd } from '../js/cashflowAI.js';
