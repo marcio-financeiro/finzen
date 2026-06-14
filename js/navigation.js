@@ -27,6 +27,7 @@ const NAV_GROUPS = [
     items:[
       {title:'Busca',          icon:'🔍', href:'./search.html'},
       {title:'Importar',       icon:'📥', href:'./importer.html'},
+      {title:'Notificações',   icon:'🔔', href:'./notifications.html'},
       {title:'Backup',         icon:'💾', href:'./backup.html'},
       {title:'Restaurar',      icon:'📤', href:'./restore.html'}
     ]
@@ -580,6 +581,20 @@ function initNavigation(){
   ensureMobileDrawer();
   ensureMenuButton();
   ensureFAB();
+  // Registrar SW e agendar alertas silenciosamente
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('../sw.js', { scope: '../' })
+      .then(async () => {
+        if(Notification.permission === 'granted'){
+          const { supabase } = await import('./supabaseClient.js');
+          const { data: sd } = await supabase.auth.getSession();
+          if(sd?.session){
+            const { agendarAlertas } = await import('./notifications.js');
+            agendarAlertas(sd.session.user.id).catch(()=>{});
+          }
+        }
+      }).catch(()=>{});
+  }
 }
 
 if(document.readyState === 'loading'){
