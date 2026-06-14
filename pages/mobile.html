@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FinZen</title>
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#0f1117">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FinZen">
+<link rel="apple-touch-icon" href="../icons/icon-192.png">
+<style>
+:root {
+  --bg:       #0f1117;
+  --surface:  #181c27;
+  --surface2: #1e2333;
+  --border:   #2a3045;
+  --accent:   #4b84f3;
+  --green:    #22c55e;
+  --red:      #ef4444;
+  --yellow:   #f59e0b;
+  --text:     #e8eaf0;
+  --muted:    #6b7698;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif; overflow: hidden; }
+
+/* ── Layout ── */
+.mobile-shell {
+  display: flex; flex-direction: column;
+  height: 100dvh; max-height: 100dvh;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bot);
+}
+
+/* ── Header ── */
+.mob-header {
+  padding: 12px 20px 8px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.mob-header-left { display: flex; align-items: center; gap: 10px; }
+.mob-logo { font-size: 20px; font-weight: 900; color: var(--accent); }
+.mob-greeting { font-size: 12px; color: var(--muted); }
+.mob-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #7c5cfc);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 800; color: #fff;
+  cursor: pointer;
+}
+
+/* ── Scroll area ── */
+.mob-scroll {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  padding: 0 16px 100px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+.mob-scroll::-webkit-scrollbar { display: none; }
+
+/* ── Card de saldo ── */
+.mob-saldo-card {
+  background: linear-gradient(135deg, rgba(75,132,243,.2), rgba(124,92,252,.15));
+  border: 1px solid rgba(75,132,243,.3);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.mob-saldo-label { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+.mob-saldo-valor { font-size: 36px; font-weight: 900; margin: 6px 0 2px; }
+.mob-saldo-sub { font-size: 12px; color: var(--muted); }
+
+/* ── KPIs rápidos ── */
+.mob-kpis {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin-bottom: 16px;
+}
+.mob-kpi {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px;
+}
+.mob-kpi-label { font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+.mob-kpi-valor { font-size: 18px; font-weight: 800; }
+
+/* ── Alertas ── */
+.mob-alertas { margin-bottom: 16px; }
+.mob-alerta {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-radius: 12px; margin-bottom: 8px;
+  font-size: 13px; cursor: pointer;
+  transition: opacity .15s;
+}
+.mob-alerta:active { opacity: .7; }
+.mob-alerta.vermelho { background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.2); }
+.mob-alerta.amarelo  { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.2); }
+.mob-alerta-icon { font-size: 18px; flex-shrink: 0; }
+.mob-alerta-info { flex: 1; }
+.mob-alerta-titulo { font-weight: 700; }
+.mob-alerta-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.mob-alerta-valor { font-weight: 800; font-size: 13px; white-space: nowrap; }
+
+/* ── Orçamentos ── */
+.mob-section-title {
+  font-size: 12px; font-weight: 800; color: var(--muted);
+  letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 10px; padding: 0 2px;
+}
+.mob-orcamentos { margin-bottom: 16px; }
+.mob-orc-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+}
+.mob-orc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.mob-orc-nome { font-size: 13px; font-weight: 700; }
+.mob-orc-valores { font-size: 11px; color: var(--muted); }
+.mob-orc-bar { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+.mob-orc-fill { height: 6px; border-radius: 99px; transition: width .4s; }
+
+/* ── Últimos lançamentos ── */
+.mob-lancamentos { margin-bottom: 16px; }
+.mob-lanc-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
+  margin-bottom: 8px;
+}
+.mob-lanc-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.mob-lanc-info { flex: 1; min-width: 0; }
+.mob-lanc-desc { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mob-lanc-sub  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.mob-lanc-valor { font-size: 14px; font-weight: 800; white-space: nowrap; }
+
+/* ── Bottom Nav ── */
+.mob-bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(24,28,39,.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 8px 0 calc(8px + var(--safe-bot));
+  z-index: 100;
+}
+.mob-nav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 3px;
+  padding: 6px 4px; cursor: pointer;
+  color: var(--muted); font-size: 10px; font-weight: 600;
+  transition: color .15s;
+  text-decoration: none;
+}
+.mob-nav-item.ativo { color: var(--accent); }
+.mob-nav-item-icon { font-size: 22px; line-height: 1; }
+
+/* ── FAB central ── */
+.mob-fab {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #7c5cfc);
+  border: none; box-shadow: 0 4px 20px rgba(75,132,243,.5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; color: #fff; cursor: pointer;
+  margin-top: -24px;
+  transition: transform .15s, box-shadow .15s;
+  flex-shrink: 0;
+}
+.mob-fab:active { transform: scale(.92); box-shadow: 0 2px 10px rgba(75,132,243,.4); }
+
+/* ── Modal de lançamento rápido ── */
+.mob-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  z-index: 200; display: flex; align-items: flex-end;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.mob-modal-overlay.aberto { opacity: 1; pointer-events: auto; }
+.mob-modal {
+  width: 100%; background: var(--surface);
+  border-radius: 24px 24px 0 0;
+  padding: 16px 20px calc(20px + var(--safe-bot));
+  transform: translateY(100%); transition: transform .25s ease;
+  max-height: 85dvh; overflow-y: auto;
+}
+.mob-modal-overlay.aberto .mob-modal { transform: translateY(0); }
+.mob-modal-handle {
+  width: 40px; height: 4px; border-radius: 99px;
+  background: var(--border); margin: 0 auto 16px;
+}
+.mob-modal-title { font-size: 16px; font-weight: 800; margin-bottom: 16px; }
+
+/* Tipo de lançamento */
+.mob-tipo-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.mob-tipo-btn {
+  flex: 1; padding: 10px; border-radius: 10px; border: none;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: all .15s; font-family: inherit;
+}
+.mob-tipo-btn.receita { background: rgba(34,197,94,.15); color: var(--green); }
+.mob-tipo-btn.receita.ativo { background: var(--green); color: #fff; }
+.mob-tipo-btn.despesa { background: rgba(239,68,68,.15); color: var(--red); }
+.mob-tipo-btn.despesa.ativo { background: var(--red); color: #fff; }
+
+/* Campos do modal */
+.mob-field { margin-bottom: 14px; }
+.mob-field label { display: block; font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 5px; }
+.mob-field input, .mob-field select {
+  width: 100%; padding: 12px 14px;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface2); color: var(--text);
+  font-size: 16px; font-family: inherit;
+}
+.mob-field input:focus, .mob-field select:focus {
+  outline: none; border-color: var(--accent);
+}
+.mob-valor-input {
+  font-size: 28px !important; font-weight: 900 !important;
+  text-align: center; letter-spacing: -.02em;
+}
+
+/* Categorias rápidas */
+.mob-cats-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 8px; margin-bottom: 14px;
+}
+.mob-cat-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 4px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface2); cursor: pointer; transition: all .15s;
+}
+.mob-cat-btn.ativo { border-color: var(--accent); background: rgba(75,132,243,.12); }
+.mob-cat-btn-icon { font-size: 22px; }
+.mob-cat-btn-label { font-size: 10px; color: var(--muted); text-align: center; font-weight: 600; }
+.mob-cat-btn.ativo .mob-cat-btn-label { color: var(--accent); }
+
+.mob-btn-salvar {
+  width: 100%; padding: 16px; border-radius: 14px; border: none;
+  background: linear-gradient(135deg, var(--accent), #7c5cfc);
+  color: #fff; font-size: 16px; font-weight: 800;
+  cursor: pointer; transition: opacity .15s; font-family: inherit;
+}
+.mob-btn-salvar:active { opacity: .85; }
+.mob-btn-salvar:disabled { opacity: .4; }
+
+/* ── Botão modo avançado ── */
+.mob-advanced-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px; margin: 0 0 20px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: transparent; color: var(--muted); font-size: 13px;
+  cursor: pointer; width: 100%; font-family: inherit;
+  transition: border-color .15s, color .15s;
+}
+.mob-advanced-btn:active { color: var(--text); border-color: var(--accent); }
+
+/* ── Loading ── */
+.mob-loading { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+.mob-spinner {
+  width: 32px; height: 32px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin .7s linear infinite; margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
+
+/* ── Empty state ── */
+.mob-empty { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="mobile-shell">
+
+  <!-- Header -->
+  <div class="mob-header">
+    <div class="mob-header-left">
+      <span class="mob-logo">FinZen</span>
+      <span class="mob-greeting" id="mobGreeting">Bom dia!</span>
+    </div>
+    <div class="mob-avatar" id="mobAvatar" onclick="irParaDashboard()">FZ</div>
+  </div>
+
+  <!-- Conteúdo scrollável -->
+  <div class="mob-scroll" id="mobScroll">
+    <div class="mob-loading" id="mobLoading">
+      <div class="mob-spinner"></div>
+      Carregando seus dados...
+    </div>
+
+    <!-- Saldo principal -->
+    <div class="mob-saldo-card" id="mobSaldoCard" style="display:none">
+      <div class="mob-saldo-label">Saldo em contas</div>
+      <div class="mob-saldo-valor" id="mobSaldo">R$ 0,00</div>
+      <div class="mob-saldo-sub" id="mobSaldoSub">Carregando...</div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="mob-kpis" id="mobKpis" style="display:none">
+      <div class="mob-kpi">
+        <div class="mob-kpi-label">Receitas do mês</div>
+        <div class="mob-kpi-valor" id="mobReceitas" style="color:var(--green)">—</div>
+      </div>
+      <div class="mob-kpi">
+        <div class="mob-kpi-label">Despesas do mês</div>
+        <div class="mob-kpi-valor" id="mobDespesas" style="color:var(--red)">—</div>
+      </div>
+      <div class="mob-kpi">
+        <div class="mob-kpi-label">Resultado do mês</div>
+        <div class="mob-kpi-valor" id="mobResultado">—</div>
+      </div>
+      <div class="mob-kpi">
+        <div class="mob-kpi-label">Faturas abertas</div>
+        <div class="mob-kpi-valor" id="mobFaturas" style="color:var(--yellow)">—</div>
+      </div>
+    </div>
+
+    <!-- Alertas -->
+    <div class="mob-alertas" id="mobAlertas" style="display:none">
+      <div class="mob-section-title">⚠️ Alertas</div>
+      <div id="mobAlertasList"></div>
+    </div>
+
+    <!-- Orçamentos -->
+    <div class="mob-orcamentos" id="mobOrcamentos" style="display:none">
+      <div class="mob-section-title">🎯 Orçamento do mês</div>
+      <div id="mobOrcamentosList"></div>
+    </div>
+
+    <!-- Últimos lançamentos -->
+    <div class="mob-lancamentos" id="mobLancamentos" style="display:none">
+      <div class="mob-section-title">💸 Últimos lançamentos</div>
+      <div id="mobLancamentosList"></div>
+    </div>
+
+    <!-- Botão modo avançado -->
+    <button class="mob-advanced-btn" onclick="ativarModoAvancado()">
+      🖥️ Abrir modo avançado (desktop)
+    </button>
+
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="mob-bottom-nav">
+    <a class="mob-nav-item ativo" onclick="scrollTop()">
+      <span class="mob-nav-item-icon">🏠</span>
+      <span>Início</span>
+    </a>
+    <a class="mob-nav-item" href="./movements.html">
+      <span class="mob-nav-item-icon">💸</span>
+      <span>Lançar</span>
+    </a>
+    <button class="mob-fab" id="mobFab" onclick="abrirModal()">＋</button>
+    <a class="mob-nav-item" href="./budgets.html">
+      <span class="mob-nav-item-icon">🎯</span>
+      <span>Orçamento</span>
+    </a>
+    <a class="mob-nav-item" href="./notifications.html">
+      <span class="mob-nav-item-icon">🔔</span>
+      <span>Alertas</span>
+    </a>
+  </nav>
+
+</div>
+
+<!-- Modal de lançamento rápido -->
+<div class="mob-modal-overlay" id="mobModalOverlay" onclick="fecharModalFora(event)">
+  <div class="mob-modal" id="mobModal">
+    <div class="mob-modal-handle"></div>
+    <div class="mob-modal-title">⚡ Lançamento rápido</div>
+
+    <!-- Tipo -->
+    <div class="mob-tipo-tabs">
+      <button class="mob-tipo-btn despesa ativo" id="btnTipoDespesa" onclick="selecionarTipo('despesa')">
+        ↓ Despesa
+      </button>
+      <button class="mob-tipo-btn receita" id="btnTipoReceita" onclick="selecionarTipo('receita')">
+        ↑ Receita
+      </button>
+    </div>
+
+    <!-- Valor -->
+    <div class="mob-field">
+      <label>Valor (R$)</label>
+      <input type="number" id="mobValor" class="mob-valor-input"
+        placeholder="0,00" step="0.01" min="0" inputmode="decimal">
+    </div>
+
+    <!-- Descrição -->
+    <div class="mob-field">
+      <label>Descrição</label>
+      <input type="text" id="mobDescricao" placeholder="Ex: Mercado, Uber, Almoço...">
+    </div>
+
+    <!-- Categorias rápidas -->
+    <div class="mob-field">
+      <label>Categoria</label>
+      <div class="mob-cats-grid" id="mobCatsGrid"></div>
+      <select id="mobCatSelect" style="margin-top:8px">
+        <option value="">Selecionar outra...</option>
+      </select>
+    </div>
+
+    <!-- Conta -->
+    <div class="mob-field">
+      <label>Conta</label>
+      <select id="mobConta"></select>
+    </div>
+
+    <!-- Data -->
+    <div class="mob-field">
+      <label>Data</label>
+      <input type="date" id="mobData">
+    </div>
+
+    <button class="mob-btn-salvar" id="mobBtnSalvar" onclick="salvarLancamento()">
+      ✓ Salvar lançamento
+    </button>
+  </div>
+</div>
+
+<script type="module" src="../js/mobile.js?v=1100"></script>
+</body>
+</html>

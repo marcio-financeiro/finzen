@@ -342,7 +342,14 @@
         <h1>Dashboard</h1>
         <p id="userEmail" class="muted"></p>
       </div>
-      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button type="button" class="btn btn-secondary compact" id="btnModoSimples"
+          onclick="localStorage.removeItem('finzen_modo_avancado');location.href='./mobile.html'"
+          style="display:none">
+          📱 Modo Simples
+        </button>
+        <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+      </div>
     </header>
 
     <!-- KPIs principais -->
@@ -523,6 +530,13 @@
 
 <script type="module" src="../js/navigation.js?v=1020"></script>
 <script type="module" src="../js/dashboard.js?v=1020"></script>
+<script>
+  // Mostrar botão "Modo Simples" apenas no mobile quando em modo avançado forçado
+  if(window.innerWidth < 768 && localStorage.getItem('finzen_modo_avancado') === 'true'){
+    const btn = document.getElementById('btnModoSimples');
+    if(btn) btn.style.display = 'block';
+  }
+</script>
 <script>
   window.toggleBloco = function(bodyId, iconId) {
     const body = document.getElementById(bodyId);
