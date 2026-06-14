@@ -111,6 +111,29 @@ async function carregarDashboard(){
 
   // ── Últimos lançamentos ──────────────────────────
   renderUltimos(ultimosLanc||[]);
+
+  // ── Score de Saúde Financeira ────────────────────
+  // Buscar investimentos para o score (query separada para não travar o dashboard)
+  const { data: investimentos } = await supabase
+    .from('investments')
+    .select('tipo,quantidade,preco_medio,cotacao_atual')
+    .eq('user_id', user.id).eq('ativo', true);
+
+  const { data: cartaoLimites } = await supabase
+    .from('credit_cards')
+    .select('limite,nome')
+    .eq('user_id', user.id).eq('ativo', true);
+
+  renderScore({
+    totalSaldo,
+    receitas,
+    despesas,
+    totalFaturas,
+    investimentos:  investimentos  || [],
+    cartaoLimites:  cartaoLimites  || [],
+    metas:          metas          || [],
+    recorrentes:    recorrentes    || [],
+  });
 }
 
 // ── Alertas ───────────────────────────────────────────
@@ -455,6 +478,115 @@ function renderUltimos(lancamentos){
       </tbody>
     </table>
   `;
+}
+
+// ── Score de Saúde Financeira ─────────────────────────
+function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investimentos, cartaoLimites, metas, recorrentes }){
+
+  // ── Critérios e pontuação (total = 100) ───────────
+  const itens = [];
+
+  // 1. Taxa de poupança (25 pts)
+  const taxaPoupanca = receitas > 0 ? ((receitas - despesas) / receitas * 100) : 0;
+  const ptsPoupanca = taxaPoupanca >= 20 ? 25
+    : taxaPoupanca >= 10 ? 18
+    : taxaPoupanca >= 5  ? 10
+    : taxaPoupanca > 0   ? 5
+    : 0;
+  itens.push({
+    label: 'Taxa de poupança',
+    pts: ptsPoupanca,
+    max: 25,
+    icon: taxaPoupanca >= 20 ? '✅' : taxaPoupanca >= 10 ? '🟡' : '🔴',
+    detalhe: `${taxaPoupanca.toFixed(1)}% do salário`,
+  });
+
+  // 2. Reserva de emergência (25 pts)
+  // Meta: 6x as despesas mensais
+  const despesasMensaisRec = recorrentes.filter(r=>r.type==='despesa').reduce((s,r)=>s+Number(r.amount||0),0);
+  const despesasRef = despesasMensaisRec > 0 ? despesasMensaisRec : despesas;
+  const reservaIdeal = despesasRef * 6;
+  const pctReserva   = reservaIdeal > 0 ? Math.min(totalSaldo / reservaIdeal * 100, 100) : 0;
+  const ptsReserva   = pctReserva >= 100 ? 25 : pctReserva >= 50 ? 15 : pctReserva >= 25 ? 8 : pctReserva > 0 ? 3 : 0;
+  itens.push({
+    label: 'Reserva de emergência',
+    pts: ptsReserva,
+    max: 25,
+    icon: pctReserva >= 100 ? '✅' : pctReserva >= 50 ? '🟡' : '🔴',
+    detalhe: `${pctReserva.toFixed(0)}% da meta (6x despesas)`,
+  });
+
+  // 3. Uso do limite do cartão (20 pts)
+  const limiteTotal  = cartaoLimites.reduce((s,c) => s + Number(c.limite||0), 0);
+  const pctCartao    = limiteTotal > 0 ? (totalFaturas / limiteTotal * 100) : 0;
+  const ptsCartao    = pctCartao <= 20 ? 20 : pctCartao <= 40 ? 14 : pctCartao <= 70 ? 7 : pctCartao <= 90 ? 3 : 0;
+  itens.push({
+    label: 'Uso do cartão de crédito',
+    pts: ptsCartao,
+    max: 20,
+    icon: pctCartao <= 20 ? '✅' : pctCartao <= 40 ? '🟡' : '🔴',
+    detalhe: limiteTotal > 0 ? `${pctCartao.toFixed(0)}% do limite usado` : 'Sem limite cadastrado',
+  });
+
+  // 4. Diversificação de investimentos (20 pts)
+  const classes = new Set(investimentos.map(i => i.tipo));
+  const totalInvest = investimentos.reduce((s,i) => s + (Number(i.quantidade||0) * Number(i.cotacao_atual||i.preco_medio||0)), 0);
+  const ptsInvest = totalInvest <= 0 ? 0 : classes.size >= 4 ? 20 : classes.size >= 3 ? 15 : classes.size >= 2 ? 10 : 5;
+  itens.push({
+    label: 'Diversificação de investimentos',
+    pts: ptsInvest,
+    max: 20,
+    icon: ptsInvest >= 15 ? '✅' : ptsInvest >= 5 ? '🟡' : '🔴',
+    detalhe: totalInvest > 0 ? `${classes.size} classe${classes.size !== 1 ? 's' : ''} de ativo` : 'Sem investimentos',
+  });
+
+  // 5. Metas ativas (10 pts)
+  const metasAtivas = metas.filter(m => Number(m.valor_atual||0) > 0);
+  const ptsMetas = metasAtivas.length >= 2 ? 10 : metasAtivas.length === 1 ? 6 : metas.length > 0 ? 2 : 0;
+  itens.push({
+    label: 'Metas financeiras',
+    pts: ptsMetas,
+    max: 10,
+    icon: ptsMetas >= 6 ? '✅' : ptsMetas >= 2 ? '🟡' : '🔴',
+    detalhe: `${metasAtivas.length} meta${metasAtivas.length !== 1 ? 's' : ''} com aporte`,
+  });
+
+  // ── Score total ────────────────────────────────────
+  const score = itens.reduce((s,i) => s + i.pts, 0);
+  const corScore = score >= 80 ? '#22c55e' : score >= 60 ? '#4b84f3' : score >= 40 ? '#f59e0b' : '#ef4444';
+  const labelScore = score >= 80 ? 'Excelente' : score >= 60 ? 'Bom' : score >= 40 ? 'Regular' : 'Atenção';
+
+  // ── Atualizar DOM ──────────────────────────────────
+  const circunferencia = 2 * Math.PI * 46; // ~289
+  const offset = circunferencia - (score / 100) * circunferencia;
+
+  el('scoreNum').textContent   = score;
+  el('scoreNum').style.color   = corScore;
+  el('scoreLabel').textContent = labelScore;
+  el('scoreLabel').style.color = corScore;
+  el('scoreCircle').style.stroke = corScore;
+  setTimeout(() => {
+    el('scoreCircle').style.strokeDashoffset = offset;
+  }, 100);
+
+  el('scoreItens').innerHTML = itens.map(item => `
+    <div class="score-item">
+      <span style="font-size:13px">${item.icon}</span>
+      <span class="score-item-label">${item.label}<br>
+        <span style="font-size:10px;color:var(--muted)">${item.detalhe}</span>
+      </span>
+      <div class="score-item-bar-wrap">
+        <div class="score-item-bar" style="width:${(item.pts/item.max*100).toFixed(0)}%;background:${
+          item.pts/item.max >= .8 ? '#22c55e' : item.pts/item.max >= .5 ? '#f59e0b' : '#ef4444'
+        }"></div>
+      </div>
+      <span class="score-item-pts" style="color:${
+        item.pts/item.max >= .8 ? '#22c55e' : item.pts/item.max >= .5 ? '#f59e0b' : '#ef4444'
+      }">${item.pts}/${item.max}</span>
+    </div>
+  `).join('');
+
+  el('blocoScore').style.display = 'flex';
 }
 
 carregarDashboard();
