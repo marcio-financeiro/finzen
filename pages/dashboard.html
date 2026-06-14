@@ -258,6 +258,9 @@
   transition:color .15s,border-color .15s;
 }
 .anai-refresh:hover{ color:var(--text);border-color:#ef4444; }
+
+/* ── Collapse transition ── */
+.ia-body-collapsed{ display:none; }
 </style>
 </head>
 
@@ -383,13 +386,14 @@
 
     <!-- Previsão IA de Fluxo de Caixa -->
     <div class="cfai-block" id="cfaiBlock">
-      <div class="cfai-header">
+      <div class="cfai-header" onclick="window.toggleBloco('cfaiBody','cfaiToggle')" style="cursor:pointer">
         <h2>🤖 Previsão Inteligente de Fluxo de Caixa <span class="cfai-badge">IA</span></h2>
+        <span id="cfaiToggle" style="color:var(--muted);font-size:16px;transition:transform .2s">▾</span>
       </div>
       <div class="cfai-body" id="cfaiBody">
         <div class="cfai-placeholder" id="cfaiPlaceholder">
           <p>Analise seus dados financeiros com IA e receba previsões, alertas de risco e recomendações personalizadas para o mês.</p>
-          <button class="cfai-btn" id="cfaiBtnAnalisar" onclick="window.cfaiAnalisar()">
+          <button class="cfai-btn" id="cfaiBtnAnalisar" onclick="event.stopPropagation();window.cfaiAnalisar()">
             ✨ Analisar meu fluxo de caixa
           </button>
         </div>
@@ -399,13 +403,14 @@
 
     <!-- Detecção de Anomalias e Assinaturas Fantasmas -->
     <div class="anai-block" id="anaiBlock">
-      <div class="anai-header">
+      <div class="anai-header" onclick="window.toggleBloco('anaiBody','anaiToggle')" style="cursor:pointer">
         <h2>👻 Anomalias e Assinaturas Fantasmas <span class="anai-badge">IA</span></h2>
+        <span id="anaiToggle" style="color:var(--muted);font-size:16px;transition:transform .2s">▾</span>
       </div>
       <div class="anai-body" id="anaiBody">
         <div class="anai-placeholder" id="anaiPlaceholder">
           <p>Detecte assinaturas esquecidas, gastos suspeitos e variações anômalas nos seus últimos 6 meses de histórico.</p>
-          <button class="anai-btn" id="anaiBtnAnalisar" onclick="window.anaiAnalisar()">
+          <button class="anai-btn" id="anaiBtnAnalisar" onclick="event.stopPropagation();window.anaiAnalisar()">
             🔍 Detectar anomalias
           </button>
         </div>
@@ -433,6 +438,15 @@
 
 <script type="module" src="../js/navigation.js?v=1020"></script>
 <script type="module" src="../js/dashboard.js?v=1020"></script>
+<script>
+  window.toggleBloco = function(bodyId, iconId) {
+    const body = document.getElementById(bodyId);
+    const icon = document.getElementById(iconId);
+    if (!body || !icon) return;
+    const collapsed = body.classList.toggle('ia-body-collapsed');
+    icon.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+  };
+</script>
 <script type="module">
   import { coletarContexto, analisarComIA, renderMd } from '../js/cashflowAI.js';
   import { supabase } from '../js/supabaseClient.js';
