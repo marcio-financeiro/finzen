@@ -82,17 +82,52 @@ async function carregarBadges(){
 }
 
 function navHtml(){
-  return NAV_GROUPS.map(group => `
-    <div class="nav-section-label">${group.label}</div>
-    ${group.items.map(item => `
-      <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">
-        <span class="nav-icon">${item.icon}</span>
-        <span>${item.title}</span>
-        ${item.badge ? '<span class="nav-badge nav-dashboard-badge" style="display:none">0</span>' : ''}
-      </a>
-    `).join('')}
-  `).join('') + `<div class="nav-version">v${APP_VERSION}</div>`;
+  const groups = NAV_GROUPS.map(group => {
+    const collapsible = group.label === 'Sistema';
+    const isGroupActive = collapsible && group.items.some(i => isActive(i.href));
+    const storageKey = `nav_collapsed_${group.label}`;
+    const collapsed = collapsible && !isGroupActive && localStorage.getItem(storageKey) !== 'open';
+
+    if(collapsible){
+      return `
+        <div class="nav-section-collapsible ${collapsed ? 'collapsed' : ''}" data-group="${group.label}">
+          <button class="nav-section-toggle" type="button" onclick="window._finzenToggleNav('${group.label}')">
+            <span class="nav-section-label-text">${group.label}</span>
+            <span class="nav-section-arrow">▾</span>
+          </button>
+          <div class="nav-section-items">
+            ${group.items.map(item => `
+              <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">
+                <span class="nav-icon">${item.icon}</span>
+                <span>${item.title}</span>
+                ${item.badge ? '<span class="nav-badge nav-dashboard-badge" style="display:none">0</span>' : ''}
+              </a>
+            `).join('')}
+          </div>
+        </div>`;
+    }
+
+    return `
+      <div class="nav-section-label">${group.label}</div>
+      ${group.items.map(item => `
+        <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">
+          <span class="nav-icon">${item.icon}</span>
+          <span>${item.title}</span>
+          ${item.badge ? '<span class="nav-badge nav-dashboard-badge" style="display:none">0</span>' : ''}
+        </a>
+      `).join('')}`;
+  }).join('');
+
+  return groups + `<div class="nav-version">v${APP_VERSION}</div>`;
 }
+
+window._finzenToggleNav = function(groupLabel){
+  const storageKey = `nav_collapsed_${groupLabel}`;
+  const els = document.querySelectorAll(`.nav-section-collapsible[data-group="${groupLabel}"]`);
+  const isCollapsed = els[0]?.classList.contains('collapsed');
+  els.forEach(el => el.classList.toggle('collapsed'));
+  localStorage.setItem(storageKey, isCollapsed ? 'open' : 'closed');
+};
 
 function injectStyles(){
   if(document.getElementById('finzen-921-navigation-style')) return;
@@ -117,6 +152,42 @@ function injectStyles(){
       margin-top:auto; padding:12px 16px;
       font-size:11px; color:var(--muted);
       opacity:.55; letter-spacing:.5px;
+    }
+
+    /* ── Grupo colapsável (Sistema) ── */
+    .nav-section-collapsible .nav-section-items {
+      overflow: hidden;
+      max-height: 500px;
+      transition: max-height .25s ease, opacity .2s ease;
+      opacity: 1;
+    }
+    .nav-section-collapsible.collapsed .nav-section-items {
+      max-height: 0;
+      opacity: 0;
+    }
+    .nav-section-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 16px 20px 6px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+    }
+    .nav-section-label-text {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .nav-section-arrow {
+      font-size: 12px;
+      transition: transform .2s ease;
+    }
+    .nav-section-collapsible.collapsed .nav-section-arrow {
+      transform: rotate(-90deg);
     }
 
     .mobile-menu-button{
