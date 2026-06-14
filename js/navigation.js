@@ -15,6 +15,7 @@ const NAV_GROUPS = [
       {title:'Orçamento',      icon:'🎯', href:'./budgets.html'},
       {title:'Metas',          icon:'🏆', href:'./goals.html'},
       {title:'FIRE',           icon:'🔥', href:'./fire.html'},
+      {title:'Comparador',     icon:'⚖️', href:'./comparador.html'},
       {title:'Chat IA',        icon:'💬', href:'./chat.html'},
       {title:'Relatório',      icon:'📊', href:'./reports.html'},
       {title:'Analytics',      icon:'📈', href:'./analytics.html'},
