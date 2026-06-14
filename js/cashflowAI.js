@@ -34,7 +34,7 @@ export async function coletarContexto(userId) {
       .eq('user_id', userId).eq('active', true),
 
     supabase.from('transactions')
-      .select('type,amount,status,date,categories:category_id(nome)')
+      .select('type,amount,status,date,categories:category_id(nome,icon)')
       .eq('user_id', userId)
       .gte('date', primeiroDia).lte('date', ultimoDia),
 
@@ -130,6 +130,16 @@ export async function coletarContexto(userId) {
       categoria: o.categories?.nome || 'Geral',
       planejado: Number(o.valor_planejado||0),
     })),
+    gastosPorCategoria: (() => {
+      const grupos = {};
+      (transacoesMes||[]).filter(t => t.status==='pago' && t.type==='despesa').forEach(t => {
+        const cat   = t.categories?.nome || 'Sem categoria';
+        const icone = t.categories?.icon || '';
+        if(!grupos[cat]) grupos[cat] = { categoria: cat, icone, total: 0 };
+        grupos[cat].total += Number(t.amount||0);
+      });
+      return Object.values(grupos).sort((a,b) => b.total - a.total).slice(0,8);
+    })(),
   };
 }
 
