@@ -344,8 +344,16 @@ function fillCategories(){
   if(type === 'receita') list = categories.filter(c => c.tipo === 'receita');
   if(type === 'despesa') list = categories.filter(c => c.tipo === 'despesa' || c.tipo === 'investimento');
 
+  // Preservar categoria selecionada antes de reconstruir o select
+  const valorAtual = movementCategory.value;
+
   movementCategory.innerHTML = '<option value="">Selecione</option>' +
     list.map(c => `<option value="${c.id}">${c.icon || ''} ${c.nome}</option>`).join('');
+
+  // Restaurar valor se ainda existe na nova lista
+  if(valorAtual && list.some(c => c.id === valorAtual)){
+    movementCategory.value = valorAtual;
+  }
 }
 
 function fillInvoices(){
