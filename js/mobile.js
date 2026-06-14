@@ -73,6 +73,7 @@ async function carregar() {
 
   contas     = contasData || [];
   categorias = cats       || [];
+  window._cartoesMobile = cartoes || [];
 
   // ── Saldo ──────────────────────────────────────────
   const saldoBRL = contas.filter(c=>(c.currency||'BRL')==='BRL').reduce((s,c)=>s+Number(c.saldo_atual||0),0);
@@ -149,13 +150,13 @@ async function carregar() {
       const saldo = Number(c.saldo_atual||0);
       const moeda = c.currency||'BRL';
       const cor   = saldo < 0 ? 'var(--red)' : 'var(--text)';
-      const emoji = tipoContaEmoji(c.tipo||c.kind||'');
+      const emoji = c.icon || tipoContaEmoji(c.tipo||c.kind||'');
       return `
         <div class="mob-orc-item" onclick="location.href='../pages/account-statement.html'">
           <div class="mob-orc-header">
             <span class="mob-orc-nome">${emoji} ${c.nome}</span>
             <span style="font-size:15px;font-weight:800;color:${cor}">
-              ${moeda !== 'BRL' ? 'US$ ' : 'R$ '}${Math.abs(saldo).toLocaleString('pt-BR',{minimumFractionDigits:2})}
+              ${moeda !== 'BRL' ? 'US$ ' : 'R$ '}${Math.abs(saldo).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
             </span>
           </div>
         </div>`;
@@ -200,12 +201,19 @@ function popularModal() {
   // Contas
   el('mobConta').innerHTML = contas
     .filter(c=>(c.currency||'BRL')==='BRL')
-    .map(c=>`<option value="${c.id}">${c.nome} (${fmt(c.saldo_atual||0)})</option>`).join('');
+    .map(c=>`<option value="${c.id}">${c.icon||'🏦'} ${c.nome} (${fmt(c.saldo_atual||0)})</option>`).join('');
+
+  // Cartões
+  const cartaoSelect = el('mobCartao');
+  if(cartaoSelect){
+    cartaoSelect.innerHTML = '<option value="">Selecione...</option>' +
+      (window._cartoesMobile||[]).map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  }
 
   // Data hoje
   el('mobData').value = new Date().toISOString().split('T')[0];
 
-  // Categorias rápidas (8 mais comuns por tipo)
+  // Categorias rápidas
   renderCategorias('despesa');
 
   // Select completo
@@ -242,9 +250,19 @@ window.selecionarCat = function(id) {
 window.selecionarTipo = function(tipo) {
   tipoAtual = tipo;
   catSelecionada = null;
+
   el('btnTipoDespesa').classList.toggle('ativo', tipo==='despesa');
   el('btnTipoReceita').classList.toggle('ativo', tipo==='receita');
-  renderCategorias(tipo);
+  el('btnTipoCartao') && el('btnTipoCartao').classList.toggle('ativo', tipo==='cartao');
+
+  // Mostrar/ocultar campos de cartão
+  const isCartao = tipo === 'cartao';
+  el('mobContaField').style.display   = isCartao ? 'none' : 'block';
+  el('mobCartaoField').style.display  = isCartao ? 'block' : 'none';
+  el('mobParcelasField').style.display= isCartao ? 'block' : 'none';
+
+  // Categorias de despesa para cartão
+  renderCategorias(tipo === 'receita' ? 'receita' : 'despesa');
 };
 
 // ── Modal ─────────────────────────────────────────────
@@ -263,45 +281,77 @@ function fecharModal() {
   el('mobDescricao').value   = '';
   catSelecionada = null;
   el('mobCatSelect').value   = '';
-  renderCategorias(tipoAtual);
+  // Reset tipo para despesa
+  selecionarTipo('despesa');
+  renderCategorias('despesa');
 }
 
 // ── Salvar lançamento ─────────────────────────────────
 window.salvarLancamento = async function() {
   const valor   = parseFloat(el('mobValor').value || '0');
   const desc    = el('mobDescricao').value.trim();
-  const contaId = el('mobConta').value;
   const catId   = catSelecionada || el('mobCatSelect').value || null;
   const data    = el('mobData').value;
 
   if(!valor || valor <= 0) { alert('Informe um valor válido.'); return; }
   if(!desc)                { alert('Informe uma descrição.'); return; }
-  if(!contaId)             { alert('Selecione uma conta.'); return; }
 
   const btn = el('mobBtnSalvar');
   btn.disabled = true;
   btn.textContent = 'Salvando...';
 
   try {
-    // Inserir transação
-    const { error } = await supabase.from('transactions').insert({
-      user_id:     user.id,
-      account_id:  contaId,
-      category_id: catId,
-      type:        tipoAtual,
-      amount:      valor,
-      description: desc,
-      date:        data,
-      status:      'pago',
-    });
-    if(error) throw error;
+    if(tipoAtual === 'cartao') {
+      // Lançamento no cartão
+      const cartaoId = el('mobCartao')?.value;
+      const parcelas = parseInt(el('mobParcelas')?.value||'1');
+      if(!cartaoId){ alert('Selecione um cartão.'); btn.disabled=false; btn.textContent='✓ Salvar lançamento'; return; }
 
-    // Atualizar saldo
-    const conta = contas.find(c=>c.id===contaId);
-    if(conta){
-      const novoSaldo = Number(conta.saldo_atual||0) + (tipoAtual==='receita' ? valor : -valor);
-      await supabase.from('accounts').update({saldo_atual:novoSaldo}).eq('id',contaId);
-      conta.saldo_atual = novoSaldo;
+      const cartao = (window._cartoesMobile||[]).find(c=>c.id===cartaoId);
+      const diaFechamento = cartao?.fechamento_dia || 1;
+
+      // Calcular referência da fatura
+      const dataCompra = new Date(data+'T00:00:00');
+      const diaCompra  = dataCompra.getDate();
+      let mesRef = dataCompra.getMonth() + 1;
+      let anoRef = dataCompra.getFullYear();
+      if(diaCompra > diaFechamento){ mesRef++; if(mesRef>12){mesRef=1;anoRef++;} }
+
+      const valorParcela = parseFloat((valor/parcelas).toFixed(2));
+      const registros = [];
+      for(let i=0;i<parcelas;i++){
+        let m=mesRef+i, a=anoRef;
+        while(m>12){m-=12;a++;}
+        const ref=`${a}-${String(m).padStart(2,'0')}`;
+        registros.push({
+          user_id:user.id, card_id:cartaoId, category_id:catId,
+          descricao:desc, valor_total:valor, parcelas,
+          parcela_atual:i+1, valor_parcela:valorParcela,
+          data_compra:data, fatura_referencia:ref, status:'aberta',
+        });
+      }
+      const {error}=await supabase.from('card_transactions').insert(registros);
+      if(error) throw error;
+
+    } else {
+      // Lançamento normal
+      const contaId = el('mobConta').value;
+      if(!contaId){ alert('Selecione uma conta.'); btn.disabled=false; btn.textContent='✓ Salvar lançamento'; return; }
+
+      const {error}=await supabase.from('transactions').insert({
+        user_id:user.id, account_id:contaId, category_id:catId,
+        type:tipoAtual, amount:valor, description:desc,
+        date:data, status:'pago',
+      });
+      if(error) throw error;
+
+      // Atualizar saldo
+      const conta = contas.find(c=>c.id===contaId);
+      if(conta){
+        const novoSaldo = Number(conta.saldo_atual||0) + (tipoAtual==='receita' ? valor : -valor);
+        await supabase.from('accounts').update({saldo_atual:novoSaldo}).eq('id',contaId);
+        conta.saldo_atual = novoSaldo;
+      }
     }
 
     fecharModal();

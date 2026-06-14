@@ -43,7 +43,7 @@ async function carregarContas(){
     <div class="reg-item">
       <div class="reg-color-dot" style="background:${c.color||'#4f8ef7'}"></div>
       <div class="reg-item-info">
-        <div class="reg-item-name">${c.nome}
+        <div class="reg-item-name">${c.icon||'🏦'} ${c.nome}
           <span class="badge ${c.active?'success':'danger'} reg-item-badge">${c.active?'ativa':'inativa'}</span>
           ${c.account_kind==='broker'?'<span class="badge info reg-item-badge">corretora</span>':''}
         </div>
@@ -74,6 +74,11 @@ function editarConta(c){
   el('contaSaldo').value=c.saldo_atual||0;
   el('contaCor').value=c.color||'#4f8ef7';
   el('contaStatus').value=String(c.active!==false);
+  // Ícone
+  const icone = c.icon || '🏦';
+  if(el('contaIcone')) el('contaIcone').value = icone;
+  const ep = document.getElementById('emojiPreviewConta');
+  if(ep) ep.textContent = icone;
   el('formContaTitulo').innerText='Editar Conta';
   el('btnSalvarConta').innerText='Salvar Alterações';
   el('btnCancelarConta').style.display='';
@@ -85,11 +90,98 @@ function limparFormConta(){
   ['contaNome','contaBanco','contaSaldo'].forEach(id=>el(id).value='');
   el('contaTipo').value=''; el('contaKind').value='bank';
   el('contaMoeda').value='BRL'; el('contaCor').value='#4f8ef7';
+  if(el('contaIcone')) el('contaIcone').value='';
+  const ep=document.getElementById('emojiPreviewConta'); if(ep) ep.textContent='🏦';
   el('contaStatus').value='true';
   el('formContaTitulo').innerText='Nova Conta';
   el('btnSalvarConta').innerText='Salvar Conta';
   el('btnCancelarConta').style.display='none';
 }
+
+// ── Mapa de ícones por banco ──────────────────────────
+const BANCO_ICONS = {
+  'itaú': '🧡', 'itau': '🧡',
+  'nubank': '💜', 'nu ': '💜',
+  'bradesco': '🔴', 'next': '💚',
+  'inter': '🟠', 'banco inter': '🟠',
+  'santander': '🔴',
+  'caixa': '🔵', 'cef': '🔵',
+  'bb': '💛', 'banco do brasil': '💛',
+  'mercado pago': '🔵', 'mercadopago': '🔵',
+  'picpay': '💚',
+  'c6': '⚫', 'c6 bank': '⚫',
+  'rico': '🟣',
+  'xp': '⬛',
+  'clear': '🟤',
+  'nomad': '🌎',
+  'wise': '💙',
+  'avenue': '🇺🇸',
+  'binance': '🟡',
+  'carteira': '👛', 'wallet': '👛',
+  'poupança': '🏦', 'poupanca': '🏦',
+  'corretora': '📈',
+};
+
+const EMOJIS_CONTA = {
+  bancos:  ['🏦','🏧','💰','💳','🪙','💵','💴','💶','💷','🏛️','🔐','🔑','💎','🪄','⚡','🌟'],
+  digital: ['📱','💜','🟠','💚','🔵','⚫','🟣','💙','🧡','🔴','💛','🌈','🎯','✨','🚀','🎪'],
+  invest:  ['📈','📊','💹','📉','🎲','🏆','🥇','🎯','💡','🔮','⚖️','🌐','🌎','🇺🇸','🇧🇷','💰'],
+  outros:  ['👛','👝','💼','🗃️','📂','📋','🔖','🏷️','🎁','🎀','⭐','🌟','✅','🔒','🔓','🗝️'],
+};
+
+window.sugerirIconeConta = function() {
+  const nome = (el('contaNome')?.value || '').toLowerCase();
+  for(const [key, icon] of Object.entries(BANCO_ICONS)){
+    if(nome.includes(key)){
+      const preview = document.getElementById('emojiPreviewConta');
+      const input   = document.getElementById('contaIcone');
+      if(preview) preview.textContent = icon;
+      if(input && !input.value) input.value = icon;
+      return;
+    }
+  }
+};
+
+function initEmojiPickerConta(){
+  const preview   = document.getElementById('emojiPreviewConta');
+  const input     = document.getElementById('contaIcone');
+  const btnPicker = document.getElementById('btnEmojiConta');
+  const panel     = document.getElementById('emojiPickerConta');
+  const grid      = document.getElementById('emojiGridConta');
+  if(!preview||!btnPicker||!panel||!grid) return;
+
+  function renderGrid(cat){
+    grid.innerHTML=(EMOJIS_CONTA[cat]||[]).map(e=>
+      `<button type="button" style="font-size:20px;width:36px;height:36px;border:none;background:transparent;
+        cursor:pointer;border-radius:6px;line-height:1;" data-emoji="${e}"
+        onmouseover="this.style.background='rgba(79,132,243,.15)'"
+        onmouseout="this.style.background='transparent'">${e}</button>`
+    ).join('');
+    grid.querySelectorAll('button[data-emoji]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        input.value=btn.dataset.emoji;
+        preview.textContent=btn.dataset.emoji;
+        panel.style.display='none';
+      });
+    });
+  }
+  renderGrid('bancos');
+
+  document.querySelectorAll('.conta-emoji-cat').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.conta-emoji-cat').forEach(b=>{b.style.background='var(--surface)';b.style.color='var(--text)';});
+      btn.style.background='var(--accent)'; btn.style.color='#fff';
+      renderGrid(btn.dataset.cat);
+    });
+  });
+
+  btnPicker.addEventListener('click',(e)=>{e.stopPropagation();panel.style.display=panel.style.display==='none'?'block':'none';});
+  input.addEventListener('input',()=>{if(input.value)preview.textContent=input.value;});
+  document.addEventListener('click',(e)=>{if(!panel.contains(e.target)&&e.target!==btnPicker)panel.style.display='none';});
+  preview.addEventListener('click',(e)=>{e.stopPropagation();panel.style.display=panel.style.display==='none'?'block':'none';});
+}
+
+initEmojiPickerConta();
 
 async function salvarConta(){
   const nome=el('contaNome').value.trim();
@@ -100,13 +192,14 @@ async function salvarConta(){
   const saldo=Number(el('contaSaldo').value||0);
   const cor=el('contaCor').value;
   const ativo=el('contaStatus').value==='true';
+  const icone=(el('contaIcone')?.value?.trim()) || document.getElementById('emojiPreviewConta')?.textContent?.trim() || '🏦';
 
   if(!nome||!tipo){ msg('msgConta','Preencha nome e tipo.','warning'); return; }
 
   const dados={
     nome, bank:banco, tipo, account_kind:kind,
     broker_name:kind==='broker'?(banco||nome):null,
-    currency:moeda, saldo_atual:saldo, color:cor, active:ativo,
+    currency:moeda, saldo_atual:saldo, color:cor, active:ativo, icon:icone,
   };
 
   let error;
