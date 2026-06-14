@@ -24,6 +24,7 @@ const NAV_GROUPS = [
     label:'Sistema',
     items:[
       {title:'Busca',          icon:'🔍', href:'./search.html'},
+      {title:'Importar',       icon:'📥', href:'./importer.html'},
       {title:'Backup',         icon:'💾', href:'./backup.html'},
       {title:'Restaurar',      icon:'📤', href:'./restore.html'}
     ]
