@@ -74,42 +74,26 @@ function msg(elId,texto,tipo='info'){
 }
 
 // ─────────────────────────────────────────────
-// COTAÇÕES — brapi.dev + Yahoo Finance
+// COTAÇÕES — via Vercel Function proxy (resolve CORS)
 // ─────────────────────────────────────────────
-async function fetchBR(tickers){
-  if(!tickers.length) return {};
+async function fetchCotacoes(tickersBR, tickersEUA, comDolar=true){
   try{
-    const r = await fetch(`https://brapi.dev/api/quote/${[...new Set(tickers)].join(',')}?token=anonymous`);
-    if(!r.ok) throw new Error();
-    const j = await r.json();
-    const out={};
-    (j.results||[]).forEach(i=>{ if(i.symbol&&i.regularMarketPrice) out[i.symbol.toUpperCase()]=toNumber(i.regularMarketPrice); });
-    return out;
-  }catch(_){ return {}; }
-}
+    const todos = [...new Set([...tickersBR, ...tickersEUA])];
+    const params = new URLSearchParams();
+    if(todos.length) params.set('tickers', todos.join(','));
+    if(comDolar) params.set('dolar', 'true');
 
-async function fetchEUA(tickers){
-  const out={};
-  for(const t of [...new Set(tickers)]){
-    try{
-      const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${t}?interval=1d&range=1d`,{mode:'cors'});
-      if(!r.ok) continue;
-      const j = await r.json();
-      const p = j?.chart?.result?.[0]?.meta?.regularMarketPrice;
-      if(p) out[t.toUpperCase()]=toNumber(p);
-    }catch(_){}
-  }
-  return out;
+    const r = await fetch(`/api/quotes?${params}`);
+    if(!r.ok) throw new Error('Erro no proxy de cotações');
+    return await r.json();
+  }catch(_){ return {}; }
 }
 
 async function fetchDolar(){
   try{
-    const r = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
-    const j = await r.json();
-    const v = toNumber(j?.USDBRL?.bid);
-    if(v>0) return v;
-  }catch(_){}
-  return dolarAtual;
+    const j = await fetch('/api/quotes?dolar=true').then(r=>r.json());
+    return j['USD-BRL'] || dolarAtual;
+  }catch(_){ return dolarAtual; }
 }
 
 async function atualizarCotacoes(silencioso=false){
@@ -119,17 +103,17 @@ async function atualizarCotacoes(silencioso=false){
     msg('mensagemCotacao','Buscando cotações...','info');
   }
   try{
-    const novoDolar = await fetchDolar();
+    const tickBR  = ativos.filter(a=>isBR(a.tipo)).map(a=>a.ticker.toUpperCase());
+    const tickEUA = ativos.filter(a=>isEUA(a.tipo)).map(a=>a.ticker.toUpperCase());
+    const cots = await fetchCotacoes(tickBR, tickEUA, true);
+
+    // Dólar
+    const novoDolar = cots['USD-BRL'] || dolarAtual;
     if(Math.abs(novoDolar-dolarAtual)>0.001){
       dolarAtual=novoDolar;
       el('dolarReferencia').value=dolarAtual.toFixed(4);
       try{ await saveUsdBrlRate(user.id,dolarAtual); }catch(_){}
     }
-
-    const tickBR  = ativos.filter(a=>isBR(a.tipo)).map(a=>a.ticker.toUpperCase());
-    const tickEUA = ativos.filter(a=>isEUA(a.tipo)).map(a=>a.ticker.toUpperCase());
-    const [cotsBR,cotsEUA] = await Promise.all([fetchBR(tickBR),fetchEUA(tickEUA)]);
-    const cots = {...cotsBR,...cotsEUA};
 
     let n=0; const agora=new Date().toISOString();
     for(const a of ativos){
