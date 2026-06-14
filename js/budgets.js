@@ -21,18 +21,20 @@ function msg(t,tipo='info'){ const e=el('mensagemOrcamento'); e.className=`messa
 async function carregar(){
   const ref = el('mesReferencia').value || mesAtual();
 
-  const [{ data: cats }, { data: orcs }, { data: tx }] = await Promise.all([
+  const [{ data: cats }, { data: orcs }, { data: tx }, { data: cardTx }] = await Promise.all([
     supabase.from('categories').select('id,nome,icon,tipo').eq('user_id',user.id).eq('tipo','despesa').order('nome'),
     supabase.from('budgets').select('*,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',ref),
     supabase.from('transactions').select('category_id,amount').eq('user_id',user.id).eq('type','despesa').eq('status','pago').gte('date',inicioMes(ref)).lte('date',fimMes(ref)),
+    supabase.from('card_transactions').select('category_id,valor_parcela').eq('user_id',user.id).eq('fatura_referencia',ref),
   ]);
 
   categorias = cats || [];
   orcamentos = orcs || [];
 
-  // Gastos reais por categoria
+  // Gastos reais por categoria (transações + compras no cartão)
   gastos = {};
   (tx||[]).forEach(t => { if(t.category_id) gastos[t.category_id]=(gastos[t.category_id]||0)+Number(t.amount||0); });
+  (cardTx||[]).forEach(t => { if(t.category_id) gastos[t.category_id]=(gastos[t.category_id]||0)+Number(t.valor_parcela||0); });
 
   // Popular select de categorias
   el('categoriaOrcamento').innerHTML = '<option value="">Selecione a categoria</option>' +
