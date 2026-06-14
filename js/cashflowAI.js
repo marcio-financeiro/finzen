@@ -227,9 +227,12 @@ Seja objetivo, use valores em R$, e não repita dados óbvios. Tom: direto e út
 // ── Renderiza markdown simples ────────────────────────────────────────────
 export function renderMd(text) {
   return text
+    .replace(/^---+$/gm, '')
+    .replace(/^## (.+)$/gm, '<h4 class="cfai-h4">$1</h4>')
     .replace(/^### (.+)$/gm, '<h4 class="cfai-h4">$1</h4>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
     .replace(/^[\-\*] (.+)$/gm, '<li>$1</li>')
     .replace(/(<li>.*<\/li>\n?)+/gs, m => `<ul class="cfai-ul">${m}</ul>`)
     .replace(/\n{2,}/g, '</p><p class="cfai-p">')
