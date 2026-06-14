@@ -64,7 +64,7 @@ async function carregarDashboard(){
   ] = await Promise.all([
     supabase.from('accounts').select('id,nome,currency,saldo_atual,color').eq('user_id',user.id).eq('active',true),                                                                                          // contas
     supabase.from('transactions').select('type,amount,status,date,category_id,categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),                              // transacoesMes
-    supabase.from('card_transactions').select('valor_parcela,fatura_referencia,status,card_id').eq('user_id',user.id).eq('status','aberta').eq('fatura_referencia',ref),                                     // parcelasMes
+    supabase.from('card_transactions').select('valor_parcela,fatura_referencia,status,card_id,category_id').eq('user_id',user.id).eq('status','aberta').eq('fatura_referencia',ref),                                     // parcelasMes
     supabase.from('transactions').select('id,description,amount,date,type,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date', (() => { const d=new Date(hoje()); d.setDate(d.getDate()+7); return d.toISOString().split('T')[0]; })()).order('date',{ascending:true}).limit(5), // transacoesPendentes
     supabase.from('budgets').select('*,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',ref),                                                                                   // orcamentos
     supabase.from('goals').select('*').eq('user_id',user.id).eq('ativo',true).order('data_alvo',{ascending:true}).limit(5),                                                                                  // metas
@@ -260,10 +260,13 @@ function renderOrcamento(orcamentos, despesasMes){
     return;
   }
 
-  // Gastos reais por category_id
+  // Gastos reais por category_id (transações + cartão)
   const gastos = {};
   despesasMes.forEach(t => {
     if(t.category_id) gastos[t.category_id] = (gastos[t.category_id]||0) + Number(t.amount||0);
+  });
+  (parcelasMes||[]).forEach(t => {
+    if(t.category_id) gastos[t.category_id] = (gastos[t.category_id]||0) + Number(t.valor_parcela||0);
   });
 
   let html = '';
