@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparador de Investimentos - FinZen</title>
+<link rel="stylesheet" href="../css/base.css?v=1080">
+<link rel="stylesheet" href="../css/layout.css?v=1080">
+<link rel="stylesheet" href="../css/components.css?v=1080">
+<link rel="stylesheet" href="../css/mobile.css?v=1080">
+<link rel="stylesheet" href="../css/navigation.css?v=1080">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#4b84f3">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ── Layout ── */
+.comp-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media(max-width: 860px){ .comp-grid{ grid-template-columns: 1fr; } }
+
+.comp-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.comp-panel h2 { font-size: 14px; font-weight: 800; margin-bottom: 16px; }
+
+/* ── Inputs ── */
+.comp-input-group { margin-bottom: 12px; }
+.comp-input-group label {
+  display: block; font-size: 12px; color: var(--muted);
+  margin-bottom: 4px; font-weight: 600;
+}
+.comp-input-group input, .comp-input-group select {
+  width: 100%; padding: 9px 12px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); color: var(--text);
+  font-size: 14px; font-family: inherit;
+}
+.comp-input-group input:focus, .comp-input-group select:focus {
+  outline: none; border-color: var(--accent);
+}
+
+/* ── Produtos ── */
+.comp-produtos { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.comp-produto {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface);
+}
+.comp-produto-cor {
+  width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
+}
+.comp-produto-nome { flex: 1; font-size: 13px; font-weight: 600; }
+.comp-produto-taxa { font-size: 12px; color: var(--muted); }
+.comp-produto input[type="checkbox"] {
+  width: 16px; height: 16px; cursor: pointer; flex-shrink: 0;
+  accent-color: var(--accent);
+}
+
+/* ── Produto customizado ── */
+.comp-custom {
+  display: grid; grid-template-columns: 1fr 80px;
+  gap: 8px; margin-top: 8px;
+}
+
+/* ── Tabela resultados ── */
+.comp-tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
+.comp-tabela th {
+  text-align: left; padding: 8px 12px;
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .05em;
+  border-bottom: 1px solid var(--border);
+}
+.comp-tabela td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.04); }
+.comp-tabela tr:hover td { background: rgba(255,255,255,.02); }
+.comp-tabela tr.melhor td { background: rgba(34,197,94,.06); }
+.comp-tabela tr.melhor td:first-child { border-left: 3px solid #22c55e; }
+
+/* ── Gráfico ── */
+.comp-chart-wrap { position: relative; height: 320px; }
+
+/* ── Período tabs ── */
+.comp-periodos {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.comp-periodo-btn {
+  padding: 5px 14px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface); color: var(--muted);
+  font-size: 12px; cursor: pointer; font-family: inherit;
+  transition: all .15s;
+}
+.comp-periodo-btn.ativo {
+  border-color: var(--accent); background: rgba(79,132,243,.12);
+  color: var(--text); font-weight: 700;
+}
+
+/* ── Badge melhor ── */
+.badge-melhor {
+  background: rgba(34,197,94,.15); color: #22c55e;
+  font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: 99px; margin-left: 6px;
+}
+
+/* ── CDI info ── */
+.comp-cdi-info {
+  font-size: 11px; color: var(--muted);
+  margin-top: 4px; padding: 6px 10px;
+  background: rgba(255,255,255,.03); border-radius: 6px;
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">FinZen</div>
+    <nav class="sidebar-nav"></nav>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1>⚖️ Comparador de Investimentos</h1>
+        <p id="userEmail" class="muted"></p>
+      </div>
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <div class="comp-grid">
+
+      <!-- Painel de configuração -->
+      <div>
+        <div class="comp-panel">
+          <h2>💰 Simulação</h2>
+
+          <div class="comp-input-group">
+            <label>Valor inicial (R$)</label>
+            <input type="number" id="valorInicial" value="10000" min="0" step="1000" oninput="simular()">
+          </div>
+
+          <div class="comp-input-group">
+            <label>Aporte mensal (R$)</label>
+            <input type="number" id="aporteMensal" value="500" min="0" step="100" oninput="simular()">
+          </div>
+
+          <div class="comp-input-group">
+            <label>IPCA anual estimado (%)</label>
+            <input type="number" id="ipca" value="4.5" min="0" max="30" step="0.1" oninput="simular()">
+            <div class="comp-cdi-info" id="infoCDI">CDI atual: carregando...</div>
+          </div>
+        </div>
+
+        <div class="comp-panel">
+          <h2>📋 Produtos para comparar</h2>
+
+          <div class="comp-produtos" id="listaProdutos">
+            <!-- Gerado pelo JS -->
+          </div>
+
+          <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+            <p style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">+ Produto personalizado</p>
+            <div class="comp-custom">
+              <input type="text" id="customNome" placeholder="Ex: LCI do Banco X">
+              <input type="number" id="customTaxa" placeholder="% a.a." min="0" step="0.1">
+            </div>
+            <button class="btn btn-secondary compact" style="margin-top:8px;width:100%" onclick="adicionarCustom()">
+              + Adicionar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resultados -->
+      <div>
+        <!-- Período -->
+        <div class="comp-panel" style="padding-bottom:4px">
+          <h2>📅 Período de simulação</h2>
+          <div class="comp-periodos">
+            <button class="comp-periodo-btn" data-anos="1"  onclick="selecionarPeriodo(this)">1 ano</button>
+            <button class="comp-periodo-btn" data-anos="2"  onclick="selecionarPeriodo(this)">2 anos</button>
+            <button class="comp-periodo-btn ativo" data-anos="5"  onclick="selecionarPeriodo(this)">5 anos</button>
+            <button class="comp-periodo-btn" data-anos="10" onclick="selecionarPeriodo(this)">10 anos</button>
+            <button class="comp-periodo-btn" data-anos="20" onclick="selecionarPeriodo(this)">20 anos</button>
+            <button class="comp-periodo-btn" data-anos="30" onclick="selecionarPeriodo(this)">30 anos</button>
+          </div>
+        </div>
+
+        <!-- Gráfico -->
+        <div class="comp-panel">
+          <h2>📈 Evolução do patrimônio</h2>
+          <div class="comp-chart-wrap">
+            <canvas id="chartComparador"></canvas>
+          </div>
+        </div>
+
+        <!-- Tabela ── -->
+        <div class="comp-panel">
+          <h2>🏆 Resultado ao final do período</h2>
+          <div style="overflow-x:auto">
+            <table class="comp-tabela">
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Taxa a.a.</th>
+                  <th>Valor bruto</th>
+                  <th>Imposto</th>
+                  <th>Valor líquido</th>
+                  <th>Rendimento</th>
+                  <th>Real (descontado IPCA)</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaResultados">
+                <tr><td colspan="7" class="muted" style="padding:16px">Configure os parâmetros ao lado.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<nav class="mobile-nav"></nav>
+<script type="module" src="../js/navigation.js?v=1080"></script>
+<script type="module" src="../js/comparador.js?v=1080"></script>
+</body>
+</html>
