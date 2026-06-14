@@ -162,7 +162,8 @@ async function carregar() {
     }).join('');
     el('mobOrcamentos').style.display = 'block';
   }
-}
+
+  // ── Últimos lançamentos ──────────────────────────────
   const lancList = el('mobLancamentosList');
   if((ultimos||[]).length){
     lancList.innerHTML = (ultimos||[]).map(t=>{
