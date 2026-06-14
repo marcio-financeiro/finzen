@@ -585,12 +585,13 @@ async function salvarDividendo(){
   const tipo     = el('divTipo').value;
   const valCota  = toNumber(el('divValorCota').value);
   const qtdCotas = toNumber(el('divQtdCotas').value);
-  const valTotal = toNumber(el('divValorTotal').value)||(valCota*qtdCotas);
+  const moedaDiv = el('divMoeda')?.value || 'BRL';
+  const valTotalMoeda = toNumber(el('divValorTotal').value)||(valCota*qtdCotas);
   const contaId  = el('divConta').value;
   const dataPag  = el('divData').value||hojeISO();
   const obs      = el('divObs').value.trim();
 
-  if(!ativoId||!tipo||(!valCota&&!valTotal)||!contaId){
+  if(!ativoId||!tipo||(!valCota&&!valTotalMoeda)||!contaId){
     msg('mensagemDiv','Preencha ativo, tipo, valor e conta.','warning'); return;
   }
 
@@ -598,36 +599,49 @@ async function salvarDividendo(){
   const conta=todasContas.find(c=>c.id===contaId);
   if(!ativo||!conta){ msg('mensagemDiv','Ativo ou conta não encontrados.','danger'); return; }
 
-  const total=valTotal||(valCota*toNumber(ativo.quantidade));
+  // Calcular valor total em moeda original e em BRL
+  const totalMoedaOriginal = valTotalMoeda||(valCota*toNumber(ativo.quantidade));
+  const totalBRL = moedaDiv === 'USD' ? totalMoedaOriginal * dolarAtual : totalMoedaOriginal;
+
+  // Valor por cota em BRL (para salvar no banco)
+  const qtd = qtdCotas || toNumber(ativo.quantidade);
+  const valCotaBRL = qtd > 0 ? totalBRL / qtd : 0;
 
   msg('mensagemDiv','Registrando...','info');
   try{
     // Inserir dividendo
     const {error:e1}=await supabase.from('dividends').insert({
       user_id:user.id, investment_id:ativoId, ticker:ativo.ticker,
-      tipo, valor_por_cota:valCota, quantidade_cotas:qtdCotas||ativo.quantidade,
-      valor_total:total, account_id:contaId, data_pagamento:dataPag, observacao:obs,
+      tipo, valor_por_cota:valCotaBRL, quantidade_cotas:qtd,
+      valor_total:totalBRL, account_id:contaId, data_pagamento:dataPag,
+      observacao:obs || (moedaDiv==='USD' ? `USD ${totalMoedaOriginal.toFixed(2)} × ${dolarAtual.toFixed(4)}` : ''),
     });
     if(e1) throw e1;
 
-    // Creditar na conta
-    const novoSaldo=toNumber(conta.saldo_atual)+total;
+    // Creditar na conta (sempre em BRL)
+    const novoSaldo=toNumber(conta.saldo_atual)+totalBRL;
     await supabase.from('accounts').update({saldo_atual:novoSaldo}).eq('id',contaId).eq('user_id',user.id);
 
     // Registrar como receita nas transações
     await supabase.from('transactions').insert({
       user_id:user.id, account_id:contaId,
-      type:'receita', amount:total,
+      type:'receita', amount:totalBRL,
       description:`Dividendo ${ativo.ticker} (${tipo})`,
       date:dataPag, status:'pago',
-      notes:obs||`Provento de ${ativo.ticker}`,
+      notes:obs||`Provento de ${ativo.ticker}${moedaDiv==='USD'?` • USD ${totalMoedaOriginal.toFixed(2)} × ${dolarAtual.toFixed(4)}`:''}`,
     });
 
-    msg('mensagemDiv',`Dividendo de ${formatCurrency(total,'BRL')} registrado e creditado na conta.`,'success');
+    const msgFinal = moedaDiv === 'USD'
+      ? `Dividendo de USD ${totalMoedaOriginal.toFixed(2)} → ${formatCurrency(totalBRL,'BRL')} registrado.`
+      : `Dividendo de ${formatCurrency(totalBRL,'BRL')} registrado e creditado na conta.`;
+
+    msg('mensagemDiv', msgFinal, 'success');
 
     // Limpar
     ['divValorCota','divQtdCotas','divValorTotal','divObs'].forEach(id=>{ const e=el(id); if(e) e.value=''; });
     el('divAtivo').value=''; el('divData').value=hojeISO();
+    if(el('divMoeda')) el('divMoeda').value='BRL';
+    atualizarConversaoDiv();
 
     await carregarCorretoras();
     carregarDividendos();
@@ -883,12 +897,41 @@ el('tickerAtivo').addEventListener('blur', ()=>{
 el('divAtivo').addEventListener('change',()=>{
   const opt=el('divAtivo').options[el('divAtivo').selectedIndex];
   if(opt?.dataset?.qty) el('divQtdCotas').value=opt.dataset.qty;
+  // Sugerir moeda baseada no ativo selecionado
+  const ativo = ativos.find(a=>a.id===el('divAtivo').value);
+  if(ativo && el('divMoeda')) el('divMoeda').value = ativo.moeda||'BRL';
+  atualizarConversaoDiv();
 });
 el('divValorCota').addEventListener('input',()=>{
   const v=toNumber(el('divValorCota').value);
   const q=toNumber(el('divQtdCotas').value);
-  if(v&&q) el('divValorTotal').value=(v*q).toFixed(2);
+  if(v&&q) el('divValorTotal').value=(v*q).toFixed(6);
+  atualizarConversaoDiv();
 });
+el('divValorTotal').addEventListener('input', atualizarConversaoDiv);
+if(el('divMoeda')) el('divMoeda').addEventListener('change', atualizarConversaoDiv);
+
+function atualizarConversaoDiv(){
+  const moeda   = el('divMoeda')?.value || 'BRL';
+  const total   = toNumber(el('divValorTotal').value);
+  const label   = el('labelDivTotal');
+  const preview = el('divConversao');
+  if(!label || !preview) return;
+
+  if(moeda === 'USD'){
+    label.textContent = 'Valor total recebido (USD)';
+    if(total > 0){
+      const brl = total * dolarAtual;
+      preview.style.display = 'block';
+      preview.textContent = `≈ ${formatCurrency(brl,'BRL')} (USD/BRL: ${dolarAtual.toFixed(4)})`;
+    } else {
+      preview.style.display = 'none';
+    }
+  } else {
+    label.textContent = 'Valor total recebido (BRL)';
+    preview.style.display = 'none';
+  }
+}
 el('btnSalvarDiv').addEventListener('click',salvarDividendo);
 
 // Filtro ano dividendos
