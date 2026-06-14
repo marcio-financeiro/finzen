@@ -31,6 +31,17 @@ let catSelecionada = null;
 let contas       = [];
 let categorias   = [];
 
+// ── Emoji por tipo de conta ───────────────────────────
+function tipoContaEmoji(tipo) {
+  const t = (tipo||'').toLowerCase();
+  if(t.includes('corret') || t.includes('broker')) return '📈';
+  if(t.includes('poupan'))  return '🏦';
+  if(t.includes('carteira') || t.includes('wallet')) return '👛';
+  if(t.includes('digital')) return '💜';
+  if(t.includes('invest'))  return '💰';
+  return '🏦';
+}
+
 // ── Carregar dados ────────────────────────────────────
 async function carregar() {
   const hoje    = new Date();
@@ -131,35 +142,27 @@ async function carregar() {
     el('mobAlertas').style.display = 'block';
   }
 
-  // ── Orçamentos ──────────────────────────────────────
-  // Calcular gastos por categoria
-  const gastosCat = {};
-  ;(txMes||[]).filter(t=>t.type==='despesa').forEach(t=>{
-    if(t.category_id) gastosCat[t.category_id]=(gastosCat[t.category_id]||0)+Number(t.amount||0);
-  });
-
-  const orcList = el('mobOrcamentosList');
-  if((orcamentos||[]).length){
-    orcList.innerHTML = (orcamentos||[]).map(o=>{
-      const planejado = Number(o.valor_planejado||0);
-      const gasto     = 0; // simplificado — sem join de category_id aqui
-      const pct       = planejado>0?Math.min(gasto/planejado*100,100):0;
-      const cor       = pct>=90?'var(--red)':pct>=70?'var(--yellow)':'var(--accent)';
+  // ── Últimos lançamentos ──────────────────────────────
+  const contasList = el('mobContasList');
+  if(contas.length){
+    contasList.innerHTML = contas.map(c => {
+      const saldo = Number(c.saldo_atual||0);
+      const moeda = c.currency||'BRL';
+      const cor   = saldo < 0 ? 'var(--red)' : 'var(--text)';
+      const emoji = tipoContaEmoji(c.tipo||c.kind||'');
       return `
-        <div class="mob-orc-item" onclick="location.href='../pages/budgets.html'">
+        <div class="mob-orc-item" onclick="location.href='../pages/account-statement.html'">
           <div class="mob-orc-header">
-            <span class="mob-orc-nome">${o.categories?.icon||''} ${o.categories?.nome||'Geral'}</span>
-            <span class="mob-orc-valores">${fmt(gasto)} / ${fmt(planejado)}</span>
-          </div>
-          <div class="mob-orc-bar">
-            <div class="mob-orc-fill" style="width:${pct}%;background:${cor}"></div>
+            <span class="mob-orc-nome">${emoji} ${c.nome}</span>
+            <span style="font-size:15px;font-weight:800;color:${cor}">
+              ${moeda !== 'BRL' ? 'US$ ' : 'R$ '}${Math.abs(saldo).toLocaleString('pt-BR',{minimumFractionDigits:2})}
+            </span>
           </div>
         </div>`;
     }).join('');
     el('mobOrcamentos').style.display = 'block';
   }
-
-  // ── Últimos lançamentos ──────────────────────────────
+}
   const lancList = el('mobLancamentosList');
   if((ultimos||[]).length){
     lancList.innerHTML = (ultimos||[]).map(t=>{
