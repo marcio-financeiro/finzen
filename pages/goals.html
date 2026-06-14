@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Metas - FinZen</title>
-<link rel="stylesheet" href="../css/base.css?v=1030">
-<link rel="stylesheet" href="../css/layout.css?v=1030">
-<link rel="stylesheet" href="../css/components.css?v=1030">
-<link rel="stylesheet" href="../css/mobile.css?v=1030">
-<link rel="stylesheet" href="../css/navigation.css?v=1030">
+<link rel="stylesheet" href="../css/base.css?v=1040">
+<link rel="stylesheet" href="../css/layout.css?v=1040">
+<link rel="stylesheet" href="../css/components.css?v=1040">
+<link rel="stylesheet" href="../css/mobile.css?v=1040">
+<link rel="stylesheet" href="../css/navigation.css?v=1040">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#4b84f3">
 <meta name="mobile-web-app-capable" content="yes">
@@ -27,12 +27,31 @@
       <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
     </header>
 
+    <!-- KPIs -->
     <section class="kpi-grid" style="margin-bottom:20px">
-      <article class="kpi-card"><span>Total Alvo</span><strong id="totalAlvo">R$ 0,00</strong></article>
-      <article class="kpi-card"><span>Total Acumulado</span><strong id="totalAtual" class="positive">R$ 0,00</strong></article>
-      <article class="kpi-card"><span>Falta para concluir</span><strong id="totalFaltante">R$ 0,00</strong></article>
+      <article class="kpi-card">
+        <span>Total Alvo</span>
+        <strong id="totalAlvo">R$ 0,00</strong>
+      </article>
+      <article class="kpi-card">
+        <span>Total Acumulado</span>
+        <strong id="totalAtual" class="positive">R$ 0,00</strong>
+      </article>
+      <article class="kpi-card">
+        <span>Falta para concluir</span>
+        <strong id="totalFaltante">R$ 0,00</strong>
+      </article>
+      <article class="kpi-card">
+        <span>Saldo disponível</span>
+        <strong id="saldoDisponivel" class="positive">R$ 0,00</strong>
+      </article>
+      <article class="kpi-card">
+        <span>Sua poupança média</span>
+        <strong id="mediaAporte" style="color:#4b84f3">R$ 0,00/mês</strong>
+      </article>
     </section>
 
+    <!-- Formulário -->
     <section class="panel" style="margin-bottom:16px">
       <div class="panel-header"><h2 id="tituloForm">Nova Meta</h2></div>
       <div class="form-grid" style="padding:16px 20px">
@@ -60,7 +79,7 @@
           <input type="number" id="valorAtual" placeholder="0,00" step="0.01" min="0">
         </div>
         <div class="form-group">
-          <label>Data alvo</label>
+          <label>Data alvo <span class="muted" style="font-size:11px">(opcional)</span></label>
           <input type="date" id="dataAlvo">
         </div>
         <div class="form-group">
@@ -79,6 +98,7 @@
       <div id="mensagemMeta" class="message" style="margin:0 20px 16px"></div>
     </section>
 
+    <!-- Lista de metas -->
     <section class="panel">
       <div class="panel-header"><h2>Minhas Metas</h2></div>
       <div id="listaMetas" style="padding:0 20px 8px">
@@ -90,7 +110,7 @@
 </div>
 
 <nav class="mobile-nav"></nav>
-<script type="module" src="../js/navigation.js?v=1030"></script>
-<script type="module" src="../js/goals.js?v=1030"></script>
+<script type="module" src="../js/navigation.js?v=1040"></script>
+<script type="module" src="../js/goals.js?v=1040"></script>
 </body>
 </html>
