@@ -1109,6 +1109,11 @@ async function loadMovements(){
               </td>
               <td>
                 ${r.source==='transaction' ? `
+                  ${r.status==='pendente' ? `
+                  <button type="button" class="btn btn-primary compact"
+                    onclick="window.pagarMovimentoFinZen('${r.id}')"
+                    style="background:#22c55e;border-color:#22c55e">✓ Pagar</button>
+                  ` : ''}
                   <button type="button" class="btn btn-secondary compact"
                     onclick="window.editMovementFinZen('${r.id}')">Editar</button>
                   <button type="button" class="btn btn-danger compact"
@@ -1141,6 +1146,11 @@ async function loadMovements(){
           </div>
           ${r.source==='transaction' ? `
             <div class="ff-mobile-card-actions">
+              ${r.status==='pendente' ? `
+              <button type="button" class="btn compact"
+                onclick="window.pagarMovimentoFinZen('${r.id}')"
+                style="background:#22c55e;border-color:#22c55e;color:#fff;flex:2">✓ Pagar</button>
+              ` : ''}
               <button type="button" class="btn btn-secondary compact"
                 onclick="window.editMovementFinZen('${r.id}')">Editar</button>
               <button type="button" class="btn btn-danger compact"
@@ -1201,6 +1211,43 @@ async function refreshAll(){
 // ─────────────────────────────────────────────
 window.editMovementFinZen   = editTransaction;
 window.deleteMovementFinZen = deleteTransaction;
+
+// ── Dar baixa em lançamento pendente com 1 clique ────
+window.pagarMovimentoFinZen = async function(id) {
+  try {
+    // Buscar transação
+    const { data: tx, error } = await supabase
+      .from('transactions')
+      .select('*,accounts:account_id(saldo_atual,currency)')
+      .eq('id', id).eq('user_id', user.id).single();
+
+    if(error || !tx) { showMessage('Lançamento não encontrado.', 'danger'); return; }
+    if(tx.status === 'pago') { showMessage('Lançamento já está pago.', 'info'); return; }
+
+    // Marcar como pago
+    await supabase.from('transactions')
+      .update({ status: 'pago' })
+      .eq('id', id).eq('user_id', user.id);
+
+    // Atualizar saldo da conta
+    if(tx.account_id && tx.accounts) {
+      const saldoAtual = Number(tx.accounts.saldo_atual || 0);
+      const valor      = Number(tx.amount || 0);
+      const novoSaldo  = tx.type === 'receita'
+        ? saldoAtual + valor
+        : saldoAtual - valor;
+
+      await supabase.from('accounts')
+        .update({ saldo_atual: novoSaldo })
+        .eq('id', tx.account_id).eq('user_id', user.id);
+    }
+
+    showMessage(`✓ "${tx.description}" marcado como pago!`, 'success');
+    await loadMovements();
+  } catch(e) {
+    showMessage('Erro ao dar baixa: ' + e.message, 'danger');
+  }
+};
 
 // ─────────────────────────────────────────────
 // EVENTOS
