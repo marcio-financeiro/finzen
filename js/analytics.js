@@ -77,7 +77,7 @@ async function carregar() {
       { data: cardTx },
       { data: contas },
       { data: investimentos },
-      { data: patrimHistorico },
+      { data: txPatrimonio },
     ] = await Promise.all([
       supabase.from('transactions')
         .select('type,amount,date,status,categories:category_id(nome,icon)')
@@ -98,11 +98,12 @@ async function carregar() {
         .select('classe_ativo,valor_atual,rendimento_total')
         .eq('user_id', user.id).eq('ativo', true),
 
-      supabase.from('patrimony_history')
-        .select('mes_referencia,patrimonio_liquido,total_contas,total_investimentos,total_faturas')
+      // Patrimônio: calcula dinamicamente por mês
+      supabase.from('transactions')
+        .select('type,amount,date,status')
         .eq('user_id', user.id)
-        .gte('mes_referencia', meses[0])
-        .order('mes_referencia', { ascending: true }),
+        .gte('date', inicio).lte('date', fim)
+        .eq('status','pago'),
     ]);
 
     const tx     = txHistorico || [];
@@ -155,8 +156,45 @@ async function carregar() {
       invClasse[c] = (invClasse[c]||0) + Number(i.valor_atual||0);
     });
 
-    // ── Patrimônio histórico ──────────────────────────
-    const histPatr = patrimHistorico || [];
+    // ── Patrimônio histórico — calculado dinamicamente ──
+    // Parte do saldo atual e subtrai/soma as transações mês a mês ao contrário
+    const saldoAtualBRL = (contas||[])
+      .filter(c => c.currency === 'BRL')
+      .reduce((s,c) => s + Number(c.saldo_atual||0), 0);
+    const totalInvestAtual = Object.values(invClasse).reduce((s,v)=>s+v,0);
+
+    // Acumula fluxo por mês (receitas - despesas)
+    const fluxoPorMes = {};
+    meses.forEach(m => { fluxoPorMes[m] = 0; });
+    (txPatrimonio||[]).forEach(t => {
+      const m = t.date?.slice(0,7);
+      if(!fluxoPorMes.hasOwnProperty(m)) return;
+      if(t.type==='receita') fluxoPorMes[m] += Number(t.amount||0);
+      if(t.type==='despesa') fluxoPorMes[m] -= Number(t.amount||0);
+    });
+    // Inclui cartão
+    cartao.forEach(t => {
+      const m = t.fatura_referencia;
+      if(!fluxoPorMes.hasOwnProperty(m)) return;
+      fluxoPorMes[m] -= Number(t.valor_parcela||0);
+    });
+
+    // Reconstrói patrimônio retroativamente a partir do saldo atual
+    const patrimonioBase = saldoAtualBRL + totalInvestAtual;
+    const patrimonioMeses = [...meses].reverse().reduce((acc, mes, i) => {
+      if(i === 0) {
+        acc[mes] = patrimonioBase;
+      } else {
+        const anterior = [...meses].reverse()[i-1];
+        acc[mes] = acc[anterior] - fluxoPorMes[anterior];
+      }
+      return acc;
+    }, {});
+
+    const patrimHistorico = meses.map(m => ({
+      mes_referencia: m,
+      patrimonio_liquido: patrimonioMeses[m] || 0,
+    }));
 
     // ── KPIs ──────────────────────────────────────────
     const totalReceitas = receitas.reduce((s,v)=>s+v,0);
@@ -331,49 +369,26 @@ async function carregar() {
 
     // ── Gráfico 6: Patrimônio histórico ───────────────
     destroyChart('chartPatrimonio');
-    if(histPatr.length > 0) {
-      charts['chartPatrimonio'] = new Chart(el('chartPatrimonio'), {
-        type: 'line',
-        data: {
-          labels: histPatr.map(h => nomeMes(h.mes_referencia)),
-          datasets: [
-            {
-              label: 'Patrimônio Líquido',
-              data: histPatr.map(h => Number(h.patrimonio_liquido||0)),
-              borderColor: '#22c55e',
-              backgroundColor: rgba('#22c55e', .1),
-              borderWidth: 2.5,
-              pointRadius: 5,
-              tension: .35,
-              fill: true,
-            },
-            {
-              label: 'Contas',
-              data: histPatr.map(h => Number(h.total_contas||0)),
-              borderColor: '#4b84f3',
-              borderWidth: 1.5,
-              borderDash: [4,4],
-              pointRadius: 3,
-              tension: .35,
-            },
-            {
-              label: 'Investimentos',
-              data: histPatr.map(h => Number(h.total_investimentos||0)),
-              borderColor: '#f59e0b',
-              borderWidth: 1.5,
-              borderDash: [4,4],
-              pointRadius: 3,
-              tension: .35,
-            },
-          ]
-        },
-        options: chartOptions('Evolução Patrimonial')
-      });
-      el('semPatrimonio').style.display = 'none';
-    } else {
-      el('semPatrimonio').style.display = 'flex';
-      el('chartPatrimonio').style.display = 'none';
-    }
+    charts['chartPatrimonio'] = new Chart(el('chartPatrimonio'), {
+      type: 'line',
+      data: {
+        labels: patrimHistorico.map(h => nomeMes(h.mes_referencia)),
+        datasets: [
+          {
+            label: 'Patrimônio estimado',
+            data: patrimHistorico.map(h => Number(h.patrimonio_liquido||0)),
+            borderColor: '#22c55e',
+            backgroundColor: rgba('#22c55e', .1),
+            borderWidth: 2.5,
+            pointRadius: 5,
+            tension: .35,
+            fill: true,
+          },
+        ]
+      },
+      options: chartOptions('Evolução Patrimonial Estimada (6 meses)')
+    });
+    el('semPatrimonio').style.display = 'none';
 
     // ── Tabela top categorias ─────────────────────────
     el('tabelaCategorias').innerHTML = catOrdenadas.slice(0,8).map(([cat, val], i) => {
