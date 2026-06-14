@@ -66,7 +66,31 @@
           <h3 id="formContaTitulo">Nova Conta</h3>
           <div class="form-grid">
             <div class="form-group"><label>Nome</label>
-              <input type="text" id="contaNome" placeholder="Ex: Itaú, Mercado Pago"></div>
+              <input type="text" id="contaNome" placeholder="Ex: Itaú, Mercado Pago" oninput="sugerirIconeConta()"></div>
+            <div class="form-group"><label>Ícone (emoji)</label>
+              <div style="position:relative">
+                <div style="display:flex;gap:8px;align-items:center">
+                  <button type="button" id="btnEmojiConta"
+                    style="width:42px;height:42px;font-size:22px;border:1px solid var(--border);border-radius:8px;
+                      background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center"
+                    title="Escolher emoji">
+                    <span id="emojiPreviewConta">🏦</span>
+                  </button>
+                  <input type="text" id="contaIcone" placeholder="ou digite emoji" maxlength="4" style="flex:1">
+                </div>
+                <div id="emojiPickerConta" style="display:none;position:absolute;z-index:999;
+                  top:48px;left:0;background:var(--surface);border:1px solid var(--border);
+                  border-radius:12px;padding:12px;width:300px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
+                  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">
+                    <button class="conta-emoji-cat" data-cat="bancos" style="font-size:11px;padding:4px 8px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer">🏦 Bancos</button>
+                    <button class="conta-emoji-cat" data-cat="digital" style="font-size:11px;padding:4px 8px;border-radius:6px;border:none;background:var(--surface);color:var(--text);cursor:pointer">📱 Digital</button>
+                    <button class="conta-emoji-cat" data-cat="invest" style="font-size:11px;padding:4px 8px;border-radius:6px;border:none;background:var(--surface);color:var(--text);cursor:pointer">📈 Invest</button>
+                    <button class="conta-emoji-cat" data-cat="outros" style="font-size:11px;padding:4px 8px;border-radius:6px;border:none;background:var(--surface);color:var(--text);cursor:pointer">💼 Outros</button>
+                  </div>
+                  <div id="emojiGridConta" style="display:flex;flex-wrap:wrap;gap:2px;max-height:160px;overflow-y:auto"></div>
+                </div>
+              </div>
+            </div>
             <div class="form-group"><label>Banco / Instituição</label>
               <input type="text" id="contaBanco" placeholder="Ex: Itaú, Nubank"></div>
             <div class="form-group"><label>Tipo</label>

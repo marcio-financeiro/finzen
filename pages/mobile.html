@@ -381,6 +381,10 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
       <button class="mob-tipo-btn receita" id="btnTipoReceita" onclick="selecionarTipo('receita')">
         ↑ Receita
       </button>
+      <button class="mob-tipo-btn" id="btnTipoCartao" onclick="selecionarTipo('cartao')"
+        style="background:rgba(79,132,243,.15);color:var(--accent)">
+        💳 Cartão
+      </button>
     </div>
 
     <!-- Valor -->
@@ -406,9 +410,30 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
     </div>
 
     <!-- Conta -->
-    <div class="mob-field">
+    <div class="mob-field" id="mobContaField">
       <label>Conta</label>
       <select id="mobConta"></select>
+    </div>
+
+    <!-- Cartão (apenas para tipo cartão) -->
+    <div class="mob-field" id="mobCartaoField" style="display:none">
+      <label>Cartão de crédito</label>
+      <select id="mobCartao"></select>
+    </div>
+
+    <!-- Parcelas (apenas para tipo cartão) -->
+    <div class="mob-field" id="mobParcelasField" style="display:none">
+      <label>Parcelas</label>
+      <select id="mobParcelas">
+        <option value="1">1x (à vista)</option>
+        <option value="2">2x</option>
+        <option value="3">3x</option>
+        <option value="4">4x</option>
+        <option value="5">5x</option>
+        <option value="6">6x</option>
+        <option value="10">10x</option>
+        <option value="12">12x</option>
+      </select>
     </div>
 
     <!-- Data -->
