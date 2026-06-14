@@ -150,6 +150,69 @@
 /* ── Full-width panels ── */
 .dash-full{ margin-bottom:16px; }
 
+/* ── Score de Saúde Financeira ── */
+.score-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.score-gauge {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  flex-shrink: 0;
+}
+.score-gauge svg { width: 110px; height: 110px; }
+.score-gauge-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+}
+.score-gauge-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  margin-top: 2px;
+}
+.score-info { flex: 1; min-width: 220px; }
+.score-info h3 { font-size: 14px; font-weight: 800; margin-bottom: 12px; }
+.score-itens { display: flex; flex-direction: column; gap: 8px; }
+.score-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.score-item-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.score-item-bar {
+  height: 6px;
+  border-radius: 99px;
+  transition: width .5s ease;
+}
+.score-item-label { width: 160px; color: var(--muted); }
+.score-item-pts { width: 50px; text-align: right; font-weight: 700; font-size: 11px; }
+@media(max-width:600px){
+  .score-block { flex-direction: column; align-items: flex-start; }
+}
+
 /* ── Cashflow AI ── */
 .cfai-block{
   border:1px solid rgba(79,124,255,.35);
@@ -303,6 +366,28 @@
       <div class="dash-kpi" onclick="location.href='./card-bills.html'">
         <span>Faturas (mês atual)</span>
         <strong id="kpiFaturas" class="negative">R$ 0,00</strong>
+      </div>
+    </div>
+
+    <!-- Score de Saúde Financeira -->
+    <div class="score-block" id="blocoScore" style="display:none">
+      <div class="score-gauge">
+        <svg viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="55" cy="55" r="46" fill="none" stroke="var(--border)" stroke-width="10"/>
+          <circle id="scoreCircle" cx="55" cy="55" r="46" fill="none" stroke="#22c55e"
+            stroke-width="10" stroke-linecap="round"
+            stroke-dasharray="289" stroke-dashoffset="289"
+            transform="rotate(-90 55 55)"
+            style="transition: stroke-dashoffset .8s ease, stroke .4s"/>
+        </svg>
+        <div class="score-gauge-num">
+          <span id="scoreNum" style="color:#22c55e">0</span>
+          <span class="score-gauge-label" id="scoreLabel" style="color:var(--muted)">—</span>
+        </div>
+      </div>
+      <div class="score-info">
+        <h3>🏅 Score de Saúde Financeira</h3>
+        <div class="score-itens" id="scoreItens"></div>
       </div>
     </div>
 
