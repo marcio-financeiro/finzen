@@ -5,6 +5,12 @@ import { formatCurrency } from './utils.js';
 // ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
 if(!sessionData.session){ navigate('../login.html'); }
+
+// ── Redirecionar mobile para modo simples ─────────────
+const isMobile = window.innerWidth < 768;
+const modoAvancado = localStorage.getItem('finzen_modo_avancado') === 'true';
+if(isMobile && !modoAvancado){ navigate('./mobile.html'); }
+
 const user = sessionData.session.user;
 document.getElementById('userEmail').innerText = user.email;
 document.getElementById('btnLogout').addEventListener('click', async () => {
