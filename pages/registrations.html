@@ -160,7 +160,32 @@
                 <option value="investimento">Investimento</option>
               </select></div>
             <div class="form-group"><label>Ícone (emoji)</label>
-              <input type="text" id="categoriaIcon" placeholder="Ex: 🍔" maxlength="4"></div>
+              <div style="position:relative">
+                <div style="display:flex;gap:8px;align-items:center">
+                  <button type="button" id="btnEmojiPicker"
+                    style="width:42px;height:42px;font-size:22px;border:1px solid var(--border);border-radius:8px;
+                      background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center"
+                    title="Escolher emoji">
+                    <span id="emojiPreview">😀</span>
+                  </button>
+                  <input type="text" id="iconeCategoria" placeholder="ou digite o emoji" maxlength="4"
+                    style="flex:1">
+                </div>
+                <div id="emojiPickerPanel" style="display:none;position:absolute;z-index:999;
+                  top:48px;left:0;background:var(--surface);border:1px solid var(--border);
+                  border-radius:12px;padding:12px;width:300px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
+                  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">
+                    <button class="emoji-cat-btn" data-cat="common" style="font-size:11px;padding:4px 8px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer">⭐ Comum</button>
+                    <button class="emoji-cat-btn" data-cat="money"  style="font-size:11px;padding:4px 8px;border-radius:6px;border:none;background:var(--surface);color:var(--text);cursor:pointer">💰 Finanças</button>
+                    <button class="emoji-cat-btn" data-cat="food"   style="font-size:11px;padding:4px 8px;border-radius:6px;border:none;background:var(--surface);color:var(--text);cursor:pointer">🍔 Comida</button>
+                    <button class="emoji-cat-btn" data-cat="home"   style="font-size:11px;padding:4px 8px;border-radius:6px;border:none;background:var(--surface);color:var(--text);cursor:pointer">🏠 Casa</button>
+                    <button class="emoji-cat-btn" data-cat="transport" style="font-size:11px;padding:4px 8px;border-radius:6px;border:none;background:var(--surface);color:var(--text);cursor:pointer">🚗 Transporte</button>
+                    <button class="emoji-cat-btn" data-cat="fun"    style="font-size:11px;padding:4px 8px;border-radius:6px;border:none;background:var(--surface);color:var(--text);cursor:pointer">🎮 Lazer</button>
+                  </div>
+                  <div id="emojiGrid" style="display:flex;flex-wrap:wrap;gap:2px;max-height:160px;overflow-y:auto"></div>
+                </div>
+              </div>
+            </div>
             <div class="form-group"><label>Status</label>
               <select id="categoriaAtivo">
                 <option value="true">Ativa</option>
