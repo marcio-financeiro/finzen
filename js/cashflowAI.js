@@ -228,6 +228,7 @@ Seja objetivo, use valores em R$, e não repita dados óbvios. Tom: direto e út
 export function renderMd(text) {
   return text
     .replace(/^---+$/gm, '')
+    .replace(/^# (.+)$/gm, '<h4 class="cfai-h4">$1</h4>')
     .replace(/^## (.+)$/gm, '<h4 class="cfai-h4">$1</h4>')
     .replace(/^### (.+)$/gm, '<h4 class="cfai-h4">$1</h4>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
