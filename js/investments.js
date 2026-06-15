@@ -993,73 +993,115 @@ async function renderIndicadores() {
   const container = el('blocoIndicadores');
   if(!container) return;
 
-  // Buscar CDI e IBOV via brapi
-  let cdiAnual = 0, ibovAnual = 0;
-  try {
-    const r = await fetch('/api/quotes?tickers=BOVA11&dolar=false');
-    if(r.ok) {
-      const j = await r.json();
-      // BOVA11 como proxy do IBOV
-      const bova = j['BOVA11'];
-      if(bova) ibovAnual = bova;
-    }
-  } catch(_) {}
+  let cdiAnual = 0, ipcaAnual = 0, ibovAnual = 0;
 
+  // CDI e IPCA via BrasilAPI
   try {
     const r = await fetch('https://brasilapi.com.br/api/taxas/v1');
     if(r.ok) {
       const taxas = await r.json();
-      const cdi = taxas.find(t => t.nome === 'CDI');
-      if(cdi?.valor) cdiAnual = cdi.valor;
+      const cdi  = taxas.find(t => t.nome === 'CDI');
+      const ipca = taxas.find(t => t.nome === 'IPCA');
+      if(cdi?.valor)  cdiAnual  = cdi.valor;
+      if(ipca?.valor) ipcaAnual = ipca.valor;
     }
   } catch(_) {}
 
-  // Calcular rentabilidade da carteira
-  const totalAplicado = ativos.filter(a=>!isRF(a.tipo)).reduce((s,a) => s + calcAplicado(a), 0);
-  const totalAtual    = ativos.filter(a=>!isRF(a.tipo)).reduce((s,a) => s + calcBRL(a, calcAtual(a)), 0);
+  // IBOV via brapi com histórico 12 meses
+  try {
+    const r = await fetch(
+      `https://brapi.dev/api/quote/%5EBVSP?range=1y&interval=1mo&token=bGZu7dGPyW94PcfXVCiA7t`
+    );
+    if(r.ok) {
+      const j = await r.json();
+      const hist = j?.results?.[0]?.historicalDataPrice;
+      if(hist?.length >= 2) {
+        const primeiro = hist[0]?.close || hist[0]?.open;
+        const ultimo   = hist[hist.length-1]?.close;
+        if(primeiro && ultimo) ibovAnual = (ultimo - primeiro) / primeiro * 100;
+      }
+    }
+  } catch(_) {}
+
+  // Rentabilidade da carteira
+  const totalAplicado = ativos.filter(a=>!isRF(a.tipo)).reduce((s,a)=>s+calcAplicado(a),0);
+  const totalAtual    = ativos.filter(a=>!isRF(a.tipo)).reduce((s,a)=>s+calcBRL(a,calcAtual(a)),0);
   const rentCarteira  = totalAplicado > 0 ? (totalAtual - totalAplicado) / totalAplicado * 100 : 0;
+  const ganho         = totalAtual - totalAplicado;
 
   // Por classe
   const classes = {};
   ativos.filter(a=>!isRF(a.tipo)).forEach(a => {
     const c = a.tipo || 'Outros';
-    if(!classes[c]) classes[c] = { aplic: 0, atual: 0 };
+    if(!classes[c]) classes[c] = { aplic:0, atual:0 };
     classes[c].aplic += calcAplicado(a);
     classes[c].atual += calcBRL(a, calcAtual(a));
   });
 
-  const cor = v => v >= 0 ? '#22c55e' : '#ef4444';
+  const cor    = v => v >= 0 ? '#22c55e' : '#ef4444';
   const fmtPct = v => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
 
+  function badge(carteira, indicador, label) {
+    if(!indicador) return '';
+    const diff = carteira - indicador;
+    const c    = diff >= 0 ? '#22c55e' : '#ef4444';
+    return `<div style="font-size:11px;color:${c};font-weight:700">${diff >= 0 ? '✅' : '⚠️'} ${diff >= 0 ? '+' : ''}${diff.toFixed(2)}% vs ${label}</div>`;
+  }
+
   container.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:700">📈 Carteira (total)</div>
-        <div style="font-size:22px;font-weight:900;color:${cor(rentCarteira)}">${fmtPct(rentCarteira)}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${formatCurrency(totalAtual-totalAplicado,'BRL')}</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:700">💰 CDI (a.a.)</div>
-        <div style="font-size:22px;font-weight:900;color:#f59e0b">${cdiAnual > 0 ? fmtPct(cdiAnual) : '--'}</div>
-        <div style="font-size:11px;margin-top:2px;color:${cor(rentCarteira - cdiAnual)}">${cdiAnual > 0 ? (rentCarteira > cdiAnual ? '✅ Acima do CDI' : '⚠️ Abaixo do CDI') : 'Carregando...'}</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:700">📊 vs CDI</div>
-        <div style="font-size:22px;font-weight:900;color:${cor(rentCarteira-cdiAnual)}">${cdiAnual > 0 ? fmtPct(rentCarteira - cdiAnual) : '--'}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">diferença</div>
+    <!-- Carteira principal -->
+    <div style="background:linear-gradient(135deg,rgba(79,132,243,.12),rgba(34,197,94,.08));border:1px solid rgba(79,132,243,.25);border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px">📈 Sua Carteira (desde o início)</div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:34px;font-weight:900;color:${cor(rentCarteira)};line-height:1">${fmtPct(rentCarteira)}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">${ganho >= 0 ? '+' : ''}${formatCurrency(ganho,'BRL')} sobre ${formatCurrency(totalAplicado,'BRL')}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;text-align:right">
+          ${badge(rentCarteira, cdiAnual,  'CDI')}
+          ${badge(rentCarteira, ipcaAnual, 'IPCA')}
+          ${badge(rentCarteira, ibovAnual, 'IBOV')}
+        </div>
       </div>
     </div>
 
-    <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">Por classe</div>
+    <!-- Indicadores de mercado -->
+    <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Indicadores de mercado</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-weight:700">💰 CDI a.a.</div>
+        <div style="font-size:18px;font-weight:900;color:#f59e0b">${cdiAnual ? fmtPct(cdiAnual) : '--'}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-weight:700">📊 IPCA a.a.</div>
+        <div style="font-size:18px;font-weight:900;color:#8b5cf6">${ipcaAnual ? fmtPct(ipcaAnual) : '--'}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-weight:700">🏛️ IBOV 12m</div>
+        <div style="font-size:18px;font-weight:900;color:#ef4444">${ibovAnual ? fmtPct(ibovAnual) : '--'}</div>
+      </div>
+    </div>
+
+    <!-- Por classe -->
+    <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Por classe de ativo</div>
     <div style="display:flex;flex-direction:column;gap:6px">
-      ${Object.entries(classes).map(([classe, v]) => {
-        const rent = v.aplic > 0 ? (v.atual - v.aplic) / v.aplic * 100 : 0;
-        const pct  = totalAtual > 0 ? v.atual / totalAtual * 100 : 0;
+      ${Object.entries(classes).sort((a,b)=>{
+        const rA=a[1].aplic>0?(a[1].atual-a[1].aplic)/a[1].aplic*100:0;
+        const rB=b[1].aplic>0?(b[1].atual-b[1].aplic)/b[1].aplic*100:0;
+        return rB-rA;
+      }).map(([classe,v])=>{
+        const rent=v.aplic>0?(v.atual-v.aplic)/v.aplic*100:0;
+        const pct=totalAtual>0?v.atual/totalAtual*100:0;
         return `
-          <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
-            <span style="flex:1;font-size:13px;font-weight:600">${classe}</span>
-            <span style="font-size:12px;color:var(--muted)">${pct.toFixed(1)}%</span>
-            <span style="font-size:14px;font-weight:800;color:${cor(rent)};min-width:70px;text-align:right">${fmtPct(rent)}</span>
+          <div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px">
+              <span style="flex:1;font-size:13px;font-weight:700">${classe}</span>
+              <span style="font-size:11px;color:var(--muted)">${pct.toFixed(1)}%</span>
+              <span style="font-size:15px;font-weight:900;color:${cor(rent)}">${fmtPct(rent)}</span>
+            </div>
+            <div style="height:4px;background:var(--border);border-radius:99px;overflow:hidden">
+              <div style="height:4px;width:${Math.min(Math.abs(rent)/Math.max(Math.abs(rentCarteira),1)*100,100).toFixed(0)}%;background:${cor(rent)};border-radius:99px"></div>
+            </div>
           </div>`;
       }).join('')}
     </div>
