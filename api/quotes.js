@@ -1,29 +1,21 @@
 // api/quotes.js — FinZen
-// brapi.dev com API key + Yahoo Finance para EUA
-
-export const config = { runtime: 'edge' };
+// Vercel Serverless (Node.js) — mais compatível com brapi.dev
 
 const BRAPI_TOKEN = 'bGZu7dGPyW94PcfXVCiA7t';
 
-export default async function handler(req) {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Cache-Control': 'public, max-age=300',
-  };
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Cache-Control', 'public, max-age=300');
 
-  if(req.method === 'OPTIONS') {
-    return new Response(null, { headers });
-  }
+  if(req.method === 'OPTIONS') return res.status(200).end();
 
-  const url     = new URL(req.url);
-  const tickers = (url.searchParams.get('tickers') || '')
+  const tickers = (req.query.tickers || '')
     .split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
-  const dolar   = url.searchParams.get('dolar') === 'true';
+  const dolar = req.query.dolar === 'true';
   const resultado = {};
 
-  // ── Dólar ─────────────────────────────────────────────
+  // ── Dólar via brapi ──────────────────────────────────
   if(dolar) {
     try {
       const r = await fetch(
@@ -36,7 +28,6 @@ export default async function handler(req) {
       }
     } catch(_) {}
 
-    // Fallback dólar
     if(!resultado['USD-BRL']) {
       try {
         const r = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
@@ -49,16 +40,12 @@ export default async function handler(req) {
     }
   }
 
-  if(!tickers.length) {
-    return new Response(JSON.stringify(resultado), {
-      headers: { ...headers, 'Content-Type': 'application/json' }
-    });
-  }
+  if(!tickers.length) return res.status(200).json(resultado);
 
   const tickersBR  = tickers.filter(t => /\d/.test(t));
   const tickersEUA = tickers.filter(t => !/\d/.test(t));
 
-  // ── BR: brapi.dev com token ───────────────────────────
+  // ── BR: brapi.dev com token ──────────────────────────
   if(tickersBR.length) {
     try {
       const r = await fetch(
@@ -75,31 +62,24 @@ export default async function handler(req) {
     } catch(_) {}
   }
 
-  // ── EUA: Yahoo Finance ────────────────────────────────
+  // ── EUA: Yahoo Finance ───────────────────────────────
   if(tickersEUA.length) {
     try {
       const r = await fetch(
         `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickersEUA.join(',')}`,
-        {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'application/json',
-          }
-        }
+        { headers: { 'User-Agent': 'Mozilla/5.0' } }
       );
       if(r.ok) {
         const j = await r.json();
         (j?.quoteResponse?.result || []).forEach(i => {
-          if(i.symbol && i.regularMarketPrice) {
+          if(i.symbol && i.regularMarketPrice)
             resultado[i.symbol] = parseFloat(i.regularMarketPrice);
-          }
         });
       }
     } catch(_) {}
 
-    // Fallback individual para EUA
-    const faltando = tickersEUA.filter(t => !resultado[t]);
-    for(const ticker of faltando) {
+    // Fallback individual
+    for(const ticker of tickersEUA.filter(t => !resultado[t])) {
       try {
         const r = await fetch(
           `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`,
@@ -114,7 +94,5 @@ export default async function handler(req) {
     }
   }
 
-  return new Response(JSON.stringify(resultado), {
-    headers: { ...headers, 'Content-Type': 'application/json' }
-  });
+  return res.status(200).json(resultado);
 }
