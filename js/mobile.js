@@ -61,7 +61,7 @@ async function carregar() {
     { data: cats },
     { data: cartoes },
   ] = await Promise.all([
-    supabase.from('accounts').select('id,nome,saldo_atual,currency').eq('user_id',user.id).eq('active',true),
+    supabase.from('accounts').select('id,nome,saldo_atual,currency,icon,tipo,account_kind').eq('user_id',user.id).eq('active',true),
     supabase.from('transactions').select('type,amount,status').eq('user_id',user.id).gte('date',inicio).lte('date',fim).eq('status','pago'),
     supabase.from('card_transactions').select('valor_parcela,credit_cards:card_id(nome,vencimento_dia)').eq('user_id',user.id).eq('status','aberta').eq('fatura_referencia',anoMes),
     supabase.from('transactions').select('description,amount,date,type').eq('user_id',user.id).eq('status','pendente').gte('date',hojeISO).lte('date',em7).order('date'),
