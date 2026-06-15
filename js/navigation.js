@@ -18,8 +18,8 @@ const NAV_GROUPS = [
       {title:'Comparador',     icon:'⚖️', href:'./comparador.html'},
       {title:'Chat IA',        icon:'💬', href:'./chat.html'},
       {title:'Relatório',      icon:'📊', href:'./reports.html'},
-      {title:'Analytics',      icon:'📈', href:'./analytics.html'},
-      {title:'Cadastros',      icon:'⚙️', href:'./registrations.html'}
+      {title:'Analytics',      icon:'📉', href:'./analytics.html'},
+      {title:'Cadastros',      icon:'⚙️', href:'./registrations.html'},
     ]
   },
   {
@@ -583,7 +583,7 @@ function initNavigation(){
   ensureFAB();
   // Registrar SW e agendar alertas silenciosamente
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('../sw.js', { scope: '../' })
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
       .then(async () => {
         if(Notification.permission === 'granted'){
           const { supabase } = await import('./supabaseClient.js');

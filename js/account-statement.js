@@ -87,10 +87,54 @@ async function carregarExtrato(){
     return;
   }
 
-  const lancamentos = data || [];
+  // ── Buscar transferências da conta selecionada ────────
+  let transferencias = [];
+  if(contaId) {
+    const [{ data: transOut }, { data: transIn }] = await Promise.all([
+      supabase.from('account_transfers')
+        .select('id,amount,description,date,from_account_id,to_account_id,accounts_to:to_account_id(nome)')
+        .eq('user_id', user.id)
+        .eq('from_account_id', contaId)
+        .gte('date', mes ? `${mes.split('-')[0]}-${mes.split('-')[1]}-01` : '2000-01-01')
+        .lte('date', mes ? new Date(Number(mes.split('-')[0]), Number(mes.split('-')[1]), 0).toISOString().split('T')[0] : '2099-12-31'),
+      supabase.from('account_transfers')
+        .select('id,amount,description,date,from_account_id,to_account_id,accounts_from:from_account_id(nome)')
+        .eq('user_id', user.id)
+        .eq('to_account_id', contaId)
+        .gte('date', mes ? `${mes.split('-')[0]}-${mes.split('-')[1]}-01` : '2000-01-01')
+        .lte('date', mes ? new Date(Number(mes.split('-')[0]), Number(mes.split('-')[1]), 0).toISOString().split('T')[0] : '2099-12-31'),
+    ]);
 
-  const entradas = lancamentos.filter(l=>l.type==='receita').reduce((s,l)=>s+Number(l.amount||0),0);
-  const saidas   = lancamentos.filter(l=>l.type==='despesa').reduce((s,l)=>s+Number(l.amount||0),0);
+    (transOut||[]).forEach(t => transferencias.push({
+      id: t.id, date: t.date,
+      description: t.description || `Transferência para ${t.accounts_to?.nome||'outra conta'}`,
+      type: 'transferencia_saida',
+      amount: Number(t.amount||0),
+      conta: t.accounts_to?.nome || '-',
+      status: 'pago',
+      isTransfer: true,
+    }));
+    (transIn||[]).forEach(t => transferencias.push({
+      id: t.id, date: t.date,
+      description: t.description || `Transferência de ${t.accounts_from?.nome||'outra conta'}`,
+      type: 'transferencia_entrada',
+      amount: Number(t.amount||0),
+      conta: t.accounts_from?.nome || '-',
+      status: 'pago',
+      isTransfer: true,
+    }));
+  }
+
+  // Combinar e ordenar por data
+  const todos = [
+    ...(data||[]).map(l => ({ ...l, isTransfer: false })),
+    ...transferencias,
+  ].sort((a,b) => b.date?.localeCompare(a.date));
+
+  const lancamentos = todos;
+
+  const entradas = lancamentos.filter(l=>l.type==='receita'||l.type==='transferencia_entrada').reduce((s,l)=>s+Number(l.amount||0),0);
+  const saidas   = lancamentos.filter(l=>l.type==='despesa'||l.type==='transferencia_saida').reduce((s,l)=>s+Number(l.amount||0),0);
   const resultado = entradas - saidas;
 
   el('kpiEntradas').innerText = formatCurrency(entradas, 'BRL');
@@ -120,15 +164,21 @@ async function carregarExtrato(){
         ${lancamentos.map(l => {
           const currency = l.accounts?.currency || 'BRL';
           const valor = Number(l.amount || 0);
+          const isEntrada = l.type==='receita' || l.type==='transferencia_entrada';
+          const isSaida   = l.type==='despesa' || l.type==='transferencia_saida';
+          const contaNome = l.isTransfer ? l.conta : (l.accounts?.nome || '-');
+          const catNome   = l.isTransfer
+            ? `<span style="color:var(--muted)">🔄 Transferência</span>`
+            : `${l.categories?.icon||''} ${l.categories?.nome || '-'}`;
           return `
             <tr>
               <td style="white-space:nowrap">${formatDate(l.date)}</td>
               <td>${l.description || '-'}</td>
-              <td>${l.accounts?.nome || '-'}</td>
-              <td>${l.categories?.icon||''} ${l.categories?.nome || '-'}</td>
-              <td><span class="badge ${l.status==='pago'?'success':'warning'}">${l.status||'-'}</span></td>
-              <td class="money ${l.type==='receita'?'positive':'negative'}" style="text-align:right">
-                ${l.type==='receita'?'+':'-'}${formatCurrency(valor, currency)}
+              <td>${contaNome}</td>
+              <td>${catNome}</td>
+              <td><span class="badge ${l.status==='pago'||l.status==='paga'?'success':'warning'}">${l.status||'-'}</span></td>
+              <td class="money ${isEntrada?'positive':'negative'}" style="text-align:right">
+                ${isEntrada?'+':'-'}${formatCurrency(valor, currency)}
               </td>
             </tr>
           `;
