@@ -42,6 +42,130 @@ function tipoContaEmoji(tipo) {
   return '🏦';
 }
 
+// ── Cache offline ─────────────────────────────────────
+const CACHE_KEY = 'finzen_mobile_cache';
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutos
+
+function salvarCache(dados) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ dados, ts: Date.now() }));
+  } catch(_) {}
+}
+
+function carregarCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if(!raw) return null;
+    const { dados, ts } = JSON.parse(raw);
+    if(Date.now() - ts > CACHE_TTL) return null;
+    return dados;
+  } catch(_) { return null; }
+}
+
+function mostrarOfflineBanner() {
+  const banner = document.createElement('div');
+  banner.style.cssText = `position:fixed;top:0;left:0;right:0;padding:8px 16px;
+    background:rgba(245,158,11,.9);color:#000;font-size:12px;font-weight:700;
+    text-align:center;z-index:999;`;
+  banner.textContent = '📵 Modo offline — dados do cache';
+  document.body.appendChild(banner);
+  setTimeout(() => banner.remove(), 4000);
+}
+
+// ── Pagar fatura pelo mobile ──────────────────────────
+window.pagarFaturaMobile = async function(idx, cartaoId, cartaoNome, total) {
+  if(!confirm(`Pagar fatura ${cartaoNome}\n${fmt(total)}\n\nSelecione a conta de débito.`)) return;
+
+  // Mostrar select de contas
+  const contasBRL = contas.filter(c=>(c.currency||'BRL')==='BRL');
+  if(!contasBRL.length){ alert('Nenhuma conta BRL disponível.'); return; }
+
+  // Criar modal simples de seleção
+  const opcoes = contasBRL.map(c=>`${c.icon||'🏦'} ${c.nome} (${fmt(c.saldo_atual||0)})`).join('\n');
+  const idx2 = contasBRL.findIndex(c => c.saldo_atual >= total);
+  const contaEscolhida = contasBRL[idx2 >= 0 ? idx2 : 0];
+
+  if(!confirm(`Débitar de:\n${contaEscolhida.icon||'🏦'} ${contaEscolhida.nome}\nSaldo: ${fmt(contaEscolhida.saldo_atual||0)}\n\nConfirmar pagamento de ${fmt(total)}?`)) return;
+
+  try {
+    const hoje = new Date().toISOString().split('T')[0];
+    const anoMes = hoje.slice(0,7);
+
+    // Marcar parcelas como pagas
+    const { error: e1 } = await supabase.from('card_transactions')
+      .update({ status: 'paga' })
+      .eq('user_id', user.id)
+      .eq('card_id', cartaoId)
+      .eq('fatura_referencia', anoMes);
+    if(e1) throw e1;
+
+    // Debitar da conta
+    const novoSaldo = Number(contaEscolhida.saldo_atual||0) - total;
+    await supabase.from('accounts').update({ saldo_atual: novoSaldo })
+      .eq('id', contaEscolhida.id).eq('user_id', user.id);
+
+    // Registrar pagamento nas transações
+    await supabase.from('transactions').insert({
+      user_id: user.id, account_id: contaEscolhida.id,
+      type: 'despesa', amount: total,
+      description: `Pagamento fatura ${cartaoNome}`,
+      date: hoje, status: 'pago',
+    });
+
+    // Remover alerta da tela
+    document.getElementById(`alerta-${idx}`)?.remove();
+
+    alert(`✅ Fatura ${cartaoNome} paga com sucesso!`);
+    await carregar();
+  } catch(e) {
+    alert('Erro ao pagar: ' + e.message);
+  }
+};
+
+// ── Pagar lançamento pendente pelo mobile ─────────────
+window.pagarPendenteMobile = async function(idx, txId, valor, contaId) {
+  if(!confirm(`Confirmar pagamento?\n${fmt(valor)}`)) return;
+
+  try {
+    await supabase.from('transactions')
+      .update({ status: 'pago' })
+      .eq('id', txId).eq('user_id', user.id);
+
+    if(contaId) {
+      const conta = contas.find(c=>c.id===contaId);
+      if(conta) {
+        const novoSaldo = Number(conta.saldo_atual||0) - valor;
+        await supabase.from('accounts').update({ saldo_atual: novoSaldo }).eq('id', contaId);
+      }
+    }
+
+    document.getElementById(`alerta-${idx}`)?.remove();
+    alert('✅ Lançamento marcado como pago!');
+    await carregar();
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  }
+};
+
+function renderizarDados(c) {
+  // Saldo
+  el('mobSaldo').textContent = fmt(c.saldoBRL||0);
+  el('mobSaldo').style.color = (c.saldoBRL||0) >= 0 ? 'var(--green)' : 'var(--red)';
+  el('mobSaldoSub').textContent = `${c.nContas||0} conta${(c.nContas||0)!==1?'s':''} ativas`;
+  // KPIs
+  el('mobReceitas').textContent  = fmt(c.receitas||0);
+  el('mobDespesas').textContent  = fmt(c.despesas||0);
+  el('mobResultado').textContent = fmt(c.resultado||0);
+  el('mobResultado').style.color = (c.resultado||0) >= 0 ? 'var(--green)' : 'var(--red)';
+  el('mobFaturas').textContent   = fmt(c.totalFat||0);
+  // Contas
+  contas = c.contas || [];
+  el('mobLoading').style.display   = 'none';
+  el('mobSaldoCard').style.display = 'block';
+  el('mobKpis').style.display      = 'grid';
+  popularModal();
+}
+
 // ── Carregar dados ────────────────────────────────────
 async function carregar() {
   const hoje    = new Date();
@@ -50,6 +174,16 @@ async function carregar() {
   const fim     = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).toISOString().split('T')[0];
   const hojeISO = hoje.toISOString().split('T')[0];
   const em7     = new Date(Date.now()+7*864e5).toISOString().split('T')[0];
+
+  // Tentar carregar do cache se offline
+  if(!navigator.onLine) {
+    const cache = carregarCache();
+    if(cache) {
+      mostrarOfflineBanner();
+      renderizarDados(cache);
+      return;
+    }
+  }
 
   const [
     { data: contasData },
@@ -114,6 +248,10 @@ async function carregar() {
         titulo: dias<=0?`Fatura ${c.nome} vence HOJE`:`Fatura ${c.nome} vence em ${dias} dia${dias>1?'s':''}`,
         sub: fmt(totalCartao),
         href: '../pages/card-bills.html',
+        cartaoId: c.id,
+        cartaoNome: c.nome,
+        totalCartao,
+        isFatura: true,
       });
     }
   });
@@ -127,18 +265,34 @@ async function carregar() {
       titulo: `${p.description}`,
       sub: `${dias<=0?'Hoje':dias===1?'Amanhã':`Em ${dias} dias`} • ${fmt(p.amount)}`,
       href: '../pages/movements.html',
+      txId: p.id,
+      txValor: p.amount,
+      txConta: p.account_id,
+      isPendente: true,
     });
   });
 
   const alertasList = el('mobAlertasList');
   if(alertas.length){
-    alertasList.innerHTML = alertas.map(a=>`
-      <div class="mob-alerta ${a.tipo}" onclick="location.href='${a.href}'">
+    alertasList.innerHTML = alertas.map((a,i)=>`
+      <div class="mob-alerta ${a.tipo}" id="alerta-${i}">
         <span class="mob-alerta-icon">${a.icon}</span>
-        <div class="mob-alerta-info">
+        <div class="mob-alerta-info" onclick="location.href='${a.href}'">
           <div class="mob-alerta-titulo">${a.titulo}</div>
           <div class="mob-alerta-sub">${a.sub}</div>
         </div>
+        ${a.isFatura ? `
+          <button class="mob-pagar-btn" onclick="pagarFaturaMobile(${i},'${a.cartaoId}','${a.cartaoNome}',${a.totalCartao})"
+            style="padding:6px 12px;border-radius:8px;border:none;background:#22c55e;color:#fff;
+              font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
+            ✓ Pagar
+          </button>` : ''}
+        ${a.isPendente ? `
+          <button class="mob-pagar-btn" onclick="pagarPendenteMobile(${i},'${a.txId}',${a.txValor},'${a.txConta||''}')"
+            style="padding:6px 12px;border-radius:8px;border:none;background:#22c55e;color:#fff;
+              font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
+            ✓ Pagar
+          </button>` : ''}
       </div>`).join('');
     el('mobAlertas').style.display = 'block';
   }
@@ -191,6 +345,15 @@ async function carregar() {
   el('mobLoading').style.display    = 'none';
   el('mobSaldoCard').style.display  = 'block';
   el('mobKpis').style.display       = 'grid';
+
+  // Salvar cache para uso offline
+  try {
+    salvarCache({
+      saldoBRL, nContas, receitas, despesas, resultado, totalFat,
+      alertas, contas, orcamentos: orcamentos||[], ultimos: ultimos||[],
+      anoMes,
+    });
+  } catch(_) {}
 
   // ── Popular modal ──────────────────────────────────
   popularModal();
