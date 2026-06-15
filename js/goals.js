@@ -153,7 +153,7 @@ function abrirModalAporte(id, nome, falta, sugestao){
 
         <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">Valor a aportar (R$)</label>
         <input type="number" id="inputAporte" placeholder="0,00" step="0.01" min="0"
-          value="${sugestao ? sugestao.toFixed(2) : ''}"
+          value="${sugestao ? sugestao.toFixed(2) : ''}" inputmode="decimal"
           style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:14px;margin-bottom:16px">
 
         <div style="display:flex;gap:8px">

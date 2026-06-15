@@ -681,7 +681,7 @@ function renderizarBalancear(){
         <label style="margin:0;color:var(--muted);font-size:12px;">% ideal</label>
         <input type="number" class="bal-classe-input" data-classe="${ck}"
           style="width:70px;padding:6px 8px;font-size:13px;" value="${cideal||''}" placeholder="0" min="0" max="100" step="0.1"
-          onclick="event.stopPropagation()">
+          inputmode="decimal" onclick="event.stopPropagation()">
         <span class="inv-collapse-icon">▾</span>
       </div>
     </div>`;
@@ -696,7 +696,7 @@ function renderizarBalancear(){
           <span>${formatCurrency(calcBRL(a,calcAtual(a)),'BRL')}</span>
           <span class="muted" style="font-size:12px;">% na classe</span>
           <input type="number" class="bal-ativo-input" data-ticker="${pk}"
-            value="${pideal||''}" placeholder="0" min="0" max="100" step="0.1">
+            value="${pideal||''}" placeholder="0" min="0" max="100" step="0.1" inputmode="decimal">
           <span></span>
         </div>`;
       });
