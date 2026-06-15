@@ -1024,7 +1024,8 @@ async function renderIndicadores() {
   } catch(_) {}
 
   // Rentabilidade da carteira
-  const totalAplicado = ativos.filter(a=>!isRF(a.tipo)).reduce((s,a)=>s+calcAplicado(a),0);
+  // Tudo convertido para BRL para comparação correta
+  const totalAplicado = ativos.filter(a=>!isRF(a.tipo)).reduce((s,a)=>s+calcBRL(a,calcAplicado(a)),0);
   const totalAtual    = ativos.filter(a=>!isRF(a.tipo)).reduce((s,a)=>s+calcBRL(a,calcAtual(a)),0);
   const rentCarteira  = totalAplicado > 0 ? (totalAtual - totalAplicado) / totalAplicado * 100 : 0;
   const ganho         = totalAtual - totalAplicado;
@@ -1034,7 +1035,7 @@ async function renderIndicadores() {
   ativos.filter(a=>!isRF(a.tipo)).forEach(a => {
     const c = a.tipo || 'Outros';
     if(!classes[c]) classes[c] = { aplic:0, atual:0 };
-    classes[c].aplic += calcAplicado(a);
+    classes[c].aplic += calcBRL(a, calcAplicado(a));
     classes[c].atual += calcBRL(a, calcAtual(a));
   });
 
@@ -1095,7 +1096,7 @@ async function renderIndicadores() {
         return `
           <div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px">
-              <span style="flex:1;font-size:13px;font-weight:700">${classe}</span>
+              <span style="flex:1;font-size:13px;font-weight:700">${tipoLabel(classe)}</span>
               <span style="font-size:11px;color:var(--muted)">${pct.toFixed(1)}%</span>
               <span style="font-size:15px;font-weight:900;color:${cor(rent)}">${fmtPct(rent)}</span>
             </div>
