@@ -105,7 +105,13 @@ async function atualizarCotacoes(silencioso=false){
   try{
     const tickBR  = ativos.filter(a=>isBR(a.tipo)).map(a=>a.ticker.toUpperCase());
     const tickEUA = ativos.filter(a=>isEUA(a.tipo)).map(a=>a.ticker.toUpperCase());
+
+    console.log('[FinZen] tickBR:', tickBR);
+    console.log('[FinZen] tickEUA:', tickEUA);
+    console.log('[FinZen] total ativos:', ativos.length);
+
     const cots = await fetchCotacoes(tickBR, tickEUA, true);
+    console.log('[FinZen] cotações retornadas:', cots);
 
     // Dólar
     const novoDolar = cots['USD-BRL'] || dolarAtual;
@@ -119,6 +125,7 @@ async function atualizarCotacoes(silencioso=false){
     for(const a of ativos){
       if(isRF(a.tipo)) continue;
       const nova = cots[a.ticker.toUpperCase()];
+      console.log(`[FinZen] ${a.ticker} → cotação: ${nova}`);
       if(!nova) continue;
       const atual=toNumber(a.cotacao_atual||0);
       if(atual>0&&Math.abs(nova-atual)/atual<0.0001) continue;
@@ -132,6 +139,7 @@ async function atualizarCotacoes(silencioso=false){
     if(!silencioso) msg('mensagemCotacao',`${n} cotação(ões) atualizada(s). USD/BRL: ${dolarAtual.toFixed(4)}`,'success');
     renderizarTudo();
   }catch(e){
+    console.error('[FinZen] Erro cotações:', e);
     if(!silencioso) msg('mensagemCotacao','Erro: '+e.message,'danger');
   }finally{
     el('btnAtualizar').disabled=false;
