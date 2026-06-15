@@ -299,7 +299,8 @@ function renderizarCarteira(){
         <td class="money">${toNumber(a.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:6})}</td>
         <td class="money">${fmtMoeda(toNumber(a.preco_medio),m)}</td>
         <td class="money">${fmtMoeda(toNumber(a.cotacao_atual||a.preco_medio),m)}
-          ${a.atualizado_em?'<span style="font-size:9px;color:var(--success)"> ✓auto</span>':''}
+          ${a.atualizado_em?"<span style=\"font-size:9px;color:var(--success)\"> u2713auto</span>":""}
+          <button class="btn compact" data-cot-manual="${a.id}" data-ticker="${a.ticker}" data-moeda="${m}" style="font-size:10px;padding:2px 6px;margin-left:4px;background:rgba(79,132,243,.12);border-color:rgba(79,132,243,.3)">u270fufe0f</button>
         </td>
         <td class="money">${fmtMoeda(aplic,m)}${m==='USD'?`<br><small class="muted">${formatCurrency(calcBRL(a,aplic),'BRL')}</small>`:''}
         </td>
@@ -353,6 +354,7 @@ function renderizarCarteira(){
 
   el('listaCarteira').querySelectorAll('[data-editar]').forEach(b=>b.addEventListener('click',()=>editarAtivo(b.dataset.editar)));
   el('listaCarteira').querySelectorAll('[data-excluir]').forEach(b=>b.addEventListener('click',()=>excluirAtivo(b.dataset.excluir,b.dataset.ticker)));
+  el('listaCarteira').querySelectorAll('[data-cot-manual]').forEach(b=>b.addEventListener('click',()=>atualizarCotacaoManual(b.dataset.cotManual,b.dataset.ticker,b.dataset.moeda)));
 }
 
 // ─────────────────────────────────────────────
@@ -844,6 +846,7 @@ function calcularBalanceamento(){
 function renderizarTudo(){
   renderizarKPIs();
   renderizarCarteira();
+  renderIndicadores();
 }
 
 // ─────────────────────────────────────────────
@@ -960,6 +963,109 @@ el('dataAtivo').value=hojeISO();
 el('divData').value=hojeISO();
 
 // ─────────────────────────────────────────────
+// ── Cotação manual ────────────────────────────────────
+async function atualizarCotacaoManual(id, ticker, moeda) {
+  const ativo = ativos.find(a => a.id === id);
+  if(!ativo) return;
+
+  const cotAtual = toNumber(ativo.cotacao_atual || ativo.preco_medio);
+  const simbolo  = moeda === 'USD' ? 'US$ ' : 'R$ ';
+  const nova = prompt(`💹 ${ticker} — Cotação atual: ${simbolo}${cotAtual.toLocaleString('pt-BR',{minimumFractionDigits:2})}\n\nInforme a nova cotação:`);
+
+  if(nova === null || nova.trim() === '') return;
+  const novaNum = parseFloat(nova.replace(',','.'));
+  if(isNaN(novaNum) || novaNum <= 0) { alert('Valor inválido.'); return; }
+
+  const agora = new Date().toISOString();
+  const { error } = await supabase.from('investments')
+    .update({ cotacao_atual: novaNum, atualizado_em: agora })
+    .eq('id', id).eq('user_id', user.id);
+
+  if(error) { alert('Erro ao salvar: ' + error.message); return; }
+  ativo.cotacao_atual = novaNum;
+  ativo.atualizado_em = agora;
+  msg('mensagemCotacao', `✏️ ${ticker} atualizado manualmente: ${simbolo}${novaNum.toLocaleString('pt-BR',{minimumFractionDigits:2})}`, 'success');
+  renderizarTudo();
+}
+
+// ── Indicadores de rentabilidade da carteira ──────────
+async function renderIndicadores() {
+  const container = el('blocoIndicadores');
+  if(!container) return;
+
+  // Buscar CDI e IBOV via brapi
+  let cdiAnual = 0, ibovAnual = 0;
+  try {
+    const r = await fetch('/api/quotes?tickers=BOVA11&dolar=false');
+    if(r.ok) {
+      const j = await r.json();
+      // BOVA11 como proxy do IBOV
+      const bova = j['BOVA11'];
+      if(bova) ibovAnual = bova;
+    }
+  } catch(_) {}
+
+  try {
+    const r = await fetch('https://brasilapi.com.br/api/taxas/v1');
+    if(r.ok) {
+      const taxas = await r.json();
+      const cdi = taxas.find(t => t.nome === 'CDI');
+      if(cdi?.valor) cdiAnual = cdi.valor;
+    }
+  } catch(_) {}
+
+  // Calcular rentabilidade da carteira
+  const totalAplicado = ativos.filter(a=>!isRF(a.tipo)).reduce((s,a) => s + calcAplicado(a), 0);
+  const totalAtual    = ativos.filter(a=>!isRF(a.tipo)).reduce((s,a) => s + calcBRL(a, calcAtual(a)), 0);
+  const rentCarteira  = totalAplicado > 0 ? (totalAtual - totalAplicado) / totalAplicado * 100 : 0;
+
+  // Por classe
+  const classes = {};
+  ativos.filter(a=>!isRF(a.tipo)).forEach(a => {
+    const c = a.tipo || 'Outros';
+    if(!classes[c]) classes[c] = { aplic: 0, atual: 0 };
+    classes[c].aplic += calcAplicado(a);
+    classes[c].atual += calcBRL(a, calcAtual(a));
+  });
+
+  const cor = v => v >= 0 ? '#22c55e' : '#ef4444';
+  const fmtPct = v => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:700">📈 Carteira (total)</div>
+        <div style="font-size:22px;font-weight:900;color:${cor(rentCarteira)}">${fmtPct(rentCarteira)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${formatCurrency(totalAtual-totalAplicado,'BRL')}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:700">💰 CDI (a.a.)</div>
+        <div style="font-size:22px;font-weight:900;color:#f59e0b">${cdiAnual > 0 ? fmtPct(cdiAnual) : '--'}</div>
+        <div style="font-size:11px;margin-top:2px;color:${cor(rentCarteira - cdiAnual)}">${cdiAnual > 0 ? (rentCarteira > cdiAnual ? '✅ Acima do CDI' : '⚠️ Abaixo do CDI') : 'Carregando...'}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:700">📊 vs CDI</div>
+        <div style="font-size:22px;font-weight:900;color:${cor(rentCarteira-cdiAnual)}">${cdiAnual > 0 ? fmtPct(rentCarteira - cdiAnual) : '--'}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">diferença</div>
+      </div>
+    </div>
+
+    <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">Por classe</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${Object.entries(classes).map(([classe, v]) => {
+        const rent = v.aplic > 0 ? (v.atual - v.aplic) / v.aplic * 100 : 0;
+        const pct  = totalAtual > 0 ? v.atual / totalAtual * 100 : 0;
+        return `
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+            <span style="flex:1;font-size:13px;font-weight:600">${classe}</span>
+            <span style="font-size:12px;color:var(--muted)">${pct.toFixed(1)}%</span>
+            <span style="font-size:14px;font-weight:800;color:${cor(rent)};min-width:70px;text-align:right">${fmtPct(rent)}</span>
+          </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
 // INICIALIZAÇÃO
 // ─────────────────────────────────────────────
 await carregarDolar();
