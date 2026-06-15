@@ -122,7 +122,38 @@ function navHtml(){
       `).join('')}`;
   }).join('');
 
-  return groups + `<div class="nav-version">v${APP_VERSION}</div>`;
+  return groups + `
+    <div class="nav-version">v${APP_VERSION}</div>
+    <button class="nav-blur-btn" id="btnToggleBlur" onclick="window._finzenToggleBlur()" title="Ocultar/mostrar valores">
+      <span id="blurBtnIcon">👁️</span>
+      <span id="blurBtnLabel">Ocultar valores</span>
+    </button>
+  `;
+}
+
+// ── Toggle blur de valores ────────────────────────────
+window._finzenToggleBlur = function() {
+  const ativo = document.body.classList.toggle('finzen-valores-ocultos');
+  localStorage.setItem('finzen_blur_valores', ativo ? '1' : '0');
+  _finzenAtualizarBotaoBlur(ativo);
+};
+
+function _finzenAtualizarBotaoBlur(ativo) {
+  document.querySelectorAll('#btnToggleBlur').forEach(btn => {
+    btn.classList.toggle('ativo', ativo);
+  });
+  document.querySelectorAll('#blurBtnIcon').forEach(el => {
+    el.textContent = ativo ? '🙈' : '👁️';
+  });
+  document.querySelectorAll('#blurBtnLabel').forEach(el => {
+    el.textContent = ativo ? 'Mostrar valores' : 'Ocultar valores';
+  });
+}
+
+function _finzenInitBlur() {
+  const ativo = localStorage.getItem('finzen_blur_valores') === '1';
+  if(ativo) document.body.classList.add('finzen-valores-ocultos');
+  _finzenAtualizarBotaoBlur(ativo);
 }
 
 window._finzenToggleNav = function(groupLabel){
@@ -153,9 +184,60 @@ function injectStyles(){
       vertical-align:middle;line-height:1;
     }
     .nav-version{
-      margin-top:auto; padding:12px 16px;
+      padding:8px 16px 4px;
       font-size:11px; color:var(--muted);
       opacity:.55; letter-spacing:.5px;
+    }
+
+    /* ── Botão ocultar valores ── */
+    .nav-blur-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: calc(100% - 32px);
+      margin: 4px 16px 16px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .nav-blur-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .nav-blur-btn.ativo {
+      border-color: rgba(245,158,11,.4);
+      background: rgba(245,158,11,.08);
+      color: #f59e0b;
+    }
+
+    /* ── Blur dos valores quando ativo ── */
+    body.finzen-valores-ocultos .money,
+    body.finzen-valores-ocultos .positive,
+    body.finzen-valores-ocultos .negative,
+    body.finzen-valores-ocultos .dash-kpi strong,
+    body.finzen-valores-ocultos .ff-flow-main strong,
+    body.finzen-valores-ocultos .ff-flow-card strong,
+    body.finzen-valores-ocultos .mob-saldo-valor,
+    body.finzen-valores-ocultos .mob-kpi-valor,
+    body.finzen-valores-ocultos .mob-alerta-valor,
+    body.finzen-valores-ocultos .mob-lanc-valor,
+    body.finzen-valores-ocultos [class*="kpi"] strong,
+    body.finzen-valores-ocultos .inv-valor,
+    body.finzen-valores-ocultos .stmt-valor {
+      filter: blur(6px);
+      user-select: none;
+      transition: filter .2s;
+    }
+    body.finzen-valores-ocultos .money:hover,
+    body.finzen-valores-ocultos .positive:hover,
+    body.finzen-valores-ocultos .negative:hover {
+      filter: blur(0);
     }
 
     /* ── Grupo colapsável (Sistema) ── */
@@ -581,6 +663,7 @@ function initNavigation(){
   ensureMobileDrawer();
   ensureMenuButton();
   ensureFAB();
+  _finzenInitBlur();
   // Registrar SW e agendar alertas silenciosamente
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('/sw.js', { scope: '/' })

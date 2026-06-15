@@ -541,5 +541,29 @@ window.ativarModoAvancado = function() {
   location.href = '../pages/dashboard.html';
 };
 
+// ── Sincronizar botão blur mobile ────────────────────
+function syncBtnBlur() {
+  const ativo = document.body.classList.contains('finzen-valores-ocultos');
+  const btn = document.getElementById('mobBtnBlur');
+  if(btn) btn.textContent = ativo ? '🙈' : '👁️';
+}
+
+// Inicializar blur se estava ativo
+if(localStorage.getItem('finzen_blur_valores') === '1') {
+  document.body.classList.add('finzen-valores-ocultos');
+}
+syncBtnBlur();
+
+// Sobrescrever toggleBlur para atualizar ícone mobile também
+const _originalToggle = window._finzenToggleBlur;
+window._finzenToggleBlur = function() {
+  if(_originalToggle) _originalToggle();
+  else {
+    const ativo = document.body.classList.toggle('finzen-valores-ocultos');
+    localStorage.setItem('finzen_blur_valores', ativo ? '1' : '0');
+  }
+  syncBtnBlur();
+};
+
 // ── Inicializar ───────────────────────────────────────
 await carregar();
