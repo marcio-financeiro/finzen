@@ -269,6 +269,22 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 }
 @keyframes spin { to { transform: rotate(360deg) } }
 
+/* ── Blur de valores ── */
+body.finzen-valores-ocultos .mob-saldo-valor,
+body.finzen-valores-ocultos .mob-kpi-valor,
+body.finzen-valores-ocultos .mob-alerta-valor,
+body.finzen-valores-ocultos .mob-lanc-valor,
+body.finzen-valores-ocultos .mob-orc-valores,
+body.finzen-valores-ocultos [style*="font-weight:800"],
+body.finzen-valores-ocultos .mob-alerta-sub {
+  filter: blur(5px);
+  user-select: none;
+  transition: filter .2s;
+}
+body.finzen-valores-ocultos #mobSaldo {
+  filter: blur(8px);
+}
+
 /* ── Empty state ── */
 .mob-empty { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; }
 </style>
@@ -282,7 +298,13 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
       <span class="mob-logo">FinZen</span>
       <span class="mob-greeting" id="mobGreeting">Bom dia!</span>
     </div>
-    <div class="mob-avatar" id="mobAvatar" onclick="irParaDashboard()">FZ</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button onclick="window._finzenToggleBlur()" id="mobBtnBlur"
+        style="background:transparent;border:1px solid var(--border);border-radius:10px;
+          padding:6px 10px;cursor:pointer;font-size:16px;color:var(--muted)"
+        title="Ocultar valores">👁️</button>
+      <div class="mob-avatar" id="mobAvatar" onclick="irParaDashboard()">FZ</div>
+    </div>
   </div>
 
   <!-- Conteúdo scrollável -->
