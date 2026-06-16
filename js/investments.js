@@ -1170,9 +1170,6 @@ async function renderizarTermometro() {
   termometro.render(ativos, pesos, dolarAtual, macro);
 }
 
-// Expõe no window logo após declaração — o onclick inline usa isto
-window._termRender = renderizarTermometro;
-
 // Inicializa módulo (carrega macro salvo e preenche inputs)
 termometro.init(supabase, user.id).then(macro => {
   _termMacro = macro;
@@ -1189,4 +1186,6 @@ el('btnSalvarMacro')?.addEventListener('click', async () => {
   await termometro.salvarMacro(s, i, d);
   const btn = el('btnSalvarMacro');
   if (btn) { btn.textContent = '✅ Salvo!'; setTimeout(() => { btn.textContent = 'Salvar macro'; }, 1500); }
+  // Re-renderiza automaticamente após salvar — sem precisar de botão Atualizar
+  await renderizarTermometro();
 });
