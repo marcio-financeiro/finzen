@@ -1007,12 +1007,23 @@ async function renderIndicadores() {
     }
   } catch(_) {}
 
-  // IBOV via proxy (BCB via Vercel Function)
+  // IBOV via BCB direto do browser (sem proxy)
   try {
-    const r = await fetch('/api/quotes?tickers=IBOV&dolar=false');
+    const hoje = new Date();
+    const pad  = n => String(n).padStart(2,'0');
+    const fim  = `${pad(hoje.getDate())}/${pad(hoje.getMonth()+1)}/${hoje.getFullYear()}`;
+    const d1   = new Date(hoje); d1.setFullYear(hoje.getFullYear()-1);
+    const ini  = `${pad(d1.getDate())}/${pad(d1.getMonth()+1)}/${d1.getFullYear()}`;
+    const r = await fetch(
+      `https://api.bcb.gov.br/dados/serie/bcdata.sgs.7/dados?formato=json&dataInicial=${ini}&dataFinal=${fim}`
+    );
     if(r.ok) {
       const j = await r.json();
-      if(j?.IBOV) ibovAnual = j.IBOV;
+      if(j?.length >= 2) {
+        const p0 = parseFloat(j[0].valor.replace(',','.'));
+        const p1 = parseFloat(j[j.length-1].valor.replace(',','.'));
+        if(p0 > 0 && p1 > 0) ibovAnual = (p1 - p0) / p0 * 100;
+      }
     }
   } catch(_) {}
 
