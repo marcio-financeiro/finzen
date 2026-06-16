@@ -38,10 +38,10 @@
   border-radius:14px;
   display:grid;
   place-items:center;
-  background:linear-gradient(135deg,var(--accent),var(--purple));
-  color:white;
+  background:linear-gradient(135deg,#f59e0b,#fbbf24);
+  color:#000;
   font-weight:900;
-  box-shadow:0 16px 36px rgba(75,132,243,.32);
+  box-shadow:0 8px 32px rgba(245,158,11,.32);
 }
 
 .brand h1{
@@ -123,9 +123,10 @@ textarea:focus{
 }
 
 .btn-primary{
-  background:var(--accent);
-  color:#fff;
-  box-shadow:0 10px 24px rgba(75,132,243,.25);
+  background:linear-gradient(135deg,#f59e0b,#fbbf24);
+  color:#000;
+  font-weight:800;
+  box-shadow:0 8px 24px rgba(245,158,11,.3);
 }
 
 .btn-secondary{

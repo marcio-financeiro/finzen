@@ -8,9 +8,10 @@
 
   --border:#2a2d45;
 
-  --accent:#4b84f3;
-  --accent-dim:rgba(75,132,243,0.12);
-  --purple:#7b5ce5;
+  --accent:#f59e0b;
+  --accent-dim:rgba(245,158,11,0.12);
+  --accent-hover:#fbbf24;
+  --purple:#f59e0b;
 
   --success:#1ec86a;
   --success-dim:rgba(30,200,106,0.12);
@@ -34,6 +35,10 @@
 
   --font-main:Inter,Arial,sans-serif;
   --font-mono:"JetBrains Mono","Courier New",monospace;
+
+  /* Gradiente dourado — usado no brand e botões primários */
+  --gold-gradient:linear-gradient(135deg,#f59e0b,#fbbf24);
+  --gold-glow:0 8px 32px rgba(245,158,11,.3);
 }
 
 *{
