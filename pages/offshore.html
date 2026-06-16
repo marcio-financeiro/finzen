@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offshore - FinZen</title>
+<link rel="stylesheet" href="../css/base.css?v=1030">
+<link rel="stylesheet" href="../css/layout.css?v=1030">
+<link rel="stylesheet" href="../css/components.css?v=1030">
+<link rel="stylesheet" href="../css/mobile.css?v=1030">
+<link rel="stylesheet" href="../css/navigation.css?v=1030">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#f5a623">
+<style>
+
+/* ── Abas ── */
+.off-tabs{display:flex;gap:4px;padding:14px 18px 0;border-bottom:1px solid var(--border);}
+.off-tab{padding:10px 18px;border:none;background:transparent;color:var(--muted);
+  font-weight:800;font-size:13px;cursor:pointer;border-bottom:3px solid transparent;
+  transition:color .15s,border-color .15s;margin-bottom:-1px;}
+.off-tab.active{color:#f5a623;border-bottom-color:#f5a623;}
+.off-tab-content{display:none;padding:20px;}
+.off-tab-content.active{display:block;}
+
+/* ── KPIs ── */
+.off-kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+.off-kpi{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;}
+.off-kpi span{font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:4px;}
+.off-kpi strong{font-size:20px;font-weight:900;display:block;}
+
+/* ── Timeline de ciclos ── */
+.off-ciclo-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:16px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start;
+  transition:border-color .15s;cursor:pointer;
+}
+.off-ciclo-card:hover{border-color:#f5a623;}
+.off-ciclo-status{
+  width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px;
+}
+.off-ciclo-info{flex:1;}
+.off-ciclo-plat{font-size:14px;font-weight:800;}
+.off-ciclo-datas{font-size:12px;color:var(--muted);margin-top:3px;}
+.off-ciclo-badges{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+
+/* ── Certificações ── */
+.cert-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;
+  cursor:pointer;transition:border-color .15s;
+}
+.cert-card:hover{border-color:var(--accent);}
+.cert-status-bar{width:4px;border-radius:2px;align-self:stretch;flex-shrink:0;}
+.cert-info{flex:1;}
+.cert-nome{font-size:14px;font-weight:800;}
+.cert-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.cert-dias{font-size:13px;font-weight:800;flex-shrink:0;text-align:right;}
+
+/* Status cores */
+.status-valida   {background:#1ec86a;}
+.status-avencer  {background:#f5a623;}
+.status-vencida  {background:#f04e4e;}
+.status-planejado{background:#4b84f3;}
+.status-embarcado{background:#f5a623;}
+.status-concluido{background:#1ec86a;}
+.status-cancelado{background:#6b7094;}
+
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <div id="navContainer"></div>
+  <main class="content">
+
+    <section class="panel" style="margin:20px;padding:0;overflow:hidden;">
+
+      <!-- Header -->
+      <div style="padding:20px 20px 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div>
+          <h1 style="margin:0;font-size:22px;">⚓ Offshore</h1>
+          <p id="userEmail" class="muted" style="margin:2px 0 0;font-size:12px;"></p>
+        </div>
+        <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+      </div>
+
+      <!-- KPIs globais -->
+      <div style="padding:16px 20px 0;">
+        <div class="off-kpi-grid" id="offKpis">
+          <div class="off-kpi"><span>Dias embarcado (ano)</span><strong id="kpiDiasEmb">—</strong></div>
+          <div class="off-kpi"><span>Dias em casa (ano)</span><strong id="kpiDiasCasa">—</strong></div>
+          <div class="off-kpi"><span>Ciclos concluídos</span><strong id="kpiCiclos">—</strong></div>
+          <div class="off-kpi"><span>Certificações válidas</span><strong id="kpiCertVal">—</strong></div>
+          <div class="off-kpi"><span>A vencer em 90d</span><strong id="kpiCertAVencer" style="color:var(--warning);">—</strong></div>
+          <div class="off-kpi"><span>HE acumuladas (ciclo)</span><strong id="kpiHE">—</strong></div>
+        </div>
+      </div>
+
+      <!-- Abas -->
+      <div class="off-tabs">
+        <button class="off-tab active" data-tab="escala">📅 Escala</button>
+        <button class="off-tab" data-tab="certificacoes">📜 Certificações</button>
+        <button class="off-tab" data-tab="horas">⏱️ Horas Extras</button>
+        <button class="off-tab" data-tab="historico">🏭 Histórico</button>
+      </div>
+
+      <!-- TAB: Escala -->
+      <div class="off-tab-content active" id="tab-escala">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h2 style="margin:0;font-size:15px;">Ciclos de Embarque</h2>
+          <button class="btn btn-primary compact" id="btnNovoCiclo">+ Novo ciclo</button>
+        </div>
+        <div id="listaCiclos"><p class="muted">Carregando...</p></div>
+      </div>
+
+      <!-- TAB: Certificações -->
+      <div class="off-tab-content" id="tab-certificacoes">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h2 style="margin:0;font-size:15px;">Certificações</h2>
+          <button class="btn btn-primary compact" id="btnNovaCert">+ Nova certificação</button>
+        </div>
+        <div id="listaCerts"><p class="muted">Carregando...</p></div>
+      </div>
+
+      <!-- TAB: Horas Extras -->
+      <div class="off-tab-content" id="tab-horas">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h2 style="margin:0;font-size:15px;">Horas Extras / Sobreaviso</h2>
+          <button class="btn btn-primary compact" id="btnNovaHE">+ Registrar</button>
+        </div>
+        <div id="listaHE"><p class="muted">Carregando...</p></div>
+      </div>
+
+      <!-- TAB: Histórico -->
+      <div class="off-tab-content" id="tab-historico">
+        <h2 style="margin:0 0 16px;font-size:15px;">Histórico de Plataformas</h2>
+        <div id="listaHistorico"><p class="muted">Carregando...</p></div>
+      </div>
+
+    </section>
+  </main>
+</div>
+
+<!-- Modal Ciclo -->
+<div id="modalCiclo" style="display:none;position:fixed;inset:0;z-index:9990;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.6);" id="modalCicloBackdrop"></div>
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:24px;width:90%;max-width:480px;max-height:90vh;overflow-y:auto;
+    box-shadow:0 24px 64px rgba(0,0,0,.5);">
+    <h2 id="modalCicloTitulo" style="font-size:16px;font-weight:800;margin:0 0 20px;">Novo Ciclo</h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group"><label>Embarque *</label><input type="date" id="cEmbarque"></div>
+      <div class="form-group"><label>Desembarque</label><input type="date" id="cDesembarque"></div>
+    </div>
+    <div class="form-group"><label>Plataforma / Local</label><input type="text" id="cPlataforma" placeholder="Ex: P-51, FPSO Cidade de Paraty..."></div>
+    <div class="form-group"><label>Empresa</label><input type="text" id="cEmpresa" placeholder="Ex: Petrobras, SBM..."></div>
+    <div class="form-group"><label>Contrato / OS</label><input type="text" id="cContrato" placeholder="Número do contrato"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label>Regime</label>
+        <select id="cRegime">
+          <option value="14x14">14x14</option>
+          <option value="14x21" selected>14x21</option>
+          <option value="21x21">21x21</option>
+          <option value="28x28">28x28</option>
+          <option value="variavel">Variável</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="cStatus">
+          <option value="planejado">Planejado</option>
+          <option value="embarcado">Embarcado</option>
+          <option value="concluido">Concluído</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Observações</label><textarea id="cObs" rows="2"></textarea></div>
+    <div id="msgCiclo" class="message" style="min-height:0;"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn btn-primary" id="btnSalvarCiclo">💾 Salvar</button>
+      <button class="btn btn-secondary" id="btnCancelarCiclo">Cancelar</button>
+      <button class="btn btn-danger" id="btnExcluirCiclo" style="display:none;margin-left:auto;">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Certificação -->
+<div id="modalCert" style="display:none;position:fixed;inset:0;z-index:9990;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.6);" id="modalCertBackdrop"></div>
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:24px;width:90%;max-width:480px;max-height:90vh;overflow-y:auto;
+    box-shadow:0 24px 64px rgba(0,0,0,.5);">
+    <h2 id="modalCertTitulo" style="font-size:16px;font-weight:800;margin:0 0 20px;">Nova Certificação</h2>
+
+    <div class="form-group">
+      <label>Certificação *</label>
+      <select id="certNomeSel" onchange="window._offCertNomeChange(this.value)">
+        <option value="">Selecione ou digite abaixo</option>
+        <option value="HUET">HUET (Helicopter Underwater Escape Training)</option>
+        <option value="OPITO BOSIET">OPITO BOSIET</option>
+        <option value="OPITO FOET">OPITO FOET</option>
+        <option value="NR-33">NR-33 (Espaços Confinados)</option>
+        <option value="NR-35">NR-35 (Trabalho em Altura)</option>
+        <option value="NR-37">NR-37 (Plataformas)</option>
+        <option value="STCW">STCW</option>
+        <option value="H2S">H2S (Gás Sulfídrico)</option>
+        <option value="Primeiros Socorros">Primeiros Socorros</option>
+        <option value="outro">Outro (digitar)</option>
+      </select>
+    </div>
+    <div class="form-group" id="certNomeOutroDiv" style="display:none;">
+      <label>Nome da certificação</label>
+      <input type="text" id="certNomeOutro" placeholder="Digite o nome">
+    </div>
+    <div class="form-group"><label>Número / Código</label><input type="text" id="certNumero" placeholder="Ex: BR-12345"></div>
+    <div class="form-group"><label>Entidade emissora</label><input type="text" id="certEntidade" placeholder="Ex: OPITO, SENAI, Det Norske Veritas..."></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group"><label>Data de emissão</label><input type="date" id="certEmissao"></div>
+      <div class="form-group"><label>Data de vencimento *</label><input type="date" id="certVencimento"></div>
+    </div>
+    <div class="form-group">
+      <label>Alertar com quantos dias de antecedência</label>
+      <select id="certAlertaDias">
+        <option value="30">30 dias</option>
+        <option value="60">60 dias</option>
+        <option value="90" selected>90 dias</option>
+        <option value="180">180 dias</option>
+      </select>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <input type="checkbox" id="certNotifEmail" checked style="width:16px;height:16px;">
+      <label for="certNotifEmail" style="margin:0;font-size:13px;font-weight:700;cursor:pointer;">
+        📧 Receber alerta por e-mail
+      </label>
+    </div>
+    <div class="form-group"><label>Observações</label><textarea id="certObs" rows="2"></textarea></div>
+    <div id="msgCert" class="message" style="min-height:0;"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn btn-primary" id="btnSalvarCert">💾 Salvar</button>
+      <button class="btn btn-secondary" id="btnCancelarCert">Cancelar</button>
+      <button class="btn btn-danger" id="btnExcluirCert" style="display:none;margin-left:auto;">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Horas Extras -->
+<div id="modalHE" style="display:none;position:fixed;inset:0;z-index:9990;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.6);" id="modalHEBackdrop"></div>
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:24px;width:90%;max-width:420px;
+    box-shadow:0 24px 64px rgba(0,0,0,.5);">
+    <h2 style="font-size:16px;font-weight:800;margin:0 0 20px;">Registrar Horas</h2>
+    <div class="form-group"><label>Ciclo</label><select id="heCiclo"></select></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group"><label>Data *</label><input type="date" id="heData"></div>
+      <div class="form-group"><label>Horas extras</label><input type="number" id="heHoras" step="0.5" min="0" placeholder="0"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group"><label>Valor/hora (R$)</label><input type="number" id="heValorHora" step="0.01" min="0" placeholder="0,00"></div>
+      <div style="display:flex;align-items:center;gap:8px;padding-top:28px;">
+        <input type="checkbox" id="heSobreaviso" style="width:16px;height:16px;">
+        <label for="heSobreaviso" style="margin:0;font-size:13px;font-weight:700;cursor:pointer;">Sobreaviso</label>
+      </div>
+    </div>
+    <div class="form-group"><label>Descrição</label><input type="text" id="heDesc" placeholder="Ex: Trabalho noturno, emergência..."></div>
+    <div id="msgHE" class="message" style="min-height:0;"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn btn-primary" id="btnSalvarHE">💾 Salvar</button>
+      <button class="btn btn-secondary" id="btnCancelarHE">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="../js/navigation.js?v=1030"></script>
+<script type="module" src="../js/offshore.js?v=1030"></script>
+</body>
+</html>
