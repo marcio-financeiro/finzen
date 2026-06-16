@@ -844,40 +844,44 @@ function calcularBalanceamento(){
 
   el('balResultado').innerHTML=`
     <div class="bal-sugestao">
-      <div style="display:flex;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-        <div><strong>Sugestão de aporte: ${formatCurrency(aporte,'BRL')}</strong></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <div><strong>Sugestão — aporte de ${formatCurrency(aporte,'BRL')}</strong></div>
         <div class="muted" style="font-size:12px;">Sobra: ${formatCurrency(Math.max(sobra,0),'BRL')}</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 90px 80px 100px;gap:8px;
-        font-size:11px;font-weight:800;color:var(--muted);padding-bottom:8px;border-bottom:1px solid var(--border);">
-        <span>Ativo</span><span>Alocação ideal</span><span>Falta</span><span>Qtd</span><span>Valor</span>
-      </div>
       ${sugestoes.map(s=>s.semAtivo?`
-        <div class="bal-sugestao-item" style="display:grid;grid-template-columns:1fr 1fr 90px 80px 100px;gap:8px;
-          opacity:.75;background:rgba(255,200,0,.04);border-radius:6px;padding:6px 0;margin-top:4px;">
-          <span><strong>${s.tipo}</strong> <span class="muted" style="font-size:11px">⚠️ sem ativo</span></span>
-          <span style="font-size:11px;color:var(--muted)">${s.pidealLabel}</span>
-          <span class="positive">+${formatCurrency(s.diferenca,'BRL')}</span>
-          <span class="muted">—</span>
-          <span class="money">${formatCurrency(s.valorSugerido,'BRL')}</span>
+        <div style="background:rgba(255,200,0,.06);border:1px solid rgba(255,200,0,.2);border-radius:10px;
+          padding:12px 14px;margin-bottom:8px;opacity:.85;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+            <div>
+              <strong style="font-size:14px;">⚠️ ${s.tipo}</strong>
+              <div class="muted" style="font-size:11px;margin-top:2px;">sem ativo cadastrado</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="positive" style="font-weight:800;font-size:15px;">+${formatCurrency(s.diferenca,'BRL')}</div>
+              <div class="muted" style="font-size:11px;">${s.pidealLabel}</div>
+            </div>
+          </div>
         </div>
       `:`
-        <div class="bal-sugestao-item" style="display:grid;grid-template-columns:1fr 1fr 90px 80px 100px;gap:8px;
-          padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);">
-          <span>
-            <strong>${s.ticker}</strong>
-            <span class="muted" style="font-size:11px;display:block;">${s.tipo}</span>
-          </span>
-          <span style="font-size:11px;color:var(--muted);line-height:1.4;">${s.pidealLabel}</span>
-          <span class="positive" style="font-size:12px;">+${formatCurrency(s.diferenca,'BRL')}</span>
-          <span><strong>${s.qtdSugerida}</strong> <span class="muted" style="font-size:10px">cotas</span></span>
-          <span class="money positive">${formatCurrency(s.valorSugerido,'BRL')}</span>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          padding:12px 14px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+            <div>
+              <strong style="font-size:15px;">${s.ticker}</strong>
+              <span class="muted" style="font-size:12px;margin-left:6px;">${s.tipo}</span>
+              <div class="muted" style="font-size:11px;margin-top:3px;">${s.pidealLabel}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div class="positive" style="font-weight:800;font-size:15px;">+${formatCurrency(s.diferenca,'BRL')}</div>
+              ${s.qtdSugerida>0?`<div style="font-size:12px;margin-top:2px;"><strong>${s.qtdSugerida}</strong> <span class="muted">cotas · ${formatCurrency(s.valorSugerido,'BRL')}</span></div>`:`<div class="muted" style="font-size:11px;">cotação não disponível</div>`}
+            </div>
+          </div>
         </div>
       `).join('')}
-      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);
-        display:flex;justify-content:space-between;font-weight:800;">
+      <div style="margin-top:4px;padding:14px;background:rgba(75,132,243,.1);border:1px solid rgba(75,132,243,.25);
+        border-radius:10px;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:15px;">
         <span>Total a aportar</span>
-        <span class="money positive">${formatCurrency(totalSugerido,'BRL')}</span>
+        <span class="positive">${formatCurrency(totalSugerido,'BRL')}</span>
       </div>
     </div>
   `;
