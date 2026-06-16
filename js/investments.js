@@ -1177,3 +1177,13 @@ termometro.init(supabase, user.id).then(macro => {
   if (el('macroIPCA'))  el('macroIPCA').value  = macro.ipca;
   if (el('macroDolar')) el('macroDolar').value  = macro.dolar;
 });
+
+// btnSalvarMacro — addEventListener direto (estava funcionando antes)
+el('btnSalvarMacro')?.addEventListener('click', async () => {
+  const s = parseFloat(el('macroSelic')?.value) || 14.75;
+  const i = parseFloat(el('macroIPCA')?.value)  || 4.86;
+  const d = parseFloat(el('macroDolar')?.value)  || 5.80;
+  await termometro.salvarMacro(s, i, d);
+  const btn = el('btnSalvarMacro');
+  if (btn) { btn.textContent = '✅ Salvo!'; setTimeout(() => { btn.textContent = 'Salvar macro'; }, 1500); }
+});
