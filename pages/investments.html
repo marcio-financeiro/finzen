@@ -375,8 +375,22 @@
           </div>
           <div style="display:flex;align-items:flex-end;gap:8px;margin-left:auto;">
             <button type="button" class="btn btn-secondary compact" id="btnSalvarMacro" style="margin:0;">Salvar macro</button>
-            <button type="button" class="btn btn-primary compact" style="margin:0;"
-              onclick="window._renderizarTermometro()">🌡️ Atualizar</button>
+            <button type="button" class="btn btn-primary compact" style="margin:0;" onclick="
+              (function(){
+                var selic  = parseFloat(document.getElementById('macroSelic').value) || 14.75;
+                var ipca   = parseFloat(document.getElementById('macroIPCA').value)  || 4.86;
+                var dolar  = parseFloat(document.getElementById('macroDolar').value) || 5.80;
+                var macro  = { selic: selic, ipca: ipca, dolar: dolar };
+                var ativos = window._finzenAtivos  || [];
+                var pesos  = window._finzenPesos   || {};
+                var taxa   = window._finzenDolar   || dolar;
+                if (typeof termometro !== 'undefined') {
+                  termometro.render(ativos, pesos, taxa, macro);
+                } else {
+                  alert('Módulo termômetro ainda não carregado. Aguarde e tente novamente.');
+                }
+              })()
+            ">🌡️ Atualizar</button>
           </div>
         </div>
 
