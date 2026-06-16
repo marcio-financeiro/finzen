@@ -13,6 +13,7 @@ export default async function handler(req, res) {
   const tickers = (req.query.tickers || '')
     .split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
   const dolar = req.query.dolar === 'true';
+  const fundamental = req.query.fundamental === 'true';
   const resultado = {};
 
   // ── Dólar via brapi ──────────────────────────────────
@@ -49,56 +50,27 @@ export default async function handler(req, res) {
   if(tickersBR.length) {
     try {
       const r = await fetch(
-        `https://brapi.dev/api/quote/${tickersBR.join(',')}?token=${BRAPI_TOKEN}&fundamental=false&dividends=false`
+        `https://brapi.dev/api/quote/${tickersBR.join(',')}?token=${BRAPI_TOKEN}&fundamental=${fundamental}&dividends=false`
       );
       if(r.ok) {
         const j = await r.json();
         (j.results || []).forEach(i => {
           if(i.symbol && i.regularMarketPrice) {
-            resultado[i.symbol.toUpperCase()] = parseFloat(i.regularMarketPrice);
+            const sym = i.symbol.toUpperCase();
+            resultado[sym] = parseFloat(i.regularMarketPrice);
+            // Campos fundamentalistas quando solicitados
+            if(fundamental) {
+              resultado[`${sym}_fund`] = {
+                pl   : i.priceEarnings        ?? null,
+                roe  : i.returnOnEquity        ?? null,
+                dy   : i.dividendYield         ?? null,
+                pvpa : i.priceToBook           ?? null,
+              };
+            }
           }
         });
       }
     } catch(_) {}
-
-    // Fallback: Yahoo Finance para tickers BR que não vieram da brapi
-    const faltando = tickersBR.filter(t => !resultado[t]);
-    if(faltando.length) {
-      // Yahoo usa sufixo .SA para ações/FIIs brasileiros
-      const yahooTickers = faltando.map(t => t + '.SA');
-      try {
-        const r = await fetch(
-          `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${yahooTickers.join(',')}`,
-          { headers: { 'User-Agent': 'Mozilla/5.0' } }
-        );
-        if(r.ok) {
-          const j = await r.json();
-          (j?.quoteResponse?.result || []).forEach(i => {
-            if(i.symbol && i.regularMarketPrice) {
-              // Remove sufixo .SA para bater com o ticker original
-              const original = i.symbol.replace('.SA','').toUpperCase();
-              if(!resultado[original])
-                resultado[original] = parseFloat(i.regularMarketPrice);
-            }
-          });
-        }
-      } catch(_) {}
-
-      // Fallback individual para os que ainda faltam
-      for(const ticker of faltando.filter(t => !resultado[t])) {
-        try {
-          const r = await fetch(
-            `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}.SA?interval=1d&range=1d`,
-            { headers: { 'User-Agent': 'Mozilla/5.0' } }
-          );
-          if(r.ok) {
-            const j = await r.json();
-            const p = j?.chart?.result?.[0]?.meta?.regularMarketPrice;
-            if(p) resultado[ticker] = parseFloat(p);
-          }
-        } catch(_) {}
-      }
-    }
   }
 
   // ── EUA: Yahoo Finance ───────────────────────────────
@@ -111,8 +83,17 @@ export default async function handler(req, res) {
       if(r.ok) {
         const j = await r.json();
         (j?.quoteResponse?.result || []).forEach(i => {
-          if(i.symbol && i.regularMarketPrice)
+          if(i.symbol && i.regularMarketPrice) {
             resultado[i.symbol] = parseFloat(i.regularMarketPrice);
+            if(fundamental) {
+              resultado[`${i.symbol}_fund`] = {
+                pl   : i.trailingPE                      ?? null,
+                roe  : i.returnOnEquity != null ? i.returnOnEquity * 100 : null,
+                dy   : i.trailingAnnualDividendYield != null ? i.trailingAnnualDividendYield * 100 : null,
+                pvpa : i.priceToBook                     ?? null,
+              };
+            }
+          }
         });
       }
     } catch(_) {}

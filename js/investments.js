@@ -4,6 +4,7 @@ import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
 import { DEFAULT_USD_BRL, formatPercent, formatUSD, getUsdBrlRate, saveUsdBrlRate, toNumber } from './services/financeService.js';
 import { termometro }     from './termometro.js';
+import { diarioTese }     from './diarioTese.js';
 
 // ─────────────────────────────────────────────
 // AUTH
@@ -279,7 +280,7 @@ function renderizarCarteira(){
         <th>Ticker</th><th>Nome</th><th>Qtd</th>
         <th>P. Médio</th><th>Cotação</th>
         <th>Aplicado</th><th>Atual</th><th>Resultado</th>
-        <th>% Classe</th><th>% Ideal</th><th>Comprar?</th><th>Ações</th>
+        <th>% Classe</th><th>% Ideal</th><th>Comprar?</th><th>Ações</th><th>Tese</th>
       </tr></thead><tbody>`;
 
     grupo.ativos.forEach(a=>{
@@ -319,6 +320,18 @@ function renderizarCarteira(){
           <button class="btn btn-secondary compact" data-editar="${a.id}">Editar</button>
           <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">Excluir</button>
         </td>
+        <td>
+          <button class="btn compact" data-tese="${a.id}" data-ticker="${a.ticker}" data-tipo="${a.tipo}"
+            style="font-size:11px;padding:3px 8px;background:rgba(123,92,229,.12);border-color:rgba(123,92,229,.3);color:var(--purple);">
+            📓 Tese
+          </button>
+        </td>
+      </tr>
+      <!-- Linha expansível do Diário de Tese — desktop only -->
+      <tr id="tese-row-${a.id}" style="display:none;">
+        <td colspan="13" style="padding:0;">
+          <div id="tese-container-${a.id}"></div>
+        </td>
       </tr>`;
     });
     html+=`</tbody></table></div>`;
@@ -357,6 +370,29 @@ function renderizarCarteira(){
   el('listaCarteira').querySelectorAll('[data-editar]').forEach(b=>b.addEventListener('click',()=>editarAtivo(b.dataset.editar)));
   el('listaCarteira').querySelectorAll('[data-excluir]').forEach(b=>b.addEventListener('click',()=>excluirAtivo(b.dataset.excluir,b.dataset.ticker)));
   el('listaCarteira').querySelectorAll('[data-cot-manual]').forEach(b=>b.addEventListener('click',()=>atualizarCotacaoManual(b.dataset.cotManual,b.dataset.ticker,b.dataset.moeda)));
+
+  // Botão 📓 Tese — abre/fecha painel expansível (desktop only)
+  el('listaCarteira').querySelectorAll('[data-tese]').forEach(b => {
+    b.addEventListener('click', async () => {
+      const id        = b.dataset.tese;
+      const ticker    = b.dataset.ticker;
+      const tipo      = b.dataset.tipo;
+      const row       = document.getElementById(`tese-row-${id}`);
+      const container = document.getElementById(`tese-container-${id}`);
+      if (!row) return;
+      const aberto = row.style.display !== 'none';
+      if (aberto) {
+        row.style.display = 'none';
+        b.textContent = '📓 Tese';
+      } else {
+        row.style.display = '';
+        b.textContent = '📓 Fechar';
+        if (!container.hasChildNodes() || container.innerHTML.includes('Carregando')) {
+          await diarioTese.renderPainel(id, ticker, tipo, container);
+        }
+      }
+    });
+  });
 }
 
 // ─────────────────────────────────────────────
@@ -1175,12 +1211,14 @@ async function renderizarTermometro() {
   termometro.render(ativos, pesos, taxa, macro);
 }
 
-// Inicializa módulo (carrega macro salvo e preenche inputs)
+// Inicializa módulos auxiliares
 termometro.init(supabase, user.id).then(macro => {
   _termMacro = macro;
   if (el('macroSelic')) el('macroSelic').value = macro.selic;
   if (el('macroIPCA'))  el('macroIPCA').value  = macro.ipca;
 });
+
+diarioTese.init(supabase, user.id);
 
 // btnSalvarMacro — addEventListener direto (estava funcionando antes)
 el('btnSalvarMacro')?.addEventListener('click', async () => {
