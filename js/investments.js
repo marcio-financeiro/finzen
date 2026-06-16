@@ -516,6 +516,7 @@ function limparFormAtivo(){
   el('operacaoAtivo').value='compra';
   el('moedaAtivo').value='BRL';
   el('dataAtivo').value=hojeISO();
+
   el('btnSalvarAtivo').innerText='Salvar Aporte';
   el('btnCancelarEdicao').style.display='none';
 }
@@ -1003,6 +1004,9 @@ el('btnSalvarPesos')?.addEventListener('click',salvarPesos);
 el('btnCalcularBal')?.addEventListener('click',calcularBalanceamento);
 
 el('dataAtivo').value=hojeISO();
+
+// Expor função para onclick no HTML (necessário com type=module)
+window.calcularBalanceamento = calcularBalanceamento;
 el('divData').value=hojeISO();
 
 // ─────────────────────────────────────────────
