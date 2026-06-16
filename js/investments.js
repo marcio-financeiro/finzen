@@ -993,7 +993,7 @@ async function renderIndicadores() {
   const container = el('blocoIndicadores');
   if(!container) return;
 
-  let cdiAnual = 0, ipcaAnual = 0, ibovAnual = 0;
+  let cdiAnual = 0, ipcaAnual = 0;
 
   // CDI e IPCA via BrasilAPI
   try {
@@ -1007,43 +1007,9 @@ async function renderIndicadores() {
     }
   } catch(_) {}
 
-  // IBOV — múltiplas fontes
-  // Fonte 1: BrasilAPI (tem CORS liberado)
   try {
-    const r = await fetch('https://brasilapi.com.br/api/bolsa/v1/ibovespa?anos=1');
-    if(r.ok) {
-      const j = await r.json();
-      if(Array.isArray(j) && j.length >= 2) {
-        const p0 = j[0]?.valor || j[0]?.pontos;
-        const p1 = j[j.length-1]?.valor || j[j.length-1]?.pontos;
-        if(p0 && p1) ibovAnual = (p1 - p0) / p0 * 100;
-      }
-    }
-  } catch(_) {}
-
-  // Fonte 2: HG Brasil (CORS liberado, key=demo)
-  if(!ibovAnual) {
-    try {
-      const r = await fetch('https://api.hgbrasil.com/finance?key=demo&format=json-cors&fields=stocks');
-      if(r.ok) {
-        const j = await r.json();
-        const ibov = j?.results?.stocks?.IBOVESPA;
-        if(ibov?.variation) ibovAnual = ibov.variation;
-      }
-    } catch(_) {}
-  }
-
-  // Fonte 3: brapi com BOVA11 (variação 52 semanas)
-  if(!ibovAnual) {
-    try {
-      const r = await fetch(`https://brapi.dev/api/quote/BOVA11?token=bGZu7dGPyW94PcfXVCiA7t`);
-      if(r.ok) {
-        const j = await r.json();
-        const v = j?.results?.[0]?.fiftyTwoWeekLowChangePercent;
-        if(v) ibovAnual = v * 100;
-      }
-    } catch(_) {}
-  }
+      .eq('user_id', user.id)
+      .maybeSingle();
 
   // Rentabilidade da carteira
   // Tudo convertido para BRL para comparação correta
@@ -1083,14 +1049,13 @@ async function renderIndicadores() {
         <div style="display:flex;flex-direction:column;gap:4px;text-align:right">
           ${badge(rentCarteira, cdiAnual,  'CDI')}
           ${badge(rentCarteira, ipcaAnual, 'IPCA')}
-          ${badge(rentCarteira, ibovAnual, 'IBOV')}
         </div>
       </div>
     </div>
 
     <!-- Indicadores de mercado -->
     <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Indicadores de mercado</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
         <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-weight:700">💰 CDI a.a.</div>
         <div style="font-size:18px;font-weight:900;color:#f59e0b">${cdiAnual ? fmtPct(cdiAnual) : '--'}</div>
@@ -1100,9 +1065,6 @@ async function renderIndicadores() {
         <div style="font-size:18px;font-weight:900;color:#8b5cf6">${ipcaAnual ? fmtPct(ipcaAnual) : '--'}</div>
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-weight:700">🏛️ IBOV 12m</div>
-        <div style="font-size:18px;font-weight:900;color:#ef4444">${ibovAnual ? fmtPct(ibovAnual) : '--'}</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:2px">via BOVA11</div>
       </div>
     </div>
 
