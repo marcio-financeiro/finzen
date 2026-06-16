@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investimentos - FinZen</title>
+<link rel="stylesheet" href="../css/base.css?v=1020">
+<link rel="stylesheet" href="../css/layout.css?v=1020">
+<link rel="stylesheet" href="../css/components.css?v=1020">
+<link rel="stylesheet" href="../css/mobile.css?v=1020">
+<link rel="stylesheet" href="../css/navigation.css?v=1020">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#4b84f3">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FinZen">
+<link rel="apple-touch-icon" href="../icons/icon-192.png">
+<style>
+/* ── Abas ── */
+.inv-tabs{display:flex;gap:4px;padding:14px 18px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.inv-tab{padding:10px 18px;border:none;background:transparent;color:var(--muted);
+  font-weight:800;font-size:13px;cursor:pointer;border-bottom:3px solid transparent;
+  transition:color .15s,border-color .15s;margin-bottom:-1px;}
+.inv-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.inv-tab-content{display:none;padding:18px;}
+.inv-tab-content.active{display:block;}
+
+/* Aba desktop-only: oculta em mobile */
+@media(max-width:820px){
+  .desktop-only-tab{ display:none !important; }
+  #tab-termometro{ display:none !important; }
+}
+
+/* ── KPI ── */
+.inv-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+@media(max-width:720px){.inv-kpi-row{grid-template-columns:1fr 1fr;}}
+.inv-kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;}
+.inv-kpi span{color:var(--muted);font-size:11px;font-weight:700;display:block;margin-bottom:6px;}
+.inv-kpi strong{font-family:var(--font-mono);font-size:1.2rem;display:block;}
+.inv-kpi small{color:var(--muted);font-size:11px;}
+
+/* ── Tabela carteira ── */
+.inv-class-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px;background:var(--surface-2);
+  border-radius:10px;margin:16px 0 6px;font-weight:800;font-size:13px;
+}
+.inv-collapsible{ cursor:pointer;user-select:none; }
+.inv-collapsible:hover{ background:var(--surface-3,rgba(75,132,243,.08)); }
+.inv-collapse-icon{ font-size:14px;transition:transform .2s;color:var(--muted); }
+.inv-class-body{ overflow:hidden;transition:max-height .3s ease; }
+.inv-class-body.collapsed{ display:none; }
+.inv-collapsible.collapsed .inv-collapse-icon{ transform:rotate(-90deg); }
+.inv-class-header .inv-class-pct{
+  display:flex;gap:16px;font-size:12px;font-weight:700;
+}
+.inv-pct-bar-wrap{height:4px;background:var(--border);border-radius:99px;margin-top:4px;}
+.inv-pct-bar{height:4px;border-radius:99px;background:var(--accent);}
+.inv-pct-bar.over{background:var(--danger);}
+
+/* ── Badge comprar ── */
+.badge-comprar{background:var(--success-dim);color:var(--success);padding:3px 8px;
+  border-radius:999px;font-size:10px;font-weight:800;}
+.badge-nao{background:var(--surface-2);color:var(--muted);padding:3px 8px;
+  border-radius:999px;font-size:10px;font-weight:800;}
+.badge-vender{background:var(--danger-dim);color:var(--danger);padding:3px 8px;
+  border-radius:999px;font-size:10px;font-weight:800;}
+
+/* ── Mobile cards ── */
+.inv-mobile-list{display:none;flex-direction:column;gap:10px;}
+.inv-mobile-card{border:1px solid var(--border);border-radius:14px;padding:14px;background:rgba(255,255,255,.02);}
+.inv-mobile-top{display:flex;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.inv-ticker{font-weight:900;font-size:1rem;}
+.inv-nome{color:var(--muted);font-size:.8rem;margin-top:2px;}
+.inv-mobile-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.inv-mobile-grid span{color:var(--muted);font-size:.75rem;font-weight:700;display:block;}
+.inv-mobile-grid strong{font-size:.88rem;}
+.inv-mobile-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.inv-mobile-actions .btn{flex:1;min-width:90px;margin:0;}
+@media(max-width:720px){
+  .inv-desktop-table{display:none;}
+  .inv-mobile-list{display:flex;}
+}
+
+/* ── Balanceamento ── */
+.bal-row{display:grid;grid-template-columns:1fr 80px 80px 80px 110px;
+  gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+.bal-row:last-child{border-bottom:none;}
+.bal-row input[type=number]{padding:6px 8px;font-size:13px;}
+.bal-classe-row{background:var(--surface-2);border-radius:10px;padding:10px 14px;
+  margin-top:12px;display:flex;justify-content:space-between;align-items:center;}
+.bal-sugestao{background:rgba(75,132,243,.08);border:1px solid rgba(75,132,243,.2);
+  border-radius:14px;padding:16px;margin-top:12px;}
+.bal-sugestao-item{display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.bal-sugestao-item:last-child{border-bottom:none;}
+
+/* ── Spinner ── */
+.inv-spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.25);
+  border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── Update bar ── */
+.inv-update-bar{display:flex;align-items:center;gap:12px;padding:12px 18px;flex-wrap:wrap;
+  border-bottom:1px solid var(--border);}
+.inv-update-bar small{color:var(--muted);font-size:12px;}
+.inv-dolar-group{display:flex;gap:6px;align-items:center;}
+.inv-dolar-group input{width:90px;padding:6px 10px;font-size:13px;}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"><div class="sidebar-brand">FinZen</div><nav class="sidebar-nav"></nav></aside>
+  <main class="content">
+
+    <header class="topbar">
+      <div><h1>Investimentos</h1><p id="userEmail" class="muted"></p></div>
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <!-- KPIs sempre visíveis -->
+    <section class="panel" style="padding:16px;">
+      <div class="inv-kpi-row">
+        <div class="inv-kpi"><span>Patrimônio atual</span><strong id="kpiPatrimonio">R$ 0,00</strong></div>
+        <div class="inv-kpi"><span>Total aplicado</span><strong id="kpiAplicado">R$ 0,00</strong></div>
+        <div class="inv-kpi"><span>Resultado</span><strong id="kpiResultado">R$ 0,00</strong><small id="kpiResultadoPct">0,00%</small></div>
+        <div class="inv-kpi"><span>Exterior</span><strong id="kpiUsd">US$ 0,00</strong><small id="kpiUsdBrl" class="muted">R$ 0,00</small></div>
+      </div>
+      <!-- Barra cotação -->
+      <div class="inv-update-bar">
+        <button type="button" class="btn btn-secondary compact" id="btnAtualizar">🔄 Atualizar cotações</button>
+        <div class="inv-dolar-group">
+          <label style="margin:0;color:var(--muted);font-size:12px;font-weight:700;">USD/BRL</label>
+          <input type="number" id="dolarReferencia" step="0.0001" placeholder="5,15">
+          <button type="button" class="btn btn-secondary compact" id="btnSalvarDolar" style="margin:0">Salvar</button>
+        </div>
+        <small id="ultimaAtualizacao">—</small>
+        <div id="mensagemCotacao" class="message" style="margin:0;min-height:0;"></div>
+      </div>
+    </section>
+
+    <!-- Abas -->
+    <section class="panel" style="padding:0;">
+      <div class="inv-tabs">
+        <button class="inv-tab active" data-tab="carteira">📊 Carteira</button>
+        <button class="inv-tab" data-tab="aportar">💰 Aportar / Gerir</button>
+        <button class="inv-tab" data-tab="dividendos">🎯 Dividendos</button>
+        <button class="inv-tab" data-tab="balancear">⚖️ Balancear</button>
+        <button class="inv-tab desktop-only-tab" data-tab="termometro">🌡️ Termômetro</button>
+      </div>
+
+      <!-- ─── ABA CARTEIRA ─── -->
+      <div class="inv-tab-content active" id="tab-carteira">
+
+        <!-- Indicadores de Rentabilidade -->
+        <div class="panel" style="margin-bottom:16px;padding:16px 20px">
+          <div style="font-size:14px;font-weight:800;margin-bottom:14px">📊 Rentabilidade da Carteira</div>
+          <div id="blocoIndicadores">
+            <p class="muted" style="font-size:13px">Carregando indicadores...</p>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+          <select id="filtroCorretora" style="padding:7px 10px;font-size:13px;width:auto;">
+            <option value="">Todas as corretoras</option>
+          </select>
+        </div>
+        <div id="listaCarteira"><p class="muted">Carregando...</p></div>
+      </div>
+
+      <!-- ─── ABA APORTAR ─── -->
+      <div class="inv-tab-content" id="tab-aportar">
+        <p class="muted" style="margin-bottom:16px;font-size:13px;">
+          Ao salvar, o valor é debitado automaticamente da conta da corretora.
+          Para ações/FIIs BR use o ticker sem extensão (BBAS3). Para EUA use o símbolo (VOO).
+        </p>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Ticker / Código</label>
+            <input type="text" id="tickerAtivo" placeholder="Ex: BBAS3, VOO">
+          </div>
+          <div class="form-group">
+            <label>Nome (opcional)</label>
+            <input type="text" id="nomeAtivo" placeholder="Ex: Banco do Brasil">
+          </div>
+          <div class="form-group">
+            <label>Tipo</label>
+            <select id="tipoAtivo">
+              <option value="">Selecione</option>
+              <option value="acao_br">Ação BR</option>
+              <option value="fii">FII</option>
+              <option value="etf_br">ETF BR</option>
+              <option value="etf_eua">ETF EUA</option>
+              <option value="acao_eua">Ação EUA</option>
+              <option value="renda_fixa">Renda Fixa</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Corretora (conta)</label>
+            <select id="corretoraAtivo"><option value="">Carregando...</option></select>
+          </div>
+          <div class="form-group">
+            <label>Operação</label>
+            <select id="operacaoAtivo">
+              <option value="compra">Compra</option>
+              <option value="venda">Venda</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Quantidade</label>
+            <input type="number" id="quantidadeAtivo" placeholder="0" step="0.000001" min="0">
+          </div>
+          <div class="form-group">
+            <label>Preço unitário (ou deixe vazio)</label>
+            <input type="number" id="precoAtivo" placeholder="Se não souber, informe o total" step="0.000001" min="0">
+          </div>
+          <div class="form-group">
+            <label>Valor total investido</label>
+            <input type="number" id="valorTotalAtivo" placeholder="Ou informe aqui se não souber o unitário" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label>Moeda</label>
+            <select id="moedaAtivo">
+              <option value="BRL">BRL — Real</option>
+              <option value="USD">USD — Dólar</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Data</label>
+            <input type="date" id="dataAtivo">
+          </div>
+          <div class="form-group full">
+            <label>Observação (opcional)</label>
+            <input type="text" id="obsAtivo" placeholder="Ex: aporte mensal">
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary" id="btnSalvarAtivo">Salvar Aporte</button>
+        <button type="button" class="btn btn-secondary" id="btnCancelarEdicao" style="display:none">Cancelar edição</button>
+        <div id="mensagemAtivo" class="message"></div>
+
+        <!-- Histórico de transações -->
+        <div class="panel-header" style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px;">
+          <h2 style="font-size:14px;">Histórico de Aportes e Vendas</h2>
+        </div>
+        <div id="listaTransacoes" class="table-wrap" style="margin-top:8px;"><p class="muted">Carregando...</p></div>
+      </div>
+
+      <!-- ─── ABA DIVIDENDOS ─── -->
+      <div class="inv-tab-content" id="tab-dividendos">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;">
+          <div class="inv-kpi"><span>Dividendos no mês</span><strong id="divMes">R$ 0,00</strong></div>
+          <div class="inv-kpi"><span>Dividendos no ano</span><strong id="divAno">R$ 0,00</strong></div>
+          <div class="inv-kpi"><span>Total acumulado</span><strong id="divTotal">R$ 0,00</strong></div>
+        </div>
+
+        <p class="muted" style="font-size:13px;margin-bottom:16px;">
+          Registre dividendos, JCP e rendimentos. O valor é creditado automaticamente na conta da corretora.
+        </p>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Ativo</label>
+            <select id="divAtivo"><option value="">Selecione o ativo</option></select>
+          </div>
+          <div class="form-group">
+            <label>Tipo</label>
+            <select id="divTipo">
+              <option value="dividendo">Dividendo</option>
+              <option value="jcp">JCP</option>
+              <option value="rendimento">Rendimento FII</option>
+              <option value="cupom">Cupom / Juros</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Valor por cota</label>
+            <input type="number" id="divValorCota" placeholder="0,00" step="0.000001" min="0">
+          </div>
+          <div class="form-group">
+            <label>Qtd cotas na data</label>
+            <input type="number" id="divQtdCotas" placeholder="Preenchido automaticamente" step="0.000001" min="0">
+          </div>
+          <div class="form-group">
+            <label>Moeda do recebimento</label>
+            <select id="divMoeda">
+              <option value="BRL">🇧🇷 Real (BRL)</option>
+              <option value="USD">🇺🇸 Dólar (USD)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label id="labelDivTotal">Valor total recebido</label>
+            <input type="number" id="divValorTotal" placeholder="0,00" step="0.01" min="0">
+            <small id="divConversao" class="muted" style="display:none;margin-top:4px;display:block"></small>
+          </div>
+          <div class="form-group">
+            <label>Conta de destino</label>
+            <select id="divConta"><option value="">Selecione a conta</option></select>
+          </div>
+          <div class="form-group">
+            <label>Data de pagamento</label>
+            <input type="date" id="divData">
+          </div>
+          <div class="form-group">
+            <label>Observação (opcional)</label>
+            <input type="text" id="divObs" placeholder="">
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary" id="btnSalvarDiv">Registrar Dividendo</button>
+        <div id="mensagemDiv" class="message"></div>
+
+        <div class="panel-header" style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px;">
+          <h2 style="font-size:14px;">Histórico de Proventos</h2>
+          <select id="filtroAnoDiv" style="padding:6px 10px;font-size:13px;width:auto;"></select>
+        </div>
+        <div id="listaDividendos" class="table-wrap" style="margin-top:8px;"><p class="muted">Carregando...</p></div>
+      </div>
+
+      <!-- ─── ABA BALANCEAR ─── -->
+      <div class="inv-tab-content" id="tab-balancear" style="padding-bottom:100px;">
+        <p class="muted" style="font-size:13px;margin-bottom:16px;">
+          Defina o peso ideal de cada classe e de cada ativo dentro da classe.
+          Informe o valor do aporte e veja exatamente quanto comprar de cada ativo.
+        </p>
+
+        <!-- Classes -->
+        <div id="balClasses"></div>
+
+        <div style="display:flex;gap:10px;align-items:flex-end;margin-top:20px;flex-wrap:wrap;">
+          <div class="form-group" style="margin:0;">
+            <label>Valor do aporte (R$)</label>
+            <input type="number" id="balValorAporte" placeholder="0,00" step="0.01" min="0" style="width:180px;">
+          </div>
+
+          <button type="button" class="btn btn-secondary" id="btnSalvarPesos" style="margin:0">Salvar pesos</button>
+        </div>
+        <div style="margin-top:16px;">
+          <button onclick="calcularBalanceamento()" class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;font-weight:800;">⚖️ Calcular sugestão de aporte</button>
+        </div>
+        <div id="mensagemBal" class="message"></div>
+        <div id="balResultado"></div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           ABA: TERMÔMETRO DE ALOCAÇÃO
+           Visível apenas em desktop (min-width: 821px)
+      ════════════════════════════════════════════════════════════ -->
+      <div class="inv-tab-content" id="tab-termometro" style="padding-bottom:40px;">
+
+        <!-- Macro context bar -->
+        <div id="termMacroBar" style="
+          display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;
+          padding:14px 16px;background:var(--surface-2);
+          border:1px solid var(--border);border-radius:var(--radius-md);">
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:130px;">
+            <span style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;">Selic (% a.a.)</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input type="number" id="macroSelic" step="0.01" placeholder="14.75"
+                style="width:80px;padding:5px 8px;font-size:13px;font-weight:700;">
+              <span id="selicSemaforo" style="font-size:18px;">🔴</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:130px;">
+            <span style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;">IPCA (% a.a.)</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input type="number" id="macroIPCA" step="0.01" placeholder="4.86"
+                style="width:80px;padding:5px 8px;font-size:13px;font-weight:700;">
+              <span id="ipcaSemaforo" style="font-size:18px;">🟡</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:130px;">
+            <span style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;">USD/BRL</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input type="number" id="macroDolar" step="0.01" placeholder="5.80"
+                style="width:80px;padding:5px 8px;font-size:13px;font-weight:700;">
+            </div>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px;margin-left:auto;">
+            <button type="button" class="btn btn-secondary compact" id="btnSalvarMacro" style="margin:0;">Salvar macro</button>
+            <button type="button" class="btn btn-primary compact" style="margin:0;"
+              onclick="if(window._termRender) window._termRender(); else alert('Aguarde o carregamento e tente novamente.');">🌡️ Atualizar</button>
+          </div>
+        </div>
+
+        <!-- Alerta macro contextual -->
+        <div id="termMacroAlerta" style="display:none;margin-bottom:16px;
+          padding:12px 16px;border-radius:var(--radius-md);font-size:13px;line-height:1.5;
+          background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.3);color:var(--warning);">
+        </div>
+
+        <!-- Grid: gauge por setor -->
+        <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+          <h2 style="margin:0;font-size:15px;">Alocação por Classe vs Meta</h2>
+          <span class="muted" style="font-size:12px;">Defina as metas na aba ⚖️ Balancear</span>
+        </div>
+        <div id="termGaugeGrid" style="
+          display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+          gap:14px;margin-bottom:24px;">
+          <p class="muted">Carregando...</p>
+        </div>
+
+        <!-- Barra de composição global -->
+        <div style="margin-bottom:8px;">
+          <h2 style="margin:0;font-size:15px;">Composição da Carteira</h2>
+        </div>
+        <div id="termComposicaoBar" style="
+          background:var(--surface-2);border:1px solid var(--border);
+          border-radius:var(--radius-md);padding:16px;margin-bottom:24px;">
+          <div id="termBarraVisual" style="height:28px;border-radius:8px;overflow:hidden;display:flex;margin-bottom:12px;"></div>
+          <div id="termLegenda" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
+        </div>
+
+        <!-- Recomendação contextual por classe -->
+        <div style="margin-bottom:8px;">
+          <h2 style="margin:0;font-size:15px;">Leitura Macro por Classe</h2>
+        </div>
+        <div id="termRecomendacoes" style="
+          display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;">
+        </div>
+
+      </div><!-- /tab-termometro -->
+
+    </section>
+  </main>
+</div>
+
+<script type="module" src="../js/navigation.js?v=1020"></script>
+<script type="module" src="../js/investments.js?v=1021"></script>
+</body>
+</html>
