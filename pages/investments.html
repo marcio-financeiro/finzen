@@ -375,7 +375,6 @@
           </div>
           <div style="display:flex;align-items:flex-end;gap:8px;margin-left:auto;">
             <button type="button" class="btn btn-secondary compact" id="btnSalvarMacro" style="margin:0;">Salvar macro</button>
-            <button type="button" class="btn btn-primary compact" style="margin:0;" id="btnTermAtualizar">🌡️ Atualizar</button>
           </div>
         </div>
 
@@ -423,23 +422,5 @@
 
 <script type="module" src="../js/navigation.js?v=1020"></script>
 <script type="module" src="../js/investments.js?v=1021"></script>
-<script>
-  /* Aguarda window._termRender ficar disponível (módulo ES6 carrega async)
-     e só então registra o listener — sem depender de timing ou onclick inline */
-  (function() {
-    var MAX = 100; // até 10 segundos (100 x 100ms)
-    var tentativas = 0;
-    var intervalo = setInterval(function() {
-      var btn = document.getElementById('btnTermAtualizar');
-      if (btn && typeof window._termRender === 'function') {
-        clearInterval(intervalo);
-        btn.addEventListener('click', function() {
-          window._termRender();
-        });
-      }
-      if (++tentativas >= MAX) clearInterval(intervalo);
-    }, 100);
-  })();
-</script>
 </body>
 </html>
