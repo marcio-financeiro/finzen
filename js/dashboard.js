@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { rebalancePopup } from './rebalancePopup.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
@@ -596,3 +597,6 @@ function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investiment
 }
 
 carregarDashboard();
+
+// Verificar rebalanceamento uma vez por dia
+rebalancePopup.verificar(supabase, user.id);
