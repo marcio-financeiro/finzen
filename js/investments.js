@@ -3,6 +3,7 @@ import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
 import { DEFAULT_USD_BRL, formatPercent, formatUSD, getUsdBrlRate, saveUsdBrlRate, toNumber } from './services/financeService.js';
+import { termometro }     from './termometro.js';
 
 // ─────────────────────────────────────────────
 // AUTH
@@ -39,6 +40,7 @@ document.querySelectorAll('.inv-tab').forEach(btn => {
     if(btn.dataset.tab === 'dividendos') carregarDividendos();
     if(btn.dataset.tab === 'balancear')  renderizarBalancear();
     if(btn.dataset.tab === 'aportar')    carregarTransacoes();
+    if(btn.dataset.tab === 'termometro') renderizarTermometro();
   });
 });
 
@@ -1149,3 +1151,28 @@ await carregarAtivos();
 await carregarPesos();
 renderizarTudo();
 await atualizarCotacoes(true);
+
+// ─────────────────────────────────────────────
+// TERMÔMETRO DE ALOCAÇÃO
+// ─────────────────────────────────────────────
+let _termMacro = null;
+
+// Inicializa o módulo (lê macro salvo, registra botão salvar)
+termometro.init(supabase, user.id).then(macro => {
+  _termMacro = macro;
+});
+
+async function renderizarTermometro() {
+  // Busca macro atual dos inputs (pode ter sido editado sem salvar)
+  const selic = parseFloat(document.getElementById('macroSelic')?.value) || (_termMacro?.selic || 14.75);
+  const ipca  = parseFloat(document.getElementById('macroIPCA')?.value)  || (_termMacro?.ipca  || 4.86);
+  const dolar = parseFloat(document.getElementById('macroDolar')?.value)  || dolarAtual;
+
+  const macro = { selic, ipca, dolar };
+  _termMacro  = macro;
+
+  termometro.render(ativos, pesos, dolarAtual, macro);
+}
+
+// Botão "Atualizar" dentro da aba
+document.getElementById('btnRenderTermometro')?.addEventListener('click', renderizarTermometro);
