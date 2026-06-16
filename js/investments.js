@@ -280,7 +280,7 @@ function renderizarCarteira(){
         <th>Ticker</th><th>Nome</th><th>Qtd</th>
         <th>P. Médio</th><th>Cotação</th>
         <th>Aplicado</th><th>Atual</th><th>Resultado</th>
-        <th>% Classe</th><th>% Ideal</th><th>Comprar?</th><th>Ações</th><th>Tese</th>
+        <th>% Classe</th><th>% Ideal</th><th>Comprar?</th><th>Ações</th>
       </tr></thead><tbody>`;
 
     grupo.ativos.forEach(a=>{
@@ -319,17 +319,15 @@ function renderizarCarteira(){
         <td>
           <button class="btn btn-secondary compact" data-editar="${a.id}">Editar</button>
           <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">Excluir</button>
-        </td>
-        <td>
           <button class="btn compact" data-tese="${a.id}" data-ticker="${a.ticker}" data-tipo="${a.tipo}"
             style="font-size:11px;padding:3px 8px;background:rgba(123,92,229,.12);border-color:rgba(123,92,229,.3);color:var(--purple);">
-            📓 Tese
+            📓
           </button>
         </td>
       </tr>
       <!-- Linha expansível do Diário de Tese — desktop only -->
       <tr id="tese-row-${a.id}" style="display:none;">
-        <td colspan="13" style="padding:0;">
+        <td colspan="12" style="padding:0;">
           <div id="tese-container-${a.id}"></div>
         </td>
       </tr>`;
@@ -383,10 +381,10 @@ function renderizarCarteira(){
       const aberto = row.style.display !== 'none';
       if (aberto) {
         row.style.display = 'none';
-        b.textContent = '📓 Tese';
+        b.textContent = '📓';
       } else {
         row.style.display = '';
-        b.textContent = '📓 Fechar';
+        b.textContent = '✖️';
         if (!container.hasChildNodes() || container.innerHTML.includes('Carregando')) {
           await diarioTese.renderPainel(id, ticker, tipo, container);
         }
