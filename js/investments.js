@@ -741,6 +741,7 @@ async function salvarPesos(){
 }
 
 function calcularBalanceamento(){
+  console.log('[FinZen] calcularBalanceamento chamado, pesos:', JSON.stringify(pesos));
   const aporte=toNumber(el('balValorAporte').value);
   if(!aporte){ msg('mensagemBal','Informe o valor do aporte.','warning'); return; }
 
@@ -998,8 +999,8 @@ if(selAno){
 }
 
 // Balancear
-el('btnSalvarPesos').addEventListener('click',salvarPesos);
-el('btnCalcularBal').addEventListener('click',calcularBalanceamento);
+el('btnSalvarPesos')?.addEventListener('click',salvarPesos);
+el('btnCalcularBal')?.addEventListener('click',calcularBalanceamento);
 
 el('dataAtivo').value=hojeISO();
 el('divData').value=hojeISO();
