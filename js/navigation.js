@@ -459,7 +459,13 @@ function ensureDesktopSidebar(){
   if(!sidebar){
     sidebar = document.createElement('aside');
     sidebar.className = 'sidebar';
-    sidebar.innerHTML = '<div class="sidebar-brand">FinZen</div><nav class="sidebar-nav"></nav>';
+    sidebar.innerHTML = `
+      <div class="sidebar-brand" style="padding:20px 20px 8px;text-align:center;">
+        <div style="font-size:22px;font-weight:900;background:var(--gold-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.5px;line-height:1.1;">FinZen</div>
+        <div style="width:32px;height:2px;background:var(--gold-gradient);margin:4px auto 2px;border-radius:99px;"></div>
+        <div style="font-size:9px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-weight:600;">Assessor Pessoal</div>
+      </div>
+      <nav class="sidebar-nav"></nav>`;
     shell.prepend(sidebar);
   }
 
@@ -487,10 +493,10 @@ function ensureMobileDrawer(){
   drawer.className = 'mobile-drawer';
   drawer.innerHTML = `
     <div class="drawer-profile">
-      <div class="drawer-avatar">FZ</div>
+      <div class="drawer-avatar" style="background:var(--gold-gradient);color:#000;">FZ</div>
       <div>
-        <div class="drawer-name">FinZen</div>
-        <div class="drawer-email">Menu principal</div>
+        <div class="drawer-name" style="background:var(--gold-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">FinZen</div>
+        <div class="drawer-email" style="color:var(--accent);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:600;">Assessor Pessoal</div>
       </div>
       <button class="drawer-close" type="button" aria-label="Fechar menu">×</button>
     </div>
