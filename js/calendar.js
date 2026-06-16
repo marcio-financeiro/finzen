@@ -15,9 +15,7 @@ const { data: sd } = await supabase.auth.getSession();
 if (!sd.session) navigate('../login.html');
 const user = sd.session.user;
 document.getElementById('userEmail').innerText = user.email;
-document.getElementById('btnLogout').addEventListener('click', async () => {
-  await supabase.auth.signOut(); navigate('../login.html');
-});
+document.getElementById('btnVoltar').addEventListener('click', () => navigate('./dashboard.html'));
 
 // ── Estado ────────────────────────────────────────────
 const el    = id => document.getElementById(id);
@@ -445,7 +443,7 @@ el('btnSalvarEvento').addEventListener('click', async () => {
 
   // Exportar para iPhone (.ics)
   if (el('evIcsExport').checked) {
-    exportarICS({ titulo, data_inicio: data, data_fim: el('evDataFim').value, hora: el('evHora').value, descricao: el('evDescricao').value, local: el('evLocal').value });
+    exportarICS({ id: editandoId, titulo, data_inicio: data, data_fim: el('evDataFim').value, hora: el('evHora').value, descricao: el('evDescricao').value, local: el('evLocal').value, lembrete_dias: parseInt(el('evLembreteDias').value)||1 });
   }
 
   fecharModal();
@@ -464,9 +462,72 @@ el('btnExcluirEvento').addEventListener('click', async () => {
 // ── Botão novo evento ─────────────────────────────────
 el('btnNovoEvento').addEventListener('click', () => abrirModalNovo(hojeISO()));
 
+// ── Exportar mês inteiro para iPhone ─────────────────
+el('btnExportarMes').addEventListener('click', exportarMesICS);
+
+function exportarMesICS() {
+  if (!eventos.length) {
+    alert('Nenhum evento neste período para exportar.');
+    return;
+  }
+
+  const formatICS = iso => iso ? iso.replace(/-/g,'') : '';
+  const now = new Date().toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+  const mesLabel = el('calLabel').textContent.replace(/\s/g,'_');
+
+  const linhas = ['BEGIN:VCALENDAR','VERSION:2.0',
+    'PRODID:-//FinZen//Calendar//PT','CALSCALE:GREGORIAN','METHOD:REQUEST'];
+
+  eventos.forEach(ev => {
+    const cfg    = tipoCfg(ev.tipo);
+    const dtStart = ev.hora
+      ? formatICS(ev.data_inicio) + 'T' + ev.hora.replace(':','').slice(0,4) + '00'
+      : formatICS(ev.data_inicio);
+    const dtEnd = ev.data_fim
+      ? (ev.hora ? formatICS(ev.data_fim) + 'T' + ev.hora.replace(':','').slice(0,4) + '00' : formatICS(ev.data_fim))
+      : dtStart;
+
+    // UID estável = id do Supabase — garante atualização em vez de duplicata
+    const uid = `${ev.id}@finzen.marcio-financeiro.github.io`;
+
+    // SEQUENCE baseado na data de atualização — iPhone usa para saber qual é mais recente
+    const seq = ev.atualizado_em
+      ? Math.floor(new Date(ev.atualizado_em).getTime() / 60000)
+      : 0;
+
+    linhas.push('BEGIN:VEVENT');
+    linhas.push(`UID:${uid}`);
+    linhas.push(`DTSTAMP:${now}`);
+    linhas.push(`SEQUENCE:${seq}`);
+    linhas.push(ev.hora ? `DTSTART:${dtStart}` : `DTSTART;VALUE=DATE:${dtStart}`);
+    linhas.push(ev.hora ? `DTEND:${dtEnd}`     : `DTEND;VALUE=DATE:${dtEnd}`);
+    linhas.push(`SUMMARY:${cfg.icon} ${ev.titulo}`);
+    if (ev.descricao) linhas.push(`DESCRIPTION:${ev.descricao.replace(/\n/g,'\\n')}`);
+    if (ev.local)     linhas.push(`LOCATION:${ev.local}`);
+    const alarmHoras = (ev.lembrete_dias || 1) * 24;
+    linhas.push('BEGIN:VALARM');
+    linhas.push(`TRIGGER:-PT${alarmHoras}H`);
+    linhas.push('ACTION:DISPLAY');
+    linhas.push(`DESCRIPTION:Lembrete FinZen: ${ev.titulo}`);
+    linhas.push('END:VALARM');
+    linhas.push('END:VEVENT');
+  });
+
+  linhas.push('END:VCALENDAR');
+
+  const ics  = linhas.join('\r\n');
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `FinZen_${mesLabel}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ── Exportar .ics para iPhone ─────────────────────────
-function exportarICS({ titulo, data_inicio, data_fim, hora, descricao, local }) {
-  const formatICS = iso => iso.replace(/-/g,'');
+function exportarICS({ id, titulo, data_inicio, data_fim, hora, descricao, local, lembrete_dias }) {
+  const formatICS = iso => iso ? iso.replace(/-/g,'') : '';
   const dtStart = hora
     ? formatICS(data_inicio) + 'T' + hora.replace(':','') + '00'
     : formatICS(data_inicio);
@@ -474,8 +535,13 @@ function exportarICS({ titulo, data_inicio, data_fim, hora, descricao, local }) 
     ? formatICS(data_fim) + (hora ? 'T' + hora.replace(':','') + '00' : '')
     : dtStart;
 
-  const uid = `finzen-${Date.now()}@marcio-financeiro.github.io`;
+  // UID estável: usa o id do Supabase se disponível
+  const uid = id
+    ? `${id}@finzen.marcio-financeiro.github.io`
+    : `finzen-${Date.now()}@marcio-financeiro.github.io`;
+
   const now = new Date().toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+  const alarmHoras = (lembrete_dias || 1) * 24;
 
   const ics = [
     'BEGIN:VCALENDAR',

@@ -12,9 +12,7 @@ const { data: sd } = await supabase.auth.getSession();
 if (!sd.session) navigate('../login.html');
 const user = sd.session.user;
 document.getElementById('userEmail').innerText = user.email;
-document.getElementById('btnLogout').addEventListener('click', async () => {
-  await supabase.auth.signOut(); navigate('../login.html');
-});
+document.getElementById('btnVoltar').addEventListener('click', () => navigate('./dashboard.html'));
 
 const el  = id => document.getElementById(id);
 const fmt = v  => Number(v).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
@@ -326,6 +324,34 @@ el('btnSalvarCiclo').addEventListener('click', async () => {
   }
 
   if (error) { el('msgCiclo').className='message danger'; el('msgCiclo').textContent='Erro: '+error.message; return; }
+
+  // Registrar automaticamente no calendário
+  const plat = el('cPlataforma').value.trim() || 'Offshore';
+  const calPayload = {
+    user_id     : user.id,
+    titulo      : `⚓ Embarque — ${plat}`,
+    tipo        : 'offshore',
+    status      : payload.status === 'concluido' ? 'concluido' : 'pendente',
+    data_inicio : payload.data_embarque,
+    data_fim    : payload.data_desembarque || null,
+    descricao   : `Regime: ${payload.regime || '—'}${payload.empresa ? ' · ' + payload.empresa : ''}${payload.contrato ? ' · OS: ' + payload.contrato : ''}`,
+    local       : plat,
+    notif_email : true,
+    lembrete_dias: 3,
+    email_destino: 'info.marcio@gmail.com',
+  };
+  // Só insere se for ciclo novo (não edição)
+  if (!editandoCicloId) {
+    await supabase.from('calendar_events').insert(calPayload);
+  } else {
+    // Atualiza o evento do calendário vinculado (pelo título + data)
+    await supabase.from('calendar_events')
+      .update({ data_inicio: payload.data_embarque, data_fim: payload.data_desembarque || null, status: calPayload.status, descricao: calPayload.descricao })
+      .eq('user_id', user.id)
+      .eq('tipo', 'offshore')
+      .eq('data_inicio', ciclos.find(c => c.id === editandoCicloId)?.data_embarque || payload.data_embarque);
+  }
+
   el('modalCiclo').style.display = 'none';
   await carregarTudo();
 });
