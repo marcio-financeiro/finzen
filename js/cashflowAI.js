@@ -143,7 +143,124 @@ export async function coletarContexto(userId) {
   };
 }
 
-// ── Chama Claude AI via Vercel Function (sem CORS) ───────────────────────
+// ── Coleta contexto de investimentos do usuário ───────────────────────────
+export async function coletarContextoInvestimentos(userId) {
+  const hoje = new Date();
+  const anoMes = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
+  const anoAtual = hoje.getFullYear().toString();
+  const mes6Atras = new Date(hoje.getFullYear(), hoje.getMonth()-6, 1).toISOString().split('T')[0];
+
+  const [
+    { data: ativos },
+    { data: dividendosMes },
+    { data: dividendosAno },
+    { data: metas },
+  ] = await Promise.all([
+    supabase.from('investments')
+      .select('ticker,nome,tipo,quantidade,preco_medio,cotacao_atual,moeda,tese_entrada,gatilho_saida,convicao,ind_pl,ind_roe,ind_dy,ind_pl_auto,ind_roe_auto,ind_dy_auto')
+      .eq('user_id', userId)
+      .eq('ativo', true)
+      .order('tipo'),
+
+    supabase.from('dividends')
+      .select('ticker,valor_total,tipo,data_pagamento,investments:investment_id(ticker,nome)')
+      .eq('user_id', userId)
+      .gte('data_pagamento', `${anoMes}-01`)
+      .lte('data_pagamento', `${anoMes}-31`),
+
+    supabase.from('dividends')
+      .select('valor_total,data_pagamento')
+      .eq('user_id', userId)
+      .gte('data_pagamento', `${anoAtual}-01-01`),
+
+    supabase.from('goals')
+      .select('nome,valor_alvo,valor_atual,data_alvo')
+      .eq('user_id', userId)
+      .eq('ativo', true)
+      .limit(5),
+  ]);
+
+  // Calcular totais por classe
+  const porClasse = {};
+  let totalAplicado = 0;
+  let totalAtual = 0;
+
+  (ativos||[]).forEach(a => {
+    const qtd    = Number(a.quantidade || 0);
+    const pm     = Number(a.preco_medio || 0);
+    const cot    = Number(a.cotacao_atual || a.preco_medio || 0);
+    const aplic  = qtd * pm;
+    const atual  = qtd * cot;
+    const classe = {
+      acao_br:'Ações BR', acao:'Ações BR', fii:'FIIs',
+      etf_br:'ETFs BR', etf:'ETFs BR', acao_eua:'Ações EUA',
+      etf_eua:'ETFs EUA', renda_fixa:'Renda Fixa', cripto:'Cripto',
+    }[a.tipo] || 'Outros';
+
+    if (!porClasse[classe]) porClasse[classe] = { aplicado:0, atual:0 };
+    porClasse[classe].aplicado += aplic;
+    porClasse[classe].atual    += atual;
+    totalAplicado += aplic;
+    totalAtual    += atual;
+  });
+
+  const resultado = totalAtual - totalAplicado;
+  const rentabilidade = totalAplicado > 0 ? (resultado / totalAplicado * 100).toFixed(2) : 0;
+
+  const divMes = (dividendosMes||[]).reduce((s,d) => s + Number(d.valor_total||0), 0);
+  const divAno = (dividendosAno||[]).reduce((s,d) => s + Number(d.valor_total||0), 0);
+  const yieldAno = totalAtual > 0 ? (divAno / totalAtual * 100).toFixed(2) : 0;
+
+  // Ativos com tese registrada
+  const ativosComTese = (ativos||[]).filter(a => a.tese_entrada || a.convicao);
+
+  // Top 5 ativos por valor atual
+  const top5 = [...(ativos||[])]
+    .map(a => ({
+      ticker : a.ticker,
+      nome   : a.nome || '',
+      tipo   : a.tipo,
+      aplic  : Number(a.quantidade||0) * Number(a.preco_medio||0),
+      atual  : Number(a.quantidade||0) * Number(a.cotacao_atual||a.preco_medio||0),
+      pl     : a.ind_pl_auto ?? a.ind_pl ?? null,
+      roe    : a.ind_roe_auto ?? a.ind_roe ?? null,
+      dy     : a.ind_dy_auto ?? a.ind_dy ?? null,
+      tese   : a.tese_entrada || null,
+      gatilho: a.gatilho_saida || null,
+      convicao: a.convicao || null,
+    }))
+    .sort((a,b) => b.atual - a.atual)
+    .slice(0, 8);
+
+  return {
+    totalAtivos    : (ativos||[]).length,
+    totalAplicado,
+    totalAtual,
+    resultado,
+    rentabilidade,
+    divMes,
+    divAno,
+    yieldAno,
+    porClasse      : Object.entries(porClasse).map(([classe, v]) => ({
+      classe,
+      aplicado : v.aplicado,
+      atual    : v.atual,
+      pct      : totalAtual > 0 ? (v.atual / totalAtual * 100).toFixed(1) : 0,
+      resultado: v.atual - v.aplicado,
+    })).sort((a,b) => b.atual - a.atual),
+    top5,
+    ativosComTese  : ativosComTese.length,
+    metas          : (metas||[]).map(m => ({
+      nome      : m.nome,
+      alvo      : Number(m.valor_alvo||0),
+      atual     : Number(m.valor_atual||0),
+      pct       : m.valor_alvo > 0 ? (m.valor_atual / m.valor_alvo * 100).toFixed(0) : 0,
+      prazo     : m.data_alvo,
+    })),
+  };
+}
+
+
 export async function analisarComIA(contexto, onChunk, onDone) {
   const fmt = v => Number(v).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
 

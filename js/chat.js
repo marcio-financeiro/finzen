@@ -7,7 +7,7 @@
 import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
-import { coletarContexto, renderMd } from './cashflowAI.js';
+import { coletarContexto, coletarContextoInvestimentos, renderMd } from './cashflowAI.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -21,6 +21,7 @@ document.getElementById('btnLogout').addEventListener('click', async () => {
 // ── Estado ────────────────────────────────────────────
 let historico    = [];   // [{role, content}]
 let contexto     = null; // dados financeiros carregados
+let ctxInvest    = null; // dados de investimentos carregados
 let carregando   = false;
 
 const el = id => document.getElementById(id);
@@ -29,73 +30,144 @@ const el = id => document.getElementById(id);
 async function inicializar() {
   el('statusContexto').textContent = '⏳ Carregando seus dados financeiros...';
   try {
-    contexto = await coletarContexto(user.id);
+    [contexto, ctxInvest] = await Promise.all([
+      coletarContexto(user.id),
+      coletarContextoInvestimentos(user.id),
+    ]);
     el('statusContexto').textContent = '✅ Dados carregados — pode perguntar!';
     el('statusContexto').style.color = 'var(--success, #22c55e)';
     el('inputMsg').disabled    = false;
     el('btnEnviar').disabled   = false;
-    el('inputMsg').placeholder = 'Pergunte sobre seus gastos, investimentos, metas...';
+    el('inputMsg').placeholder = 'Pergunte sobre gastos, investimentos, metas, teses...';
   } catch(err) {
     el('statusContexto').textContent = '⚠️ Erro ao carregar dados: ' + err.message;
     el('statusContexto').style.color = 'var(--danger, #ef4444)';
   }
 }
 
-// ── System prompt com contexto financeiro ─────────────
+// ── System prompt com contexto financeiro + investimentos ─────────────
 function buildSystemPrompt() {
-  const fmt = v => Number(v).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
-  const c   = contexto;
+  const fmt  = v => Number(v).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+  const fmtP = v => v != null ? Number(v).toFixed(2) + '%' : '—';
+  const c    = contexto;
+  const inv  = ctxInvest;
 
-  return `Você é o FinZen AI, assistente financeiro pessoal integrado ao app FinZen.
-Você tem acesso aos dados financeiros reais do usuário e deve responder de forma clara, objetiva e em português brasileiro.
-Seja direto e conciso. Use bullet points quando listar itens. Formate valores sempre em R$.
+  const linhasClasse = inv
+    ? inv.porClasse.map(cl =>
+        `- ${cl.classe}: ${fmt(cl.atual)} (${cl.pct}% da carteira) | resultado: ${fmt(cl.resultado)}`
+      ).join('\n')
+    : '';
 
-## Dados Financeiros Atuais (${c.mesReferencia})
+  const linhasTop5 = inv
+    ? inv.top5.map(a => {
+        const res  = a.atual - a.aplic;
+        const pct  = a.aplic > 0 ? (res / a.aplic * 100).toFixed(1) : '0';
+        const inds = [
+          a.pl  != null ? 'P/L: '  + Number(a.pl).toFixed(1)  : null,
+          a.roe != null ? 'ROE: '  + fmtP(a.roe)               : null,
+          a.dy  != null ? 'DY: '   + fmtP(a.dy)                : null,
+        ].filter(Boolean).join(' | ');
+        const tese = a.tese    ? '\n  Tese: '  + a.tese.slice(0, 120)    : '';
+        const gat  = a.gatilho ? '\n  Saída: ' + a.gatilho.slice(0, 100) : '';
+        const conv = a.convicao ? ' [convicção ' + a.convicao + ']' : '';
+        return '- ' + a.ticker + conv + ': ' + fmt(a.atual) + ' | ' + (res >= 0 ? '+' : '') + pct + '%' + (inds ? ' | ' + inds : '') + tese + gat;
+      }).join('\n')
+    : '';
 
-- Saldo atual em contas: ${fmt(c.saldoAtual)}
-- Saldo previsto fim do mês: ${fmt(c.saldoPrevisto)}
-- Receitas pagas no mês: ${fmt(c.receitasMes)}
-- Despesas pagas no mês: ${fmt(c.despesasMes)}
-- Saldo do mês: ${fmt(c.receitasMes - c.despesasMes)}
-- Taxa de poupança: ${c.taxaPoupancaMes}%
-- Faturas de cartão abertas: ${fmt(c.totalFaturas)}
-- Receitas pendentes até fim do mês: ${fmt(c.receitasPendentes)}
-- Despesas pendentes até fim do mês: ${fmt(c.despesasPendentes)}
+  const linhasMetas = inv && inv.metas.length
+    ? inv.metas.map(m =>
+        '- ' + m.nome + ': ' + fmt(m.atual) + ' de ' + fmt(m.alvo) + ' (' + m.pct + '%)' + (m.prazo ? ' — prazo ' + m.prazo : '')
+      ).join('\n')
+    : '- Nenhuma meta cadastrada';
 
-### Gastos por categoria (mês atual)
-${c.gastosPorCategoria?.length
-  ? c.gastosPorCategoria.map(g => `- ${g.icone||''} ${g.categoria}: ${fmt(g.total)}`).join('\n')
-  : '- Sem dados de categoria'}
+  const secaoInvest = inv ? [
+    '',
+    '## Carteira de Investimentos',
+    '',
+    '- Total de ativos: ' + inv.totalAtivos,
+    '- Total aplicado: ' + fmt(inv.totalAplicado),
+    '- Valor atual: ' + fmt(inv.totalAtual),
+    '- Resultado: ' + fmt(inv.resultado) + ' (' + inv.rentabilidade + '%)',
+    '- Dividendos recebidos no mês: ' + fmt(inv.divMes),
+    '- Dividendos recebidos no ano: ' + fmt(inv.divAno),
+    '- Yield sobre patrimônio (ano): ' + inv.yieldAno + '%',
+    '- Ativos com Diário de Tese registrado: ' + inv.ativosComTese,
+    '',
+    '### Alocação por classe',
+    linhasClasse,
+    '',
+    '### Top ativos (por valor atual)',
+    linhasTop5,
+    '',
+    '### Metas financeiras',
+    linhasMetas,
+  ].join('\n') : '';
 
-### Histórico últimos 3 meses
-${c.historico3Meses?.length
-  ? c.historico3Meses.map(h => `- ${h.mes}: receitas ${fmt(h.receitas)}, despesas ${fmt(h.despesas)}, saldo ${fmt(h.saldo)}`).join('\n')
-  : '- Sem histórico disponível'}
+  const catStr = c.gastosPorCategoria?.length
+    ? c.gastosPorCategoria.map(g => '- ' + (g.icone || '') + ' ' + g.categoria + ': ' + fmt(g.total)).join('\n')
+    : '- Sem dados de categoria';
 
-### Lançamentos pendentes
-${c.lancamentosPendentes?.length
-  ? c.lancamentosPendentes.map(p => `- [${p.tipo}] ${p.descricao}: ${fmt(p.valor)} em ${p.data}`).join('\n')
-  : '- Nenhum lançamento pendente'}
+  const histStr = c.historico3Meses?.length
+    ? c.historico3Meses.map(h => '- ' + h.mes + ': receitas ' + fmt(h.receitas) + ', despesas ' + fmt(h.despesas) + ', saldo ' + fmt(h.saldo)).join('\n')
+    : '- Sem histórico disponível';
 
-### Recorrentes ativos
-${c.recorrentes?.length
-  ? c.recorrentes.map(r => `- [${r.tipo}] ${r.descricao}: ${fmt(r.valor)} (${r.frequencia})`).join('\n')
-  : '- Nenhum recorrente'}
+  const pendStr = c.lancamentosPendentes?.length
+    ? c.lancamentosPendentes.map(p => '- [' + p.tipo + '] ' + p.descricao + ': ' + fmt(p.valor) + ' em ' + p.data).join('\n')
+    : '- Nenhum lançamento pendente';
 
-### Orçamentos do mês
-${c.orcamentos?.length
-  ? c.orcamentos.map(o => `- ${o.categoria}: planejado ${fmt(o.planejado)}`).join('\n')
-  : '- Sem orçamentos configurados'}
+  const recStr = c.recorrentes?.length
+    ? c.recorrentes.map(r => '- [' + r.tipo + '] ' + r.descricao + ': ' + fmt(r.valor) + ' (' + r.frequencia + ')').join('\n')
+    : '- Nenhum recorrente';
 
-## Instruções
-- Responda sempre em português brasileiro
-- Use os dados reais acima — nunca invente números
-- Formate valores em R$ com vírgula decimal
-- Respostas concisas: prefira bullet points a parágrafos longos
-- Se não souber algo (ex: cotação em tempo real), diga claramente
-- Nunca sugira investimentos específicos (ex: "compre PETR4") — fale em classes e diversificação`;
+  const orcStr = c.orcamentos?.length
+    ? c.orcamentos.map(o => '- ' + o.categoria + ': planejado ' + fmt(o.planejado)).join('\n')
+    : '- Sem orçamentos configurados';
+
+  return [
+    'Você é o FinZen AI, assistente financeiro pessoal integrado ao app FinZen.',
+    'Você tem acesso aos dados financeiros E de investimentos reais do usuário.',
+    'Responda de forma clara, objetiva e em português brasileiro.',
+    'Use bullet points quando listar itens. Formate valores sempre em R$.',
+    '',
+    '## Dados Financeiros Atuais (' + c.mesReferencia + ')',
+    '',
+    '- Saldo atual em contas: ' + fmt(c.saldoAtual),
+    '- Saldo previsto fim do mês: ' + fmt(c.saldoPrevisto),
+    '- Receitas pagas no mês: ' + fmt(c.receitasMes),
+    '- Despesas pagas no mês: ' + fmt(c.despesasMes),
+    '- Saldo do mês: ' + fmt(c.receitasMes - c.despesasMes),
+    '- Taxa de poupança: ' + c.taxaPoupancaMes + '%',
+    '- Faturas de cartão abertas: ' + fmt(c.totalFaturas),
+    '- Receitas pendentes até fim do mês: ' + fmt(c.receitasPendentes),
+    '- Despesas pendentes até fim do mês: ' + fmt(c.despesasPendentes),
+    '',
+    '### Gastos por categoria (mês atual)',
+    catStr,
+    '',
+    '### Histórico últimos 3 meses',
+    histStr,
+    '',
+    '### Lançamentos pendentes',
+    pendStr,
+    '',
+    '### Recorrentes ativos',
+    recStr,
+    '',
+    '### Orçamentos do mês',
+    orcStr,
+    secaoInvest,
+    '',
+    '## Instruções',
+    '- Responda sempre em português brasileiro',
+    '- Use os dados reais acima — nunca invente números',
+    '- Formate valores em R$ com vírgula decimal',
+    '- Respostas concisas: prefira bullet points a parágrafos longos',
+    '- Se não souber algo, diga claramente',
+    '- Pode comentar sobre ativos específicos da carteira do usuário usando os dados acima',
+    '- Nunca recomende comprar ou vender ativos que não estejam na carteira do usuário',
+    '- Para análise de tese, baseie-se no que o usuário registrou no Diário de Tese',
+  ].join('\n');
 }
-
 // ── Renderizar mensagem ───────────────────────────────
 function addMsg(role, conteudo = '', animado = false) {
   const wrap = el('mensagens');
