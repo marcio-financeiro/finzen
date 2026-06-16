@@ -1007,10 +1007,6 @@ async function renderIndicadores() {
     }
   } catch(_) {}
 
-  try {
-      .eq('user_id', user.id)
-      .maybeSingle();
-
   // Rentabilidade da carteira
   // Tudo convertido para BRL para comparação correta
   const totalAplicado = ativos.filter(a=>!isRF(a.tipo)).reduce((s,a)=>s+calcBRL(a,calcAplicado(a)),0);
