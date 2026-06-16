@@ -1007,19 +1007,12 @@ async function renderIndicadores() {
     }
   } catch(_) {}
 
-  // IBOV via brapi com histórico 12 meses
+  // IBOV via proxy (BCB via Vercel Function)
   try {
-    const r = await fetch(
-      `https://brapi.dev/api/quote/%5EBVSP?range=1y&interval=1mo&token=bGZu7dGPyW94PcfXVCiA7t`
-    );
+    const r = await fetch('/api/quotes?tickers=IBOV&dolar=false');
     if(r.ok) {
       const j = await r.json();
-      const hist = j?.results?.[0]?.historicalDataPrice;
-      if(hist?.length >= 2) {
-        const primeiro = hist[0]?.close || hist[0]?.open;
-        const ultimo   = hist[hist.length-1]?.close;
-        if(primeiro && ultimo) ibovAnual = (ultimo - primeiro) / primeiro * 100;
-      }
+      if(j?.IBOV) ibovAnual = j.IBOV;
     }
   } catch(_) {}
 
@@ -1080,6 +1073,7 @@ async function renderIndicadores() {
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
         <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-weight:700">🏛️ IBOV 12m</div>
         <div style="font-size:18px;font-weight:900;color:#ef4444">${ibovAnual ? fmtPct(ibovAnual) : '--'}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px">via BOVA11</div>
       </div>
     </div>
 
