@@ -64,6 +64,7 @@ const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
 
 // ── Carregar eventos do Supabase ──────────────────────
 async function carregarEventos(dataInicio, dataFim) {
+  // ── 1. Eventos manuais do calendário ─────────────────
   const { data, error } = await supabase
     .from('calendar_events')
     .select('*')
@@ -75,6 +76,141 @@ async function carregarEventos(dataInicio, dataFim) {
 
   if (error) console.error('[FinZen] Erro ao carregar eventos:', error);
   eventos = data || [];
+
+  // ── 2. Eventos financeiros automáticos (somente leitura) ──
+  const financeiros = await carregarEventosFinanceiros(dataInicio, dataFim);
+  eventos = [...eventos, ...financeiros]
+    .sort((a, b) => a.data_inicio.localeCompare(b.data_inicio));
+}
+
+// ── Buscar dados financeiros e converter em eventos ───
+async function carregarEventosFinanceiros(dataInicio, dataFim) {
+  const evFinanc = [];
+
+  try {
+    const [
+      { data: pendentes  },
+      { data: cartoes    },
+      { data: metas      },
+      { data: certs      },
+    ] = await Promise.all([
+      // Lançamentos pendentes no período
+      supabase.from('transactions')
+        .select('id,description,amount,date,type,categories:category_id(nome,icon)')
+        .eq('user_id', user.id)
+        .eq('status', 'pendente')
+        .gte('date', dataInicio)
+        .lte('date', dataFim)
+        .order('date', { ascending: true }),
+
+      // Cartões com vencimento no período
+      supabase.from('credit_cards')
+        .select('id,nome,vencimento_dia')
+        .eq('user_id', user.id)
+        .eq('ativo', true),
+
+      // Metas com prazo no período
+      supabase.from('goals')
+        .select('id,nome,valor_alvo,valor_atual,data_alvo')
+        .eq('user_id', user.id)
+        .eq('ativo', true)
+        .gte('data_alvo', dataInicio)
+        .lte('data_alvo', dataFim),
+
+      // Certificações vencendo no período
+      supabase.from('certifications')
+        .select('id,nome,data_vencimento,entidade')
+        .eq('user_id', user.id)
+        .gte('data_vencimento', dataInicio)
+        .lte('data_vencimento', dataFim),
+    ]);
+
+    // Lançamentos pendentes → eventos financeiros
+    (pendentes || []).forEach(t => {
+      const icon = t.categories?.icon || (t.type === 'receita' ? '💚' : '🔴');
+      const sinal = t.type === 'receita' ? '+' : '-';
+      const valor = Number(t.amount || 0).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+      evFinanc.push({
+        id          : `fin-tx-${t.id}`,
+        titulo      : `${icon} ${t.description || t.categories?.nome || 'Lançamento'}`,
+        tipo        : 'financeiro',
+        status      : 'pendente',
+        data_inicio : t.date,
+        descricao   : `${sinal}${valor} · Pendente`,
+        _auto       : true,
+        _origem     : 'transacao',
+      });
+    });
+
+    // Faturas de cartão → calcular data de vencimento no período
+    const [anoInicio, mesInicio] = dataInicio.split('-').map(Number);
+    const [anoFim,    mesFim   ] = dataFim.split('-').map(Number);
+
+    (cartoes || []).forEach(cartao => {
+      if (!cartao.vencimento_dia) return;
+
+      // Verificar vencimentos em todos os meses do período
+      for (let ano = anoInicio; ano <= anoFim; ano++) {
+        const mesIni = (ano === anoInicio) ? mesInicio : 1;
+        const mesFinal = (ano === anoFim) ? mesFim : 12;
+        for (let mes = mesIni; mes <= mesFinal; mes++) {
+          const diaVenc = cartao.vencimento_dia;
+          const maxDia  = new Date(ano, mes, 0).getDate();
+          const dia     = Math.min(diaVenc, maxDia);
+          const dataVenc = `${ano}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+
+          if (dataVenc >= dataInicio && dataVenc <= dataFim) {
+            const refFatura = `${ano}-${String(mes).padStart(2,'0')}`;
+            evFinanc.push({
+              id          : `fin-fat-${cartao.id}-${refFatura}`,
+              titulo      : `💳 Fatura ${cartao.nome}`,
+              tipo        : 'financeiro',
+              status      : 'pendente',
+              data_inicio : dataVenc,
+              descricao   : `Vencimento fatura ${cartao.nome} — ${refFatura}`,
+              _auto       : true,
+              _origem     : 'fatura',
+            });
+          }
+        }
+      }
+    });
+
+    // Metas com prazo → eventos de marco
+    (metas || []).forEach(m => {
+      if (!m.data_alvo) return;
+      const pct = m.valor_alvo > 0 ? Math.round(m.valor_atual / m.valor_alvo * 100) : 0;
+      evFinanc.push({
+        id          : `fin-meta-${m.id}`,
+        titulo      : `🏆 Meta: ${m.nome}`,
+        tipo        : 'financeiro',
+        status      : pct >= 100 ? 'concluido' : 'pendente',
+        data_inicio : m.data_alvo,
+        descricao   : `Progresso: ${pct}% · ${Number(m.valor_atual||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} de ${Number(m.valor_alvo||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}`,
+        _auto       : true,
+        _origem     : 'meta',
+      });
+    });
+
+    // Certificações vencendo → alertas
+    (certs || []).forEach(c => {
+      evFinanc.push({
+        id          : `fin-cert-${c.id}`,
+        titulo      : `📄 Vence: ${c.nome}`,
+        tipo        : 'documento',
+        status      : 'pendente',
+        data_inicio : c.data_vencimento,
+        descricao   : `Certificação ${c.nome}${c.entidade ? ' — ' + c.entidade : ''} vence nesta data`,
+        _auto       : true,
+        _origem     : 'certificacao',
+      });
+    });
+
+  } catch(e) {
+    console.warn('[FinZen] Erro ao carregar eventos financeiros:', e.message);
+  }
+
+  return evFinanc;
 }
 
 // ── Navegação ─────────────────────────────────────────
@@ -174,9 +310,10 @@ function renderMensal() {
 
     evs.slice(0, 3).forEach(ev => {
       const cfg = tipoCfg(ev.tipo);
+      const autoStyle = ev._auto ? 'border-left:2px dashed ' + cfg.cor + ';opacity:.85;' : '';
       html += `<div class="cal-evento-pill" data-id="${ev.id}"
-        style="background:${cfg.cor}22;color:${cfg.cor};"
-        title="${ev.titulo}">
+        style="background:${cfg.cor}22;color:${cfg.cor};${autoStyle}"
+        title="${ev.titulo}${ev._auto?' (automático)':''}">
         ${cfg.icon} ${ev.titulo}
       </div>`;
     });
@@ -211,7 +348,9 @@ function renderMensal() {
     pill.addEventListener('click', (e) => {
       e.stopPropagation();
       const ev = eventos.find(x => x.id === pill.dataset.id);
-      if (ev) abrirModalEditar(ev);
+      if (!ev) return;
+      if (ev._auto) mostrarInfoAuto(ev);
+      else abrirModalEditar(ev);
     });
   });
 }
@@ -288,7 +427,9 @@ function renderSemanal() {
     pill.addEventListener('click', e => {
       e.stopPropagation();
       const ev = eventos.find(x => x.id === pill.dataset.id);
-      if (ev) abrirModalEditar(ev);
+      if (!ev) return;
+      if (ev._auto) mostrarInfoAuto(ev);
+      else abrirModalEditar(ev);
     });
   });
 }
@@ -343,9 +484,56 @@ function renderLista() {
   el('calBody').querySelectorAll('.cal-lista-item').forEach(item => {
     item.addEventListener('click', () => {
       const ev = eventos.find(x => x.id === item.dataset.id);
-      if (ev) abrirModalEditar(ev);
+      if (!ev) return;
+      if (ev._auto) mostrarInfoAuto(ev);
+      else abrirModalEditar(ev);
     });
   });
+}
+
+// ── Info popup para eventos automáticos (somente leitura) ─
+function mostrarInfoAuto(ev) {
+  const cfg = tipoCfg(ev.tipo);
+  const origemLabel = {
+    transacao    : '💸 Lançamento pendente',
+    fatura       : '💳 Vencimento de fatura',
+    meta         : '🏆 Prazo de meta',
+    certificacao : '📄 Vencimento de certificação',
+  }[ev._origem] || '🔄 Automático';
+
+  const popup = document.createElement('div');
+  popup.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9990;" id="autoInfoBackdrop"></div>
+    <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+      z-index:9991;background:var(--surface);border:1px solid var(--border);
+      border-radius:14px;padding:20px;width:90%;max-width:380px;
+      box-shadow:0 20px 60px rgba(0,0,0,.5);">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;">
+        <span style="font-size:24px;">${cfg.icon}</span>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:800;">${ev.titulo}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${origemLabel}</div>
+        </div>
+        <span style="font-size:11px;padding:3px 8px;border-radius:99px;
+          background:rgba(107,112,148,.15);color:var(--muted);font-weight:700;">
+          automático
+        </span>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;
+        padding:10px 12px;background:var(--surface-2);border-radius:8px;">
+        📅 ${fmtData(ev.data_inicio)}
+        ${ev.descricao ? `<br>📝 ${ev.descricao}` : ''}
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin:0 0 14px;">
+        Este evento é gerado automaticamente pelo FinZen. Para editá-lo, acesse a origem.
+      </p>
+      <button style="width:100%;padding:10px;border-radius:8px;background:var(--accent);
+        color:#fff;border:none;cursor:pointer;font-weight:700;font-size:13px;"
+        id="autoInfoFechar">Fechar</button>
+    </div>`;
+  document.body.appendChild(popup);
+  document.getElementById('autoInfoBackdrop').addEventListener('click', () => popup.remove());
+  document.getElementById('autoInfoFechar').addEventListener('click', () => popup.remove());
 }
 
 // ── Modal: Novo Evento ────────────────────────────────
@@ -471,6 +659,13 @@ function exportarMesICS() {
     return;
   }
 
+  // Exportar apenas eventos manuais (não automáticos financeiros)
+  const eventosParaExportar = eventos.filter(ev => !ev._auto);
+  if (!eventosParaExportar.length) {
+    alert('Nenhum evento manual neste período. Eventos financeiros automáticos não são exportados.');
+    return;
+  }
+
   const formatICS = iso => iso ? iso.replace(/-/g,'') : '';
   const now = new Date().toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
   const mesLabel = el('calLabel').textContent.replace(/\s/g,'_');
@@ -478,7 +673,7 @@ function exportarMesICS() {
   const linhas = ['BEGIN:VCALENDAR','VERSION:2.0',
     'PRODID:-//FinZen//Calendar//PT','CALSCALE:GREGORIAN','METHOD:REQUEST'];
 
-  eventos.forEach(ev => {
+  eventosParaExportar.forEach(ev => {
     const cfg    = tipoCfg(ev.tipo);
     const dtStart = ev.hora
       ? formatICS(ev.data_inicio) + 'T' + ev.hora.replace(':','').slice(0,4) + '00'
