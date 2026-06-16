@@ -897,6 +897,10 @@ function renderizarTudo(){
   renderizarKPIs();
   renderizarCarteira();
   renderIndicadores();
+  // Expõe estado atual para o onclick inline do botão Atualizar
+  window._finzenAtivos = ativos;
+  window._finzenPesos  = pesos;
+  window._finzenDolar  = dolarAtual;
 }
 
 // ─────────────────────────────────────────────
@@ -1165,10 +1169,6 @@ async function renderizarTermometro() {
   _termMacro  = macro;
   termometro.render(ativos, pesos, dolarAtual, macro);
 }
-
-// Expõe no window para os onclick inline do HTML
-window._renderizarTermometro   = renderizarTermometro;
-window._termometroSalvarMacro  = (s,i,d) => termometro.salvarMacro(s,i,d);
 
 // Inicializa módulo (carrega macro salvo e preenche inputs)
 termometro.init(supabase, user.id).then(macro => {
