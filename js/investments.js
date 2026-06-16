@@ -302,8 +302,8 @@ function renderizarCarteira(){
         <td class="money">${toNumber(a.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:6})}</td>
         <td class="money">${fmtMoeda(toNumber(a.preco_medio),m)}</td>
         <td class="money">${fmtMoeda(toNumber(a.cotacao_atual||a.preco_medio),m)}
-          ${a.atualizado_em?"<span style=\"font-size:9px;color:var(--success)\"> u2713auto</span>":""}
-          <button class="btn compact" data-cot-manual="${a.id}" data-ticker="${a.ticker}" data-moeda="${m}" style="font-size:10px;padding:2px 6px;margin-left:4px;background:rgba(79,132,243,.12);border-color:rgba(79,132,243,.3)">u270fufe0f</button>
+          ${a.atualizado_em?"<span style=\"font-size:9px;color:var(--success)\"> ✓auto</span>":""}
+          <button class="btn compact" data-cot-manual="${a.id}" data-ticker="${a.ticker}" data-moeda="${m}" style="font-size:10px;padding:2px 6px;margin-left:4px;background:rgba(79,132,243,.12);border-color:rgba(79,132,243,.3)">✏️</button>
         </td>
         <td class="money">${fmtMoeda(aplic,m)}${m==='USD'?`<br><small class="muted">${formatCurrency(calcBRL(a,aplic),'BRL')}</small>`:''}
         </td>
