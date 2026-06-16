@@ -322,8 +322,11 @@
             <label>Valor do aporte (R$)</label>
             <input type="number" id="balValorAporte" placeholder="0,00" step="0.01" min="0" style="width:180px;">
           </div>
-          <button type="button" class="btn btn-primary" id="btnCalcularBal" style="margin:0">Calcular</button>
+
           <button type="button" class="btn btn-secondary" id="btnSalvarPesos" style="margin:0">Salvar pesos</button>
+        </div>
+        <div style="margin-top:16px;">
+          <button onclick="calcularBalanceamento()" class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;font-weight:800;">⚖️ Calcular sugestão de aporte</button>
         </div>
         <div id="mensagemBal" class="message"></div>
         <div id="balResultado"></div>
