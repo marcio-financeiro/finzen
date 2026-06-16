@@ -1157,34 +1157,30 @@ await atualizarCotacoes(true);
 // ─────────────────────────────────────────────
 let _termMacro = null;
 
-// Inicializa o módulo (lê macro salvo, registra botão salvar)
-termometro.init(supabase, user.id).then(macro => {
-  _termMacro = macro;
-});
-
 async function renderizarTermometro() {
-  // Busca macro atual dos inputs (pode ter sido editado sem salvar)
-  const selic = parseFloat(document.getElementById('macroSelic')?.value) || (_termMacro?.selic || 14.75);
-  const ipca  = parseFloat(document.getElementById('macroIPCA')?.value)  || (_termMacro?.ipca  || 4.86);
-  const dolar = parseFloat(document.getElementById('macroDolar')?.value)  || dolarAtual;
-
+  const selic = parseFloat(el('macroSelic')?.value) || (_termMacro?.selic || 14.75);
+  const ipca  = parseFloat(el('macroIPCA')?.value)  || (_termMacro?.ipca  || 4.86);
+  const dolar = parseFloat(el('macroDolar')?.value)  || dolarAtual;
   const macro = { selic, ipca, dolar };
   _termMacro  = macro;
-
   termometro.render(ativos, pesos, dolarAtual, macro);
 }
 
-// Delegação de evento no document — funciona mesmo que a aba
-// ainda não estivesse visível quando o script inicializou
-document.addEventListener('click', e => {
-  if (e.target?.id === 'btnRenderTermometro') renderizarTermometro();
-  if (e.target?.id === 'btnSalvarMacro') {
-    const s = parseFloat(document.getElementById('macroSelic')?.value) || 14.75;
-    const i = parseFloat(document.getElementById('macroIPCA')?.value)  || 4.86;
-    const d = parseFloat(document.getElementById('macroDolar')?.value)  || 5.80;
-    termometro.salvarMacro(s, i, d).then(() => {
-      const btn = document.getElementById('btnSalvarMacro');
-      if (btn) { btn.textContent = '✅ Salvo!'; setTimeout(() => { btn.textContent = 'Salvar macro'; }, 1500); }
-    });
-  }
+// Inicializa módulo e registra botões — mesmo padrão de btnSalvarPesos/btnCalcularBal
+termometro.init(supabase, user.id).then(macro => {
+  _termMacro = macro;
+  if (el('macroSelic')) el('macroSelic').value = macro.selic;
+  if (el('macroIPCA'))  el('macroIPCA').value  = macro.ipca;
+  if (el('macroDolar')) el('macroDolar').value  = macro.dolar;
+});
+
+el('btnRenderTermometro')?.addEventListener('click', renderizarTermometro);
+
+el('btnSalvarMacro')?.addEventListener('click', async () => {
+  const s = parseFloat(el('macroSelic')?.value) || 14.75;
+  const i = parseFloat(el('macroIPCA')?.value)  || 4.86;
+  const d = parseFloat(el('macroDolar')?.value)  || 5.80;
+  await termometro.salvarMacro(s, i, d);
+  const btn = el('btnSalvarMacro');
+  if (btn) { btn.textContent = '✅ Salvo!'; setTimeout(() => { btn.textContent = 'Salvar macro'; }, 1500); }
 });

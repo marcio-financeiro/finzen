@@ -348,16 +348,7 @@ export const termometro = (() => {
   async function init(supabaseClient, userId) {
     _sb  = supabaseClient;
     _uid = userId;
-
-    // Preencher inputs com valores salvos
     const macro = await carregarMacro();
-    if (el('macroSelic')) el('macroSelic').value = macro.selic;
-    if (el('macroIPCA'))  el('macroIPCA').value  = macro.ipca;
-    if (el('macroDolar')) el('macroDolar').value  = macro.dolar;
-
-    // Botão salvar macro — tratado por delegação em investments.js
-    // (o addEventListener aqui causaria registro duplo)
-
     return macro;
   }
 
