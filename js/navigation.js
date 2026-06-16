@@ -120,10 +120,9 @@ function navHtml(){
     const isGroupActive = group.items.some(i => isActive(i.href));
     const storageKey   = `nav_collapsed_${group.label}`;
     const storedState  = localStorage.getItem(storageKey);
-    // Se o usuário fechou manualmente, respeita — exceto se nunca interagiu (storedState null)
-    // e o grupo está ativo, aí abre por padrão
-    const collapsed    = collapsible && (
-      storedState === 'closed' || (storedState === null && !isGroupActive)
+    // Padrão: fechado. Abre só se: usuário abriu manualmente OU é o grupo da página atual (e nunca interagiu)
+    const collapsed    = collapsible && !(
+      storedState === 'open' || (storedState === null && isGroupActive)
     );
 
     const itemsHtml = group.items.map(item => `
