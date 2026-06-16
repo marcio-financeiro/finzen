@@ -277,10 +277,10 @@ function renderizarCarteira(){
     // Tabela desktop
     html+=`<div class="inv-desktop-table"><table class="data-table">
       <thead><tr>
-        <th>Ticker</th><th>Nome</th><th>Qtd</th>
+        <th>Ticker</th><th>Qtd</th>
         <th>P. Médio</th><th>Cotação</th>
         <th>Aplicado</th><th>Atual</th><th>Resultado</th>
-        <th>% Classe</th><th>% Ideal</th><th>Comprar?</th><th>Ações</th>
+        <th>% / Meta</th><th>Ações</th>
       </tr></thead><tbody>`;
 
     grupo.ativos.forEach(a=>{
@@ -289,45 +289,48 @@ function renderizarCarteira(){
       const atual   = calcAtual(a);
       const res     = atual-aplic;
       const pct     = aplic?res/aplic*100:0;
-      // % dentro da classe (não da carteira total)
       const pctCart = grupo.total?calcBRL(a,atual)/grupo.total*100:0;
       const pk      = `inv_peso_${a.ticker}`;
       const pideal  = toNumber((pesos[pk]||{}).ideal||0);
       const diff    = pideal-pctCart;
       const comprar = pideal>0?(diff>1?'sim':diff<-1?'vender':'ok'):'';
+      const comprarBadge = comprar==='sim'
+        ? '<span class="badge-comprar" style="font-size:10px;">✅</span>'
+        : comprar==='vender'
+          ? '<span class="badge-vender" style="font-size:10px;">⬇</span>'
+          : comprar==='ok' ? '<span class="badge-nao" style="font-size:10px;">—</span>' : '';
 
-      html+=`<tr>
-        <td><strong>${a.ticker}</strong></td>
-        <td>${a.nome||'-'}</td>
-        <td class="money">${toNumber(a.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:6})}</td>
+      html+=`<tr title="${a.nome||''}">
+        <td><strong>${a.ticker}</strong>${a.nome?`<br><small class="muted" style="font-size:10px;">${a.nome}</small>`:''}</td>
+        <td class="money">${toNumber(a.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:4})}</td>
         <td class="money">${fmtMoeda(toNumber(a.preco_medio),m)}</td>
         <td class="money">${fmtMoeda(toNumber(a.cotacao_atual||a.preco_medio),m)}
-          ${a.atualizado_em?"<span style=\"font-size:9px;color:var(--success)\"> ✓auto</span>":""}
-          <button class="btn compact" data-cot-manual="${a.id}" data-ticker="${a.ticker}" data-moeda="${m}" style="font-size:10px;padding:2px 6px;margin-left:4px;background:rgba(79,132,243,.12);border-color:rgba(79,132,243,.3)">✏️</button>
+          ${a.atualizado_em?'<span style="font-size:9px;color:var(--success);"> ✓</span>':''}
+          <button class="btn compact" data-cot-manual="${a.id}" data-ticker="${a.ticker}" data-moeda="${m}"
+            style="font-size:10px;padding:1px 4px;background:rgba(79,132,243,.12);border-color:rgba(79,132,243,.3)">✏️</button>
         </td>
-        <td class="money">${fmtMoeda(aplic,m)}${m==='USD'?`<br><small class="muted">${formatCurrency(calcBRL(a,aplic),'BRL')}</small>`:''}
-        </td>
-        <td class="money">${fmtMoeda(atual,m)}${m==='USD'?`<br><small class="muted">${formatCurrency(calcBRL(a,atual),'BRL')}</small>`:''}
-        </td>
+        <td class="money">${fmtMoeda(aplic,m)}${m==='USD'?`<br><small class="muted">${formatCurrency(calcBRL(a,aplic),'BRL')}</small>`:''}</td>
+        <td class="money">${fmtMoeda(atual,m)}${m==='USD'?`<br><small class="muted">${formatCurrency(calcBRL(a,atual),'BRL')}</small>`:''}</td>
         <td class="money ${res>=0?'positive':'negative'}">
           ${res>=0?'+':''}${fmtMoeda(res,m)}<br>
           <small>${res>=0?'+':''}${formatPercent(pct)}</small>
         </td>
-        <td>${formatPercent(pctCart)}</td>
-        <td>${pideal?formatPercent(pideal):'-'}</td>
-        <td>${comprar==='sim'?'<span class="badge-comprar">✅ Sim</span>':comprar==='vender'?'<span class="badge-vender">⬇ Reduzir</span>':comprar==='ok'?'<span class="badge-nao">— Ok</span>':'-'}</td>
-        <td>
-          <button class="btn btn-secondary compact" data-editar="${a.id}">Editar</button>
-          <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">Excluir</button>
+        <td style="white-space:nowrap;">
+          ${formatPercent(pctCart)}
+          ${pideal?`<br><small class="muted">${formatPercent(pideal)}</small>`:''}
+          ${comprarBadge}
+        </td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-secondary compact" data-editar="${a.id}">✏</button>
+          <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">✕</button>
           <button class="btn compact" data-tese="${a.id}" data-ticker="${a.ticker}" data-tipo="${a.tipo}"
-            style="font-size:11px;padding:3px 8px;background:rgba(123,92,229,.12);border-color:rgba(123,92,229,.3);color:var(--purple);">
+            style="font-size:11px;padding:2px 6px;background:rgba(123,92,229,.12);border-color:rgba(123,92,229,.3);color:var(--purple);">
             📓
           </button>
         </td>
       </tr>
-      <!-- Linha expansível do Diário de Tese — desktop only -->
       <tr id="tese-row-${a.id}" style="display:none;">
-        <td colspan="12" style="padding:0;">
+        <td colspan="9" style="padding:0;">
           <div id="tese-container-${a.id}"></div>
         </td>
       </tr>`;
