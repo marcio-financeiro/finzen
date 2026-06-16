@@ -60,6 +60,45 @@ export default async function handler(req, res) {
         });
       }
     } catch(_) {}
+
+    // Fallback: Yahoo Finance para tickers BR que não vieram da brapi
+    const faltando = tickersBR.filter(t => !resultado[t]);
+    if(faltando.length) {
+      // Yahoo usa sufixo .SA para ações/FIIs brasileiros
+      const yahooTickers = faltando.map(t => t + '.SA');
+      try {
+        const r = await fetch(
+          `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${yahooTickers.join(',')}`,
+          { headers: { 'User-Agent': 'Mozilla/5.0' } }
+        );
+        if(r.ok) {
+          const j = await r.json();
+          (j?.quoteResponse?.result || []).forEach(i => {
+            if(i.symbol && i.regularMarketPrice) {
+              // Remove sufixo .SA para bater com o ticker original
+              const original = i.symbol.replace('.SA','').toUpperCase();
+              if(!resultado[original])
+                resultado[original] = parseFloat(i.regularMarketPrice);
+            }
+          });
+        }
+      } catch(_) {}
+
+      // Fallback individual para os que ainda faltam
+      for(const ticker of faltando.filter(t => !resultado[t])) {
+        try {
+          const r = await fetch(
+            `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}.SA?interval=1d&range=1d`,
+            { headers: { 'User-Agent': 'Mozilla/5.0' } }
+          );
+          if(r.ok) {
+            const j = await r.json();
+            const p = j?.chart?.result?.[0]?.meta?.regularMarketPrice;
+            if(p) resultado[ticker] = parseFloat(p);
+          }
+        } catch(_) {}
+      }
+    }
   }
 
   // ── EUA: Yahoo Finance ───────────────────────────────
@@ -92,26 +131,6 @@ export default async function handler(req, res) {
         }
       } catch(_) {}
     }
-  }
-
-  // ── IBOV via BCB ──────────────────────────────────────
-  if(tickers.includes("IBOV")) {
-    try {
-      const hoje = new Date();
-      const pad = n => String(n).padStart(2,"0");
-      const fim = `${pad(hoje.getDate())}/${pad(hoje.getMonth()+1)}/${hoje.getFullYear()}`;
-      const d1 = new Date(hoje); d1.setFullYear(hoje.getFullYear()-1);
-      const ini = `${pad(d1.getDate())}/${pad(d1.getMonth()+1)}/${d1.getFullYear()}`;
-      const r = await fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.7/dados?formato=json&dataInicial=${ini}&dataFinal=${fim}`);
-      if(r.ok) {
-        const j = await r.json();
-        if(j?.length >= 2) {
-          const p0 = parseFloat(j[0].valor.replace(",","."));
-          const p1 = parseFloat(j[j.length-1].valor.replace(",","."));
-          if(p0 > 0 && p1 > 0) resultado["IBOV"] = (p1 - p0) / p0 * 100;
-        }
-      }
-    } catch(_) {}
   }
 
   return res.status(200).json(resultado);
