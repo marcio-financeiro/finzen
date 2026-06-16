@@ -17,8 +17,6 @@ const NAV_GROUPS = [
       {title:'Cartões',       icon:'💳', href:'./cards.html'},
       {title:'Faturas',       icon:'📄', href:'./card-bills.html'},
       {title:'Orçamentos',    icon:'🎯', href:'./budgets.html'},
-      {title:'Relatório',     icon:'📊', href:'./reports.html'},
-      {title:'Analytics',     icon:'📉', href:'./analytics.html'},
     ]
   },
   {
@@ -44,9 +42,9 @@ const NAV_GROUPS = [
     label:'Inteligência',
     collapsible: true,
     items:[
-      {title:'Chat IA',       icon:'💬', href:'./chat.html'},
-      {title:'Exec Dashboard',icon:'📊', href:'./executiveDashboard.html'},
-      {title:'Wealth',        icon:'💰', href:'./wealth-dashboard.html'},
+      {title:'Chat IA',   icon:'💬', href:'./chat.html'},
+      {title:'Relatório', icon:'📊', href:'./reports.html'},
+      {title:'Analytics', icon:'📉', href:'./analytics.html'},
     ]
   },
   {
