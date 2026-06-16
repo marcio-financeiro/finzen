@@ -26,6 +26,12 @@
 .inv-tab-content{display:none;padding:18px;}
 .inv-tab-content.active{display:block;}
 
+/* Aba desktop-only: oculta em mobile */
+@media(max-width:820px){
+  .desktop-only-tab{ display:none !important; }
+  #tab-termometro{ display:none !important; }
+}
+
 /* ── KPI ── */
 .inv-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
 @media(max-width:720px){.inv-kpi-row{grid-template-columns:1fr 1fr;}}
@@ -141,6 +147,7 @@
         <button class="inv-tab" data-tab="aportar">💰 Aportar / Gerir</button>
         <button class="inv-tab" data-tab="dividendos">🎯 Dividendos</button>
         <button class="inv-tab" data-tab="balancear">⚖️ Balancear</button>
+        <button class="inv-tab desktop-only-tab" data-tab="termometro">🌡️ Termômetro</button>
       </div>
 
       <!-- ─── ABA CARTEIRA ─── -->
@@ -331,6 +338,84 @@
         <div id="mensagemBal" class="message"></div>
         <div id="balResultado"></div>
       </div>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           ABA: TERMÔMETRO DE ALOCAÇÃO
+           Visível apenas em desktop (min-width: 821px)
+      ════════════════════════════════════════════════════════════ -->
+      <div class="inv-tab-content" id="tab-termometro" style="padding-bottom:40px;">
+
+        <!-- Macro context bar -->
+        <div id="termMacroBar" style="
+          display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;
+          padding:14px 16px;background:var(--surface-2);
+          border:1px solid var(--border);border-radius:var(--radius-md);">
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:130px;">
+            <span style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;">Selic (% a.a.)</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input type="number" id="macroSelic" step="0.01" placeholder="14.75"
+                style="width:80px;padding:5px 8px;font-size:13px;font-weight:700;">
+              <span id="selicSemaforo" style="font-size:18px;">🔴</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:130px;">
+            <span style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;">IPCA (% a.a.)</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input type="number" id="macroIPCA" step="0.01" placeholder="4.86"
+                style="width:80px;padding:5px 8px;font-size:13px;font-weight:700;">
+              <span id="ipcaSemaforo" style="font-size:18px;">🟡</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:130px;">
+            <span style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;">USD/BRL</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input type="number" id="macroDolar" step="0.01" placeholder="5.80"
+                style="width:80px;padding:5px 8px;font-size:13px;font-weight:700;">
+            </div>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px;margin-left:auto;">
+            <button type="button" class="btn btn-secondary compact" id="btnSalvarMacro" style="margin:0;">Salvar macro</button>
+            <button type="button" class="btn btn-primary compact" id="btnRenderTermometro" style="margin:0;">🌡️ Atualizar</button>
+          </div>
+        </div>
+
+        <!-- Alerta macro contextual -->
+        <div id="termMacroAlerta" style="display:none;margin-bottom:16px;
+          padding:12px 16px;border-radius:var(--radius-md);font-size:13px;line-height:1.5;
+          background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.3);color:var(--warning);">
+        </div>
+
+        <!-- Grid: gauge por setor -->
+        <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+          <h2 style="margin:0;font-size:15px;">Alocação por Classe vs Meta</h2>
+          <span class="muted" style="font-size:12px;">Defina as metas na aba ⚖️ Balancear</span>
+        </div>
+        <div id="termGaugeGrid" style="
+          display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+          gap:14px;margin-bottom:24px;">
+          <p class="muted">Carregando...</p>
+        </div>
+
+        <!-- Barra de composição global -->
+        <div style="margin-bottom:8px;">
+          <h2 style="margin:0;font-size:15px;">Composição da Carteira</h2>
+        </div>
+        <div id="termComposicaoBar" style="
+          background:var(--surface-2);border:1px solid var(--border);
+          border-radius:var(--radius-md);padding:16px;margin-bottom:24px;">
+          <div id="termBarraVisual" style="height:28px;border-radius:8px;overflow:hidden;display:flex;margin-bottom:12px;"></div>
+          <div id="termLegenda" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
+        </div>
+
+        <!-- Recomendação contextual por classe -->
+        <div style="margin-bottom:8px;">
+          <h2 style="margin:0;font-size:15px;">Leitura Macro por Classe</h2>
+        </div>
+        <div id="termRecomendacoes" style="
+          display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;">
+        </div>
+
+      </div><!-- /tab-termometro -->
 
     </section>
   </main>
