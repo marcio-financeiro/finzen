@@ -1174,5 +1174,17 @@ async function renderizarTermometro() {
   termometro.render(ativos, pesos, dolarAtual, macro);
 }
 
-// Botão "Atualizar" dentro da aba
-document.getElementById('btnRenderTermometro')?.addEventListener('click', renderizarTermometro);
+// Delegação de evento no document — funciona mesmo que a aba
+// ainda não estivesse visível quando o script inicializou
+document.addEventListener('click', e => {
+  if (e.target?.id === 'btnRenderTermometro') renderizarTermometro();
+  if (e.target?.id === 'btnSalvarMacro') {
+    const s = parseFloat(document.getElementById('macroSelic')?.value) || 14.75;
+    const i = parseFloat(document.getElementById('macroIPCA')?.value)  || 4.86;
+    const d = parseFloat(document.getElementById('macroDolar')?.value)  || 5.80;
+    termometro.salvarMacro(s, i, d).then(() => {
+      const btn = document.getElementById('btnSalvarMacro');
+      if (btn) { btn.textContent = '✅ Salvo!'; setTimeout(() => { btn.textContent = 'Salvar macro'; }, 1500); }
+    });
+  }
+});

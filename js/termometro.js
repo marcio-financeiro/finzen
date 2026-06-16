@@ -355,20 +355,13 @@ export const termometro = (() => {
     if (el('macroIPCA'))  el('macroIPCA').value  = macro.ipca;
     if (el('macroDolar')) el('macroDolar').value  = macro.dolar;
 
-    // Botão salvar macro
-    el('btnSalvarMacro')?.addEventListener('click', async () => {
-      const s = parseFloat(el('macroSelic')?.value) || 14.75;
-      const i = parseFloat(el('macroIPCA')?.value)  || 4.86;
-      const d = parseFloat(el('macroDolar')?.value)  || 5.80;
-      await salvarMacro(s, i, d);
-      el('btnSalvarMacro').textContent = '✅ Salvo!';
-      setTimeout(() => { el('btnSalvarMacro').textContent = 'Salvar macro'; }, 1500);
-    });
+    // Botão salvar macro — tratado por delegação em investments.js
+    // (o addEventListener aqui causaria registro duplo)
 
     return macro;
   }
 
   // ── API pública ───────────────────────────────────────────────────────
-  return { init, render, carregarMacro };
+  return { init, render, carregarMacro, salvarMacro };
 
 })();
