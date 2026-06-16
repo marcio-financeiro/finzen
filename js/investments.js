@@ -747,50 +747,87 @@ function calcularBalanceamento(){
   const patrimAtual=ativos.reduce((s,a)=>s+calcBRL(a,calcAtual(a)),0);
   const novoTotal  =patrimAtual+aporte;
 
-  // Sugestões por ativo (incluindo classes sem ativos com % ideal definido)
   const sugestoes=[];
 
-  // Sugestões baseadas em ativos individuais
-  ativos.forEach(a=>{
-    const pk=`inv_peso_${a.ticker}`;
-    const pideal=toNumber((pesos[pk]||{}).ideal||0);
-    if(!pideal) return;
-
-    const valorIdeal  =novoTotal*(pideal/100);
-    const valorAtual  =calcBRL(a,calcAtual(a));
-    const diferenca   =valorIdeal-valorAtual;
-    const cotacao     =toNumber(a.cotacao_atual||a.preco_medio);
-    const moeda       =a.moeda||'BRL';
-    const cotBRL      =moeda==='USD'?cotacao*dolarAtual:cotacao;
-    const qtdSugerida =cotBRL>0?Math.floor(diferenca/cotBRL):0;
-
-    if(diferenca>0&&qtdSugerida>0){
-      sugestoes.push({
-        ticker:a.ticker, nome:a.nome||'', tipo:tipoLabel(a.tipo),
-        pideal, valorIdeal, valorAtual, diferenca,
-        cotacao:fmtMoeda(cotacao,moeda), qtdSugerida,
-        valorSugerido:qtdSugerida*cotBRL, moeda,
-      });
-    }
-  });
-
-  // Sugestões baseadas em classes sem ativos mas com % ideal definido
+  // ─── Para cada classe com % ideal definido ───────────────────────────────
   TODAS_CLASSES.forEach(classe=>{
     const ck=`inv_peso_classe_${classe.replace(/\s/g,'_')}`;
     const cideal=toNumber((pesos[ck]||{}).ideal||0);
-    if(!cideal) return;
-    // Verificar se a classe tem ativos — se tiver, já foi coberta acima
-    const temAtivos=ativos.some(a=>classeKey(a.tipo)===classe);
-    if(temAtivos) return;
-    const valorIdeal=novoTotal*(cideal/100);
-    if(valorIdeal>0){
-      sugestoes.push({
-        ticker:'—', nome:`Sem ativo cadastrado em ${classe}`, tipo:classe,
-        pideal:cideal, valorIdeal, valorAtual:0, diferenca:valorIdeal,
-        cotacao:'—', qtdSugerida:0,
-        valorSugerido:valorIdeal, moeda:'BRL', semAtivo:true,
-      });
+    if(!cideal) return; // classe sem % ideal → ignorar
+
+    // Valor que a classe deveria ter no total pós-aporte
+    const valorIdealClasse=novoTotal*(cideal/100);
+
+    // Ativos pertencentes a esta classe
+    const ativosClasse=ativos.filter(a=>classeKey(a.tipo)===classe);
+
+    // ── Classe sem nenhum ativo cadastrado ──────────────────────────────────
+    if(!ativosClasse.length){
+      const valorAtualClasse=0;
+      const diferencaClasse=valorIdealClasse-valorAtualClasse;
+      if(diferencaClasse>0){
+        sugestoes.push({
+          ticker:'—', nome:`Cadastre um ativo em ${classe}`, tipo:classe,
+          classe, pideal:cideal, pidealLabel:`${cideal}% da carteira`,
+          valorIdeal:valorIdealClasse, valorAtual:0, diferenca:diferencaClasse,
+          cotacao:'—', qtdSugerida:0, valorSugerido:diferencaClasse,
+          moeda:'BRL', semAtivo:true,
+        });
+      }
+      return;
     }
+
+    // ── Classe com ativos ────────────────────────────────────────────────────
+    // Valor atual total da classe
+    const valorAtualClasse=ativosClasse.reduce((s,a)=>s+calcBRL(a,calcAtual(a)),0);
+    const diferencaClasse=valorIdealClasse-valorAtualClasse;
+
+    // Verificar se algum ativo tem % individual dentro da classe
+    const ativosComPeso=ativosClasse.filter(a=>toNumber((pesos[`inv_peso_${a.ticker}`]||{}).ideal||0)>0);
+    const somaPesosIndividuais=ativosComPeso.reduce((s,a)=>s+toNumber((pesos[`inv_peso_${a.ticker}`]||{}).ideal||0),0);
+
+    ativosClasse.forEach(a=>{
+      const pk=`inv_peso_${a.ticker}`;
+      const pidealAtivo=toNumber((pesos[pk]||{}).ideal||0);
+
+      // Fração deste ativo dentro da classe:
+      // — Se tem peso individual → usa o peso individual / soma dos pesos da classe
+      // — Se nenhum ativo tem peso → divide igualmente
+      let fracaoAtivo;
+      if(somaPesosIndividuais>0){
+        fracaoAtivo = pidealAtivo>0 ? pidealAtivo/somaPesosIndividuais : 0;
+      } else {
+        fracaoAtivo = 1/ativosClasse.length;
+      }
+
+      // Se ativo sem peso individual quando outros têm → não alocar nele
+      if(fracaoAtivo===0) return;
+
+      // Valor ideal deste ativo = fração × valor ideal da classe
+      const valorIdealAtivo=valorIdealClasse*fracaoAtivo;
+      const valorAtualAtivo=calcBRL(a,calcAtual(a));
+      const diferenca=valorIdealAtivo-valorAtualAtivo;
+
+      const cotacao=toNumber(a.cotacao_atual||a.preco_medio);
+      const moeda  =a.moeda||'BRL';
+      const cotBRL =moeda==='USD'?cotacao*dolarAtual:cotacao;
+      const qtdSugerida=cotBRL>0?Math.floor(diferenca/cotBRL):0;
+
+      if(diferenca>0 && (qtdSugerida>0 || moeda==='BRL')){
+        sugestoes.push({
+          ticker:a.ticker, nome:a.nome||'', tipo:tipoLabel(a.tipo),
+          classe,
+          pideal:cideal,
+          pidealLabel: pidealAtivo>0
+            ? `${pidealAtivo}% na classe (${cideal}% carteira)`
+            : `${(fracaoAtivo*100).toFixed(0)}% na classe (${cideal}% carteira)`,
+          valorIdeal:valorIdealAtivo, valorAtual:valorAtualAtivo, diferenca,
+          cotacao:fmtMoeda(cotacao,moeda), qtdSugerida,
+          valorSugerido: moeda==='BRL' && cotBRL<=0 ? diferenca : qtdSugerida*cotBRL,
+          moeda, semAtivo:false,
+        });
+      }
+    });
   });
 
   sugestoes.sort((a,b)=>b.diferenca-a.diferenca);
@@ -799,7 +836,7 @@ function calcularBalanceamento(){
   const sobra=aporte-totalSugerido;
 
   if(!sugestoes.length){
-    el('balResultado').innerHTML='<p class="muted" style="margin-top:16px">Carteira já está balanceada ou nenhum ativo tem % ideal definido.</p>';
+    el('balResultado').innerHTML='<p class="muted" style="margin-top:16px">Nenhuma classe com % ideal definido. Defina os pesos acima e clique em "Salvar pesos".</p>';
     return;
   }
 
@@ -807,27 +844,32 @@ function calcularBalanceamento(){
     <div class="bal-sugestao">
       <div style="display:flex;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
         <div><strong>Sugestão de aporte: ${formatCurrency(aporte,'BRL')}</strong></div>
-        <div class="muted" style="font-size:12px;">Sobra: ${formatCurrency(sobra,'BRL')}</div>
+        <div class="muted" style="font-size:12px;">Sobra: ${formatCurrency(Math.max(sobra,0),'BRL')}</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 80px 100px 80px 100px;gap:8px;
+      <div style="display:grid;grid-template-columns:1fr 1fr 90px 80px 100px;gap:8px;
         font-size:11px;font-weight:800;color:var(--muted);padding-bottom:8px;border-bottom:1px solid var(--border);">
-        <span>Ativo</span><span>% Ideal</span><span>Falta</span><span>Qtd</span><span>Valor</span>
+        <span>Ativo</span><span>Alocação ideal</span><span>Falta</span><span>Qtd</span><span>Valor</span>
       </div>
       ${sugestoes.map(s=>s.semAtivo?`
-        <div class="bal-sugestao-item" style="display:grid;grid-template-columns:1fr 80px 100px 80px 100px;gap:8px;opacity:.75;background:var(--surface-2,rgba(255,200,0,.04));border-radius:6px;padding:4px 0;">
-          <span><strong>${s.tipo}</strong> <span class="muted" style="font-size:11px">⚠️ sem ativo cadastrado</span></span>
-          <span>${formatPercent(s.pideal)}</span>
+        <div class="bal-sugestao-item" style="display:grid;grid-template-columns:1fr 1fr 90px 80px 100px;gap:8px;
+          opacity:.75;background:rgba(255,200,0,.04);border-radius:6px;padding:6px 0;margin-top:4px;">
+          <span><strong>${s.tipo}</strong> <span class="muted" style="font-size:11px">⚠️ sem ativo</span></span>
+          <span style="font-size:11px;color:var(--muted)">${s.pidealLabel}</span>
           <span class="positive">+${formatCurrency(s.diferenca,'BRL')}</span>
           <span class="muted">—</span>
           <span class="money">${formatCurrency(s.valorSugerido,'BRL')}</span>
         </div>
       `:`
-        <div class="bal-sugestao-item" style="display:grid;grid-template-columns:1fr 80px 100px 80px 100px;gap:8px;">
-          <span><strong>${s.ticker}</strong> <span class="muted" style="font-size:11px">${s.tipo}</span></span>
-          <span>${formatPercent(s.pideal)}</span>
-          <span class="positive">+${formatCurrency(s.diferenca,'BRL')}</span>
-          <span><strong>${s.qtdSugerida}</strong> cotas</span>
-          <span class="money">${formatCurrency(s.valorSugerido,'BRL')}</span>
+        <div class="bal-sugestao-item" style="display:grid;grid-template-columns:1fr 1fr 90px 80px 100px;gap:8px;
+          padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+          <span>
+            <strong>${s.ticker}</strong>
+            <span class="muted" style="font-size:11px;display:block;">${s.tipo}</span>
+          </span>
+          <span style="font-size:11px;color:var(--muted);line-height:1.4;">${s.pidealLabel}</span>
+          <span class="positive" style="font-size:12px;">+${formatCurrency(s.diferenca,'BRL')}</span>
+          <span><strong>${s.qtdSugerida}</strong> <span class="muted" style="font-size:10px">cotas</span></span>
+          <span class="money positive">${formatCurrency(s.valorSugerido,'BRL')}</span>
         </div>
       `).join('')}
       <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);
