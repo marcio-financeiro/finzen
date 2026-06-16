@@ -34,7 +34,6 @@ export const termometro = (() => {
   const MACRO_KEYS = {
     selic : 'termometro_selic',
     ipca  : 'termometro_ipca',
-    dolar : 'termometro_dolar',
   };
 
   async function carregarMacro() {
@@ -49,15 +48,13 @@ export const termometro = (() => {
     return {
       selic : m[MACRO_KEYS.selic] || 14.75,
       ipca  : m[MACRO_KEYS.ipca]  || 4.86,
-      dolar : m[MACRO_KEYS.dolar] || 5.80,
     };
   }
 
-  async function salvarMacro(selic, ipca, dolar) {
+  async function salvarMacro(selic, ipca) {
     const upserts = [
       { user_id:_uid, setting_key:MACRO_KEYS.selic, setting_value: String(selic) },
       { user_id:_uid, setting_key:MACRO_KEYS.ipca,  setting_value: String(ipca)  },
-      { user_id:_uid, setting_key:MACRO_KEYS.dolar, setting_value: String(dolar) },
     ];
     for (const u of upserts) {
       await _sb.from('user_settings')

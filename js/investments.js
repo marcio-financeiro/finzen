@@ -1164,9 +1164,10 @@ let _termMacro = null;
 async function renderizarTermometro() {
   const selic = parseFloat(el('macroSelic')?.value) || (_termMacro?.selic || 14.75);
   const ipca  = parseFloat(el('macroIPCA')?.value)  || (_termMacro?.ipca  || 4.86);
-  const dolar = parseFloat(el('macroDolar')?.value)  || dolarAtual;
-  const macro = { selic, ipca, dolar };
+  const macro = { selic, ipca, dolar: dolarAtual };
   _termMacro  = macro;
+  // Exibe o dolar atual no display informativo
+  if (el('termDolarDisplay')) el('termDolarDisplay').textContent = dolarAtual.toFixed(4);
   termometro.render(ativos, pesos, dolarAtual, macro);
 }
 
@@ -1175,17 +1176,14 @@ termometro.init(supabase, user.id).then(macro => {
   _termMacro = macro;
   if (el('macroSelic')) el('macroSelic').value = macro.selic;
   if (el('macroIPCA'))  el('macroIPCA').value  = macro.ipca;
-  if (el('macroDolar')) el('macroDolar').value  = macro.dolar;
 });
 
 // btnSalvarMacro — addEventListener direto (estava funcionando antes)
 el('btnSalvarMacro')?.addEventListener('click', async () => {
   const s = parseFloat(el('macroSelic')?.value) || 14.75;
   const i = parseFloat(el('macroIPCA')?.value)  || 4.86;
-  const d = parseFloat(el('macroDolar')?.value)  || 5.80;
-  await termometro.salvarMacro(s, i, d);
+  await termometro.salvarMacro(s, i);
   const btn = el('btnSalvarMacro');
   if (btn) { btn.textContent = '✅ Salvo!'; setTimeout(() => { btn.textContent = 'Salvar macro'; }, 1500); }
-  // Re-renderiza automaticamente após salvar — sem precisar de botão Atualizar
   await renderizarTermometro();
 });
