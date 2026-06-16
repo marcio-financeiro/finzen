@@ -374,15 +374,7 @@
             </div>
           </div>
           <div style="display:flex;align-items:flex-end;gap:8px;margin-left:auto;">
-            <button type="button" class="btn btn-secondary compact" style="margin:0;"
-              onclick="(async()=>{
-                const s=parseFloat(document.getElementById('macroSelic').value)||14.75;
-                const i=parseFloat(document.getElementById('macroIPCA').value)||4.86;
-                const d=parseFloat(document.getElementById('macroDolar').value)||5.80;
-                await window._termometroSalvarMacro(s,i,d);
-                this.textContent='✅ Salvo!';
-                setTimeout(()=>{this.textContent='Salvar macro';},1500);
-              })()">Salvar macro</button>
+            <button type="button" class="btn btn-secondary compact" id="btnSalvarMacro" style="margin:0;">Salvar macro</button>
             <button type="button" class="btn btn-primary compact" style="margin:0;"
               onclick="window._renderizarTermometro()">🌡️ Atualizar</button>
           </div>
