@@ -1170,6 +1170,9 @@ async function renderizarTermometro() {
   termometro.render(ativos, pesos, dolarAtual, macro);
 }
 
+// Expõe no window logo após declaração — o onclick inline usa isto
+window._termRender = renderizarTermometro;
+
 // Inicializa módulo (carrega macro salvo e preenche inputs)
 termometro.init(supabase, user.id).then(macro => {
   _termMacro = macro;
