@@ -17,6 +17,8 @@ const NAV_GROUPS = [
       {title:'FIRE',           icon:'🔥', href:'./fire.html'},
       {title:'Comparador',     icon:'⚖️', href:'./comparador.html'},
       {title:'Chat IA',        icon:'💬', href:'./chat.html'},
+      {title:'Calendário',     icon:'📅', href:'./calendar.html'},
+      {title:'Offshore',       icon:'⚓', href:'./offshore.html'},
       {title:'Relatório',      icon:'📊', href:'./reports.html'},
       {title:'Analytics',      icon:'📉', href:'./analytics.html'},
       {title:'Cadastros',      icon:'⚙️', href:'./registrations.html'},
