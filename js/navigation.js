@@ -3,37 +3,64 @@ import { supabase } from './supabaseClient.js';
 
 const NAV_GROUPS = [
   {
-    label:'FinZen',
+    label: null, // Dashboard fixo sem grupo
     items:[
-      {title:'Dashboard',      icon:'🏠', href:'./dashboard.html', badge:true},
-      {title:'Movimentações',  icon:'💸', href:'./movements.html'},
-      {title:'Extrato',        icon:'🧾', href:'./account-statement.html'},
-      {title:'Cartões',        icon:'💳', href:'./cards.html'},
-      {title:'Faturas',        icon:'📄', href:'./card-bills.html'},
-      {title:'Investimentos',  icon:'📈', href:'./investments.html'},
-      {title:'Patrimônio',     icon:'💎', href:'./patrimony-history.html'},
-      {title:'Orçamento',      icon:'🎯', href:'./budgets.html'},
-      {title:'Metas',          icon:'🏆', href:'./goals.html'},
-      {title:'FIRE',           icon:'🔥', href:'./fire.html'},
-      {title:'Comparador',     icon:'⚖️', href:'./comparador.html'},
-      {title:'Chat IA',        icon:'💬', href:'./chat.html'},
-      {title:'Calendário',     icon:'📅', href:'./calendar.html'},
-      {title:'Offshore',       icon:'⚓', href:'./offshore.html'},
-      {title:'Relatório',      icon:'📊', href:'./reports.html'},
-      {title:'Analytics',      icon:'📉', href:'./analytics.html'},
-      {title:'Cadastros',      icon:'⚙️', href:'./registrations.html'},
+      {title:'Dashboard', icon:'🏠', href:'./dashboard.html', badge:true},
+    ]
+  },
+  {
+    label:'Financeiro',
+    collapsible: true,
+    items:[
+      {title:'Movimentações', icon:'💸', href:'./movements.html'},
+      {title:'Extrato',       icon:'🧾', href:'./account-statement.html'},
+      {title:'Cartões',       icon:'💳', href:'./cards.html'},
+      {title:'Faturas',       icon:'📄', href:'./card-bills.html'},
+      {title:'Orçamentos',    icon:'🎯', href:'./budgets.html'},
+      {title:'Relatório',     icon:'📊', href:'./reports.html'},
+      {title:'Analytics',     icon:'📉', href:'./analytics.html'},
+    ]
+  },
+  {
+    label:'Investimentos',
+    collapsible: true,
+    items:[
+      {title:'Carteira',      icon:'📈', href:'./investments.html'},
+      {title:'Patrimônio',    icon:'💎', href:'./patrimony-history.html'},
+      {title:'Metas',         icon:'🏆', href:'./goals.html'},
+      {title:'FIRE',          icon:'🔥', href:'./fire.html'},
+      {title:'Comparador',    icon:'⚖️', href:'./comparador.html'},
+    ]
+  },
+  {
+    label:'Gestão Pessoal',
+    collapsible: true,
+    items:[
+      {title:'Calendário',    icon:'📅', href:'./calendar.html'},
+      {title:'Offshore',      icon:'⚓', href:'./offshore.html'},
+    ]
+  },
+  {
+    label:'Inteligência',
+    collapsible: true,
+    items:[
+      {title:'Chat IA',       icon:'💬', href:'./chat.html'},
+      {title:'Exec Dashboard',icon:'📊', href:'./executiveDashboard.html'},
+      {title:'Wealth',        icon:'💰', href:'./wealth-dashboard.html'},
     ]
   },
   {
     label:'Sistema',
+    collapsible: true,
     items:[
-      {title:'Busca',          icon:'🔍', href:'./search.html'},
-      {title:'Importar',       icon:'📥', href:'./importer.html'},
-      {title:'Notificações',   icon:'🔔', href:'./notifications.html'},
-      {title:'Backup',         icon:'💾', href:'./backup.html'},
-      {title:'Restaurar',      icon:'📤', href:'./restore.html'}
+      {title:'Busca',         icon:'🔍', href:'./search.html'},
+      {title:'Notificações',  icon:'🔔', href:'./notifications.html'},
+      {title:'Cadastros',     icon:'⚙️', href:'./registrations.html'},
+      {title:'Importar',      icon:'📥', href:'./importer.html'},
+      {title:'Backup',        icon:'💾', href:'./backup.html'},
+      {title:'Restaurar',     icon:'📤', href:'./restore.html'},
     ]
-  }
+  },
 ];
 
 function currentFile(){
@@ -56,6 +83,8 @@ function isActive(href){
   if(file === 'card-bills.html'      && target === 'card-bills.html')      return true;
   if(file === 'categories.html'      && target === 'registrations.html')   return true;
   if(file === 'wealth-dashboard.html'&& target === 'patrimony-history.html') return true;
+  if(file === 'calendar.html'        && target === 'calendar.html')        return true;
+  if(file === 'offshore.html'        && target === 'offshore.html')        return true;
 
   return false;
 }
@@ -89,12 +118,26 @@ async function carregarBadges(){
 
 function navHtml(){
   const groups = NAV_GROUPS.map(group => {
-    const collapsible = group.label === 'Sistema';
-    const isGroupActive = collapsible && group.items.some(i => isActive(i.href));
-    const storageKey = `nav_collapsed_${group.label}`;
-    const collapsed = collapsible && !isGroupActive && localStorage.getItem(storageKey) !== 'open';
+    const collapsible  = group.collapsible === true;
+    const isGroupActive = group.items.some(i => isActive(i.href));
+    const storageKey   = `nav_collapsed_${group.label}`;
+    const collapsed    = collapsible && !isGroupActive && localStorage.getItem(storageKey) !== 'open';
 
-    if(collapsible){
+    const itemsHtml = group.items.map(item => `
+      <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">
+        <span class="nav-icon">${item.icon}</span>
+        <span>${item.title}</span>
+        ${item.badge ? '<span class="nav-badge nav-dashboard-badge" style="display:none">0</span>' : ''}
+      </a>
+    `).join('');
+
+    // Dashboard — sem label, sempre visível
+    if (!group.label) {
+      return itemsHtml;
+    }
+
+    // Grupo colapsável
+    if (collapsible) {
       return `
         <div class="nav-section-collapsible ${collapsed ? 'collapsed' : ''}" data-group="${group.label}">
           <button class="nav-section-toggle" type="button" onclick="window._finzenToggleNav('${group.label}')">
@@ -102,26 +145,15 @@ function navHtml(){
             <span class="nav-section-arrow">▾</span>
           </button>
           <div class="nav-section-items">
-            ${group.items.map(item => `
-              <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">
-                <span class="nav-icon">${item.icon}</span>
-                <span>${item.title}</span>
-                ${item.badge ? '<span class="nav-badge nav-dashboard-badge" style="display:none">0</span>' : ''}
-              </a>
-            `).join('')}
+            ${itemsHtml}
           </div>
         </div>`;
     }
 
+    // Grupo fixo (não colapsável)
     return `
       <div class="nav-section-label">${group.label}</div>
-      ${group.items.map(item => `
-        <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">
-          <span class="nav-icon">${item.icon}</span>
-          <span>${item.title}</span>
-          ${item.badge ? '<span class="nav-badge nav-dashboard-badge" style="display:none">0</span>' : ''}
-        </a>
-      `).join('')}`;
+      ${itemsHtml}`;
   }).join('');
 
   return groups + `
