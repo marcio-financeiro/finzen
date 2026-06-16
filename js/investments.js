@@ -1007,25 +1007,43 @@ async function renderIndicadores() {
     }
   } catch(_) {}
 
-  // IBOV via BCB direto do browser (sem proxy)
+  // IBOV — múltiplas fontes
+  // Fonte 1: BrasilAPI (tem CORS liberado)
   try {
-    const hoje = new Date();
-    const pad  = n => String(n).padStart(2,'0');
-    const fim  = `${pad(hoje.getDate())}/${pad(hoje.getMonth()+1)}/${hoje.getFullYear()}`;
-    const d1   = new Date(hoje); d1.setFullYear(hoje.getFullYear()-1);
-    const ini  = `${pad(d1.getDate())}/${pad(d1.getMonth()+1)}/${d1.getFullYear()}`;
-    const r = await fetch(
-      `https://api.bcb.gov.br/dados/serie/bcdata.sgs.7/dados?formato=json&dataInicial=${ini}&dataFinal=${fim}`
-    );
+    const r = await fetch('https://brasilapi.com.br/api/bolsa/v1/ibovespa?anos=1');
     if(r.ok) {
       const j = await r.json();
-      if(j?.length >= 2) {
-        const p0 = parseFloat(j[0].valor.replace(',','.'));
-        const p1 = parseFloat(j[j.length-1].valor.replace(',','.'));
-        if(p0 > 0 && p1 > 0) ibovAnual = (p1 - p0) / p0 * 100;
+      if(Array.isArray(j) && j.length >= 2) {
+        const p0 = j[0]?.valor || j[0]?.pontos;
+        const p1 = j[j.length-1]?.valor || j[j.length-1]?.pontos;
+        if(p0 && p1) ibovAnual = (p1 - p0) / p0 * 100;
       }
     }
   } catch(_) {}
+
+  // Fonte 2: HG Brasil (CORS liberado, key=demo)
+  if(!ibovAnual) {
+    try {
+      const r = await fetch('https://api.hgbrasil.com/finance?key=demo&format=json-cors&fields=stocks');
+      if(r.ok) {
+        const j = await r.json();
+        const ibov = j?.results?.stocks?.IBOVESPA;
+        if(ibov?.variation) ibovAnual = ibov.variation;
+      }
+    } catch(_) {}
+  }
+
+  // Fonte 3: brapi com BOVA11 (variação 52 semanas)
+  if(!ibovAnual) {
+    try {
+      const r = await fetch(`https://brapi.dev/api/quote/BOVA11?token=bGZu7dGPyW94PcfXVCiA7t`);
+      if(r.ok) {
+        const j = await r.json();
+        const v = j?.results?.[0]?.fiftyTwoWeekLowChangePercent;
+        if(v) ibovAnual = v * 100;
+      }
+    } catch(_) {}
+  }
 
   // Rentabilidade da carteira
   // Tudo convertido para BRL para comparação correta
