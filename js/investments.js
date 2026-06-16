@@ -901,6 +901,9 @@ function renderizarTudo(){
   window._finzenAtivos = ativos;
   window._finzenPesos  = pesos;
   window._finzenDolar  = dolarAtual;
+  // Atualiza display do dólar no Termômetro se estiver visível
+  const d = document.getElementById('termDolarDisplay');
+  if (d && dolarAtual) d.textContent = dolarAtual.toFixed(4);
 }
 
 // ─────────────────────────────────────────────
@@ -1162,13 +1165,14 @@ await atualizarCotacoes(true);
 let _termMacro = null;
 
 async function renderizarTermometro() {
-  const selic = parseFloat(el('macroSelic')?.value) || (_termMacro?.selic || 14.75);
-  const ipca  = parseFloat(el('macroIPCA')?.value)  || (_termMacro?.ipca  || 4.86);
-  const macro = { selic, ipca, dolar: dolarAtual };
-  _termMacro  = macro;
-  // Exibe o dolar atual no display informativo
-  if (el('termDolarDisplay')) el('termDolarDisplay').textContent = dolarAtual.toFixed(4);
-  termometro.render(ativos, pesos, dolarAtual, macro);
+  const selic  = parseFloat(el('macroSelic')?.value) || (_termMacro?.selic || 14.75);
+  const ipca   = parseFloat(el('macroIPCA')?.value)  || (_termMacro?.ipca  || 4.86);
+  const taxa   = dolarAtual > 0 ? dolarAtual : (window._finzenDolar || DEFAULT_USD_BRL);
+  const macro  = { selic, ipca, dolar: taxa };
+  _termMacro   = macro;
+  // Atualiza display informativo do dólar
+  if (el('termDolarDisplay')) el('termDolarDisplay').textContent = taxa.toFixed(4);
+  termometro.render(ativos, pesos, taxa, macro);
 }
 
 // Inicializa módulo (carrega macro salvo e preenche inputs)
