@@ -115,15 +115,18 @@ async function carregarBadges(){
 }
 
 function navHtml(){
+  // Limpar chaves antigas do localStorage que possam causar conflito
+  const STORAGE_VERSION = 'nav_v2';
+  if (localStorage.getItem('nav_version') !== STORAGE_VERSION) {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('nav_collapsed_')) localStorage.removeItem(k);
+    });
+    localStorage.setItem('nav_version', STORAGE_VERSION);
+  }
+
   const groups = NAV_GROUPS.map(group => {
-    const collapsible  = group.collapsible === true;
+    const collapsible   = group.collapsible === true;
     const isGroupActive = group.items.some(i => isActive(i.href));
-    const storageKey   = `nav_collapsed_${group.label}`;
-    const storedState  = localStorage.getItem(storageKey);
-    // Padrão: fechado. Abre só se: usuário abriu manualmente OU é o grupo da página atual (e nunca interagiu)
-    const collapsed    = collapsible && !(
-      storedState === 'open' || (storedState === null && isGroupActive)
-    );
 
     const itemsHtml = group.items.map(item => `
       <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">
@@ -140,6 +143,12 @@ function navHtml(){
 
     // Grupo colapsável
     if (collapsible) {
+      // Abre só se é o grupo da página atual
+      // Após interação do usuário, usa localStorage
+      const storageKey  = `nav_collapsed_v2_${group.label}`;
+      const stored      = localStorage.getItem(storageKey);
+      const collapsed   = stored === null ? !isGroupActive : stored === '1';
+
       return `
         <div class="nav-section-collapsible ${collapsed ? 'collapsed' : ''}" data-group="${group.label}">
           <button class="nav-section-toggle" type="button" onclick="window._finzenToggleNav('${group.label}')">
@@ -152,7 +161,6 @@ function navHtml(){
         </div>`;
     }
 
-    // Grupo fixo (não colapsável)
     return `
       <div class="nav-section-label">${group.label}</div>
       ${itemsHtml}`;
@@ -193,11 +201,12 @@ function _finzenInitBlur() {
 }
 
 window._finzenToggleNav = function(groupLabel){
-  const storageKey = `nav_collapsed_${groupLabel}`;
+  const storageKey = `nav_collapsed_v2_${groupLabel}`;
   const els = document.querySelectorAll(`.nav-section-collapsible[data-group="${groupLabel}"]`);
   const isCollapsed = els[0]?.classList.contains('collapsed');
   els.forEach(el => el.classList.toggle('collapsed'));
-  localStorage.setItem(storageKey, isCollapsed ? 'open' : 'closed');
+  // '1' = collapsed, '0' = open
+  localStorage.setItem(storageKey, isCollapsed ? '0' : '1');
 };
 
 function injectStyles(){
