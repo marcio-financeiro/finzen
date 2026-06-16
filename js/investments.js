@@ -1166,21 +1166,14 @@ async function renderizarTermometro() {
   termometro.render(ativos, pesos, dolarAtual, macro);
 }
 
-// Inicializa módulo e registra botões — mesmo padrão de btnSalvarPesos/btnCalcularBal
+// Expõe no window para os onclick inline do HTML
+window._renderizarTermometro   = renderizarTermometro;
+window._termometroSalvarMacro  = (s,i,d) => termometro.salvarMacro(s,i,d);
+
+// Inicializa módulo (carrega macro salvo e preenche inputs)
 termometro.init(supabase, user.id).then(macro => {
   _termMacro = macro;
   if (el('macroSelic')) el('macroSelic').value = macro.selic;
   if (el('macroIPCA'))  el('macroIPCA').value  = macro.ipca;
   if (el('macroDolar')) el('macroDolar').value  = macro.dolar;
-});
-
-el('btnRenderTermometro')?.addEventListener('click', renderizarTermometro);
-
-el('btnSalvarMacro')?.addEventListener('click', async () => {
-  const s = parseFloat(el('macroSelic')?.value) || 14.75;
-  const i = parseFloat(el('macroIPCA')?.value)  || 4.86;
-  const d = parseFloat(el('macroDolar')?.value)  || 5.80;
-  await termometro.salvarMacro(s, i, d);
-  const btn = el('btnSalvarMacro');
-  if (btn) { btn.textContent = '✅ Salvo!'; setTimeout(() => { btn.textContent = 'Salvar macro'; }, 1500); }
 });
