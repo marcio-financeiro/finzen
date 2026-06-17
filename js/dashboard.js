@@ -214,13 +214,13 @@ function renderAlertas(pendentes, cartoes, parcelasMes){
     const urgencia = a.dias === 0 ? '🔴' : a.dias <= 2 ? '🟡' : '🟢';
     const label    = a.dias === 0 ? 'hoje' : a.dias === 1 ? 'amanhã' : `em ${a.dias} dias`;
     const icone    = a.tipo === 'fatura' ? '💳' : '📄';
-    return `<div class="alerta-item">
-      <span class="alerta-icon">${urgencia}</span>
-      <div class="alerta-info">
-        <strong>${icone} ${a.titulo}</strong>
-        <small>Vence ${label} · ${a.subtitulo}</small>
+    return `<div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);">
+      <div style="width:36px;height:36px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">${urgencia}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">${icone} ${a.titulo}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px;">Vence ${label} · ${a.subtitulo}</div>
       </div>
-      <span class="alerta-valor negative">-${fmt(a.valor)}</span>
+      <div style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--danger-text);flex-shrink:0;">-${fmt(a.valor)}</div>
     </div>`;
   }).join('');
 }
@@ -309,13 +309,14 @@ function renderOrcamento(orcamentos, despesasMes, parcelasMes){
     const icon = orc.categories?.icon||'';
     const nome = orc.categories?.nome||'Categoria';
 
-    html += `<div class="orcamento-item">
-      <div class="orcamento-row">
-        <span class="orcamento-label">${icon} ${nome}</span>
-        <span class="muted" style="font-size:11px">${fmt(gasto)} / ${fmt(planejado)} (${pctDisplay}%)</span>
+    const corOrc = pct>=100?'var(--danger-text)':pct>=80?'var(--warning)':'var(--gold)';
+    html += `<div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+        <span style="font-size:12px;font-weight:600;color:var(--text-2);">${icon} ${nome}</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:${pct>=100?'var(--danger-text)':pct>=80?'var(--warning)':'var(--muted)'};">${fmt(gasto)} / ${fmt(planejado)}</span>
       </div>
-      <div class="orcamento-bar-wrap">
-        <div class="orcamento-bar ${classe}" style="width:${Math.min(pct,100)}%"></div>
+      <div style="height:5px;background:var(--surface-3);border-radius:99px;overflow:hidden;">
+        <div style="height:5px;border-radius:99px;background:${corOrc};width:${Math.min(pct,100)}%;transition:width .5s cubic-bezier(.16,1,.3,1);"></div>
       </div>
     </div>`;
   });
@@ -345,13 +346,13 @@ function renderMetas(metas){
     const dias  = meta.data_alvo ? diasAte(meta.data_alvo) : null;
     const prazo = dias!==null ? (dias<0?'<span class="negative" style="font-size:10px">vencida</span>':`<span class="muted" style="font-size:10px">${dias}d restantes</span>`) : '';
 
-    html += `<div class="meta-item">
-      <div class="meta-row">
-        <span class="meta-label">${meta.nome} ${prazo}</span>
-        <span class="muted" style="font-size:11px">${pct.toFixed(0)}% · falta ${fmt(falta)}</span>
+    html += `<div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+        <span style="font-size:12px;font-weight:600;color:var(--text-2);">${meta.nome} ${prazo}</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);">${pct.toFixed(0)}% · falta ${fmt(falta)}</span>
       </div>
-      <div class="meta-bar-wrap">
-        <div class="meta-bar" style="width:${pct}%;background:${cor}"></div>
+      <div style="height:5px;background:var(--surface-3);border-radius:99px;overflow:hidden;">
+        <div style="height:5px;border-radius:99px;background:${cor};width:${pct}%;transition:width .5s cubic-bezier(.16,1,.3,1);"></div>
       </div>
     </div>`;
   });
@@ -371,24 +372,20 @@ function renderReceitaLiquida(recorrentes){
     return;
   }
 
-  el('blocoReceitaLiquida').innerHTML = `
-    <div class="rl-row">
-      <span class="muted">Receitas fixas/mês</span>
-      <span class="positive" style="font-family:var(--font-mono)">${fmt(receitasRec)}</span>
-    </div>
-    <div class="rl-row">
-      <span class="muted">Despesas fixas/mês</span>
-      <span class="negative" style="font-family:var(--font-mono)">-${fmt(despesasRec)}</span>
-    </div>
-    <div class="rl-row">
-      <span class="muted">Comprometimento</span>
-      <span style="font-family:var(--font-mono);color:${pctDespesas>80?'var(--danger)':pctDespesas>60?'var(--warning,#f59e0b)':'var(--success)'}">${pctDespesas}%</span>
-    </div>
-    <div class="rl-total">
-      <span>Sobra fixa/mês</span>
-      <span class="${liquida>=0?'positive':'negative'}" style="font-family:var(--font-mono)">${fmt(liquida)}</span>
-    </div>
-  `;
+  const rlRows = [
+    {label:'Receitas fixas/mês', val:fmt(receitasRec), cor:'var(--success-text)', sinal:'+'},
+    {label:'Despesas fixas/mês', val:fmt(despesasRec), cor:'var(--danger-text)', sinal:'-'},
+    {label:'Comprometimento', val:`${pctDespesas}%`, cor:pctDespesas>80?'var(--danger-text)':pctDespesas>60?'var(--warning)':'var(--success-text)', sinal:''},
+  ];
+  el('blocoReceitaLiquida').innerHTML = rlRows.map(r=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">
+      <span style="color:var(--muted);">${r.label}</span>
+      <span style="font-family:var(--font-mono);font-weight:600;color:${r.cor};">${r.sinal}${r.val}</span>
+    </div>`).join('') + `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 0;font-size:14px;font-weight:700;">
+      <span style="color:var(--text-2);">Sobra fixa/mês</span>
+      <span style="font-family:var(--font-mono);color:${liquida>=0?'var(--success-text)':'var(--danger-text)'};">${fmt(liquida)}</span>
+    </div>`;
 }
 
 // ── Previsão saldo do mês ─────────────────────────────
@@ -463,28 +460,21 @@ function renderUltimos(lancamentos){
     return;
   }
 
-  el('ultimosLancamentos').innerHTML = `
-    <table class="data-table">
-      <thead><tr>
-        <th>Data</th><th>Tipo</th><th>Descrição</th>
-        <th>Conta</th><th>Categoria</th><th>Valor</th>
-      </tr></thead>
-      <tbody>
-        ${lancamentos.map(item => `
-          <tr>
-            <td style="white-space:nowrap">${item.date?.split('-').reverse().join('/')}</td>
-            <td><span class="badge ${item.type==='receita'?'success':'danger'}">${item.type}</span></td>
-            <td>${item.description||'-'}</td>
-            <td>${item.accounts?.nome||'-'}</td>
-            <td>${item.categories?.icon||''} ${item.categories?.nome||'-'}</td>
-            <td class="money ${item.type==='receita'?'positive':'negative'}">
-              ${item.type==='receita'?'+':'-'}${fmt(item.amount, item.accounts?.currency||'BRL')}
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  `;
+  el('ultimosLancamentos').innerHTML = lancamentos.map((item,i) => {
+    const icon = item.categories?.icon || (item.type==='receita'?'💚':'🔴');
+    const data = item.date?.split('-').reverse().join('/');
+    const val  = item.type==='receita'?'+':'-';
+    const cor  = item.type==='receita'?'var(--success-text)':'var(--danger-text)';
+    const bdr  = i<lancamentos.length-1?'border-bottom:1px solid var(--border);':'';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:11px 16px;${bdr}transition:background .15s;">
+      <div style="width:36px;height:36px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">${icon}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.description||'-'}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px;">${item.categories?.nome||item.accounts?.nome||'-'} · ${data}</div>
+      </div>
+      <div style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:${cor};flex-shrink:0;">${val}${fmt(item.amount, item.accounts?.currency||'BRL')}</div>
+    </div>`;
+  }).join('');
 }
 
 // ── Score de Saúde Financeira ─────────────────────────
@@ -576,22 +566,18 @@ function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investiment
     el('scoreCircle').style.strokeDashoffset = offset;
   }, 100);
 
-  el('scoreItens').innerHTML = itens.map(item => `
-    <div class="score-item">
-      <span style="font-size:13px">${item.icon}</span>
-      <span class="score-item-label">${item.label}<br>
-        <span style="font-size:10px;color:var(--muted)">${item.detalhe}</span>
-      </span>
-      <div class="score-item-bar-wrap">
-        <div class="score-item-bar" style="width:${(item.pts/item.max*100).toFixed(0)}%;background:${
-          item.pts/item.max >= .8 ? '#22c55e' : item.pts/item.max >= .5 ? '#f59e0b' : '#ef4444'
-        }"></div>
+  el('scoreItens').innerHTML = itens.map(item => {
+    const ratio = item.pts/item.max;
+    const cor = ratio >= .8 ? 'var(--success-text)' : ratio >= .5 ? 'var(--warning)' : 'var(--danger-text)';
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+      <span style="width:8px;height:8px;border-radius:50%;background:${cor};flex-shrink:0;display:inline-block;"></span>
+      <span style="flex:1;font-size:11px;color:var(--muted);">${item.label}</span>
+      <div style="width:60px;height:4px;background:var(--surface-3);border-radius:99px;overflow:hidden;flex-shrink:0;">
+        <div style="height:4px;border-radius:99px;background:${cor};width:${(ratio*100).toFixed(0)}%;transition:width .6s cubic-bezier(.16,1,.3,1);"></div>
       </div>
-      <span class="score-item-pts" style="color:${
-        item.pts/item.max >= .8 ? '#22c55e' : item.pts/item.max >= .5 ? '#f59e0b' : '#ef4444'
-      }">${item.pts}/${item.max}</span>
-    </div>
-  `).join('');
+      <span style="width:40px;text-align:right;font-size:10px;font-weight:700;font-family:var(--font-mono);color:${cor};">${item.pts}/${item.max}</span>
+    </div>`;
+  }).join('');
 
   el('blocoScore').style.display = 'flex';
 }
