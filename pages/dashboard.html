@@ -3,15 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard - FinZen</title>
+<title>Dashboard — FinZen</title>
 
-<link rel="stylesheet" href="../css/base.css?v=1020">
-<link rel="stylesheet" href="../css/layout.css?v=1020">
-<link rel="stylesheet" href="../css/components.css?v=1020">
-<link rel="stylesheet" href="../css/mobile.css?v=1020">
+<link rel="stylesheet" href="../css/base.css?v=1200">
+<link rel="stylesheet" href="../css/layout.css?v=1200">
+<link rel="stylesheet" href="../css/components.css?v=1200">
 <link rel="stylesheet" href="../css/navigation.css?v=1100">
 <link rel="manifest" href="../manifest.json">
-<meta name="theme-color" content="#4b84f3">
+<meta name="theme-color" content="#f59e0b">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -19,156 +18,88 @@
 <link rel="apple-touch-icon" href="../icons/icon-192.png">
 
 <style>
-/* ── KPI Grid ── */
-.dash-kpi-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:12px;
-  margin-bottom:20px;
-}
-.dash-kpi{
-  padding:16px 18px;
-  border:1px solid var(--border);
-  border-radius:16px;
-  background:var(--surface-2);
-  cursor:pointer;
-  transition:transform .15s,box-shadow .15s;
-}
-.dash-kpi:hover{ transform:translateY(-2px);box-shadow:0 4px 16px rgba(75,132,243,.18); }
-.dash-kpi span{ font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px; }
-.dash-kpi strong{ font-size:20px;font-family:var(--font-mono);display:block;letter-spacing:-.03em; }
+/* ── Dashboard específico ── */
 
-/* ── Grid 2 colunas ── */
-.dash-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:16px;
-  margin-bottom:16px;
-}
-@media(max-width:800px){ .dash-grid{ grid-template-columns:1fr; } }
-
-/* ── Bloco genérico ── */
-.dash-block{
-  border:1px solid var(--border);
-  border-radius:16px;
-  background:var(--surface-2);
-  overflow:hidden;
-}
-.dash-block-header{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:14px 18px;border-bottom:1px solid var(--border);
-}
-.dash-block-header h2{ font-size:13px;font-weight:800;margin:0; }
-.dash-block-body{ padding:16px 18px; }
-
-/* ── Pizza gráfico ── */
-.pizza-wrap{
-  display:flex;gap:20px;align-items:center;flex-wrap:wrap;
-}
-.pizza-svg{ flex-shrink:0; }
-.pizza-legend{ flex:1;min-width:120px; }
-.pizza-item{
-  display:flex;align-items:center;gap:8px;
-  margin-bottom:8px;font-size:12px;
-}
-.pizza-dot{ width:10px;height:10px;border-radius:50%;flex-shrink:0; }
-.pizza-label{ flex:1;color:var(--text); }
-.pizza-pct{ color:var(--muted);font-size:11px;font-weight:700; }
-
-/* ── Orçamento / saúde ── */
-.orcamento-item{
-  margin-bottom:14px;
-}
-.orcamento-row{
-  display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:4px;font-size:12px;
-}
-.orcamento-label{ font-weight:700; }
-.orcamento-bar-wrap{
-  height:6px;background:var(--border);border-radius:99px;overflow:hidden;
-}
-.orcamento-bar{
-  height:6px;border-radius:99px;background:var(--accent);transition:width .4s ease;
-}
-.orcamento-bar.warn{ background:var(--warning,#f59e0b); }
-.orcamento-bar.over{ background:var(--danger); }
-
-/* ── Metas ── */
-.meta-item{
-  margin-bottom:14px;
-}
-.meta-row{
-  display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:4px;font-size:12px;
-}
-.meta-label{ font-weight:700;display:flex;align-items:center;gap:6px; }
-.meta-bar-wrap{
-  height:8px;background:var(--border);border-radius:99px;overflow:hidden;
-}
-.meta-bar{
-  height:8px;border-radius:99px;transition:width .4s ease;
+/* KPI grid customizada */
+.dash-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
-/* ── Previsão ── */
-.previsao-grid{
-  display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;
-  margin-bottom:14px;
-}
-.previsao-kpi{ text-align:center; }
-.previsao-kpi span{ font-size:10px;color:var(--muted);font-weight:700;display:block; }
-.previsao-kpi strong{ font-size:14px;font-family:var(--font-mono); }
-
-/* Linha do tempo previsão */
-.previsao-linha{
-  height:40px;position:relative;margin-top:4px;
-}
-.previsao-svg{ width:100%;height:40px; }
-
-/* ── Alertas ── */
-.alerta-item{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;
-}
-.alerta-item:last-child{ border-bottom:none; }
-.alerta-icon{ font-size:18px;flex-shrink:0; }
-.alerta-info{ flex:1; }
-.alerta-info strong{ display:block;font-size:13px; }
-.alerta-info small{ color:var(--muted);font-size:11px; }
-.alerta-valor{ font-family:var(--font-mono);font-size:13px;font-weight:700; }
-
-/* ── Receita líquida ── */
-.rl-row{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;
-}
-.rl-row:last-child{ border-bottom:none; }
-.rl-total{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:12px 0 0;font-size:15px;font-weight:800;
+.dash-kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: border-color var(--duration), transform var(--duration), box-shadow var(--duration);
+  position: relative;
+  overflow: hidden;
 }
 
-/* ── Full-width panels ── */
-.dash-full{ margin-bottom:16px; }
+.dash-kpi::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: var(--gold-grad);
+  opacity: 0;
+  transition: opacity var(--duration);
+}
 
-/* ── Score de Saúde Financeira ── */
+.dash-kpi:hover {
+  border-color: var(--border-2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.dash-kpi:hover::after { opacity: 1; }
+
+.dash-kpi-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.dash-kpi-value {
+  font-family: var(--font-mono);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  display: block;
+}
+
+/* Score */
 .score-block {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
   margin-bottom: 16px;
   display: flex;
-  gap: 24px;
+  gap: 20px;
   align-items: center;
   flex-wrap: wrap;
 }
+
 .score-gauge {
   position: relative;
-  width: 110px;
-  height: 110px;
+  width: 100px;
+  height: 100px;
   flex-shrink: 0;
 }
-.score-gauge svg { width: 110px; height: 110px; }
+
+.score-gauge svg { width: 100px; height: 100px; }
+
 .score-gauge-num {
   position: absolute;
   inset: 0;
@@ -176,176 +107,342 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  font-weight: 900;
   line-height: 1;
 }
-.score-gauge-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  margin-top: 2px;
+
+.score-gauge-num span:first-child {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 800;
 }
-.score-info { flex: 1; min-width: 220px; }
-.score-info h3 { font-size: 14px; font-weight: 800; margin-bottom: 12px; }
-.score-itens { display: flex; flex-direction: column; gap: 8px; }
+
+.score-gauge-num span:last-child {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.score-info { flex: 1; min-width: 200px; }
+
+.score-info h3 {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-2);
+}
+
+.score-itens { display: flex; flex-direction: column; gap: 7px; }
+
 .score-item {
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 12px;
 }
-.score-item-bar-wrap {
-  flex: 1;
-  height: 6px;
-  background: var(--border);
-  border-radius: 99px;
+
+.score-item-label { flex: 1; color: var(--muted); }
+.score-item-bar-wrap { width: 80px; height: 4px; background: var(--surface-3); border-radius: 99px; overflow: hidden; flex-shrink: 0; }
+.score-item-bar { height: 4px; border-radius: 99px; transition: width .6s var(--ease); }
+.score-item-pts { width: 42px; text-align: right; font-size: 11px; font-weight: 700; font-family: var(--font-mono); color: var(--text-2); }
+
+/* Grid 2 colunas */
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+/* Bloco genérico */
+.dash-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
-.score-item-bar {
-  height: 6px;
-  border-radius: 99px;
-  transition: width .5s ease;
-}
-.score-item-label { width: 160px; color: var(--muted); }
-.score-item-pts { width: 50px; text-align: right; font-weight: 700; font-size: 11px; }
-@media(max-width:600px){
-  .score-block { flex-direction: column; align-items: flex-start; }
+
+.dash-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
 }
 
-/* ── Cashflow AI ── */
-.cfai-block{
-  border:1px solid rgba(79,124,255,.35);
-  border-radius:16px;
-  background:linear-gradient(135deg,rgba(79,124,255,.06) 0%,rgba(124,92,252,.06) 100%);
-  overflow:hidden;
-  margin-bottom:16px;
+.dash-block-header h2 {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  margin: 0;
+  color: var(--text-2);
 }
-.cfai-header{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:14px 18px;border-bottom:1px solid rgba(79,124,255,.2);
-}
-.cfai-header h2{ font-size:13px;font-weight:800;margin:0;display:flex;align-items:center;gap:8px; }
-.cfai-badge{
-  font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;
-  background:rgba(79,124,255,.15);color:#4b84f3;letter-spacing:.04em;
-}
-.cfai-body{ padding:18px; }
-.cfai-placeholder{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:12px;padding:24px;text-align:center;
-}
-.cfai-placeholder p{ color:var(--muted);font-size:13px;max-width:320px;line-height:1.6; }
-.cfai-btn{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:10px 20px;border-radius:10px;border:none;
-  background:linear-gradient(135deg,#4b84f3,#7c5cfc);
-  color:#fff;font-size:13px;font-weight:700;cursor:pointer;
-  transition:opacity .15s,transform .1s;
-}
-.cfai-btn:hover:not(:disabled){ opacity:.88; }
-.cfai-btn:active:not(:disabled){ transform:scale(.97); }
-.cfai-btn:disabled{ opacity:.45;cursor:not-allowed; }
-.cfai-spinner{
-  width:14px;height:14px;border:2px solid rgba(255,255,255,.3);
-  border-top-color:#fff;border-radius:50%;
-  animation:cfai-spin .7s linear infinite;
-  display:inline-block;
-}
-@keyframes cfai-spin{ to{transform:rotate(360deg)} }
-.cfai-output{ font-size:13px;line-height:1.7;color:var(--text); }
-.cfai-h4{ font-size:13px;font-weight:800;margin:16px 0 8px;color:var(--text); }
-.cfai-h4:first-child{ margin-top:0; }
-.cfai-ul{ padding-left:18px;margin:6px 0;display:flex;flex-direction:column;gap:5px; }
-.cfai-p{ margin:6px 0; }
-.cfai-cursor{
-  display:inline-block;width:2px;height:13px;
-  background:#4b84f3;margin-left:2px;vertical-align:middle;
-  animation:cfai-blink .7s step-end infinite;
-}
-@keyframes cfai-blink{ 0%,100%{opacity:1}50%{opacity:0} }
-.cfai-footer{
-  display:flex;justify-content:space-between;align-items:center;
-  margin-top:16px;padding-top:12px;border-top:1px solid rgba(79,124,255,.15);
-  font-size:11px;color:var(--muted);
-}
-.cfai-refresh{
-  background:none;border:1px solid var(--border);border-radius:6px;
-  color:var(--muted);font-size:11px;padding:4px 10px;cursor:pointer;
-  transition:color .15s,border-color .15s;
-}
-.cfai-refresh:hover{ color:var(--text);border-color:var(--accent); }
 
-/* ── Anomaly AI ── */
-.anai-block{
-  border:1px solid rgba(239,68,68,.3);
-  border-radius:16px;
-  background:linear-gradient(135deg,rgba(239,68,68,.05) 0%,rgba(245,158,11,.05) 100%);
-  overflow:hidden;
-  margin-bottom:16px;
-}
-.anai-header{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:14px 18px;border-bottom:1px solid rgba(239,68,68,.15);
-}
-.anai-header h2{ font-size:13px;font-weight:800;margin:0;display:flex;align-items:center;gap:8px; }
-.anai-badge{
-  font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;
-  background:rgba(239,68,68,.12);color:#ef4444;letter-spacing:.04em;
-}
-.anai-body{ padding:18px; }
-.anai-placeholder{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:12px;padding:24px;text-align:center;
-}
-.anai-placeholder p{ color:var(--muted);font-size:13px;max-width:320px;line-height:1.6; }
-.anai-btn{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:10px 20px;border-radius:10px;border:none;
-  background:linear-gradient(135deg,#ef4444,#f59e0b);
-  color:#fff;font-size:13px;font-weight:700;cursor:pointer;
-  transition:opacity .15s,transform .1s;
-}
-.anai-btn:hover:not(:disabled){ opacity:.88; }
-.anai-btn:active:not(:disabled){ transform:scale(.97); }
-.anai-btn:disabled{ opacity:.45;cursor:not-allowed; }
-.anai-output{ font-size:13px;line-height:1.7;color:var(--text); }
-.anai-footer{
-  display:flex;justify-content:space-between;align-items:center;
-  margin-top:16px;padding-top:12px;border-top:1px solid rgba(239,68,68,.15);
-  font-size:11px;color:var(--muted);
-}
-.anai-refresh{
-  background:none;border:1px solid var(--border);border-radius:6px;
-  color:var(--muted);font-size:11px;padding:4px 10px;cursor:pointer;
-  transition:color .15s,border-color .15s;
-}
-.anai-refresh:hover{ color:var(--text);border-color:#ef4444; }
+.dash-block-body { padding: 14px 16px; }
+.dash-full { margin-bottom: 14px; }
 
-/* ── Collapse transition ── */
-.ia-body-collapsed{ display:none; }
+/* Alertas */
+.alerta-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.alerta-item:last-child { border-bottom: none; }
+.alerta-icon { font-size: 17px; flex-shrink: 0; }
+.alerta-info { flex: 1; }
+.alerta-info strong { display: block; font-size: 13px; font-weight: 600; color: var(--text); }
+.alerta-info small { color: var(--muted); font-size: 11px; }
+.alerta-valor { font-family: var(--font-mono); font-size: 13px; font-weight: 700; }
+
+/* Pizza */
+.pizza-wrap { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.pizza-svg { flex-shrink: 0; }
+.pizza-legend { flex: 1; min-width: 100px; }
+.pizza-item { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 12px; }
+.pizza-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.pizza-label { flex: 1; color: var(--text-2); }
+.pizza-pct { color: var(--muted); font-size: 11px; font-weight: 700; font-family: var(--font-mono); }
+
+/* Orçamento */
+.orcamento-item { margin-bottom: 12px; }
+.orcamento-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 12px; }
+.orcamento-label { font-weight: 600; color: var(--text-2); }
+.orcamento-bar-wrap { height: 5px; background: var(--surface-3); border-radius: 99px; overflow: hidden; }
+.orcamento-bar { height: 5px; border-radius: 99px; background: var(--gold-grad); transition: width .5s var(--ease); }
+.orcamento-bar.warn { background: linear-gradient(90deg, var(--warning), #fbbf24); }
+.orcamento-bar.over { background: linear-gradient(90deg, var(--danger), var(--danger-text)); }
+
+/* Metas */
+.meta-item { margin-bottom: 12px; }
+.meta-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 12px; }
+.meta-label { font-weight: 600; display: flex; align-items: center; gap: 6px; color: var(--text-2); }
+.meta-bar-wrap { height: 5px; background: var(--surface-3); border-radius: 99px; overflow: hidden; }
+.meta-bar { height: 5px; border-radius: 99px; transition: width .5s var(--ease); }
+
+/* Receita líquida */
+.rl-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-2); }
+.rl-row:last-child { border-bottom: none; }
+.rl-total { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 0; font-size: 14px; font-weight: 700; }
+
+/* Previsão */
+.previsao-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.previsao-kpi { text-align: center; }
+.previsao-kpi span { font-size: 9px; color: var(--muted); font-weight: 700; letter-spacing: .05em; text-transform: uppercase; display: block; margin-bottom: 3px; }
+.previsao-kpi strong { font-size: 13px; font-family: var(--font-mono); font-weight: 700; }
+.previsao-svg { width: 100%; height: 40px; }
+
+/* Últimos lançamentos */
+.lancamento-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--duration);
+}
+
+.lancamento-row:last-child { border-bottom: none; }
+.lancamento-row:hover { background: rgba(245,158,11,.03); }
+
+.lancamento-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.lancamento-info { flex: 1; min-width: 0; }
+.lancamento-desc { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lancamento-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.lancamento-valor { font-family: var(--font-mono); font-size: 13px; font-weight: 600; white-space: nowrap; text-align: right; }
+
+/* IA Blocks */
+.ia-block {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 14px;
+  border: 1px solid;
+}
+
+.ia-block.cfai {
+  background: linear-gradient(135deg, rgba(75,132,243,.04) 0%, rgba(124,92,252,.04) 100%);
+  border-color: rgba(75,132,243,.2);
+}
+
+.ia-block.anai {
+  background: linear-gradient(135deg, rgba(239,68,68,.04) 0%, rgba(245,158,11,.04) 100%);
+  border-color: rgba(239,68,68,.18);
+}
+
+.ia-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+
+.ia-header h2 {
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+}
+
+.ia-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.cfai .ia-badge { background: rgba(75,132,243,.15); color: #4b84f3; }
+.anai .ia-badge { background: rgba(239,68,68,.15); color: #ef4444; }
+
+.ia-toggle {
+  font-size: 13px;
+  color: var(--muted);
+  transition: transform .2s;
+}
+
+.ia-body { padding: 16px; }
+.ia-body-collapsed { display: none; }
+
+.ia-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  text-align: center;
+}
+
+.ia-placeholder p { color: var(--muted); font-size: 12px; max-width: 300px; line-height: 1.6; }
+
+.ia-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: var(--radius-md);
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .15s, transform .1s;
+  color: #fff;
+}
+
+.cfai .ia-btn { background: linear-gradient(135deg, #4b84f3, #7c5cfc); }
+.anai .ia-btn { background: linear-gradient(135deg, #ef4444, #f59e0b); }
+.ia-btn:hover:not(:disabled) { opacity: .88; }
+.ia-btn:active:not(:disabled) { transform: scale(.97); }
+.ia-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.cfai-spinner {
+  width: 12px; height: 12px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: fz-spin .6s linear infinite;
+  display: inline-block;
+}
+
+.ia-output { font-size: 13px; line-height: 1.7; color: var(--text-2); }
+.cfai-h4 { font-size: 13px; font-weight: 700; margin: 14px 0 6px; color: var(--text); }
+.cfai-h4:first-child { margin-top: 0; }
+.cfai-ul { padding-left: 16px; margin: 4px 0; display: flex; flex-direction: column; gap: 4px; }
+.cfai-p { margin: 5px 0; }
+
+.cfai-cursor {
+  display: inline-block;
+  width: 2px; height: 12px;
+  background: var(--gold);
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: cfai-blink .7s step-end infinite;
+}
+
+@keyframes cfai-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+.ia-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ia-refresh {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 11px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: color var(--duration), border-color var(--duration);
+}
+
+.ia-refresh:hover { color: var(--text); border-color: var(--gold); }
+
+/* ── Mobile ajustes dashboard ── */
+@media (max-width: 700px) {
+  .dash-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .dash-kpi { padding: 12px 13px; border-radius: var(--radius-md); }
+  .dash-kpi-label { font-size: 9px; margin-bottom: 7px; }
+  .dash-kpi-value { font-size: 16px; }
+  .dash-grid { grid-template-columns: 1fr; }
+  .score-block { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .score-gauge { width: 80px; height: 80px; }
+  .score-gauge svg { width: 80px; height: 80px; }
+  .score-gauge-num span:first-child { font-size: 20px; }
+}
 </style>
 </head>
 
 <body>
 <div class="app-shell">
 
+  <!-- Sidebar — preenchida pelo navigation.js -->
   <aside class="sidebar">
-    <div class="sidebar-brand">FinZen</div>
+    <div class="sidebar-brand"></div>
     <nav class="sidebar-nav"></nav>
   </aside>
 
   <main class="content">
 
+    <!-- Topbar -->
     <header class="topbar">
       <div>
         <h1>Dashboard</h1>
-        <p id="userEmail" class="muted"></p>
+        <p id="userEmail" class="muted" style="font-size:11px;margin-top:1px;"></p>
       </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button type="button" class="btn btn-secondary compact" id="btnModoSimples"
+      <div class="topbar-actions" style="display:flex;gap:8px;align-items:center;">
+        <button type="button" class="btn btn-ghost compact" id="btnModoSimples"
           onclick="localStorage.removeItem('finzen_modo_avancado');location.href='./mobile.html'"
-          style="display:none">
+          style="display:none;">
           📱 Modo Simples
         </button>
         <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
@@ -354,46 +451,46 @@
 
     <!-- KPIs principais -->
     <div class="dash-kpi-grid">
-      <div class="dash-kpi" onclick="location.href='./movements.html'">
-        <span>Saldo em contas</span>
-        <strong id="kpiSaldo" class="positive">R$ 0,00</strong>
+      <div class="dash-kpi" onclick="location.href='./movements.html'" role="button" aria-label="Ver saldo">
+        <div class="dash-kpi-label">💳 Saldo em contas</div>
+        <span class="dash-kpi-value positive" id="kpiSaldo">R$ 0,00</span>
       </div>
-      <div class="dash-kpi" onclick="location.href='./movements.html?tipo=receita'">
-        <span>Receitas do mês</span>
-        <strong id="kpiReceitas" class="positive">R$ 0,00</strong>
+      <div class="dash-kpi" onclick="location.href='./movements.html?tipo=receita'" role="button">
+        <div class="dash-kpi-label">📈 Receitas do mês</div>
+        <span class="dash-kpi-value positive" id="kpiReceitas">R$ 0,00</span>
       </div>
-      <div class="dash-kpi" onclick="location.href='./movements.html?tipo=despesa'">
-        <span>Despesas do mês</span>
-        <strong id="kpiDespesas" class="negative">R$ 0,00</strong>
+      <div class="dash-kpi" onclick="location.href='./movements.html?tipo=despesa'" role="button">
+        <div class="dash-kpi-label">📉 Despesas do mês</div>
+        <span class="dash-kpi-value negative" id="kpiDespesas">R$ 0,00</span>
       </div>
-      <div class="dash-kpi" onclick="location.href='./movements.html'">
-        <span>Resultado do mês</span>
-        <strong id="kpiResultado">R$ 0,00</strong>
+      <div class="dash-kpi" onclick="location.href='./movements.html'" role="button">
+        <div class="dash-kpi-label">⚖️ Resultado do mês</div>
+        <span class="dash-kpi-value" id="kpiResultado">R$ 0,00</span>
       </div>
-      <div class="dash-kpi" onclick="location.href='./card-bills.html'">
-        <span>Faturas (mês atual)</span>
-        <strong id="kpiFaturas" class="negative">R$ 0,00</strong>
+      <div class="dash-kpi" onclick="location.href='./card-bills.html'" role="button">
+        <div class="dash-kpi-label">🧾 Faturas abertas</div>
+        <span class="dash-kpi-value negative" id="kpiFaturas">R$ 0,00</span>
       </div>
     </div>
 
     <!-- Score de Saúde Financeira -->
-    <div class="score-block" id="blocoScore" style="display:none">
+    <div class="score-block" id="blocoScore" style="display:none;">
       <div class="score-gauge">
-        <svg viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="55" cy="55" r="46" fill="none" stroke="var(--border)" stroke-width="10"/>
-          <circle id="scoreCircle" cx="55" cy="55" r="46" fill="none" stroke="#22c55e"
-            stroke-width="10" stroke-linecap="round"
-            stroke-dasharray="289" stroke-dashoffset="289"
-            transform="rotate(-90 55 55)"
-            style="transition: stroke-dashoffset .8s ease, stroke .4s"/>
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="var(--surface-3)" stroke-width="8"/>
+          <circle id="scoreCircle" cx="50" cy="50" r="42" fill="none" stroke="#10b981"
+            stroke-width="8" stroke-linecap="round"
+            stroke-dasharray="264" stroke-dashoffset="264"
+            transform="rotate(-90 50 50)"
+            style="transition: stroke-dashoffset .8s var(--ease), stroke .4s"/>
         </svg>
         <div class="score-gauge-num">
-          <span id="scoreNum" style="color:#22c55e">0</span>
-          <span class="score-gauge-label" id="scoreLabel" style="color:var(--muted)">—</span>
+          <span id="scoreNum" style="color:#10b981;">0</span>
+          <span id="scoreLabel">—</span>
         </div>
       </div>
       <div class="score-info">
-        <h3>🏅 Score de Saúde Financeira</h3>
+        <h3>🏅 Saúde Financeira</h3>
         <div class="score-itens" id="scoreItens"></div>
       </div>
     </div>
@@ -403,10 +500,10 @@
       <div class="dash-block">
         <div class="dash-block-header">
           <h2>🔔 Alertas de Vencimento</h2>
-          <a href="./movements.html" class="btn btn-secondary compact" style="font-size:11px">Ver pendentes</a>
+          <a href="./movements.html" class="btn btn-ghost compact" style="font-size:11px;">Ver pendentes</a>
         </div>
         <div class="dash-block-body" id="blocoAlertas">
-          <p class="muted" style="font-size:13px">Carregando...</p>
+          <p class="muted" style="font-size:12px;">Carregando...</p>
         </div>
       </div>
     </div>
@@ -414,25 +511,23 @@
     <!-- Grid 2 colunas: pizza + orçamento -->
     <div class="dash-grid">
 
-      <!-- Despesas por categoria -->
       <div class="dash-block">
         <div class="dash-block-header">
           <h2>🍕 Despesas por Categoria</h2>
-          <a href="./movements.html?tipo=despesa" class="btn btn-secondary compact" style="font-size:11px">Ver todas</a>
+          <a href="./movements.html?tipo=despesa" class="btn btn-ghost compact" style="font-size:11px;">Ver todas</a>
         </div>
         <div class="dash-block-body" id="blocoPizza">
-          <p class="muted" style="font-size:13px">Carregando...</p>
+          <p class="muted" style="font-size:12px;">Carregando...</p>
         </div>
       </div>
 
-      <!-- Saúde do orçamento -->
       <div class="dash-block">
         <div class="dash-block-header">
           <h2>📊 Saúde do Orçamento</h2>
-          <a href="./budgets.html" class="btn btn-secondary compact" style="font-size:11px">Gerenciar</a>
+          <a href="./budgets.html" class="btn btn-ghost compact" style="font-size:11px;">Gerenciar</a>
         </div>
         <div class="dash-block-body" id="blocoOrcamento">
-          <p class="muted" style="font-size:13px">Carregando...</p>
+          <p class="muted" style="font-size:12px;">Carregando...</p>
         </div>
       </div>
 
@@ -441,72 +536,70 @@
     <!-- Grid 2 colunas: metas + receita líquida -->
     <div class="dash-grid">
 
-      <!-- Progresso de metas -->
       <div class="dash-block">
         <div class="dash-block-header">
           <h2>🎯 Metas</h2>
-          <a href="./goals.html" class="btn btn-secondary compact" style="font-size:11px">Gerenciar</a>
+          <a href="./goals.html" class="btn btn-ghost compact" style="font-size:11px;">Gerenciar</a>
         </div>
         <div class="dash-block-body" id="blocoMetas">
-          <p class="muted" style="font-size:13px">Carregando...</p>
+          <p class="muted" style="font-size:12px;">Carregando...</p>
         </div>
       </div>
 
-      <!-- Receita líquida recorrente -->
       <div class="dash-block">
         <div class="dash-block-header">
-          <h2>💼 Receita Líquida Recorrente</h2>
+          <h2>💼 Receita Líquida</h2>
         </div>
         <div class="dash-block-body" id="blocoReceitaLiquida">
-          <p class="muted" style="font-size:13px">Carregando...</p>
+          <p class="muted" style="font-size:12px;">Carregando...</p>
         </div>
       </div>
 
     </div>
 
-    <!-- Previsão de saldo 30 dias -->
+    <!-- Previsão de saldo -->
     <div class="dash-full">
       <div class="dash-block">
         <div class="dash-block-header">
           <h2>📈 Previsão de Saldo do Mês</h2>
         </div>
         <div class="dash-block-body" id="blocoPrevisao">
-          <p class="muted" style="font-size:13px">Carregando...</p>
+          <p class="muted" style="font-size:12px;">Carregando...</p>
         </div>
       </div>
     </div>
 
-    <!-- Previsão IA de Fluxo de Caixa -->
-    <div class="cfai-block" id="cfaiBlock">
-      <div class="cfai-header" onclick="window.toggleBloco('cfaiBody','cfaiToggle')" style="cursor:pointer">
-        <h2>🤖 Previsão Inteligente de Fluxo de Caixa <span class="cfai-badge">IA</span></h2>
-        <span id="cfaiToggle" style="color:var(--muted);font-size:16px;transition:transform .2s">▾</span>
+    <!-- IA: Previsão de Fluxo de Caixa -->
+    <div class="ia-block cfai" id="cfaiBlock">
+      <div class="ia-header" onclick="window.toggleBloco('cfaiBody','cfaiToggle')">
+        <h2>🤖 Previsão Inteligente de Fluxo <span class="ia-badge">IA</span></h2>
+        <span class="ia-toggle" id="cfaiToggle">▾</span>
       </div>
-      <div class="cfai-body" id="cfaiBody">
-        <div class="cfai-placeholder" id="cfaiPlaceholder">
-          <p>Analise seus dados financeiros com IA e receba previsões, alertas de risco e recomendações personalizadas para o mês.</p>
-          <button class="cfai-btn" id="cfaiBtnAnalisar" onclick="event.stopPropagation();window.cfaiAnalisar()">
-            ✨ Analisar meu fluxo de caixa
+      <div class="ia-body" id="cfaiBody">
+        <div class="ia-placeholder" id="cfaiPlaceholder">
+          <p>Análise com IA: previsões, alertas de risco e recomendações personalizadas.</p>
+          <button class="ia-btn" id="cfaiBtnAnalisar" onclick="event.stopPropagation();window.cfaiAnalisar()">
+            ✨ Analisar fluxo de caixa
           </button>
         </div>
-        <div class="cfai-output" id="cfaiOutput" style="display:none"></div>
+        <div class="ia-output" id="cfaiOutput" style="display:none;"></div>
       </div>
     </div>
 
-    <!-- Detecção de Anomalias e Assinaturas Fantasmas -->
-    <div class="anai-block" id="anaiBlock">
-      <div class="anai-header" onclick="window.toggleBloco('anaiBody','anaiToggle')" style="cursor:pointer">
-        <h2>👻 Anomalias e Assinaturas Fantasmas <span class="anai-badge">IA</span></h2>
-        <span id="anaiToggle" style="color:var(--muted);font-size:16px;transition:transform .2s">▾</span>
+    <!-- IA: Anomalias -->
+    <div class="ia-block anai" id="anaiBlock">
+      <div class="ia-header" onclick="window.toggleBloco('anaiBody','anaiToggle')">
+        <h2>👻 Anomalias e Assinaturas Fantasmas <span class="ia-badge">IA</span></h2>
+        <span class="ia-toggle" id="anaiToggle">▾</span>
       </div>
-      <div class="anai-body" id="anaiBody">
-        <div class="anai-placeholder" id="anaiPlaceholder">
-          <p>Detecte assinaturas esquecidas, gastos suspeitos e variações anômalas nos seus últimos 6 meses de histórico.</p>
-          <button class="anai-btn" id="anaiBtnAnalisar" onclick="event.stopPropagation();window.anaiAnalisar()">
+      <div class="ia-body" id="anaiBody">
+        <div class="ia-placeholder" id="anaiPlaceholder">
+          <p>Detecte assinaturas esquecidas e gastos suspeitos nos últimos 6 meses.</p>
+          <button class="ia-btn" id="anaiBtnAnalisar" onclick="event.stopPropagation();window.anaiAnalisar()">
             🔍 Detectar anomalias
           </button>
         </div>
-        <div class="anai-output" id="anaiOutput" style="display:none"></div>
+        <div class="ia-output" id="anaiOutput" style="display:none;"></div>
       </div>
     </div>
 
@@ -515,10 +608,10 @@
       <div class="dash-block">
         <div class="dash-block-header">
           <h2>💸 Últimos Lançamentos</h2>
-          <a href="./movements.html" class="btn btn-secondary compact" style="font-size:11px">Ver todos</a>
+          <a href="./movements.html" class="btn btn-ghost compact" style="font-size:11px;">Ver todos</a>
         </div>
-        <div class="dash-block-body" id="ultimosLancamentos" style="padding:0">
-          <p class="muted" style="padding:16px;font-size:13px">Carregando...</p>
+        <div id="ultimosLancamentos">
+          <p class="muted" style="padding:14px 16px;font-size:12px;">Carregando...</p>
         </div>
       </div>
     </div>
@@ -526,18 +619,20 @@
   </main>
 </div>
 
-<nav class="mobile-nav"></nav>
+<!-- Bottom nav mobile -->
+<nav class="mobile-nav" id="mobileNav"></nav>
 
 <script type="module" src="../js/navigation.js?v=1100"></script>
 <script type="module" src="../js/dashboard.js?v=1020"></script>
+
 <script>
-  // Mostrar botão "Modo Simples" apenas no mobile quando em modo avançado forçado
+  // Modo simples em mobile
   if(window.innerWidth < 768 && localStorage.getItem('finzen_modo_avancado') === 'true'){
     const btn = document.getElementById('btnModoSimples');
     if(btn) btn.style.display = 'block';
   }
-</script>
-<script>
+
+  // Toggle blocos IA
   window.toggleBloco = function(bodyId, iconId) {
     const body = document.getElementById(bodyId);
     const icon = document.getElementById(iconId);
@@ -547,228 +642,179 @@
     localStorage.setItem('finzen_ia_' + bodyId, collapsed ? 'closed' : 'open');
   };
 
-  // Iniciar blocos de IA sempre fechados por padrão
+  // Iniciar IA fechados por padrão
   ['cfaiBody', 'anaiBody'].forEach(bodyId => {
     const iconId = bodyId === 'cfaiBody' ? 'cfaiToggle' : 'anaiToggle';
     const estado = localStorage.getItem('finzen_ia_' + bodyId);
     const body   = document.getElementById(bodyId);
     const icon   = document.getElementById(iconId);
     if(!body || !icon) return;
-    // Só abre se o usuário explicitamente abriu antes
     if(estado !== 'open') {
       body.classList.add('ia-body-collapsed');
       icon.style.transform = 'rotate(-90deg)';
     }
   });
 </script>
+
+<!-- IA: Fluxo de caixa -->
 <script type="module">
   import { coletarContexto, analisarComIA, renderMd } from '../js/cashflowAI.js';
   import { supabase } from '../js/supabaseClient.js';
 
   const LS_KEY = 'finzen_cfai_cache';
-  const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hora
+  const CACHE_TTL = 60 * 60 * 1000;
 
-  function salvarCache(texto) {
-    localStorage.setItem(LS_KEY, JSON.stringify({ texto, ts: Date.now() }));
-  }
-
+  function salvarCache(texto) { localStorage.setItem(LS_KEY, JSON.stringify({ texto, ts: Date.now() })); }
   function carregarCache() {
     try {
       const raw = localStorage.getItem(LS_KEY);
       if (!raw) return null;
       const { texto, ts } = JSON.parse(raw);
-      if (Date.now() - ts > CACHE_TTL_MS) return null;
-      return texto;
+      return Date.now() - ts > CACHE_TTL ? null : texto;
     } catch(_) { return null; }
   }
 
-  function mostrarResultado(texto, tempoLabel) {
+  function mostrarResultado(texto, label) {
     const output = document.getElementById('cfaiOutput');
-    const placeholder = document.getElementById('cfaiPlaceholder');
-    placeholder.style.display = 'none';
+    const ph = document.getElementById('cfaiPlaceholder');
+    ph.style.display = 'none';
     output.style.display = 'block';
     output.innerHTML = renderMd(texto) + `
-      <div class="cfai-footer">
-        <span>Gerado em ${tempoLabel}</span>
-        <button class="cfai-refresh" onclick="window.cfaiAnalisar(true)">🔄 Atualizar análise</button>
+      <div class="ia-footer">
+        <span>${label}</span>
+        <button class="ia-refresh" onclick="window.cfaiAnalisar(true)">🔄 Atualizar</button>
       </div>`;
   }
 
   window.cfaiAnalisar = async function(forcar = false) {
     const btn = document.getElementById('cfaiBtnAnalisar');
     const output = document.getElementById('cfaiOutput');
-    const placeholder = document.getElementById('cfaiPlaceholder');
-
-    // Verificar cache (a menos que forçado)
-    if (!forcar) {
-      const cached = carregarCache();
-      if (cached) {
-        const agora = new Date();
-        mostrarResultado(cached, agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) + ' (cache)');
-        return;
-      }
-    }
-
-    // Iniciar análise
-    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="cfai-spinner"></span> Analisando...'; }
-    placeholder.style.display = 'flex';
-    output.style.display = 'none';
-    output.innerHTML = '';
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Sessão expirada. Faça login novamente.');
-
-      const contexto = await coletarContexto(session.user.id);
-
-      // Mostrar output com cursor piscante
-      placeholder.style.display = 'none';
-      output.style.display = 'block';
-      output.innerHTML = '<span class="cfai-cursor"></span>';
-
-      let textoAcumulado = '';
-
-      await analisarComIA(
-        contexto,
-        // onChunk — streaming
-        (delta) => {
-          textoAcumulado += delta;
-          output.innerHTML = renderMd(textoAcumulado) + '<span class="cfai-cursor"></span>';
-          output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        },
-        // onDone
-        (textoFinal) => {
-          salvarCache(textoFinal);
-          const agora = new Date();
-          mostrarResultado(textoFinal, agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }));
-        }
-      );
-
-    } catch(err) {
-      placeholder.style.display = 'flex';
-      output.style.display = 'none';
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '✨ Analisar meu fluxo de caixa';
-      }
-      // Mostrar erro discreto
-      const errEl = document.createElement('p');
-      errEl.style.cssText = 'color:var(--danger);font-size:12px;margin-top:8px;text-align:center';
-      errEl.textContent = '⚠️ ' + err.message;
-      document.getElementById('cfaiPlaceholder').appendChild(errEl);
-    } finally {
-      if (btn) { btn.disabled = false; btn.innerHTML = '✨ Analisar meu fluxo de caixa'; }
-    }
-  };
-
-  // Carregar cache automaticamente se existir
-  const cached = carregarCache();
-  if (cached) {
-    const { ts } = JSON.parse(localStorage.getItem(LS_KEY));
-    const hora = new Date(ts).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
-    mostrarResultado(cached, hora + ' (cache)');
-  }
-</script>
-
-<script type="module">
-  import { coletarDadosAnomalias, analisarAnomalias } from '../js/anomalyAI.js';
-  import { renderMd } from '../js/cashflowAI.js';
-  import { supabase } from '../js/supabaseClient.js';
-
-  const LS_KEY_ANAI = 'finzen_anai_cache';
-  const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas (muda menos que fluxo de caixa)
-
-  function salvarCache(texto) {
-    localStorage.setItem(LS_KEY_ANAI, JSON.stringify({ texto, ts: Date.now() }));
-  }
-
-  function carregarCache() {
-    try {
-      const raw = localStorage.getItem(LS_KEY_ANAI);
-      if (!raw) return null;
-      const { texto, ts } = JSON.parse(raw);
-      if (Date.now() - ts > CACHE_TTL_MS) return null;
-      return texto;
-    } catch(_) { return null; }
-  }
-
-  function mostrarResultado(texto, tempoLabel) {
-    const output = document.getElementById('anaiOutput');
-    const placeholder = document.getElementById('anaiPlaceholder');
-    placeholder.style.display = 'none';
-    output.style.display = 'block';
-    output.innerHTML = renderMd(texto) + `
-      <div class="anai-footer">
-        <span>Gerado em ${tempoLabel}</span>
-        <button class="anai-refresh" onclick="window.anaiAnalisar(true)">🔄 Atualizar detecção</button>
-      </div>`;
-  }
-
-  window.anaiAnalisar = async function(forcar = false) {
-    const btn = document.getElementById('anaiBtnAnalisar');
-    const output = document.getElementById('anaiOutput');
-    const placeholder = document.getElementById('anaiPlaceholder');
+    const ph = document.getElementById('cfaiPlaceholder');
 
     if (!forcar) {
       const cached = carregarCache();
       if (cached) {
-        const { ts } = JSON.parse(localStorage.getItem(LS_KEY_ANAI));
-        const hora = new Date(ts).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+        const hora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
         mostrarResultado(cached, hora + ' (cache)');
         return;
       }
     }
 
-    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="cfai-spinner"></span> Analisando 6 meses...'; }
-    placeholder.style.display = 'flex';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="cfai-spinner"></span> Analisando...'; }
+    ph.style.display = 'flex';
     output.style.display = 'none';
     output.innerHTML = '';
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Sessão expirada.');
-
-      const dados = await coletarDadosAnomalias(session.user.id);
-
-      placeholder.style.display = 'none';
+      const contexto = await coletarContexto(session.user.id);
+      ph.style.display = 'none';
       output.style.display = 'block';
       output.innerHTML = '<span class="cfai-cursor"></span>';
-
-      let textoAcumulado = '';
-
-      await analisarAnomalias(
-        dados,
-        (delta) => {
-          textoAcumulado += delta;
-          output.innerHTML = renderMd(textoAcumulado) + '<span class="cfai-cursor"></span>';
-          output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        },
-        (textoFinal) => {
-          salvarCache(textoFinal);
-          const agora = new Date();
-          mostrarResultado(textoFinal, agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }));
-        }
+      let acumulado = '';
+      await analisarComIA(contexto,
+        delta => { acumulado += delta; output.innerHTML = renderMd(acumulado) + '<span class="cfai-cursor"></span>'; output.scrollIntoView({behavior:'smooth',block:'nearest'}); },
+        texto  => { salvarCache(texto); mostrarResultado(texto, new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})); }
       );
-
     } catch(err) {
-      placeholder.style.display = 'flex';
+      ph.style.display = 'flex';
+      output.style.display = 'none';
+      if (btn) { btn.disabled = false; btn.innerHTML = '✨ Analisar fluxo de caixa'; }
+      const el = document.createElement('p');
+      el.style.cssText = 'color:var(--danger-text);font-size:12px;margin-top:8px;text-align:center';
+      el.textContent = '⚠️ ' + err.message;
+      ph.appendChild(el);
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '✨ Analisar fluxo de caixa'; }
+    }
+  };
+
+  const cached = carregarCache();
+  if (cached) {
+    const { ts } = JSON.parse(localStorage.getItem(LS_KEY));
+    mostrarResultado(cached, new Date(ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) + ' (cache)');
+  }
+</script>
+
+<!-- IA: Anomalias -->
+<script type="module">
+  import { coletarDadosAnomalias, analisarAnomalias } from '../js/anomalyAI.js';
+  import { renderMd } from '../js/cashflowAI.js';
+  import { supabase } from '../js/supabaseClient.js';
+
+  const LS_KEY = 'finzen_anai_cache';
+  const CACHE_TTL = 6 * 60 * 60 * 1000;
+
+  function salvarCache(texto) { localStorage.setItem(LS_KEY, JSON.stringify({ texto, ts: Date.now() })); }
+  function carregarCache() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return null;
+      const { texto, ts } = JSON.parse(raw);
+      return Date.now() - ts > CACHE_TTL ? null : texto;
+    } catch(_) { return null; }
+  }
+
+  function mostrarResultado(texto, label) {
+    const output = document.getElementById('anaiOutput');
+    const ph = document.getElementById('anaiPlaceholder');
+    ph.style.display = 'none';
+    output.style.display = 'block';
+    output.innerHTML = renderMd(texto) + `
+      <div class="ia-footer">
+        <span>${label}</span>
+        <button class="ia-refresh" onclick="window.anaiAnalisar(true)">🔄 Atualizar</button>
+      </div>`;
+  }
+
+  window.anaiAnalisar = async function(forcar = false) {
+    const btn = document.getElementById('anaiBtnAnalisar');
+    const output = document.getElementById('anaiOutput');
+    const ph = document.getElementById('anaiPlaceholder');
+
+    if (!forcar) {
+      const cached = carregarCache();
+      if (cached) {
+        const { ts } = JSON.parse(localStorage.getItem(LS_KEY));
+        mostrarResultado(cached, new Date(ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) + ' (cache)');
+        return;
+      }
+    }
+
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="cfai-spinner"></span> Analisando...'; }
+    ph.style.display = 'flex';
+    output.style.display = 'none';
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Sessão expirada.');
+      const dados = await coletarDadosAnomalias(session.user.id);
+      ph.style.display = 'none';
+      output.style.display = 'block';
+      output.innerHTML = '<span class="cfai-cursor"></span>';
+      let acumulado = '';
+      await analisarAnomalias(dados,
+        delta => { acumulado += delta; output.innerHTML = renderMd(acumulado) + '<span class="cfai-cursor"></span>'; output.scrollIntoView({behavior:'smooth',block:'nearest'}); },
+        texto  => { salvarCache(texto); mostrarResultado(texto, new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})); }
+      );
+    } catch(err) {
+      ph.style.display = 'flex';
       output.style.display = 'none';
       if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Detectar anomalias'; }
-      const errEl = document.createElement('p');
-      errEl.style.cssText = 'color:var(--danger);font-size:12px;margin-top:8px;text-align:center';
-      errEl.textContent = '⚠️ ' + err.message;
-      document.getElementById('anaiPlaceholder').appendChild(errEl);
+      const el = document.createElement('p');
+      el.style.cssText = 'color:var(--danger-text);font-size:12px;margin-top:8px;text-align:center';
+      el.textContent = '⚠️ ' + err.message;
+      ph.appendChild(el);
     } finally {
       if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Detectar anomalias'; }
     }
   };
 
-  // Carregar cache automaticamente se existir
   const cached = carregarCache();
   if (cached) {
-    const { ts } = JSON.parse(localStorage.getItem(LS_KEY_ANAI));
-    const hora = new Date(ts).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
-    mostrarResultado(cached, hora + ' (cache)');
+    const { ts } = JSON.parse(localStorage.getItem(LS_KEY));
+    mostrarResultado(cached, new Date(ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) + ' (cache)');
   }
 </script>
 </body>
