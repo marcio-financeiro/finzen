@@ -204,9 +204,6 @@
 #inputMsg:disabled { opacity: .5; }
 
 #btnEnviar {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  cursor: pointer;
   width: 34px; height: 34px;
   border-radius: 8px;
   border: none;
@@ -220,7 +217,7 @@
 }
 #btnEnviar:hover:not(:disabled) { opacity: .85; }
 #btnEnviar:active:not(:disabled) { transform: scale(.94); }
-#btnEnviar:disabled { opacity: .3; cursor: not-allowed; }
+#btnEnviar.carregando { opacity: .4; cursor: wait; }
 
 .chat-hint {
   font-size: 11px;
@@ -291,7 +288,7 @@
           rows="1"
           disabled
         ></textarea>
-        <button id="btnEnviar" disabled title="Enviar (Enter)">➤</button>
+        <button id="btnEnviar" onclick="window.enviarChat()" title="Enviar">➤</button>
       </div>
       <p class="chat-hint">Enter para enviar · Shift+Enter para nova linha</p>
     </div>
