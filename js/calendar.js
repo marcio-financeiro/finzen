@@ -21,7 +21,7 @@ document.getElementById('btnVoltar').addEventListener('click', () => navigate('.
 const el    = id => document.getElementById(id);
 let hoje    = new Date();
 let refData = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-let viewAtual   = 'mensal';
+let viewAtual   = window.innerWidth <= 820 ? 'lista' : 'mensal';
 let eventos     = [];
 let editandoId  = null;
 
@@ -312,7 +312,7 @@ function renderMensal() {
       const cfg = tipoCfg(ev.tipo);
       const autoStyle = ev._auto ? 'border-left:2px dashed ' + cfg.cor + ';opacity:.85;' : '';
       html += `<div class="cal-evento-pill" data-id="${ev.id}"
-        style="background:${cfg.cor}22;color:${cfg.cor};${autoStyle}--pill-cor:${cfg.cor};"
+        style="background:${cfg.cor}22;color:${cfg.cor};${autoStyle}"
         title="${ev.titulo}${ev._auto?' (automático)':''}">
         ${cfg.icon} ${ev.titulo}
       </div>`;
@@ -782,6 +782,11 @@ supabase
   .then(({ data }) => {
     if (data?.setting_value) _emailPerfil = data.setting_value;
   });
+
+// Sincronizar botão ativo com a visão detectada (mobile = lista)
+document.querySelectorAll('.cal-view-btn').forEach(b => {
+  b.classList.toggle('active', b.dataset.view === viewAtual);
+});
 
 renderizar();
 
