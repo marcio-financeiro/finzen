@@ -29,6 +29,7 @@ const el = id => document.getElementById(id);
 // ── Carregar contexto financeiro ──────────────────────
 async function inicializar() {
   el('statusContexto').textContent = '⏳ Carregando seus dados financeiros...';
+  el('btnEnviar').classList.add('carregando');
   try {
     [contexto, ctxInvest] = await Promise.all([
       coletarContexto(user.id),
@@ -37,11 +38,12 @@ async function inicializar() {
     el('statusContexto').textContent = '✅ Dados carregados — pode perguntar!';
     el('statusContexto').style.color = 'var(--success, #22c55e)';
     el('inputMsg').disabled    = false;
-    el('btnEnviar').disabled   = false;
     el('inputMsg').placeholder = 'Pergunte sobre gastos, investimentos, metas, teses...';
+    el('btnEnviar').classList.remove('carregando');
   } catch(err) {
     el('statusContexto').textContent = '⚠️ Erro ao carregar dados: ' + err.message;
     el('statusContexto').style.color = 'var(--danger, #ef4444)';
+    el('btnEnviar').classList.remove('carregando');
   }
 }
 
@@ -231,7 +233,7 @@ async function enviar() {
   carregando = true;
   input.value = '';
   input.style.height = 'auto';
-  el('btnEnviar').disabled = true;
+  el('btnEnviar').classList.add('carregando');
 
   // Mostra mensagem do usuário
   addMsg('user', mensagem);
@@ -306,7 +308,7 @@ async function enviar() {
     addMsg('ai', `⚠️ Erro ao processar sua mensagem: ${err.message}`);
   } finally {
     carregando = false;
-    el('btnEnviar').disabled = false;
+    el('btnEnviar').classList.remove('carregando');
     input.focus();
   }
 }
@@ -342,11 +344,8 @@ el('inputMsg').addEventListener('keydown', function(e) {
   }
 });
 
-el('btnEnviar').addEventListener('click', enviar);
-el('btnEnviar').addEventListener('touchend', (e) => {
-  e.preventDefault();
-  if (!el('btnEnviar').disabled) enviar();
-});
+// Expõe enviar globalmente para o onclick do botão funcionar no mobile
+window.enviarChat = enviar;
 
 // ── Inicializar ───────────────────────────────────────
 inicializar();
