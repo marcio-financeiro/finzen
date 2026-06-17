@@ -551,7 +551,7 @@ function abrirModalNovo(data = '', hora = '') {
   el('evNotifEmail').checked  = false;
   el('evIcsExport').checked   = false;
   el('evLembreteDias').value  = '1';
-  el('evEmail').value         = 'info.marcio@gmail.com';
+  el('evEmail').value         = user.email;
   el('evNotifOpcoes').style.display = 'none';
   el('btnExcluirEvento').style.display = 'none';
   el('evMsg').textContent = '';
@@ -573,7 +573,7 @@ function abrirModalEditar(ev) {
   el('evNotifEmail').checked  = ev.notif_email  || false;
   el('evIcsExport').checked   = false;
   el('evLembreteDias').value  = String(ev.lembrete_dias ?? 1);
-  el('evEmail').value         = ev.email_destino || 'info.marcio@gmail.com';
+  el('evEmail').value         = ev.email_destino || user.email;
   el('evNotifOpcoes').style.display = ev.notif_email ? 'block' : 'none';
   el('btnExcluirEvento').style.display = 'inline-flex';
   el('evMsg').textContent = '';
