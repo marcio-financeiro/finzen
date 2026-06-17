@@ -343,6 +343,10 @@ el('inputMsg').addEventListener('keydown', function(e) {
 });
 
 el('btnEnviar').addEventListener('click', enviar);
+el('btnEnviar').addEventListener('touchend', (e) => {
+  e.preventDefault();
+  if (!el('btnEnviar').disabled) enviar();
+});
 
 // ── Inicializar ───────────────────────────────────────
 inicializar();
