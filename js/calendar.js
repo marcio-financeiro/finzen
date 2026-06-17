@@ -312,7 +312,7 @@ function renderMensal() {
       const cfg = tipoCfg(ev.tipo);
       const autoStyle = ev._auto ? 'border-left:2px dashed ' + cfg.cor + ';opacity:.85;' : '';
       html += `<div class="cal-evento-pill" data-id="${ev.id}"
-        style="background:${cfg.cor}22;color:${cfg.cor};${autoStyle}"
+        style="background:${cfg.cor}22;color:${cfg.cor};${autoStyle}--pill-cor:${cfg.cor};"
         title="${ev.titulo}${ev._auto?' (automático)':''}">
         ${cfg.icon} ${ev.titulo}
       </div>`;
