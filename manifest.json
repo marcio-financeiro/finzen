@@ -1,25 +1,15 @@
 {
-  "name": "FinZen",
+  "name": "FinZen — Assessor Pessoal",
   "short_name": "FinZen",
-  "description": "Controle financeiro pessoal",
+  "description": "Seu assessor pessoal financeiro e de vida",
   "start_url": "./login.html",
   "display": "standalone",
-  "background_color": "#07080f",
-  "theme_color": "#4b84f3",
+  "background_color": "#060810",
+  "theme_color": "#f59e0b",
   "orientation": "portrait-primary",
   "permissions": ["notifications"],
   "icons": [
-    {
-      "src": "./icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "./icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
