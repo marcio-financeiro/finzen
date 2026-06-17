@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bem-vindo — FinZen</title>
+<link rel="stylesheet" href="../css/base.css?v=1100">
+<link rel="stylesheet" href="../css/components.css?v=1100">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#f59e0b">
+<style>
+  body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
+
+  .ob-card {
+    width:100%; max-width:480px;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:20px; padding:36px 32px;
+    box-shadow:var(--shadow);
+  }
+
+  /* Progress steps */
+  .ob-steps {
+    display:flex; align-items:center; gap:0; margin-bottom:32px;
+  }
+  .ob-step {
+    width:28px; height:28px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:800; flex-shrink:0;
+    background:var(--surface-2); color:var(--muted);
+    border:2px solid var(--border); transition:all .2s;
+  }
+  .ob-step.active {
+    background:var(--gold-gradient); color:#000; border-color:transparent;
+    box-shadow:var(--gold-glow);
+  }
+  .ob-step.done { background:#1ec86a; color:#fff; border-color:transparent; }
+  .ob-step-line { flex:1; height:2px; background:var(--border); }
+  .ob-step-line.done { background:#1ec86a; }
+
+  /* Conteúdo dos steps */
+  .ob-step-content { display:none; }
+  .ob-step-content.active { display:block; }
+
+  .ob-icon { font-size:48px; margin-bottom:16px; }
+  .ob-title { font-size:22px; font-weight:900; margin-bottom:8px; }
+  .ob-sub { font-size:14px; color:var(--muted); margin-bottom:24px; line-height:1.6; }
+
+  /* Categorias sugeridas */
+  .cat-grid {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px;
+  }
+  .cat-chip {
+    padding:8px 6px; border-radius:8px; text-align:center;
+    border:1px solid var(--border); cursor:pointer;
+    font-size:12px; font-weight:600; color:var(--muted);
+    background:var(--surface-2); transition:all .15s; user-select:none;
+  }
+  .cat-chip.selected {
+    border-color:var(--accent); color:var(--accent);
+    background:var(--accent-dim);
+  }
+  .cat-chip .cat-icon { font-size:20px; display:block; margin-bottom:3px; }
+
+  .ob-nav { display:flex; gap:10px; margin-top:24px; }
+  .ob-nav button { flex:1; }
+
+  .ob-skip {
+    text-align:center; margin-top:16px;
+    font-size:12px; color:var(--muted); cursor:pointer;
+    text-decoration:underline;
+  }
+</style>
+</head>
+<body>
+<div class="ob-card">
+
+  <!-- Steps indicator -->
+  <div class="ob-steps">
+    <div class="ob-step active" id="step-dot-1">1</div>
+    <div class="ob-step-line" id="step-line-1"></div>
+    <div class="ob-step" id="step-dot-2">2</div>
+    <div class="ob-step-line" id="step-line-2"></div>
+    <div class="ob-step" id="step-dot-3">3</div>
+    <div class="ob-step-line" id="step-line-3"></div>
+    <div class="ob-step" id="step-dot-4">4</div>
+  </div>
+
+  <!-- STEP 1: Boas-vindas + perfil -->
+  <div class="ob-step-content active" id="ob-step-1">
+    <div class="ob-icon">👋</div>
+    <div class="ob-title">Bem-vindo ao FinZen!</div>
+    <div class="ob-sub">Seu assessor pessoal. Vamos configurar sua conta em poucos passos.</div>
+
+    <div class="form-group">
+      <label>Como quer ser chamado?</label>
+      <input type="text" id="obNome" placeholder="Seu nome">
+    </div>
+    <div class="form-group">
+      <label>E-mail para lembretes</label>
+      <input type="email" id="obEmail" placeholder="seu@email.com">
+      <small style="color:var(--muted);font-size:11px;margin-top:4px;display:block;">
+        Usado para lembretes de compromissos e vencimentos
+      </small>
+    </div>
+
+    <div class="ob-nav">
+      <button class="btn btn-primary" id="btnOb1">Continuar →</button>
+    </div>
+    <div class="ob-skip" id="skipAll">Pular configuração inicial</div>
+  </div>
+
+  <!-- STEP 2: Primeira conta bancária -->
+  <div class="ob-step-content" id="ob-step-2">
+    <div class="ob-icon">🏦</div>
+    <div class="ob-title">Sua primeira conta</div>
+    <div class="ob-sub">Adicione uma conta bancária para começar a registrar seus lançamentos.</div>
+
+    <div class="form-group">
+      <label>Nome da conta *</label>
+      <input type="text" id="obContaNome" placeholder="Ex: Nubank, Itaú, Bradesco...">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label>Tipo</label>
+        <select id="obContaTipo">
+          <option value="corrente">Conta Corrente</option>
+          <option value="poupanca">Poupança</option>
+          <option value="digital">Conta Digital</option>
+          <option value="investimento">Investimento</option>
+          <option value="carteira">Carteira</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Moeda</label>
+        <select id="obContaMoeda">
+          <option value="BRL">R$ Real</option>
+          <option value="USD">$ Dólar</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Saldo inicial (R$)</label>
+      <input type="number" id="obContaSaldo" placeholder="0,00" step="0.01" min="0">
+    </div>
+
+    <div class="ob-nav">
+      <button class="btn btn-secondary" id="btnOb2Back">← Voltar</button>
+      <button class="btn btn-primary" id="btnOb2">Continuar →</button>
+    </div>
+    <div class="ob-skip" id="skipConta">Pular — adicionar depois</div>
+  </div>
+
+  <!-- STEP 3: Categorias -->
+  <div class="ob-step-content" id="ob-step-3">
+    <div class="ob-icon">🏷️</div>
+    <div class="ob-title">Categorias de gastos</div>
+    <div class="ob-sub">Selecione as categorias que fazem sentido para você. Pode adicionar mais depois.</div>
+
+    <div class="cat-grid" id="catGrid"></div>
+
+    <div class="ob-nav">
+      <button class="btn btn-secondary" id="btnOb3Back">← Voltar</button>
+      <button class="btn btn-primary" id="btnOb3">Continuar →</button>
+    </div>
+    <div class="ob-skip" id="skipCats">Pular — configurar depois</div>
+  </div>
+
+  <!-- STEP 4: Pronto! -->
+  <div class="ob-step-content" id="ob-step-4">
+    <div class="ob-icon">🎉</div>
+    <div class="ob-title">Tudo pronto!</div>
+    <div class="ob-sub" id="ob4Sub">Seu FinZen está configurado. Explore todas as funcionalidades do seu assessor pessoal.</div>
+
+    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:8px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;">O que você pode fazer agora:</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:13px;">💸 Registrar receitas e despesas</div>
+        <div style="font-size:13px;">📈 Acompanhar seus investimentos</div>
+        <div style="font-size:13px;">📅 Organizar compromissos no calendário</div>
+        <div style="font-size:13px;">💬 Perguntar ao Chat IA sobre suas finanças</div>
+        <div style="font-size:13px;">⚓ Controlar sua escala offshore</div>
+      </div>
+    </div>
+
+    <div class="ob-nav">
+      <button class="btn btn-primary" id="btnOb4" style="font-size:15px;">Ir para o Dashboard 🚀</button>
+    </div>
+  </div>
+
+  <div id="obMsg" class="message" style="min-height:0;margin-top:12px;"></div>
+</div>
+
+<script type="module" src="../js/onboarding.js?v=1100"></script>
+</body>
+</html>

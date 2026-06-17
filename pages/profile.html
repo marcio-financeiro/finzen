@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meu Perfil — FinZen</title>
+<link rel="stylesheet" href="../css/base.css?v=1100">
+<link rel="stylesheet" href="../css/layout.css?v=1100">
+<link rel="stylesheet" href="../css/components.css?v=1100">
+<link rel="stylesheet" href="../css/mobile.css?v=1100">
+<link rel="stylesheet" href="../css/navigation.css?v=1100">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#f59e0b">
+</head>
+<body>
+<div class="app-layout">
+  <div id="navContainer"></div>
+  <main class="content">
+    <section class="panel" style="margin:20px;max-width:560px;">
+
+      <!-- Header -->
+      <div style="padding:24px 24px 0;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h1 style="margin:0;font-size:22px;">👤 Meu Perfil</h1>
+          <p id="userEmailSub" class="muted" style="margin:2px 0 0;font-size:12px;"></p>
+        </div>
+        <button class="btn btn-secondary compact" id="btnVoltar">← Dashboard</button>
+      </div>
+
+      <div style="padding:24px;">
+
+        <!-- Avatar -->
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;
+          padding:20px;background:var(--surface-2);border-radius:12px;border:1px solid var(--border);">
+          <div id="perfilAvatar" style="
+            width:64px;height:64px;border-radius:50%;
+            background:var(--gold-gradient);color:#000;
+            display:flex;align-items:center;justify-content:center;
+            font-size:26px;font-weight:900;flex-shrink:0;
+            box-shadow:var(--gold-glow);
+          ">?</div>
+          <div>
+            <div id="perfilNomeDisplay" style="font-size:18px;font-weight:900;">—</div>
+            <div id="perfilEmailDisplay" style="font-size:12px;color:var(--muted);margin-top:2px;">—</div>
+            <div style="font-size:11px;color:var(--accent);margin-top:4px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;">Assessor Pessoal</div>
+          </div>
+        </div>
+
+        <!-- Dados pessoais -->
+        <h2 style="font-size:14px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px;">Dados Pessoais</h2>
+
+        <div class="form-group">
+          <label>Nome</label>
+          <input type="text" id="pfNome" placeholder="Como quer ser chamado">
+        </div>
+
+        <div class="form-group">
+          <label>E-mail de login</label>
+          <input type="email" id="pfEmailLogin" disabled style="opacity:.5;cursor:not-allowed;">
+          <small class="muted" style="font-size:11px;">Não pode ser alterado aqui</small>
+        </div>
+
+        <!-- Notificações -->
+        <h2 style="font-size:14px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:24px 0 16px;">Notificações</h2>
+
+        <div class="form-group">
+          <label>E-mail para lembretes</label>
+          <input type="email" id="pfEmailNotif" placeholder="seu@email.com">
+          <small class="muted" style="font-size:11px;margin-top:4px;display:block;">
+            Usado para lembretes de compromissos, vencimentos e certificações
+          </small>
+        </div>
+
+        <!-- Offshore -->
+        <h2 style="font-size:14px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:24px 0 16px;">Offshore</h2>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label>Regime padrão</label>
+            <select id="pfRegime">
+              <option value="14x21">14x21</option>
+              <option value="14x14">14x14</option>
+              <option value="21x21">21x21</option>
+              <option value="28x28">28x28</option>
+              <option value="variavel">Variável</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Empresa atual</label>
+            <input type="text" id="pfEmpresa" placeholder="Ex: Petrobras, SBM...">
+          </div>
+        </div>
+
+        <div id="pfMsg" class="message" style="min-height:0;"></div>
+
+        <button class="btn btn-primary full" id="btnSalvarPerfil" style="margin-top:8px;">
+          💾 Salvar perfil
+        </button>
+
+        <!-- Segurança -->
+        <h2 style="font-size:14px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:28px 0 16px;">Segurança</h2>
+
+        <div class="form-group">
+          <label>Nova senha</label>
+          <input type="password" id="pfSenha" placeholder="Deixe em branco para não alterar">
+        </div>
+        <div class="form-group">
+          <label>Confirmar nova senha</label>
+          <input type="password" id="pfSenhaConf" placeholder="Repita a nova senha">
+        </div>
+
+        <button class="btn btn-secondary full" id="btnAlterarSenha">🔒 Alterar senha</button>
+
+        <div id="pfSenhaMsg" class="message" style="min-height:0;margin-top:8px;"></div>
+
+        <!-- Zona de perigo -->
+        <div style="margin-top:32px;padding:16px;border:1px solid rgba(240,78,78,.2);
+          border-radius:12px;background:rgba(240,78,78,.05);">
+          <div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:8px;">⚠️ Zona de perigo</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+            Fazer logout encerra sua sessão em todos os dispositivos.
+          </p>
+          <button class="btn btn-danger compact" id="btnLogoutPerfil">Sair da conta</button>
+        </div>
+
+      </div>
+    </section>
+  </main>
+</div>
+
+<script type="module" src="../js/navigation.js?v=1100"></script>
+<script type="module" src="../js/profile.js?v=1100"></script>
+</body>
+</html>
