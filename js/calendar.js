@@ -361,7 +361,7 @@ function renderMensal() {
   el('calBody').querySelectorAll('.cal-cell[data-data]').forEach(cell => {
     cell.addEventListener('click', (e) => {
       if (e.target.closest('[data-id]')) return; // clicou em evento
-      abrirModalNovo(cell.dataset.data);
+      await abrirModalNovo(cell.dataset.data);
     });
   });
 
@@ -372,7 +372,7 @@ function renderMensal() {
       const ev = eventos.find(x => x.id === pill.dataset.id);
       if (!ev) return;
       if (ev._auto) mostrarInfoAuto(ev);
-      else abrirModalEditar(ev);
+      else await abrirModalEditar(ev);
     });
   });
 }
@@ -441,7 +441,7 @@ function renderSemanal() {
   el('calBody').querySelectorAll('.cal-semana-cell').forEach(cell => {
     cell.addEventListener('click', e => {
       if (e.target.closest('[data-id]')) return;
-      abrirModalNovo(cell.dataset.data, cell.dataset.hora);
+      await abrirModalNovo(cell.dataset.data, cell.dataset.hora);
     });
   });
 
@@ -451,7 +451,7 @@ function renderSemanal() {
       const ev = eventos.find(x => x.id === pill.dataset.id);
       if (!ev) return;
       if (ev._auto) mostrarInfoAuto(ev);
-      else abrirModalEditar(ev);
+      else await abrirModalEditar(ev);
     });
   });
 }
@@ -508,7 +508,7 @@ function renderLista() {
       const ev = eventos.find(x => x.id === item.dataset.id);
       if (!ev) return;
       if (ev._auto) mostrarInfoAuto(ev);
-      else abrirModalEditar(ev);
+      else await abrirModalEditar(ev);
     });
   });
 }
@@ -559,7 +559,7 @@ function mostrarInfoAuto(ev) {
 }
 
 // ── Modal: Novo Evento ────────────────────────────────
-function abrirModalNovo(data = '', hora = '') {
+async function abrirModalNovo(data = '', hora = '') {
   editandoId = null;
   el('calModalTitulo').textContent = 'Novo Evento';
   el('evTitulo').value      = '';
@@ -581,7 +581,7 @@ function abrirModalNovo(data = '', hora = '') {
 }
 
 // ── Modal: Editar Evento ──────────────────────────────
-function abrirModalEditar(ev) {
+async function abrirModalEditar(ev) {
   editandoId = ev.id;
   el('calModalTitulo').textContent = 'Editar Evento';
   el('evTitulo').value      = ev.titulo || '';
