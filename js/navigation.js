@@ -54,6 +54,7 @@ const NAV_GROUPS = [
       {title:'Busca',         icon:'🔍', href:'./search.html'},
       {title:'Notificações',  icon:'🔔', href:'./notifications.html'},
       {title:'Cadastros',     icon:'⚙️', href:'./registrations.html'},
+      {title:'Meu Perfil',    icon:'👤', href:'./profile.html'},
       {title:'Importar',      icon:'📥', href:'./importer.html'},
       {title:'Backup',        icon:'💾', href:'./backup.html'},
       {title:'Restaurar',     icon:'📤', href:'./restore.html'},

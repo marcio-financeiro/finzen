@@ -11,7 +11,26 @@
 const EMAILJS_PUBLIC_KEY  = 'xdlmVD8Ie6WJcIYz-';
 const EMAILJS_SERVICE_ID  = 'service_2t1x059';
 const EMAILJS_TEMPLATE_ID = 'urtiw8g';
-const EMAIL_DESTINO       = 'info.marcio@gmail.com';
+const EMAIL_FALLBACK      = 'info.marcio@gmail.com'; // fallback se não tiver perfil
+
+// Cache do e-mail do usuário por sessão
+let _emailCache = null;
+
+async function getEmailUsuario(sb, userId) {
+  if (_emailCache) return _emailCache;
+  try {
+    const { data } = await sb
+      .from('user_settings')
+      .select('setting_value')
+      .eq('user_id', userId)
+      .eq('setting_key', 'perfil_email_notif')
+      .single();
+    _emailCache = data?.setting_value || EMAIL_FALLBACK;
+  } catch(_) {
+    _emailCache = EMAIL_FALLBACK;
+  }
+  return _emailCache;
+}
 
 export const emailService = (() => {
 
@@ -79,8 +98,10 @@ export const emailService = (() => {
     const CACHE_KEY  = 'finzen_email_lembrete_dia';
     const hoje       = new Date().toISOString().split('T')[0];
 
-    // Só verifica uma vez por dia
     if (localStorage.getItem(CACHE_KEY) === hoje) return;
+
+    // Buscar e-mail do perfil do usuário
+    const emailUsuario = await getEmailUsuario(sb, userId);
 
     try {
       // Buscar eventos com notif_email=true e lembrete próximo
@@ -115,7 +136,7 @@ export const emailService = (() => {
             hora      : ev.hora,
             tipo      : ev.tipo,
             descricao : ev.descricao || (diasAte === 0 ? '⏰ Evento hoje!' : `Em ${diasAte} dia(s)`),
-            email     : ev.email_destino || EMAIL_DESTINO,
+            email     : ev.email_destino || emailUsuario,
           });
         }
       });
@@ -134,7 +155,7 @@ export const emailService = (() => {
             descricao : diasAte === 0
               ? `⚠️ Certificação ${cert.nome} vence HOJE! Emitida por: ${cert.entidade || '—'}`
               : `Certificação ${cert.nome} vence em ${diasAte} dia(s). Emitida por: ${cert.entidade || '—'}`,
-            email     : EMAIL_DESTINO,
+            email     : emailUsuario,
           });
         }
       });
