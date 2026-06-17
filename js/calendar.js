@@ -62,29 +62,7 @@ const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
-// ── E-mail do perfil do usuário (cache) ──────────────
-let _emailPerfil = null;
-
-async function getEmailPerfil() {
-  if (_emailPerfil) return _emailPerfil;
-  try {
-    const { data } = await supabase
-      .from('user_settings')
-      .select('setting_value')
-      .eq('user_id', user.id)
-      .eq('setting_key', 'perfil_email_notif')
-      .single();
-    _emailPerfil = data?.setting_value || user.email || '';
-  } catch(_) {
-    _emailPerfil = user.email || '';
-  }
-  return _emailPerfil;
-}
-
-// ── Carregar e-mail do perfil na inicialização ────────
-getEmailPerfil();
-
-
+// ── Carregar eventos do Supabase ──────────────────────
 async function carregarEventos(dataInicio, dataFim) {
   // ── 1. Eventos manuais do calendário ─────────────────
   const { data, error } = await supabase
@@ -361,7 +339,7 @@ function renderMensal() {
   el('calBody').querySelectorAll('.cal-cell[data-data]').forEach(cell => {
     cell.addEventListener('click', (e) => {
       if (e.target.closest('[data-id]')) return; // clicou em evento
-      await abrirModalNovo(cell.dataset.data);
+      abrirModalNovo(cell.dataset.data);
     });
   });
 
@@ -372,7 +350,7 @@ function renderMensal() {
       const ev = eventos.find(x => x.id === pill.dataset.id);
       if (!ev) return;
       if (ev._auto) mostrarInfoAuto(ev);
-      else await abrirModalEditar(ev);
+      else abrirModalEditar(ev);
     });
   });
 }
@@ -441,7 +419,7 @@ function renderSemanal() {
   el('calBody').querySelectorAll('.cal-semana-cell').forEach(cell => {
     cell.addEventListener('click', e => {
       if (e.target.closest('[data-id]')) return;
-      await abrirModalNovo(cell.dataset.data, cell.dataset.hora);
+      abrirModalNovo(cell.dataset.data, cell.dataset.hora);
     });
   });
 
@@ -451,7 +429,7 @@ function renderSemanal() {
       const ev = eventos.find(x => x.id === pill.dataset.id);
       if (!ev) return;
       if (ev._auto) mostrarInfoAuto(ev);
-      else await abrirModalEditar(ev);
+      else abrirModalEditar(ev);
     });
   });
 }
@@ -508,7 +486,7 @@ function renderLista() {
       const ev = eventos.find(x => x.id === item.dataset.id);
       if (!ev) return;
       if (ev._auto) mostrarInfoAuto(ev);
-      else await abrirModalEditar(ev);
+      else abrirModalEditar(ev);
     });
   });
 }
@@ -559,7 +537,7 @@ function mostrarInfoAuto(ev) {
 }
 
 // ── Modal: Novo Evento ────────────────────────────────
-async function abrirModalNovo(data = '', hora = '') {
+function abrirModalNovo(data = '', hora = '') {
   editandoId = null;
   el('calModalTitulo').textContent = 'Novo Evento';
   el('evTitulo').value      = '';
@@ -573,7 +551,7 @@ async function abrirModalNovo(data = '', hora = '') {
   el('evNotifEmail').checked  = false;
   el('evIcsExport').checked   = false;
   el('evLembreteDias').value  = '1';
-  el('evEmail').value         = await getEmailPerfil();
+  el('evEmail').value         = _emailPerfil;
   el('evNotifOpcoes').style.display = 'none';
   el('btnExcluirEvento').style.display = 'none';
   el('evMsg').textContent = '';
@@ -581,7 +559,7 @@ async function abrirModalNovo(data = '', hora = '') {
 }
 
 // ── Modal: Editar Evento ──────────────────────────────
-async function abrirModalEditar(ev) {
+function abrirModalEditar(ev) {
   editandoId = ev.id;
   el('calModalTitulo').textContent = 'Editar Evento';
   el('evTitulo').value      = ev.titulo || '';
@@ -595,7 +573,7 @@ async function abrirModalEditar(ev) {
   el('evNotifEmail').checked  = ev.notif_email  || false;
   el('evIcsExport').checked   = false;
   el('evLembreteDias').value  = String(ev.lembrete_dias ?? 1);
-  el('evEmail').value         = ev.email_destino || await getEmailPerfil();
+  el('evEmail').value         = ev.email_destino || _emailPerfil;
   el('evNotifOpcoes').style.display = ev.notif_email ? 'block' : 'none';
   el('btnExcluirEvento').style.display = 'inline-flex';
   el('evMsg').textContent = '';
@@ -793,6 +771,18 @@ function exportarICS({ id, titulo, data_inicio, data_fim, hora, descricao, local
 }
 
 // ── Inicialização ─────────────────────────────────────
+// Buscar e-mail do perfil uma vez e salvar em variável global
+let _emailPerfil = user.email || '';
+supabase
+  .from('user_settings')
+  .select('setting_value')
+  .eq('user_id', user.id)
+  .eq('setting_key', 'perfil_email_notif')
+  .single()
+  .then(({ data }) => {
+    if (data?.setting_value) _emailPerfil = data.setting_value;
+  });
+
 renderizar();
 
 // Verificar e enviar lembretes por e-mail (uma vez por dia)
