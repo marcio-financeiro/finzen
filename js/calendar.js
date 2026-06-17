@@ -62,7 +62,29 @@ const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
-// ── Carregar eventos do Supabase ──────────────────────
+// ── E-mail do perfil do usuário (cache) ──────────────
+let _emailPerfil = null;
+
+async function getEmailPerfil() {
+  if (_emailPerfil) return _emailPerfil;
+  try {
+    const { data } = await supabase
+      .from('user_settings')
+      .select('setting_value')
+      .eq('user_id', user.id)
+      .eq('setting_key', 'perfil_email_notif')
+      .single();
+    _emailPerfil = data?.setting_value || user.email || '';
+  } catch(_) {
+    _emailPerfil = user.email || '';
+  }
+  return _emailPerfil;
+}
+
+// ── Carregar e-mail do perfil na inicialização ────────
+getEmailPerfil();
+
+
 async function carregarEventos(dataInicio, dataFim) {
   // ── 1. Eventos manuais do calendário ─────────────────
   const { data, error } = await supabase
@@ -551,7 +573,7 @@ function abrirModalNovo(data = '', hora = '') {
   el('evNotifEmail').checked  = false;
   el('evIcsExport').checked   = false;
   el('evLembreteDias').value  = '1';
-  el('evEmail').value         = user.email;
+  el('evEmail').value         = await getEmailPerfil();
   el('evNotifOpcoes').style.display = 'none';
   el('btnExcluirEvento').style.display = 'none';
   el('evMsg').textContent = '';
@@ -573,7 +595,7 @@ function abrirModalEditar(ev) {
   el('evNotifEmail').checked  = ev.notif_email  || false;
   el('evIcsExport').checked   = false;
   el('evLembreteDias').value  = String(ev.lembrete_dias ?? 1);
-  el('evEmail').value         = ev.email_destino || user.email;
+  el('evEmail').value         = ev.email_destino || await getEmailPerfil();
   el('evNotifOpcoes').style.display = ev.notif_email ? 'block' : 'none';
   el('btnExcluirEvento').style.display = 'inline-flex';
   el('evMsg').textContent = '';
