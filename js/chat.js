@@ -88,6 +88,16 @@ ${c.orcamentos?.length
   ? c.orcamentos.map(o => `- ${o.categoria}: planejado ${fmt(o.planejado)}`).join('\n')
   : '- Sem orçamentos configurados'}
 
+### Compras abertas no cartão
+${c.comprasCartao?.length
+  ? c.comprasCartao.map(f =>
+      `**${f.cartao} — fatura ${f.fatura} (R$ ${Number(f.total).toLocaleString('pt-BR',{minimumFractionDigits:2})}):**\n` +
+      f.itens.slice(0,8).map(i =>
+        `  - ${i.descricao}${i.parcela?' ('+i.parcela+')':''}: ${fmt(i.valor)} [${i.categoria}]`
+      ).join('\n')
+    ).join('\n')
+  : '- Sem compras abertas no cartão'}
+
 ## Instruções
 - Responda sempre em português brasileiro
 - Use os dados reais acima — nunca invente números

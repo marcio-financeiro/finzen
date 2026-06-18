@@ -29,6 +29,7 @@ export async function coletarContexto(userId) {
     { data: recorrentes },
     { data: historico3m },
     { data: orcamentos },
+    { data: comprasCartao },
   ] = await Promise.all([
     supabase.from('accounts')
       .select('nome,saldo_atual,currency')
@@ -67,6 +68,13 @@ export async function coletarContexto(userId) {
       .select('valor_planejado,categories:category_id(nome)')
       .eq('user_id', userId)
       .eq('mes_referencia', anoMes),
+
+    supabase.from('card_transactions')
+      .select('descricao,valor_parcela,valor_total,parcela_atual,total_parcelas,fatura_referencia,credit_cards:card_id(nome),categories:category_id(nome,icon)')
+      .eq('user_id', userId)
+      .eq('status', 'aberta')
+      .order('fatura_referencia', { ascending: false })
+      .limit(50),
   ]);
 
   const pagas = (transacoesMes||[]).filter(t => t.status === 'pago');
@@ -131,6 +139,22 @@ export async function coletarContexto(userId) {
       categoria: o.categories?.nome || 'Geral',
       planejado: Number(o.valor_planejado||0),
     })),
+    comprasCartao: (() => {
+      // Agrupa compras abertas por fatura
+      const grupos = {};
+      (comprasCartao||[]).forEach(c => {
+        const ref = c.fatura_referencia || 'sem-ref';
+        if (!grupos[ref]) grupos[ref] = { fatura: ref, cartao: c.credit_cards?.nome || 'Cartão', itens: [], total: 0 };
+        grupos[ref].itens.push({
+          descricao: c.descricao,
+          valor: Number(c.valor_parcela||0),
+          categoria: c.categories?.nome || 'Sem categoria',
+          parcela: c.total_parcelas > 1 ? `${c.parcela_atual}/${c.total_parcelas}` : null,
+        });
+        grupos[ref].total += Number(c.valor_parcela||0);
+      });
+      return Object.values(grupos).sort((a,b) => b.fatura.localeCompare(a.fatura)).slice(0,3);
+    })(),
     gastosPorCategoria: (() => {
       const grupos = {};
       (transacoesMes||[]).filter(t => t.status==='pago' && t.type==='despesa').forEach(t => {
@@ -160,6 +184,16 @@ Analise os dados financeiros abaixo e gere uma análise preditiva de fluxo de ca
 - Despesas pagas no mês: ${fmt(contexto.despesasMes)}
 - Taxa de poupança atual: ${contexto.taxaPoupancaMes}%
 - Faturas de cartão em aberto: ${fmt(contexto.totalFaturas)}
+
+### Compras abertas no cartão (por fatura)
+${contexto.comprasCartao?.length
+  ? contexto.comprasCartao.map(f =>
+      `**${f.cartao} — fatura ${f.fatura} (total: ${fmt(f.total)})**\n` +
+      f.itens.slice(0,8).map(i =>
+        `  - ${i.descricao}${i.parcela?' ('+i.parcela+')':''}: ${fmt(i.valor)} [${i.categoria}]`
+      ).join('\n')
+    ).join('\n')
+  : '- Sem compras abertas no cartão'}
 - Receitas pendentes até fim do mês: ${fmt(contexto.receitasPendentes)}
 - Despesas pendentes até fim do mês: ${fmt(contexto.despesasPendentes)}
 

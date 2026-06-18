@@ -304,11 +304,16 @@ function renderizarCarteira(){
         <td>${formatPercent(pctCart)}</td>
         <td>${pideal?formatPercent(pideal):'-'}</td>
         <td>${comprar==='sim'?'<span class="badge-comprar">✅ Sim</span>':comprar==='vender'?'<span class="badge-vender">⬇ Reduzir</span>':comprar==='ok'?'<span class="badge-nao">— Ok</span>':'-'}</td>
-        <td style="white-space:nowrap">
-          <button class="btn btn-secondary compact" data-editar="${a.id}">Editar</button>
-          <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">Excluir</button>
-          <button class="btn btn-secondary compact" data-cot-manual="${a.id}" data-ticker="${a.ticker}" title="Informar cotação manualmente">💲</button>
-          <button class="btn btn-secondary compact" data-tese="${a.id}" data-ticker="${a.ticker}" title="Diário de Tese e Indicadores">📓</button>
+        <td>
+          <div class="inv-acoes-wrap">
+            <button class="btn btn-secondary compact inv-acoes-btn" data-menu="${a.id}" title="Ações">⋯</button>
+            <div class="inv-acoes-menu" id="menu-${a.id}">
+              <button data-editar="${a.id}">✏️ Editar</button>
+              <button data-cot-manual="${a.id}" data-ticker="${a.ticker}">💲 Cotação manual</button>
+              <button data-tese="${a.id}" data-ticker="${a.ticker}">📓 Diário de tese</button>
+              <button data-excluir="${a.id}" data-ticker="${a.ticker}" style="color:var(--danger)">🗑️ Excluir</button>
+            </div>
+          </div>
         </td>
       </tr>`;
     });
@@ -334,10 +339,10 @@ function renderizarCarteira(){
           ${m==='USD'?`<div><span>Em BRL</span><strong class="money">${formatCurrency(calcBRL(a,atual),'BRL')}</strong></div>`:''}
         </div>
         <div class="inv-mobile-actions">
-          <button class="btn btn-secondary compact" data-editar="${a.id}">Editar</button>
-          <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">Excluir</button>
-          <button class="btn btn-secondary compact" data-cot-manual="${a.id}" data-ticker="${a.ticker}" title="Cotação manual">💲</button>
-          <button class="btn btn-secondary compact" data-tese="${a.id}" data-ticker="${a.ticker}" title="Diário de Tese">📓</button>
+          <button class="btn btn-secondary compact" data-editar="${a.id}">✏️ Editar</button>
+          <button class="btn btn-secondary compact" data-cot-manual="${a.id}" data-ticker="${a.ticker}">💲 Cotação</button>
+          <button class="btn btn-secondary compact" data-tese="${a.id}" data-ticker="${a.ticker}">📓 Tese</button>
+          <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">🗑️</button>
         </div>
       </div>`;
     });
@@ -349,6 +354,20 @@ function renderizarCarteira(){
 
   el('listaCarteira').querySelectorAll('[data-editar]').forEach(b=>b.addEventListener('click',()=>editarAtivo(b.dataset.editar)));
   el('listaCarteira').querySelectorAll('[data-excluir]').forEach(b=>b.addEventListener('click',()=>excluirAtivo(b.dataset.excluir,b.dataset.ticker)));
+  // Menu dropdown
+  el('listaCarteira').querySelectorAll('.inv-acoes-btn').forEach(b => {
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = b.dataset.menu;
+      const menu = document.getElementById('menu-' + id);
+      // Fecha todos os outros
+      document.querySelectorAll('.inv-acoes-menu.open').forEach(m => { if(m !== menu) m.classList.remove('open'); });
+      menu?.classList.toggle('open');
+    });
+  });
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.inv-acoes-menu.open').forEach(m => m.classList.remove('open'));
+  });
   el('listaCarteira').querySelectorAll('[data-cot-manual]').forEach(b=>b.addEventListener('click',()=>abrirCotacaoManual(b.dataset.cotManual,b.dataset.ticker)));
   el('listaCarteira').querySelectorAll('[data-tese]').forEach(b=>b.addEventListener('click',()=>abrirDiarioTese(b.dataset.tese,b.dataset.ticker)));
 }
