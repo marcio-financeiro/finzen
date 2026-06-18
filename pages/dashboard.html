@@ -328,17 +328,12 @@
 /* ── Faixa proativa do assistente ── */
 #assistantBar {
   width: 100%;
-  background: linear-gradient(90deg, rgba(245,158,11,.08) 0%, rgba(245,158,11,.04) 100%);
-  border-bottom: 1px solid rgba(245,158,11,.15);
-  padding: 0;
-  overflow: visible; /* sem overflow aqui — o controle fica no .ab-ticker-wrap */
   height: 36px;
-  display: flex;
-  align-items: stretch;
-  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  background: rgba(245,158,11,.06);
+  border-bottom: 1px solid rgba(245,158,11,.15);
 }
-
-/* Rótulo fixo — sempre visível, nunca coberto */
 .ab-label {
   font-family: var(--font-mono);
   font-size: 9px;
@@ -346,67 +341,45 @@
   letter-spacing: .15em;
   color: var(--accent);
   padding: 0 14px;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
   border-right: 1px solid rgba(245,158,11,.2);
-  display: flex;
-  align-items: center;
-  background: linear-gradient(90deg, rgba(245,158,11,.12), rgba(245,158,11,.06));
-  flex-shrink: 0;
+  background: rgba(245,158,11,.08);
+  white-space: nowrap;
+  z-index: 1;
 }
-
-/* Wrapper do ticker — overflow aqui, não no pai */
 .ab-ticker-wrap {
-  flex: 1;
   overflow: hidden;
+  position: relative;
   display: flex;
   align-items: center;
-  position: relative;
 }
-
 .ab-track {
   display: flex;
-  align-items: center;
-  animation: abScroll 32s linear infinite;
   white-space: nowrap;
-  will-change: transform;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
-
-#assistantBar:hover .ab-track {
-  animation-play-state: paused;
-}
-
-@keyframes abScroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
 .ab-item {
   font-size: 12px;
   color: var(--text);
-  padding: 0 28px;
+  padding: 0 24px;
   border-right: 1px solid rgba(245,158,11,.1);
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
+  line-height: 36px;
+  display: inline-block;
   white-space: nowrap;
 }
-
-.ab-item:hover { color: var(--accent); cursor: default; }
-
 .ab-loading {
   color: var(--muted);
-  animation: abPulse 1.5s ease-in-out infinite;
-  padding-left: 16px;
+  font-size: 12px;
+  padding: 0 16px;
+  line-height: 36px;
 }
-
-@keyframes abPulse {
-  0%, 100% { opacity: .4; }
-  50%       { opacity: 1; }
-}
-
 @media (max-width: 820px) {
   .ab-label { display: none; }
-  .ab-item { font-size: 11px; padding: 0 20px; }
+  #assistantBar { grid-template-columns: 1fr; }
 }
 
 </style>
