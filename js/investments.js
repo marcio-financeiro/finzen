@@ -267,9 +267,9 @@ function renderizarCarteira(){
     html+=`<div class="inv-desktop-table"><table class="data-table">
       <thead><tr>
         <th>Ticker</th><th>Nome</th><th>Qtd</th>
-        <th>P. Médio</th><th>Cotação</th>
+        <th>Cotação</th>
         <th>Aplicado</th><th>Atual</th><th>Resultado</th>
-        <th>% Classe</th><th>% Ideal</th><th>Comprar?</th><th>Ações</th>
+        <th>%&nbsp;Classe</th><th>%&nbsp;Ideal</th><th>Comprar?</th><th>Ações</th>
       </tr></thead><tbody>`;
 
     grupo.ativos.forEach(a=>{
@@ -289,7 +289,6 @@ function renderizarCarteira(){
         <td><strong>${a.ticker}</strong></td>
         <td>${a.nome||'-'}</td>
         <td class="money">${toNumber(a.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:6})}</td>
-        <td class="money">${fmtMoeda(toNumber(a.preco_medio),m)}</td>
         <td class="money">${fmtMoeda(toNumber(a.cotacao_atual||a.preco_medio),m)}
           ${a.atualizado_em?'<span style="font-size:9px;color:var(--success)"> ✓auto</span>':''}
         </td>
