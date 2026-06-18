@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js';
+import { initAssistantBar } from './assistantBar.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 
@@ -596,3 +597,4 @@ function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investiment
 }
 
 carregarDashboard();
+initAssistantBar(user.id).catch(() => {});
