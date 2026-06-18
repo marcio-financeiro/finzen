@@ -28,6 +28,7 @@ export async function coletarContexto(userId) {
     { data: recorrentes },
     { data: historico3m },
     { data: orcamentos },
+    { data: cartaoMes },
   ] = await Promise.all([
     supabase.from('accounts')
       .select('nome,saldo_atual,currency')
@@ -66,6 +67,12 @@ export async function coletarContexto(userId) {
       .select('valor_planejado,categories:category_id(nome)')
       .eq('user_id', userId)
       .eq('mes_referencia', anoMes),
+
+    // Despesas do cartão de crédito do mês, agrupadas por categoria
+    supabase.from('card_transactions')
+      .select('valor_parcela,descricao,categories:category_id(nome,icon)')
+      .eq('user_id', userId)
+      .eq('fatura_referencia', anoMes),
   ]);
 
   const pagas = (transacoesMes||[]).filter(t => t.status === 'pago');
@@ -132,14 +139,23 @@ export async function coletarContexto(userId) {
     })),
     gastosPorCategoria: (() => {
       const grupos = {};
+      // Despesas de movimentações normais
       (transacoesMes||[]).filter(t => t.status==='pago' && t.type==='despesa').forEach(t => {
         const cat   = t.categories?.nome || 'Sem categoria';
         const icone = t.categories?.icon || '';
         if(!grupos[cat]) grupos[cat] = { categoria: cat, icone, total: 0 };
         grupos[cat].total += Number(t.amount||0);
       });
-      return Object.values(grupos).sort((a,b) => b.total - a.total).slice(0,8);
+      // Despesas do cartão de crédito (card_transactions)
+      (cartaoMes||[]).forEach(t => {
+        const cat   = t.categories?.nome || 'Cartão s/ categoria';
+        const icone = t.categories?.icon || '💳';
+        if(!grupos[cat]) grupos[cat] = { categoria: cat, icone, total: 0 };
+        grupos[cat].total += Number(t.valor_parcela||0);
+      });
+      return Object.values(grupos).sort((a,b) => b.total - a.total).slice(0,12);
     })(),
+    totalCartaoMes: (cartaoMes||[]).reduce((s,t) => s+Number(t.valor_parcela||0), 0),
   };
 }
 
