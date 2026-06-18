@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chat IA - FinZen</title>
-<link rel="stylesheet" href="../css/base.css?v=1050">
-<link rel="stylesheet" href="../css/layout.css?v=1050">
-<link rel="stylesheet" href="../css/components.css?v=1050">
-<link rel="stylesheet" href="../css/mobile.css?v=1050">
+<link rel="stylesheet" href="../css/base.css?v=1100">
+<link rel="stylesheet" href="../css/layout.css?v=1100">
+<link rel="stylesheet" href="../css/components.css?v=1100">
+<link rel="stylesheet" href="../css/mobile.css?v=1100">
 <link rel="stylesheet" href="../css/navigation.css?v=1100">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#4b84f3">
@@ -226,10 +226,12 @@
   margin-top: 6px;
 }
 
-/* Mobile: ocupar tela inteira */
+/* Mobile: ocupar tela inteira descontando a mobile-nav (~65px) */
 @media(max-width: 768px) {
-  .chat-shell { height: calc(100dvh - 120px); }
+  .chat-shell { height: calc(100dvh - 65px); max-height: calc(100dvh - 65px); }
   .chat-bubble { max-width: calc(100% - 50px); }
+  /* Garante que a área de input não fique coberta pela nav */
+  .chat-input-area { padding-bottom: 80px; }
 }
 </style>
 </head>
@@ -298,6 +300,6 @@
 
 <nav class="mobile-nav"></nav>
 <script type="module" src="../js/navigation.js?v=1100"></script>
-<script type="module" src="../js/chat.js?v=1050"></script>
+<script type="module" src="../js/chat.js?v=1100"></script>
 </body>
 </html>
