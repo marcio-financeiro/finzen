@@ -152,29 +152,19 @@ function renderBar(insights) {
   const bar = document.getElementById('assistantBar');
   if (!bar) return;
 
-  bar.innerHTML = '';
+  const textos = insights.length ? insights : ['✅ Tudo em ordem por hoje'];
 
-  // Estado de carregamento removido — animar entrada
-  bar.classList.add('loaded');
+  // Duplicar para scroll contínuo suave
+  const items = [...textos, ...textos]
+    .map(t => `<span class="ab-item">${t}</span>`)
+    .join('');
 
-  if (!insights.length) {
-    bar.innerHTML = '<span class="ab-item">✅ Tudo em ordem por hoje</span>';
-    return;
-  }
-
-  // Criar o ticker — duplicar para scroll contínuo
-  const track = document.createElement('div');
-  track.className = 'ab-track';
-
-  const items = [...insights, ...insights]; // duplicar para loop suave
-  items.forEach(text => {
-    const span = document.createElement('span');
-    span.className = 'ab-item';
-    span.textContent = text;
-    track.appendChild(span);
-  });
-
-  bar.appendChild(track);
+  bar.innerHTML = `
+    <div class="ab-label">✦ ASSISTENTE</div>
+    <div class="ab-ticker-wrap">
+      <div class="ab-track">${items}</div>
+    </div>
+  `;
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -183,7 +173,12 @@ export async function initAssistantBar(userId) {
   if (!bar) return;
 
   // Estado inicial de carregamento
-  bar.innerHTML = '<span class="ab-item ab-loading">✦ Carregando insights…</span>';
+  bar.innerHTML = `
+    <div class="ab-label">✦ ASSISTENTE</div>
+    <div class="ab-ticker-wrap">
+      <span class="ab-item ab-loading">Carregando insights…</span>
+    </div>
+  `;
 
   const insights = await buscarInsights(userId);
   renderBar(insights);
