@@ -1,4 +1,5 @@
 import { confirmarExclusao } from './confirmModal.js';
+import { getCotacoes, getDolar, limparCache } from './quoteCache.js';
 import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
@@ -76,23 +77,16 @@ function msg(elId,texto,tipo='info'){
 // ─────────────────────────────────────────────
 // COTAÇÕES — via Vercel Function proxy (resolve CORS)
 // ─────────────────────────────────────────────
-async function fetchCotacoes(tickersBR, tickersEUA, comDolar=true){
+async function fetchCotacoes(tickersBR, tickersEUA, comDolar=true, forcar=false){
   try{
     const todos = [...new Set([...tickersBR, ...tickersEUA])];
-    const params = new URLSearchParams();
-    if(todos.length) params.set('tickers', todos.join(','));
-    if(comDolar) params.set('dolar', 'true');
-
-    const r = await fetch(`/api/quotes?${params}`);
-    if(!r.ok) throw new Error('Erro no proxy de cotações');
-    return await r.json();
+    return await getCotacoes(todos, comDolar, forcar);
   }catch(_){ return {}; }
 }
 
 async function fetchDolar(){
   try{
-    const j = await fetch('/api/quotes?dolar=true').then(r=>r.json());
-    return j['USD-BRL'] || dolarAtual;
+    return (await getDolar()) || dolarAtual;
   }catch(_){ return dolarAtual; }
 }
 
@@ -865,7 +859,10 @@ function renderizarTudo(){
 // ─────────────────────────────────────────────
 // EVENTOS
 // ─────────────────────────────────────────────
-el('btnAtualizar').addEventListener('click',()=>atualizarCotacoes(false));
+el('btnAtualizar').addEventListener('click',()=>{
+  limparCache();
+  atualizarCotacoes(false);
+});
 el('btnSalvarDolar').addEventListener('click',async()=>{
   const v=toNumber(el('dolarReferencia').value);
   if(v<=0){ msg('mensagemCotacao','Informe uma cotação válida.','warning'); return; }
