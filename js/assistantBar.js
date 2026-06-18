@@ -148,23 +148,61 @@ async function insightsFallback(userId) {
 }
 
 // ── Renderizar faixa ──────────────────────────────────────────────────────────
+// Variável global para o intervalo do ticker
+let _tickerInterval = null;
+
 function renderBar(insights) {
   const bar = document.getElementById('assistantBar');
   if (!bar) return;
 
-  const textos = insights.length ? insights : ['✅ Tudo em ordem por hoje'];
+  // Parar ticker anterior se existir
+  if (_tickerInterval) { clearInterval(_tickerInterval); _tickerInterval = null; }
 
-  // Duplicar para scroll contínuo suave
-  const items = [...textos, ...textos]
-    .map(t => `<span class="ab-item">${t}</span>`)
-    .join('');
+  const textos = insights.length ? insights : ['✅ Tudo em ordem por hoje'];
 
   bar.innerHTML = `
     <div class="ab-label">✦ ASSISTENTE</div>
     <div class="ab-ticker-wrap">
-      <div class="ab-track">${items}</div>
+      <div class="ab-track" id="abTrack"></div>
     </div>
   `;
+
+  const track = document.getElementById('abTrack');
+  if (!track) return;
+
+  // Preencher itens
+  textos.forEach(t => {
+    const span = document.createElement('span');
+    span.className = 'ab-item';
+    span.textContent = t;
+    track.appendChild(span);
+  });
+
+  // Scroll via JS — mais confiável que CSS animation
+  let pos = 0;
+  const wrap = track.parentElement;
+  const speed = 0.5; // px por frame
+
+  // Aguardar render para obter largura real
+  requestAnimationFrame(() => {
+    const totalW = track.scrollWidth;
+    const wrapW  = wrap.offsetWidth;
+    if (totalW <= wrapW) return; // cabe tudo, não precisa rolar
+
+    function tick() {
+      pos += speed;
+      if (pos >= totalW) pos = 0;
+      track.style.transform = `translateX(-${pos}px) translateY(-50%)`;
+    }
+
+    _tickerInterval = setInterval(tick, 16); // ~60fps
+
+    // Pausar ao passar mouse
+    wrap.addEventListener('mouseenter', () => clearInterval(_tickerInterval));
+    wrap.addEventListener('mouseleave', () => {
+      _tickerInterval = setInterval(tick, 16);
+    });
+  });
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -176,7 +214,7 @@ export async function initAssistantBar(userId) {
   bar.innerHTML = `
     <div class="ab-label">✦ ASSISTENTE</div>
     <div class="ab-ticker-wrap">
-      <span class="ab-item ab-loading">Carregando insights…</span>
+      <span class="ab-loading">Carregando insights…</span>
     </div>
   `;
 
