@@ -1,3 +1,4 @@
+import { analyzeRequest } from './apiClient.js';
 /**
  * anomalyAI.js
  * Detecção de anomalias financeiras e assinaturas fantasmas com Claude AI
@@ -189,11 +190,7 @@ Liste de 2 a 3 ações concretas: cancelar X, revisar Y, investigar Z. Seja espe
 
 Tom: direto, sem alarmismo desnecessário. Foque no que realmente merece atenção.`;
 
-  const response = await fetch('/api/analyze', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt }),
-  });
+  const response = await analyzeRequest({ prompt });
 
   if (!response.ok) throw new Error(`Erro ${response.status}`);
 

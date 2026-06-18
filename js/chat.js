@@ -1,3 +1,4 @@
+import { analyzeRequest } from './apiClient.js';
 /**
  * chat.js
  * Chat financeiro com IA — conectado aos dados reais do Supabase
@@ -177,14 +178,10 @@ async function enviar() {
   try {
     const systemPrompt = buildSystemPrompt();
 
-    const resp = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt: mensagem,
-        system: systemPrompt,
-        history: historico.slice(-10), // últimas 10 trocas
-      }),
+    const resp = await analyzeRequest({
+      prompt: mensagem,
+      system: systemPrompt,
+      history: historico.slice(-10), // últimas 10 trocas
     });
 
     if(!resp.ok) throw new Error(`Erro ${resp.status}`);

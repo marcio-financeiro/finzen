@@ -1,3 +1,4 @@
+import { analyzeRequest } from './apiClient.js';
 /**
  * cashflowAI.js
  * Previsão inteligente de fluxo de caixa com Claude AI
@@ -195,11 +196,7 @@ Liste de 2 a 3 ações práticas e específicas que o usuário pode tomar agora.
 
 Seja objetivo, use valores em R$, e não repita dados óbvios. Tom: direto e útil, como um consultor financeiro experiente.`;
 
-  const response = await fetch('/api/analyze', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt }),
-  });
+  const response = await analyzeRequest({ prompt });
 
   if (!response.ok) throw new Error(`Erro ${response.status}`);
 
