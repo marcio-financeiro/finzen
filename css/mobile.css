@@ -1,152 +1,188 @@
-@media (max-width:700px){
-  body{
-    background:var(--bg);
-  }
+/* ============================================================
+   FinZen — mobile.css
+   Sobrescritas específicas para dispositivos móveis
+   Inclui ajustes de autofill, entradas numéricas e quick-entry
+   Versão: 12.0 — Midnight Vault
+   ============================================================ */
 
-  .app-shell{
-    display:block;
-    min-height:100vh;
-  }
-
-  .sidebar{
-    display:none;
-  }
-
-  .content{
-    padding:14px 14px 96px;
-  }
-
-  .topbar{
-    margin:-14px -14px 14px;
-    padding:14px 18px 16px;
-    border-bottom:1px solid var(--border);
-    background:var(--surface);
-    position:sticky;
-    top:0;
-    z-index:5;
-    align-items:flex-start;
-  }
-
-  .topbar h1{
-    font-size:22px;
-    margin-bottom:4px;
-  }
-
-  .topbar .muted{
-    max-width:220px;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-  }
-
-  .kpi-grid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:10px;
-    margin-bottom:14px;
-  }
-
-  .kpi-card{
-    padding:12px;
-    border-radius:10px;
-  }
-
-  .kpi-card span{
-    font-size:10px;
-    margin-bottom:5px;
-  }
-
-  .kpi-card strong{
-    font-size:16px;
-  }
-
-  .panel{
-    border-radius:10px;
-    margin-bottom:14px;
-  }
-
-  .panel-header{
-    padding:13px 14px;
-  }
-
-  .panel .form-grid{
-    margin-left:14px;
-    margin-right:14px;
-    padding-top:14px;
-  }
-
-  .panel > .btn,
-  .panel > .message{
-    margin-left:14px;
-    margin-right:14px;
-  }
-
-  .form-grid{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  .data-table{
-    min-width:720px;
-  }
-
-  .btn.compact{
-    padding:8px 10px;
-  }
-
-  .mobile-nav{
-    position:fixed;
-    left:0;
-    right:0;
-    bottom:0;
-    display:flex;
-    background:var(--surface);
-    border-top:1px solid var(--border);
-    padding:8px 0 10px;
-    z-index:20;
-    box-shadow:0 -20px 50px rgba(0,0,0,.35);
-  }
-
-  .mobile-nav a{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:3px;
-    color:var(--muted);
-    font-size:10px;
-    padding:4px 2px;
-    border-radius:0;
-  }
-
-  .mobile-nav a.active{
-    color:var(--accent);
-    background:transparent;
-  }
-
-  .mobile-nav a::before{
-    font-size:18px;
-    line-height:1;
-  }
-
-  .mobile-nav a[href*="dashboard"]::before{ content:"📊"; }
-  .mobile-nav a[href*="transactions"]::before{ content:"↕️"; }
-  .mobile-nav a[href*="cards"]::before{ content:"💳"; }
-  .mobile-nav a[href*="card-bills"]::before{ content:"🧾"; }
-  .mobile-nav a[href*="budgets"]::before{ content:"🎯"; }
-  .mobile-nav a[href*="goals"]::before{ content:"🏆"; }
-  .mobile-nav a[href*="investments"]::before{ content:"📈"; }
-  .mobile-nav a[href*="allocation"]::before{ content:"🧭"; }
-  .mobile-nav a[href*="wealth-dashboard"]::before{ content:"💎"; }
-  .mobile-nav a[href*="dividends"]::before{ content:"💰"; }
+/* ── Autofill fix (login page) ────────────────────────────── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 40px var(--bg-subtle) inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  caret-color: var(--accent);
+  transition: background-color 5000s ease-in-out 0s;
 }
 
-@media (max-width:390px){
-  .kpi-grid{
-    grid-template-columns:1fr;
+/* ── Ajustes tácteis ──────────────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* Aumenta área de toque em itens de lista */
+  .tx-item { padding: 11px 10px; }
+  .nav-item { padding: 9px var(--space-4); }
+
+  /* Remove hover em telas touch */
+  .nav-item:hover,
+  .tx-item:hover,
+  .kpi-card:hover,
+  .card-clickable:hover {
+    background: transparent;
+    border-color: var(--border);
+    transform: none;
   }
 
-  .topbar{
-    flex-direction:column;
+  /* Botões maiores */
+  .btn { min-height: 42px; }
+  .btn-sm { min-height: 34px; }
+
+  /* Inputs maiores */
+  .form-input,
+  .form-select,
+  .form-textarea { padding: 11px 12px; font-size: 16px; }
+
+  /* Previne zoom em inputs no iOS */
+  .form-input,
+  .form-select,
+  .form-textarea,
+  .search-input { font-size: max(16px, var(--text-base)); }
+
+  /* Tabelas — scroll horizontal */
+  .data-table { min-width: 520px; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Ocultar colunas secundárias em tabela de investimentos */
+  .col-hide-mobile { display: none; }
+
+  /* Cards de KPI com 2 colunas */
+  .kpi-grid   { grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
+  .kpi-grid-3 { grid-template-columns: repeat(2, 1fr); }
+
+  /* Valor KPI menor */
+  .kpi-value { font-size: 17px; }
+
+  /* Painéis em coluna única */
+  .panel-row,
+  .panel-row-3,
+  .panel-row-wide { grid-template-columns: 1fr; }
+
+  /* form-row vira coluna única */
+  .form-row,
+  .form-row-3 { grid-template-columns: 1fr; }
+
+  /* Page header sem logo em mobile */
+  .page-header { flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+  .page-header-right { width: 100%; justify-content: flex-end; }
+
+  /* Topbar simplificada */
+  .topbar-center { display: none; }
+  .topbar { padding: 0 var(--space-4); }
+
+  /* Faixa de contexto empilhada */
+  .context-strip { flex-direction: column; align-items: flex-start; }
+
+  /* Modal em tela cheia no mobile */
+  .modal {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   }
+  .modal-overlay { align-items: flex-end; padding: 0; }
+
+  /* FAB acima do bottom nav se existir */
+  .has-bottom-nav .fab { bottom: 72px; }
+  .has-bottom-nav .fab-menu { bottom: 126px; }
+}
+
+/* ── Quick Entry mobile (lançamento rápido) ───────────────── */
+.quick-entry {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.quick-entry-valor {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  outline: none;
+  width: 100%;
+  text-align: center;
+  caret-color: var(--accent);
+}
+.quick-entry-valor::placeholder { color: var(--text-muted); }
+
+.quick-entry-tipo {
+  display: flex;
+  gap: var(--space-2);
+}
+.quick-entry-tipo-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: transparent;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all var(--transition);
+  text-align: center;
+}
+.quick-entry-tipo-btn.income.active {
+  background: var(--bg-income);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--color-income);
+}
+.quick-entry-tipo-btn.expense.active {
+  background: var(--bg-expense);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--color-expense);
+}
+
+.quick-entry-desc {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  padding: 9px 12px;
+  width: 100%;
+  outline: none;
+  font-family: var(--font-ui);
+}
+.quick-entry-desc:focus { border-color: var(--border-focus); }
+.quick-entry-desc::placeholder { color: var(--text-muted); }
+
+/* ── Responsivo — telas grandes ───────────────────────────── */
+@media (min-width: 1280px) {
+  .main-content { padding: var(--space-6) 32px; }
+  .kpi-grid { gap: var(--space-4); }
+}
+
+@media (min-width: 1600px) {
+  .sidebar { width: 224px; }
+  .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ── Reduced motion ───────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── PWA safe areas (iOS) ─────────────────────────────────── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .fab { bottom: calc(24px + env(safe-area-inset-bottom)); }
+  .bottom-nav { padding-bottom: env(safe-area-inset-bottom); height: calc(56px + env(safe-area-inset-bottom)); }
 }
