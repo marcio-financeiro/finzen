@@ -304,9 +304,11 @@ function renderizarCarteira(){
         <td>${formatPercent(pctCart)}</td>
         <td>${pideal?formatPercent(pideal):'-'}</td>
         <td>${comprar==='sim'?'<span class="badge-comprar">✅ Sim</span>':comprar==='vender'?'<span class="badge-vender">⬇ Reduzir</span>':comprar==='ok'?'<span class="badge-nao">— Ok</span>':'-'}</td>
-        <td>
+        <td style="white-space:nowrap">
           <button class="btn btn-secondary compact" data-editar="${a.id}">Editar</button>
           <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">Excluir</button>
+          <button class="btn btn-secondary compact" data-cot-manual="${a.id}" data-ticker="${a.ticker}" title="Informar cotação manualmente">💲</button>
+          <button class="btn btn-secondary compact" data-tese="${a.id}" data-ticker="${a.ticker}" title="Diário de Tese e Indicadores">📓</button>
         </td>
       </tr>`;
     });
@@ -334,6 +336,8 @@ function renderizarCarteira(){
         <div class="inv-mobile-actions">
           <button class="btn btn-secondary compact" data-editar="${a.id}">Editar</button>
           <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">Excluir</button>
+          <button class="btn btn-secondary compact" data-cot-manual="${a.id}" data-ticker="${a.ticker}" title="Cotação manual">💲</button>
+          <button class="btn btn-secondary compact" data-tese="${a.id}" data-ticker="${a.ticker}" title="Diário de Tese">📓</button>
         </div>
       </div>`;
     });
@@ -345,6 +349,8 @@ function renderizarCarteira(){
 
   el('listaCarteira').querySelectorAll('[data-editar]').forEach(b=>b.addEventListener('click',()=>editarAtivo(b.dataset.editar)));
   el('listaCarteira').querySelectorAll('[data-excluir]').forEach(b=>b.addEventListener('click',()=>excluirAtivo(b.dataset.excluir,b.dataset.ticker)));
+  el('listaCarteira').querySelectorAll('[data-cot-manual]').forEach(b=>b.addEventListener('click',()=>abrirCotacaoManual(b.dataset.cotManual,b.dataset.ticker)));
+  el('listaCarteira').querySelectorAll('[data-tese]').forEach(b=>b.addEventListener('click',()=>abrirDiarioTese(b.dataset.tese,b.dataset.ticker)));
 }
 
 // ─────────────────────────────────────────────
@@ -950,6 +956,122 @@ el('btnCalcularBal').addEventListener('click',calcularBalanceamento);
 
 el('dataAtivo').value=hojeISO();
 el('divData').value=hojeISO();
+
+
+// ─────────────────────────────────────────────
+// COTAÇÃO MANUAL
+// ─────────────────────────────────────────────
+window.abrirCotacaoManual = function(id, ticker) {
+  const atual = ativos.find(a => a.id == id)?.cotacao_atual || '';
+  const val = prompt(`Informe a cotação manual para ${ticker}:`, atual);
+  if (val === null) return; // cancelado
+  const nova = toNumber(val);
+  if (nova <= 0) { alert('Cotação inválida.'); return; }
+  const agora = new Date().toISOString();
+  supabase.from('investments')
+    .update({ cotacao_atual: nova, atualizado_em: agora })
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .then(({ error }) => {
+      if (error) { alert('Erro ao salvar cotação.'); return; }
+      const a = ativos.find(a => a.id == id);
+      if (a) { a.cotacao_atual = nova; a.atualizado_em = agora; }
+      renderizarTudo();
+      msg('mensagemCotacao', `Cotação de ${ticker} atualizada manualmente: ${nova}`, 'success');
+    });
+};
+
+// ─────────────────────────────────────────────
+// DIÁRIO DE TESE (painel lateral simplificado)
+// ─────────────────────────────────────────────
+window.abrirDiarioTese = async function(id, ticker) {
+  // Busca tese existente
+  const { data: tese } = await supabase
+    .from('investments')
+    .select('tese_entrada, gatilho_saida, convicao, notas')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single();
+
+  // Cria modal inline
+  let modal = document.getElementById('modalTese');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modalTese';
+    modal.style.cssText = `
+      position:fixed;inset:0;z-index:9999;
+      background:rgba(0,0,0,0.7);
+      display:flex;align-items:center;justify-content:center;
+      padding:16px;
+    `;
+    document.body.appendChild(modal);
+  }
+
+  const d = tese || {};
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;
+      padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="margin:0;font-size:16px;">📓 Diário de Tese — ${ticker}</h2>
+        <button onclick="document.getElementById('modalTese').remove()"
+          style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">×</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div>
+          <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">TESE DE ENTRADA</label>
+          <textarea id="teseTese" rows="3" style="width:100%;background:var(--surface-2);border:1px solid var(--border);
+            border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px;resize:vertical"
+            placeholder="Por que comprou este ativo?">${d.tese_entrada||''}</textarea>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">GATILHO DE SAÍDA</label>
+          <textarea id="teseGatilho" rows="2" style="width:100%;background:var(--surface-2);border:1px solid var(--border);
+            border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px;resize:vertical"
+            placeholder="Quando venderia este ativo?">${d.gatilho_saida||''}</textarea>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">CONVICÇÃO</label>
+          <select id="teseConvicao" style="width:100%;background:var(--surface-2);border:1px solid var(--border);
+            border-radius:8px;padding:10px;color:var(--text);font-size:13px">
+            <option value="">— Selecione —</option>
+            <option value="alta" ${d.convicao==='alta'?'selected':''}>🟢 Alta</option>
+            <option value="media" ${d.convicao==='media'?'selected':''}>🟡 Média</option>
+            <option value="baixa" ${d.convicao==='baixa'?'selected':''}>🔴 Baixa</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">NOTAS</label>
+          <textarea id="teseNotas" rows="3" style="width:100%;background:var(--surface-2);border:1px solid var(--border);
+            border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px;resize:vertical"
+            placeholder="Observações adicionais...">${d.notas||''}</textarea>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+          <button onclick="document.getElementById('modalTese').remove()"
+            class="btn btn-secondary">Cancelar</button>
+          <button onclick="window.salvarTese('${id}','${ticker}')"
+            class="btn btn-primary">💾 Salvar</button>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+window.salvarTese = async function(id, ticker) {
+  const tese     = document.getElementById('teseTese')?.value || '';
+  const gatilho  = document.getElementById('teseGatilho')?.value || '';
+  const convicao = document.getElementById('teseConvicao')?.value || '';
+  const notas    = document.getElementById('teseNotas')?.value || '';
+
+  const { error } = await supabase
+    .from('investments')
+    .update({ tese_entrada: tese, gatilho_saida: gatilho, convicao, notas })
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) { alert('Erro ao salvar tese.'); return; }
+  document.getElementById('modalTese')?.remove();
+  msg('mensagemCotacao', `Tese de ${ticker} salva com sucesso.`, 'success');
+};
 
 // ─────────────────────────────────────────────
 // INICIALIZAÇÃO
