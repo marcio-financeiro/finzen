@@ -451,7 +451,7 @@ function fecharModal() {
 
 // ── Salvar lançamento ─────────────────────────────────
 window.salvarLancamento = async function() {
-  const valor   = parseFloat(el('mobValor').value || '0');
+  const valor   = parseFloat((el('mobValor').value || '0').replace(',', '.'));
   const desc    = el('mobDescricao').value.trim();
   const catId   = catSelecionada || el('mobCatSelect').value || null;
   const data    = el('mobData').value;
