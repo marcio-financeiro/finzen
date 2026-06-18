@@ -143,6 +143,43 @@
 .inv-acoes-menu button:last-child { border-bottom: none; }
 .inv-acoes-menu button:hover { background: var(--surface-2); }
 
+
+/* ── Tabela desktop compacta ── */
+.inv-desktop-table {
+  overflow-x: auto;
+}
+.inv-desktop-table .data-table {
+  font-size: 12px;
+  width: 100%;
+}
+.inv-desktop-table .data-table th {
+  font-size: 10px;
+  padding: 8px 8px;
+  white-space: nowrap;
+}
+.inv-desktop-table .data-table td {
+  padding: 8px 8px;
+  font-size: 12px;
+}
+.inv-desktop-table .data-table td.money {
+  font-size: 12px;
+}
+/* Coluna Ações menor */
+.inv-desktop-table .data-table td:last-child,
+.inv-desktop-table .data-table th:last-child {
+  width: 40px;
+  text-align: center;
+  padding: 8px 4px;
+}
+/* Coluna Nome pode encolher */
+.inv-desktop-table .data-table td:nth-child(2),
+.inv-desktop-table .data-table th:nth-child(2) {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 </style>
 </head>
 <body>
