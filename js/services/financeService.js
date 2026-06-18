@@ -8,6 +8,19 @@ export function normalizeCurrency(currency){
 }
 
 export function toNumber(value, fallback = 0){
+  if (value === null || value === undefined || value === '') return fallback;
+  // Suporte a vírgula como separador decimal (padrão brasileiro)
+  // Ex: "37,25" → 37.25 | "1.234,56" → 1234.56 | "1,234.56" → 1234.56
+  if (typeof value === 'string') {
+    const s = value.trim();
+    // Formato BR: 1.234,56 — ponto como milhar, vírgula como decimal
+    if (/^-?[\d.]+,\d{1,2}$/.test(s)) {
+      value = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      // Qualquer outra vírgula isolada → decimal
+      value = s.replace(',', '.');
+    }
+  }
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
 }
