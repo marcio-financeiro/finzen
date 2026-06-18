@@ -101,6 +101,48 @@
 .inv-update-bar small{color:var(--muted);font-size:12px;}
 .inv-dolar-group{display:flex;gap:6px;align-items:center;}
 .inv-dolar-group input{width:90px;padding:6px 10px;font-size:13px;}
+
+/* ── Menu dropdown de ações ── */
+.inv-acoes-wrap {
+  position: relative;
+  display: inline-block;
+}
+.inv-acoes-btn {
+  font-size: 18px;
+  padding: 4px 10px;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+.inv-acoes-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  z-index: 100;
+  min-width: 180px;
+  overflow: hidden;
+}
+.inv-acoes-menu.open { display: block; }
+.inv-acoes-menu button {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+.inv-acoes-menu button:last-child { border-bottom: none; }
+.inv-acoes-menu button:hover { background: var(--surface-2); }
+
 </style>
 </head>
 <body>
