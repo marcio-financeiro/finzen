@@ -180,6 +180,12 @@
   white-space: nowrap;
 }
 
+
+/* ── Indicador cache/ao vivo ── */
+[data-quote-status="live"]  { background:rgba(16,185,129,.12)  !important; color:var(--success) !important; }
+[data-quote-status="cache"] { background:rgba(245,158,11,.12)  !important; color:var(--warning) !important; }
+[data-quote-status="offline"]{ background:rgba(107,106,96,.12) !important; color:var(--muted)   !important; }
+
 </style>
 </head>
 <body>
@@ -209,6 +215,11 @@
           <button type="button" class="btn btn-secondary compact" id="btnSalvarDolar" style="margin:0">Salvar</button>
         </div>
         <small id="ultimaAtualizacao">—</small>
+        <span data-quote-status="live" title="Cotações ao vivo"
+          style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;
+          background:rgba(16,185,129,.12);color:var(--success);transition:all .3s">
+          ● ao vivo
+        </span>
         <div id="mensagemCotacao" class="message" style="margin:0;min-height:0;"></div>
       </div>
     </section>
