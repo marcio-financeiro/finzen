@@ -151,72 +151,58 @@ async function insightsFallback(userId) {
 // Variável global para o intervalo do ticker
 let _tickerInterval = null;
 
+let _tickerRAF = null;
+
 function renderBar(insights) {
-  const bar = document.getElementById('assistantBar');
-  if (!bar) return;
-
-  // Parar ticker anterior se existir
-  if (_tickerInterval) { clearInterval(_tickerInterval); _tickerInterval = null; }
-
-  const textos = insights.length ? insights : ['✅ Tudo em ordem por hoje'];
-
-  bar.innerHTML = `
-    <div class="ab-label">✦ ASSISTENTE</div>
-    <div class="ab-ticker-wrap">
-      <div class="ab-track" id="abTrack"></div>
-    </div>
-  `;
-
   const track = document.getElementById('abTrack');
   if (!track) return;
 
-  // Preencher itens
-  textos.forEach(t => {
-    const span = document.createElement('span');
-    span.className = 'ab-item';
-    span.textContent = t;
-    track.appendChild(span);
-  });
+  // Cancelar animação anterior
+  if (_tickerRAF) { cancelAnimationFrame(_tickerRAF); _tickerRAF = null; }
 
-  // Scroll via JS — mais confiável que CSS animation
-  let pos = 0;
-  const wrap = track.parentElement;
-  const speed = 0.5; // px por frame
+  const textos = insights.length ? insights : ['✅ Tudo em ordem por hoje'];
 
-  // Aguardar render para obter largura real
+  // Preencher track — duplicar para loop suave
+  track.innerHTML = [...textos, ...textos]
+    .map(t => `<span class="ab-item">${t}</span>`)
+    .join('');
+
+  const scroll = document.getElementById('abScroll');
+  if (!scroll) return;
+
+  // Aguardar render para medir largura real
   requestAnimationFrame(() => {
     const totalW = track.scrollWidth;
-    const wrapW  = wrap.offsetWidth;
-    if (totalW <= wrapW) return; // cabe tudo, não precisa rolar
+    const wrapW  = scroll.offsetWidth;
+    if (totalW <= wrapW) return; // cabe sem rolar
 
-    function tick() {
-      pos += speed;
-      if (pos >= totalW) pos = 0;
-      track.style.transform = `translateX(-${pos}px) translateY(-50%)`;
+    let pos  = 0;
+    let half = totalW / 2; // ponto de reset (duplicamos)
+    let paused = false;
+
+    scroll.addEventListener('mouseenter', () => { paused = true; });
+    scroll.addEventListener('mouseleave', () => { paused = false; });
+
+    function step() {
+      if (!paused) {
+        pos += 0.5;
+        if (pos >= half) pos = 0;
+        track.style.left = `-${pos}px`;
+      }
+      _tickerRAF = requestAnimationFrame(step);
     }
 
-    _tickerInterval = setInterval(tick, 16); // ~60fps
-
-    // Pausar ao passar mouse
-    wrap.addEventListener('mouseenter', () => clearInterval(_tickerInterval));
-    wrap.addEventListener('mouseleave', () => {
-      _tickerInterval = setInterval(tick, 16);
-    });
+    _tickerRAF = requestAnimationFrame(step);
   });
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 export async function initAssistantBar(userId) {
-  const bar = document.getElementById('assistantBar');
-  if (!bar) return;
+  const track = document.getElementById('abTrack');
+  if (!track) return;
 
-  // Estado inicial de carregamento
-  bar.innerHTML = `
-    <div class="ab-label">✦ ASSISTENTE</div>
-    <div class="ab-ticker-wrap">
-      <span class="ab-loading">Carregando insights…</span>
-    </div>
-  `;
+  // Mostrar loading
+  track.innerHTML = '<span class="ab-item" style="color:var(--muted);opacity:.5">Carregando insights…</span>';
 
   const insights = await buscarInsights(userId);
   renderBar(insights);
