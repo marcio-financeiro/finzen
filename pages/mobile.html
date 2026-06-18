@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>FinZen</title>
 <link rel="manifest" href="../manifest.json">
-<meta name="theme-color" content="#f59e0b">
+<meta name="theme-color" content="#0f1117">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,7 +17,7 @@
   --surface:  #181c27;
   --surface2: #1e2333;
   --border:   #2a3045;
-  --accent:   #4b84f3;
+  --accent:   #f59e0b;
   --green:    #22c55e;
   --red:      #ef4444;
   --yellow:   #f59e0b;
@@ -66,8 +66,8 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 
 /* ── Card de saldo ── */
 .mob-saldo-card {
-  background: linear-gradient(135deg, rgba(75,132,243,.2), rgba(124,92,252,.15));
-  border: 1px solid rgba(75,132,243,.3);
+  background: linear-gradient(135deg, rgba(245,158,11,.2), rgba(251,191,36,.10));
+  border: 1px solid rgba(245,158,11,.3);
   border-radius: 20px;
   padding: 20px;
   margin-bottom: 16px;
@@ -166,14 +166,14 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .mob-fab {
   width: 56px; height: 56px; border-radius: 50%;
   background: linear-gradient(135deg, var(--accent), #7c5cfc);
-  border: none; box-shadow: 0 4px 20px rgba(75,132,243,.5);
+  border: none; box-shadow: 0 4px 20px rgba(245,158,11,.5);
   display: flex; align-items: center; justify-content: center;
   font-size: 28px; color: #fff; cursor: pointer;
   margin-top: -24px;
   transition: transform .15s, box-shadow .15s;
   flex-shrink: 0;
 }
-.mob-fab:active { transform: scale(.92); box-shadow: 0 2px 10px rgba(75,132,243,.4); }
+.mob-fab:active { transform: scale(.92); box-shadow: 0 2px 10px rgba(245,158,11,.4); }
 
 /* ── Modal de lançamento rápido ── */
 .mob-modal-overlay {
@@ -235,7 +235,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
   padding: 10px 4px; border-radius: 10px; border: 1px solid var(--border);
   background: var(--surface2); cursor: pointer; transition: all .15s;
 }
-.mob-cat-btn.ativo { border-color: var(--accent); background: rgba(75,132,243,.12); }
+.mob-cat-btn.ativo { border-color: var(--accent); background: rgba(245,158,11,.12); }
 .mob-cat-btn-icon { font-size: 22px; }
 .mob-cat-btn-label { font-size: 10px; color: var(--muted); text-align: center; font-weight: 600; }
 .mob-cat-btn.ativo .mob-cat-btn-label { color: var(--accent); }
@@ -269,22 +269,6 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 }
 @keyframes spin { to { transform: rotate(360deg) } }
 
-/* ── Blur de valores ── */
-body.finzen-valores-ocultos .mob-saldo-valor,
-body.finzen-valores-ocultos .mob-kpi-valor,
-body.finzen-valores-ocultos .mob-alerta-valor,
-body.finzen-valores-ocultos .mob-lanc-valor,
-body.finzen-valores-ocultos .mob-orc-valores,
-body.finzen-valores-ocultos [style*="font-weight:800"],
-body.finzen-valores-ocultos .mob-alerta-sub {
-  filter: blur(5px);
-  user-select: none;
-  transition: filter .2s;
-}
-body.finzen-valores-ocultos #mobSaldo {
-  filter: blur(8px);
-}
-
 /* ── Empty state ── */
 .mob-empty { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; }
 </style>
@@ -298,13 +282,7 @@ body.finzen-valores-ocultos #mobSaldo {
       <span class="mob-logo">FinZen</span>
       <span class="mob-greeting" id="mobGreeting">Bom dia!</span>
     </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <button onclick="window._finzenToggleBlur()" id="mobBtnBlur"
-        style="background:transparent;border:1px solid var(--border);border-radius:10px;
-          padding:6px 10px;cursor:pointer;font-size:16px;color:var(--muted)"
-        title="Ocultar valores">👁️</button>
-      <div class="mob-avatar" id="mobAvatar" onclick="irParaDashboard()">FZ</div>
-    </div>
+    <div class="mob-avatar" id="mobAvatar" onclick="irParaDashboard()">FZ</div>
   </div>
 
   <!-- Conteúdo scrollável -->

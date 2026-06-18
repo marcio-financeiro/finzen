@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Comparador de Investimentos - FinZen</title>
-<link rel="stylesheet" href="../css/base.css?v=1100">
-<link rel="stylesheet" href="../css/layout.css?v=1100">
-<link rel="stylesheet" href="../css/components.css?v=1100">
-<link rel="stylesheet" href="../css/mobile.css?v=1100">
-<link rel="stylesheet" href="../css/navigation.css?v=1100">
+<link rel="stylesheet" href="../css/base.css?v=1080">
+<link rel="stylesheet" href="../css/layout.css?v=1080">
+<link rel="stylesheet" href="../css/components.css?v=1080">
+<link rel="stylesheet" href="../css/mobile.css?v=1080">
+<link rel="stylesheet" href="../css/navigation.css?v=1080">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#f59e0b">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -143,17 +143,17 @@
 
           <div class="comp-input-group">
             <label>Valor inicial (R$)</label>
-            <input type="number" id="valorInicial" value="10000" min="0" step="1000" oninput="simular()">
+            <input type="number" id="valorInicial" value="10000" min="0" step="1000" inputmode="decimal" oninput="simular()">
           </div>
 
           <div class="comp-input-group">
             <label>Aporte mensal (R$)</label>
-            <input type="number" id="aporteMensal" value="500" min="0" step="100" oninput="simular()">
+            <input type="number" id="aporteMensal" value="500" min="0" step="100" inputmode="decimal" oninput="simular()">
           </div>
 
           <div class="comp-input-group">
             <label>IPCA anual estimado (%)</label>
-            <input type="number" id="ipca" value="4.5" min="0" max="30" step="0.1" oninput="simular()">
+            <input type="number" id="ipca" value="4.5" min="0" max="30" step="0.1" inputmode="decimal" oninput="simular()">
             <div class="comp-cdi-info" id="infoCDI">CDI atual: carregando...</div>
           </div>
         </div>
@@ -169,7 +169,7 @@
             <p style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">+ Produto personalizado</p>
             <div class="comp-custom">
               <input type="text" id="customNome" placeholder="Ex: LCI do Banco X">
-              <input type="number" id="customTaxa" placeholder="% a.a." min="0" step="0.1">
+              <input type="number" id="customTaxa" placeholder="% a.a." min="0" step="0.1" inputmode="decimal">
             </div>
             <button class="btn btn-secondary compact" style="margin-top:8px;width:100%" onclick="adicionarCustom()">
               + Adicionar
@@ -230,7 +230,7 @@
 </div>
 
 <nav class="mobile-nav"></nav>
-<script type="module" src="../js/navigation.js?v=1100"></script>
-<script type="module" src="../js/comparador.js?v=1100"></script>
+<script type="module" src="../js/navigation.js?v=1080"></script>
+<script type="module" src="../js/comparador.js?v=1080"></script>
 </body>
 </html>

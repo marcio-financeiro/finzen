@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cadastros - FinZen</title>
-<link rel="stylesheet" href="../css/base.css?v=1100">
-<link rel="stylesheet" href="../css/layout.css?v=1100">
-<link rel="stylesheet" href="../css/components.css?v=1100">
-<link rel="stylesheet" href="../css/mobile.css?v=1100">
-<link rel="stylesheet" href="../css/navigation.css?v=1100">
+<link rel="stylesheet" href="../css/base.css?v=1020">
+<link rel="stylesheet" href="../css/layout.css?v=1020">
+<link rel="stylesheet" href="../css/components.css?v=1020">
+<link rel="stylesheet" href="../css/mobile.css?v=1020">
+<link rel="stylesheet" href="../css/navigation.css?v=1020">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#f59e0b">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -114,7 +114,7 @@
                 <option value="USD">USD — Dólar</option>
               </select></div>
             <div class="form-group"><label>Saldo atual</label>
-              <input type="number" id="contaSaldo" placeholder="0,00" step="0.01"></div>
+              <input type="number" id="contaSaldo" placeholder="0,00" step="0.01" inputmode="decimal"></div>
             <div class="form-group"><label>Cor</label>
               <input type="color" id="contaCor" value="#4f8ef7"></div>
             <div class="form-group"><label>Status</label>
@@ -149,11 +149,11 @@
                 <option value="Hipercard">Hipercard</option>
               </select></div>
             <div class="form-group"><label>Limite</label>
-              <input type="number" id="cartaoLimite" placeholder="0,00" step="0.01" min="0"></div>
+              <input type="number" id="cartaoLimite" placeholder="0,00" step="0.01" min="0" inputmode="decimal"></div>
             <div class="form-group"><label>Dia de fechamento</label>
-              <input type="number" id="cartaoFechamento" placeholder="Ex: 20" min="1" max="31"></div>
+              <input type="number" id="cartaoFechamento" placeholder="Ex: 20" min="1" max="31" inputmode="numeric"></div>
             <div class="form-group"><label>Dia de vencimento</label>
-              <input type="number" id="cartaoVencimento" placeholder="Ex: 10" min="1" max="31"></div>
+              <input type="number" id="cartaoVencimento" placeholder="Ex: 10" min="1" max="31" inputmode="numeric"></div>
             <div class="form-group"><label>Cor</label>
               <input type="color" id="cartaoCor" value="#8b5cf6"></div>
             <div class="form-group"><label>Status</label>
@@ -226,7 +226,7 @@
     </section>
   </main>
 </div>
-<script type="module" src="../js/navigation.js?v=1100"></script>
-<script type="module" src="../js/registrations.js?v=1100"></script>
+<script type="module" src="../js/navigation.js?v=1020"></script>
+<script type="module" src="../js/registrations.js?v=1020"></script>
 </body>
 </html>

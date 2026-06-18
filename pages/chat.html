@@ -4,23 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chat IA - FinZen</title>
-<link rel="stylesheet" href="../css/base.css?v=1100">
-<link rel="stylesheet" href="../css/layout.css?v=1100">
-<link rel="stylesheet" href="../css/components.css?v=1100">
-<link rel="stylesheet" href="../css/mobile.css?v=1100">
-<link rel="stylesheet" href="../css/navigation.css?v=1100">
+<link rel="stylesheet" href="../css/base.css?v=1050">
+<link rel="stylesheet" href="../css/layout.css?v=1050">
+<link rel="stylesheet" href="../css/components.css?v=1050">
+<link rel="stylesheet" href="../css/mobile.css?v=1050">
+<link rel="stylesheet" href="../css/navigation.css?v=1050">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#f59e0b">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <style>
+/* ── Layout do chat ── */
 .chat-shell {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 60px);
+  height: calc(100vh - 60px); /* descontar topbar */
   max-height: calc(100vh - 60px);
-  overflow: hidden;
 }
+
+/* ── Status de contexto ── */
 .chat-status {
   padding: 8px 20px;
   font-size: 12px;
@@ -32,6 +34,8 @@
   justify-content: space-between;
   flex-shrink: 0;
 }
+
+/* ── Sugestões rápidas ── */
 .chat-suggestions {
   display: flex;
   gap: 8px;
@@ -43,6 +47,7 @@
   border-bottom: 1px solid var(--border);
 }
 .chat-suggestions::-webkit-scrollbar { display: none; }
+
 .chat-chip {
   white-space: nowrap;
   padding: 5px 12px;
@@ -54,15 +59,14 @@
   cursor: pointer;
   transition: border-color .15s, color .15s, background .15s;
   flex-shrink: 0;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
 }
-.chat-chip:hover,
-.chat-chip:active {
+.chat-chip:hover {
   border-color: var(--accent);
   color: var(--text);
-  background: rgba(245,158,11,.08);
+  background: rgba(79,124,255,.08);
 }
+
+/* ── Área de mensagens ── */
 #mensagens {
   flex: 1;
   overflow-y: auto;
@@ -71,8 +75,9 @@
   flex-direction: column;
   gap: 14px;
   scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
 }
+
+/* ── Empty state ── */
 .chat-empty {
   flex: 1;
   display: flex;
@@ -88,6 +93,8 @@
 .chat-empty-icon { font-size: 44px; }
 .chat-empty h3 { font-size: 16px; font-weight: 700; color: var(--text); }
 .chat-empty p { font-size: 13px; line-height: 1.6; max-width: 280px; }
+
+/* ── Mensagens ── */
 .chat-msg {
   display: flex;
   gap: 10px;
@@ -98,7 +105,9 @@
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
 .chat-msg-user { flex-direction: row-reverse; }
+
 .chat-avatar {
   width: 30px; height: 30px;
   border-radius: 50%;
@@ -108,6 +117,7 @@
 }
 .chat-msg-ai   .chat-avatar { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
 .chat-msg-user .chat-avatar { background: var(--surface-2, rgba(255,255,255,.06)); border: 1px solid var(--border); }
+
 .chat-bubble {
   max-width: calc(100% - 80px);
   padding: 10px 14px;
@@ -115,23 +125,27 @@
   font-size: 13px;
   line-height: 1.65;
 }
-.chat-msg-ai .chat-bubble {
+.chat-msg-ai   .chat-bubble {
   background: var(--surface-2, rgba(255,255,255,.04));
   border: 1px solid var(--border);
   border-top-left-radius: 4px;
   color: var(--text);
 }
 .chat-msg-user .chat-bubble {
-  background: rgba(245,158,11,.15);
-  border: 1px solid rgba(245,158,11,.25);
+  background: rgba(79,124,255,.15);
+  border: 1px solid rgba(79,124,255,.25);
   border-top-right-radius: 4px;
   color: var(--text);
 }
+
+/* Markdown dentro das bolhas */
 .chat-bubble strong { font-weight: 700; }
 .chat-bubble h4 { font-size: 13px; font-weight: 700; margin: 10px 0 5px; }
 .chat-bubble h4:first-child { margin-top: 0; }
 .chat-bubble ul { padding-left: 16px; margin: 5px 0; display: flex; flex-direction: column; gap: 3px; }
 .chat-bubble p  { margin: 4px 0; }
+
+/* Cursor piscante */
 .chat-cursor {
   display: inline-block;
   width: 2px; height: 13px;
@@ -141,6 +155,8 @@
   animation: blink .7s step-end infinite;
 }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* Indicador de digitação */
 .chat-dots { display: flex; gap: 4px; align-items: center; padding: 3px 0; }
 .chat-dots span {
   width: 6px; height: 6px;
@@ -151,12 +167,15 @@
 .chat-dots span:nth-child(2) { animation-delay: .2s; }
 .chat-dots span:nth-child(3) { animation-delay: .4s; }
 @keyframes dot { 0%,80%,100%{transform:scale(.7);opacity:.4} 40%{transform:scale(1);opacity:1} }
+
+/* ── Input area ── */
 .chat-input-area {
   padding: 10px 14px 14px;
   background: var(--surface);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
+
 .chat-input-row {
   display: flex;
   align-items: flex-end;
@@ -168,6 +187,7 @@
   transition: border-color .2s;
 }
 .chat-input-row:focus-within { border-color: var(--accent); }
+
 #inputMsg {
   flex: 1;
   background: transparent;
@@ -182,42 +202,33 @@
 }
 #inputMsg::placeholder { color: var(--muted); }
 #inputMsg:disabled { opacity: .5; }
+
 #btnEnviar {
-  width: 38px;
-  height: 38px;
-  min-width: 38px;
-  border-radius: 10px;
+  width: 34px; height: 34px;
+  border-radius: 8px;
   border: none;
   background: var(--accent);
-  color: #000;
-  font-weight: 700;
-  font-size: 16px;
+  color: #fff;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  font-size: 15px;
   transition: opacity .15s, transform .1s;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
 }
 #btnEnviar:hover:not(:disabled) { opacity: .85; }
-#btnEnviar:active:not(:disabled) { transform: scale(.92); }
-#btnEnviar:disabled { opacity: .35; cursor: not-allowed; }
+#btnEnviar:active:not(:disabled) { transform: scale(.94); }
+#btnEnviar:disabled { opacity: .3; cursor: not-allowed; }
+
 .chat-hint {
   font-size: 11px;
   color: var(--muted);
   text-align: center;
   margin-top: 6px;
 }
-/* Esconder FAB na página do chat — sobrepõe o botão enviar */
-.finzen-fab-wrap { display: none !important; }
 
+/* Mobile: ocupar tela inteira */
 @media(max-width: 768px) {
-  .chat-shell {
-    height: calc(100dvh - 125px);
-    max-height: calc(100dvh - 125px);
-  }
+  .chat-shell { height: calc(100dvh - 120px); }
   .chat-bubble { max-width: calc(100% - 50px); }
 }
 </style>
@@ -237,55 +248,56 @@
         <p id="userEmail" class="muted"></p>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button id="btnLimpar" class="btn btn-secondary compact" title="Limpar conversa">🗑️ Limpar</button>
+        <button onclick="limparChat()" class="btn btn-secondary compact" title="Limpar conversa">🗑️ Limpar</button>
         <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
       </div>
     </header>
 
-    <div class="chat-shell">
-
-      <div class="chat-status">
-        <span id="statusContexto">⏳ Carregando dados financeiros...</span>
-        <span style="font-size:11px;color:var(--muted)">Histórico: últimas 10 trocas</span>
-      </div>
-
-      <div class="chat-suggestions" id="chatSugestoes">
-        <button class="chat-chip" data-sugestao="Como foram meus gastos esse mês?">📊 Gastos do mês</button>
-        <button class="chat-chip" data-sugestao="Quanto tenho de fatura de cartão aberta?">💳 Faturas abertas</button>
-        <button class="chat-chip" data-sugestao="Onde posso economizar esse mês?">💡 Onde economizar</button>
-        <button class="chat-chip" data-sugestao="Como está minha taxa de poupança?">🏦 Taxa de poupança</button>
-        <button class="chat-chip" data-sugestao="Vou fechar o mês no azul ou no vermelho?">🔮 Previsão do mês</button>
-        <button class="chat-chip" data-sugestao="Quais são minhas maiores despesas por categoria?">📈 Top categorias</button>
-        <button class="chat-chip" data-sugestao="Tenho algum lançamento pendente essa semana?">⏰ Pendentes</button>
-      </div>
-
-      <div id="mensagens">
-        <div id="emptyState" class="chat-empty">
-          <div class="chat-empty-icon">🤖</div>
-          <h3>Olá! Sou o FinZen AI</h3>
-          <p>Tenho acesso aos seus dados financeiros reais. Pergunte o que quiser sobre gastos, receitas, cartões, metas e muito mais.</p>
-        </div>
-      </div>
-
-      <div class="chat-input-area">
-        <div class="chat-input-row">
-          <textarea
-            id="inputMsg"
-            placeholder="Carregando dados..."
-            rows="1"
-            disabled
-          ></textarea>
-          <button id="btnEnviar" disabled aria-label="Enviar mensagem">➤</button>
-        </div>
-        <p class="chat-hint">Enter para enviar · Shift+Enter para nova linha</p>
-      </div>
-
+    <!-- Status do contexto -->
+    <div class="chat-status">
+      <span id="statusContexto">⏳ Carregando dados financeiros...</span>
+      <span style="font-size:11px;color:var(--muted)">Histórico: últimas 10 trocas</span>
     </div>
+
+    <!-- Sugestões rápidas -->
+    <div class="chat-suggestions">
+      <button class="chat-chip" onclick="usarSugestao('Como foram meus gastos esse mês?')">📊 Gastos do mês</button>
+      <button class="chat-chip" onclick="usarSugestao('Quanto tenho de fatura de cartão aberta?')">💳 Faturas abertas</button>
+      <button class="chat-chip" onclick="usarSugestao('Onde posso economizar esse mês?')">💡 Onde economizar</button>
+      <button class="chat-chip" onclick="usarSugestao('Como está minha taxa de poupança?')">🏦 Taxa de poupança</button>
+      <button class="chat-chip" onclick="usarSugestao('Vou fechar o mês no azul ou no vermelho?')">🔮 Previsão do mês</button>
+      <button class="chat-chip" onclick="usarSugestao('Quais são minhas maiores despesas por categoria?')">📈 Top categorias</button>
+      <button class="chat-chip" onclick="usarSugestao('Tenho algum lançamento pendente essa semana?')">⏰ Pendentes</button>
+    </div>
+
+    <!-- Mensagens -->
+    <div id="mensagens">
+      <div id="emptyState" class="chat-empty">
+        <div class="chat-empty-icon">🤖</div>
+        <h3>Olá! Sou o FinZen AI</h3>
+        <p>Tenho acesso aos seus dados financeiros reais. Pergunte o que quiser sobre gastos, receitas, cartões, metas e muito mais.</p>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input-area">
+      <div class="chat-input-row">
+        <textarea
+          id="inputMsg"
+          placeholder="Carregando dados..."
+          rows="1"
+          disabled
+        ></textarea>
+        <button id="btnEnviar" disabled title="Enviar (Enter)">➤</button>
+      </div>
+      <p class="chat-hint">Enter para enviar · Shift+Enter para nova linha</p>
+    </div>
+
   </main>
 </div>
 
 <nav class="mobile-nav"></nav>
-<script type="module" src="../js/navigation.js?v=1100"></script>
-<script type="module" src="../js/chat.js?v=1100"></script>
+<script type="module" src="../js/navigation.js?v=1050"></script>
+<script type="module" src="../js/chat.js?v=1050"></script>
 </body>
 </html>
