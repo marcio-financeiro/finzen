@@ -325,61 +325,57 @@
 /* ── Collapse transition ── */
 .ia-body-collapsed{ display:none; }
 
+
+
+
 /* ── Faixa proativa do assistente ── */
 #assistantBar {
-  width: 100%;
-  height: 36px;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  background: rgba(245,158,11,.06);
-  border-bottom: 1px solid rgba(245,158,11,.15);
+  margin: -24px -24px 20px;   /* sangra nas bordas como o topbar */
+  height: 38px;
+  display: flex;
+  align-items: stretch;
+  background: rgba(245,158,11,.07);
+  border-bottom: 1px solid rgba(245,158,11,.18);
+  font-size: 12px;
+  overflow: hidden;
 }
-.ab-label {
+#abLabel {
+  padding: 0 14px;
   font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: .15em;
+  letter-spacing: .14em;
   color: var(--accent);
-  padding: 0 14px;
+  white-space: nowrap;
   display: flex;
   align-items: center;
+  background: rgba(245,158,11,.1);
   border-right: 1px solid rgba(245,158,11,.2);
-  background: rgba(245,158,11,.08);
-  white-space: nowrap;
-  z-index: 1;
+  flex-shrink: 0;
 }
-.ab-ticker-wrap {
+#abScroll {
+  flex: 1;
   overflow: hidden;
   position: relative;
+}
+#abTrack {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
   display: flex;
+  white-space: nowrap;
   align-items: center;
 }
-.ab-track {
-  display: flex;
-  white-space: nowrap;
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
 .ab-item {
-  font-size: 12px;
-  color: var(--text);
   padding: 0 24px;
+  color: var(--text);
   border-right: 1px solid rgba(245,158,11,.1);
-  line-height: 36px;
-  display: inline-block;
+  line-height: 38px;
   white-space: nowrap;
-}
-.ab-loading {
-  color: var(--muted);
-  font-size: 12px;
-  padding: 0 16px;
-  line-height: 36px;
-}
-@media (max-width: 820px) {
-  .ab-label { display: none; }
-  #assistantBar { grid-template-columns: 1fr; }
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 </style>
@@ -410,7 +406,10 @@
       </div>
     </header>
 
-    <div id="assistantBar" aria-label="Insights do assistente"></div>
+    <div id="assistantBar">
+  <div id="abLabel">✦ ASSISTENTE</div>
+  <div id="abScroll"><div id="abTrack"></div></div>
+</div>
 
 
     <!-- KPIs principais -->
