@@ -1,43 +1,41 @@
-export const config = { runtime: 'edge' };
+// api/analyze.js — Proxy Claude AI
+// Node.js serverless (não Edge — Edge bloqueia chamadas externas)
 
-export default async function handler(req) {
+export default async function handler(req, res) {
+
+  // ── CORS ──────────────────────────────────────────────────────────────────
+  res.setHeader('Access-Control-Allow-Origin', 'https://finzen-rho.vercel.app');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-finzen-secret');
+
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
+    return res.status(204).end();
   }
 
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // ── Autenticação por secret ───────────────────────────────────────────────
+  const secret = req.headers['x-finzen-secret'];
+  if (!secret || secret !== process.env.FINZEN_SECRET) {
+    return res.status(403).json({ error: 'Forbidden' });
   }
 
   try {
-    const body = await req.json();
-    const { prompt, system, history } = body;
+    const { prompt, system, history } = req.body;
 
     if (!prompt) {
-      return new Response(JSON.stringify({ error: 'prompt é obrigatório' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      });
+      return res.status(400).json({ error: 'prompt é obrigatório' });
     }
 
     // Monta histórico de mensagens
     const messages = [];
     if (history && Array.isArray(history)) {
-      // Adiciona histórico anterior (sem a última mensagem do usuário que já vem em prompt)
       history.slice(0, -1).forEach(h => {
         messages.push({ role: h.role, content: h.content });
       });
     }
-    // Adiciona mensagem atual
     messages.push({ role: 'user', content: prompt });
 
     const requestBody = {
@@ -47,10 +45,7 @@ export default async function handler(req) {
       messages,
     };
 
-    // System prompt opcional (usado pelo chat)
-    if (system) {
-      requestBody.system = system;
-    }
+    if (system) requestBody.system = system;
 
     const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -64,24 +59,25 @@ export default async function handler(req) {
 
     if (!anthropicRes.ok) {
       const err = await anthropicRes.text();
-      return new Response(JSON.stringify({ error: err }), {
-        status: anthropicRes.status,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      });
+      return res.status(anthropicRes.status).json({ error: err });
     }
 
-    return new Response(anthropicRes.body, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
+    // Streaming de resposta
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+
+    const reader = anthropicRes.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      res.write(decoder.decode(value));
+    }
+
+    res.end();
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-    });
+    return res.status(500).json({ error: err.message });
   }
 }
