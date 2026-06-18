@@ -21,10 +21,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'prompt é obrigatório' });
     }
 
-    // Monta histórico de mensagens
+    // Monta histórico de mensagens (todas as anteriores, exceto a atual que vem em 'prompt')
     const messages = [];
     if (history && Array.isArray(history)) {
-      history.slice(0, -1).forEach(h => {
+      // O histórico enviado pelo chat.js já inclui a mensagem atual no final
+      // Removemos a última (que é a atual) para não duplicar com o 'prompt'
+      const historicoPrevio = history.slice(0, -1);
+      historicoPrevio.forEach(h => {
         messages.push({ role: h.role, content: h.content });
       });
     }
