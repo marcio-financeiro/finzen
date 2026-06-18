@@ -76,38 +76,88 @@ async function sumAccounts(){
 }
 
 async function sumOpenCards(){
-  const hoje  = new Date();
-  const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
-
   const { data, error } = await supabase
     .from('card_transactions')
-    .select('valor_parcela')
+    .select('valor_parcela, valor_total, status')
     .eq('user_id', user.id)
-    .eq('status', 'aberta')
-    .eq('fatura_referencia', mesAtual);  // ← só mês atual!
+    .eq('status', 'aberta');
 
   if(error){
     throw new Error('Erro ao calcular cartões: ' + error.message);
   }
 
-  return (data || []).reduce((sum, item) => sum + Number(item.valor_parcela || 0), 0);
+  return (data || []).reduce((sum, item) => {
+    const parcela = Number(item.valor_parcela ?? 0);
+    const total = Number(item.valor_total ?? 0);
+
+    if(parcela){
+      return sum + parcela;
+    }
+
+    return sum + total;
+  }, 0);
 }
 
 async function sumInvestmentsSafe(){
-  // Tabela correta: investments com campos quantidade, cotacao_atual, preco_medio
-  const { data, error } = await supabase
-    .from('investments')
-    .select('quantidade, cotacao_atual, preco_medio, ativo')
-    .eq('user_id', user.id)
-    .eq('ativo', true);
+  /*
+    Cálculo conservador.
+    Como o módulo de investimentos ainda pode estar evoluindo,
+    tentamos estruturas comuns sem quebrar a tela.
+  */
 
-  if(error || !data || !data.length) return 0;
+  const attempts = [
+    {
+      table:'investment_assets',
+      select:'quantity,current_price,average_price,total_value'
+    },
+    {
+      table:'investments',
+      select:'quantity,current_price,average_price,total_value'
+    },
+    {
+      table:'investment_positions',
+      select:'quantity,current_price,average_price,total_value'
+    }
+  ];
 
-  return data.reduce((sum, item) => {
-    const qtd    = Number(item.quantidade   || 0);
-    const cotacao = Number(item.cotacao_atual || item.preco_medio || 0);
-    return sum + (qtd * cotacao);
-  }, 0);
+  for(const attempt of attempts){
+    const { data, error } = await supabase
+      .from(attempt.table)
+      .select(attempt.select)
+      .eq('user_id', user.id);
+
+    if(error){
+      continue;
+    }
+
+    if(!data || !data.length){
+      return 0;
+    }
+
+    return data.reduce((sum, item) => {
+      const total = Number(item.total_value ?? 0);
+
+      if(total){
+        return sum + total;
+      }
+
+      const quantity = Number(item.quantity ?? 0);
+      const current = Number(item.current_price ?? 0);
+      const average = Number(item.average_price ?? 0);
+
+      if(quantity && current){
+        return sum + (quantity * current);
+      }
+
+      if(quantity && average){
+        return sum + (quantity * average);
+      }
+
+      return sum;
+    }, 0);
+  }
+
+  return 0;
 }
 
 async function calculateSnapshot(){
@@ -351,7 +401,7 @@ export async function renderGraficoEvolucao(user, supabase, containerId){
   container.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;gap:16px;font-size:12px">
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:2px;background:#4b84f3;display:inline-block;border-radius:1px"></span>Patrimônio</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:2px;background:#f59e0b;display:inline-block;border-radius:1px"></span>Patrimônio</span>
         <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:2px;background:#22c55e;display:inline-block;border-radius:1px"></span>Contas</span>
         <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:2px;background:#7c5cfc;display:inline-block;border-radius:1px;border-top:2px dashed #7c5cfc"></span>Invest.</span>
       </div>
@@ -361,8 +411,8 @@ export async function renderGraficoEvolucao(user, supabase, containerId){
       ${zeroLine}
       ${polyline(contas,   '#22c55e')}
       ${polyline(investim, '#7c5cfc', '6 3')}
-      ${polyline(valores,  '#4b84f3')}
-      ${dot(valores, '#4b84f3')}
+      ${polyline(valores,  '#f59e0b')}
+      ${dot(valores, '#f59e0b')}
       ${xLabels}
     </svg>
   `;

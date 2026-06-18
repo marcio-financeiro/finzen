@@ -66,7 +66,7 @@ function initEmojiPicker(){
         document.getElementById('emojiPreview').textContent='${e}';
         document.getElementById('emojiPickerPanel').style.display='none';
       })()" style="font-size:20px;width:34px;height:34px;border:none;background:transparent;
-        cursor:pointer;border-radius:6px;line-height:1;" onmouseover="this.style.background='var(--surface-3,rgba(75,132,243,.12))'"
+        cursor:pointer;border-radius:6px;line-height:1;" onmouseover="this.style.background='var(--surface-3,rgba(245,158,11,.10))'"
         onmouseout="this.style.background='transparent'">${e}</button>`
     ).join('');
   }

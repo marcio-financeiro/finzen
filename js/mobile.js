@@ -198,7 +198,7 @@ async function carregar() {
     supabase.from('accounts').select('id,nome,saldo_atual,currency,icon,tipo,account_kind').eq('user_id',user.id).eq('active',true),
     supabase.from('transactions').select('type,amount,status').eq('user_id',user.id).gte('date',inicio).lte('date',fim).eq('status','pago'),
     supabase.from('card_transactions').select('valor_parcela,credit_cards:card_id(nome,vencimento_dia)').eq('user_id',user.id).eq('status','aberta').eq('fatura_referencia',anoMes),
-    supabase.from('transactions').select('id,description,amount,date,type,account_id').eq('user_id',user.id).eq('status','pendente').gte('date',hojeISO).lte('date',em7).order('date'),
+    supabase.from('transactions').select('description,amount,date,type').eq('user_id',user.id).eq('status','pendente').gte('date',hojeISO).lte('date',em7).order('date'),
     supabase.from('budgets').select('valor_planejado,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',anoMes),
     supabase.from('transactions').select('type,amount,date,description,categories:category_id(nome,icon),accounts:account_id(nome)').eq('user_id',user.id).eq('status','pago').order('date',{ascending:false}).limit(5),
     supabase.from('categories').select('id,nome,icon,tipo').eq('user_id',user.id).eq('ativo',true),
@@ -539,30 +539,6 @@ window.irParaDashboard = function() {
 window.ativarModoAvancado = function() {
   localStorage.setItem('finzen_modo_avancado', 'true');
   location.href = '../pages/dashboard.html';
-};
-
-// ── Sincronizar botão blur mobile ────────────────────
-function syncBtnBlur() {
-  const ativo = document.body.classList.contains('finzen-valores-ocultos');
-  const btn = document.getElementById('mobBtnBlur');
-  if(btn) btn.textContent = ativo ? '🙈' : '👁️';
-}
-
-// Inicializar blur se estava ativo
-if(localStorage.getItem('finzen_blur_valores') === '1') {
-  document.body.classList.add('finzen-valores-ocultos');
-}
-syncBtnBlur();
-
-// Sobrescrever toggleBlur para atualizar ícone mobile também
-const _originalToggle = window._finzenToggleBlur;
-window._finzenToggleBlur = function() {
-  if(_originalToggle) _originalToggle();
-  else {
-    const ativo = document.body.classList.toggle('finzen-valores-ocultos');
-    localStorage.setItem('finzen_blur_valores', ativo ? '1' : '0');
-  }
-  syncBtnBlur();
 };
 
 // ── Inicializar ───────────────────────────────────────

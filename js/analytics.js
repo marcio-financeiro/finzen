@@ -25,7 +25,7 @@ const charts = {};
 
 // ── Paleta de cores ───────────────────────────────────
 const CORES = [
-  '#4b84f3','#22c55e','#f59e0b','#ef4444','#8b5cf6',
+  '#f59e0b','#22c55e','#10b981','#ef4444','#8b5cf6',
   '#06b6d4','#f97316','#10b981','#e11d48','#6366f1',
   '#84cc16','#ec4899','#14b8a6','#fb923c','#a855f7'
 ];
@@ -253,8 +253,8 @@ async function carregar() {
         datasets: [{
           label: 'Saldo do mês',
           data: saldos,
-          borderColor: '#4b84f3',
-          backgroundColor: rgba('#4b84f3', .12),
+          borderColor: '#f59e0b',
+          backgroundColor: rgba(245,158,11, .12),
           borderWidth: 2.5,
           pointBackgroundColor: saldos.map(v => v >= 0 ? '#22c55e' : '#ef4444'),
           pointRadius: 5,

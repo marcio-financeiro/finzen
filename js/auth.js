@@ -50,23 +50,10 @@ btnCadastro.addEventListener('click', async () => {
     return;
   }
 
-  if(password.length < 6){
-    showMessage('A senha deve ter no mínimo 6 caracteres.', 'warning');
-    return;
-  }
+  const { error } = await supabase.auth.signUp({ email, password });
 
-  const { data, error } = await supabase.auth.signUp({ email, password });
-
-  if(error){
-    showMessage(error.message, 'danger');
-    return;
-  }
-
-  if(data.session){
-    // Usuário criado e logado — ir para onboarding
-    navigate('./pages/onboarding.html');
-  } else {
-    // Supabase requer confirmação de e-mail
-    showMessage('Cadastro realizado! Verifique seu e-mail para confirmar a conta.', 'success');
-  }
+  showMessage(
+    error ? error.message : 'Cadastro realizado. Verifique seu e-mail, se necessário.',
+    error ? 'danger' : 'success'
+  );
 });

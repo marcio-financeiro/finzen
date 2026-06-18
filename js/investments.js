@@ -3,8 +3,6 @@ import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
 import { DEFAULT_USD_BRL, formatPercent, formatUSD, getUsdBrlRate, saveUsdBrlRate, toNumber } from './services/financeService.js';
-import { termometro }     from './termometro.js';
-import { diarioTese }     from './diarioTese.js';
 
 // ─────────────────────────────────────────────
 // AUTH
@@ -41,7 +39,6 @@ document.querySelectorAll('.inv-tab').forEach(btn => {
     if(btn.dataset.tab === 'dividendos') carregarDividendos();
     if(btn.dataset.tab === 'balancear')  renderizarBalancear();
     if(btn.dataset.tab === 'aportar')    carregarTransacoes();
-    if(btn.dataset.tab === 'termometro') renderizarTermometro();
   });
 });
 
@@ -108,13 +105,7 @@ async function atualizarCotacoes(silencioso=false){
   try{
     const tickBR  = ativos.filter(a=>isBR(a.tipo)).map(a=>a.ticker.toUpperCase());
     const tickEUA = ativos.filter(a=>isEUA(a.tipo)).map(a=>a.ticker.toUpperCase());
-
-    console.log('[FinZen] tickBR:', tickBR);
-    console.log('[FinZen] tickEUA:', tickEUA);
-    console.log('[FinZen] total ativos:', ativos.length);
-
     const cots = await fetchCotacoes(tickBR, tickEUA, true);
-    console.log('[FinZen] cotações retornadas:', cots);
 
     // Dólar
     const novoDolar = cots['USD-BRL'] || dolarAtual;
@@ -128,7 +119,6 @@ async function atualizarCotacoes(silencioso=false){
     for(const a of ativos){
       if(isRF(a.tipo)) continue;
       const nova = cots[a.ticker.toUpperCase()];
-      console.log(`[FinZen] ${a.ticker} → cotação: ${nova}`);
       if(!nova) continue;
       const atual=toNumber(a.cotacao_atual||0);
       if(atual>0&&Math.abs(nova-atual)/atual<0.0001) continue;
@@ -142,7 +132,6 @@ async function atualizarCotacoes(silencioso=false){
     if(!silencioso) msg('mensagemCotacao',`${n} cotação(ões) atualizada(s). USD/BRL: ${dolarAtual.toFixed(4)}`,'success');
     renderizarTudo();
   }catch(e){
-    console.error('[FinZen] Erro cotações:', e);
     if(!silencioso) msg('mensagemCotacao','Erro: '+e.message,'danger');
   }finally{
     el('btnAtualizar').disabled=false;
@@ -277,10 +266,10 @@ function renderizarCarteira(){
     // Tabela desktop
     html+=`<div class="inv-desktop-table"><table class="data-table">
       <thead><tr>
-        <th>Ticker</th><th>Qtd</th>
+        <th>Ticker</th><th>Nome</th><th>Qtd</th>
         <th>P. Médio</th><th>Cotação</th>
         <th>Aplicado</th><th>Atual</th><th>Resultado</th>
-        <th>% / Meta</th><th>Ações</th>
+        <th>% Classe</th><th>% Ideal</th><th>Comprar?</th><th>Ações</th>
       </tr></thead><tbody>`;
 
     grupo.ativos.forEach(a=>{
@@ -289,49 +278,35 @@ function renderizarCarteira(){
       const atual   = calcAtual(a);
       const res     = atual-aplic;
       const pct     = aplic?res/aplic*100:0;
+      // % dentro da classe (não da carteira total)
       const pctCart = grupo.total?calcBRL(a,atual)/grupo.total*100:0;
       const pk      = `inv_peso_${a.ticker}`;
       const pideal  = toNumber((pesos[pk]||{}).ideal||0);
       const diff    = pideal-pctCart;
       const comprar = pideal>0?(diff>1?'sim':diff<-1?'vender':'ok'):'';
-      const comprarBadge = comprar==='sim'
-        ? '<span class="badge-comprar" style="font-size:10px;">✅</span>'
-        : comprar==='vender'
-          ? '<span class="badge-vender" style="font-size:10px;">⬇</span>'
-          : comprar==='ok' ? '<span class="badge-nao" style="font-size:10px;">—</span>' : '';
 
-      html+=`<tr title="${a.nome||''}">
-        <td><strong>${a.ticker}</strong>${a.nome?`<br><small class="muted" style="font-size:10px;">${a.nome}</small>`:''}</td>
-        <td class="money">${toNumber(a.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:4})}</td>
+      html+=`<tr>
+        <td><strong>${a.ticker}</strong></td>
+        <td>${a.nome||'-'}</td>
+        <td class="money">${toNumber(a.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:6})}</td>
         <td class="money">${fmtMoeda(toNumber(a.preco_medio),m)}</td>
         <td class="money">${fmtMoeda(toNumber(a.cotacao_atual||a.preco_medio),m)}
-          ${a.atualizado_em?'<span style="font-size:9px;color:var(--success);"> ✓</span>':''}
-          <button class="btn compact" data-cot-manual="${a.id}" data-ticker="${a.ticker}" data-moeda="${m}"
-            style="font-size:10px;padding:1px 4px;background:rgba(79,132,243,.12);border-color:rgba(79,132,243,.3)">✏️</button>
+          ${a.atualizado_em?'<span style="font-size:9px;color:var(--success)"> ✓auto</span>':''}
         </td>
-        <td class="money">${fmtMoeda(aplic,m)}${m==='USD'?`<br><small class="muted">${formatCurrency(calcBRL(a,aplic),'BRL')}</small>`:''}</td>
-        <td class="money">${fmtMoeda(atual,m)}${m==='USD'?`<br><small class="muted">${formatCurrency(calcBRL(a,atual),'BRL')}</small>`:''}</td>
+        <td class="money">${fmtMoeda(aplic,m)}${m==='USD'?`<br><small class="muted">${formatCurrency(calcBRL(a,aplic),'BRL')}</small>`:''}
+        </td>
+        <td class="money">${fmtMoeda(atual,m)}${m==='USD'?`<br><small class="muted">${formatCurrency(calcBRL(a,atual),'BRL')}</small>`:''}
+        </td>
         <td class="money ${res>=0?'positive':'negative'}">
           ${res>=0?'+':''}${fmtMoeda(res,m)}<br>
           <small>${res>=0?'+':''}${formatPercent(pct)}</small>
         </td>
-        <td style="white-space:nowrap;">
-          ${formatPercent(pctCart)}
-          ${pideal?`<br><small class="muted">${formatPercent(pideal)}</small>`:''}
-          ${comprarBadge}
-        </td>
-        <td style="white-space:nowrap;">
-          <button class="btn btn-secondary compact" data-editar="${a.id}">✏</button>
-          <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">✕</button>
-          <button class="btn compact" data-tese="${a.id}" data-ticker="${a.ticker}" data-tipo="${a.tipo}"
-            style="font-size:11px;padding:2px 6px;background:rgba(123,92,229,.12);border-color:rgba(123,92,229,.3);color:var(--purple);">
-            📓
-          </button>
-        </td>
-      </tr>
-      <tr id="tese-row-${a.id}" style="display:none;">
-        <td colspan="9" style="padding:0;">
-          <div id="tese-container-${a.id}"></div>
+        <td>${formatPercent(pctCart)}</td>
+        <td>${pideal?formatPercent(pideal):'-'}</td>
+        <td>${comprar==='sim'?'<span class="badge-comprar">✅ Sim</span>':comprar==='vender'?'<span class="badge-vender">⬇ Reduzir</span>':comprar==='ok'?'<span class="badge-nao">— Ok</span>':'-'}</td>
+        <td>
+          <button class="btn btn-secondary compact" data-editar="${a.id}">Editar</button>
+          <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">Excluir</button>
         </td>
       </tr>`;
     });
@@ -370,30 +345,6 @@ function renderizarCarteira(){
 
   el('listaCarteira').querySelectorAll('[data-editar]').forEach(b=>b.addEventListener('click',()=>editarAtivo(b.dataset.editar)));
   el('listaCarteira').querySelectorAll('[data-excluir]').forEach(b=>b.addEventListener('click',()=>excluirAtivo(b.dataset.excluir,b.dataset.ticker)));
-  el('listaCarteira').querySelectorAll('[data-cot-manual]').forEach(b=>b.addEventListener('click',()=>atualizarCotacaoManual(b.dataset.cotManual,b.dataset.ticker,b.dataset.moeda)));
-
-  // Botão 📓 Tese — abre/fecha painel expansível (desktop only)
-  el('listaCarteira').querySelectorAll('[data-tese]').forEach(b => {
-    b.addEventListener('click', async () => {
-      const id        = b.dataset.tese;
-      const ticker    = b.dataset.ticker;
-      const tipo      = b.dataset.tipo;
-      const row       = document.getElementById(`tese-row-${id}`);
-      const container = document.getElementById(`tese-container-${id}`);
-      if (!row) return;
-      const aberto = row.style.display !== 'none';
-      if (aberto) {
-        row.style.display = 'none';
-        b.textContent = '📓';
-      } else {
-        row.style.display = '';
-        b.textContent = '✖️';
-        if (!container.hasChildNodes() || container.innerHTML.includes('Carregando')) {
-          await diarioTese.renderPainel(id, ticker, tipo, container);
-        }
-      }
-    });
-  });
 }
 
 // ─────────────────────────────────────────────
@@ -555,7 +506,6 @@ function limparFormAtivo(){
   el('operacaoAtivo').value='compra';
   el('moedaAtivo').value='BRL';
   el('dataAtivo').value=hojeISO();
-
   el('btnSalvarAtivo').innerText='Salvar Aporte';
   el('btnCancelarEdicao').style.display='none';
 }
@@ -781,94 +731,56 @@ async function salvarPesos(){
 }
 
 function calcularBalanceamento(){
-  console.log('[FinZen] calcularBalanceamento chamado, pesos:', JSON.stringify(pesos));
   const aporte=toNumber(el('balValorAporte').value);
   if(!aporte){ msg('mensagemBal','Informe o valor do aporte.','warning'); return; }
 
   const patrimAtual=ativos.reduce((s,a)=>s+calcBRL(a,calcAtual(a)),0);
   const novoTotal  =patrimAtual+aporte;
 
+  // Sugestões por ativo (incluindo classes sem ativos com % ideal definido)
   const sugestoes=[];
 
-  // ─── Para cada classe com % ideal definido ───────────────────────────────
+  // Sugestões baseadas em ativos individuais
+  ativos.forEach(a=>{
+    const pk=`inv_peso_${a.ticker}`;
+    const pideal=toNumber((pesos[pk]||{}).ideal||0);
+    if(!pideal) return;
+
+    const valorIdeal  =novoTotal*(pideal/100);
+    const valorAtual  =calcBRL(a,calcAtual(a));
+    const diferenca   =valorIdeal-valorAtual;
+    const cotacao     =toNumber(a.cotacao_atual||a.preco_medio);
+    const moeda       =a.moeda||'BRL';
+    const cotBRL      =moeda==='USD'?cotacao*dolarAtual:cotacao;
+    const qtdSugerida =cotBRL>0?Math.floor(diferenca/cotBRL):0;
+
+    if(diferenca>0&&qtdSugerida>0){
+      sugestoes.push({
+        ticker:a.ticker, nome:a.nome||'', tipo:tipoLabel(a.tipo),
+        pideal, valorIdeal, valorAtual, diferenca,
+        cotacao:fmtMoeda(cotacao,moeda), qtdSugerida,
+        valorSugerido:qtdSugerida*cotBRL, moeda,
+      });
+    }
+  });
+
+  // Sugestões baseadas em classes sem ativos mas com % ideal definido
   TODAS_CLASSES.forEach(classe=>{
     const ck=`inv_peso_classe_${classe.replace(/\s/g,'_')}`;
     const cideal=toNumber((pesos[ck]||{}).ideal||0);
-    if(!cideal) return; // classe sem % ideal → ignorar
-
-    // Valor que a classe deveria ter no total pós-aporte
-    const valorIdealClasse=novoTotal*(cideal/100);
-
-    // Ativos pertencentes a esta classe
-    const ativosClasse=ativos.filter(a=>classeKey(a.tipo)===classe);
-
-    // ── Classe sem nenhum ativo cadastrado ──────────────────────────────────
-    if(!ativosClasse.length){
-      const valorAtualClasse=0;
-      const diferencaClasse=valorIdealClasse-valorAtualClasse;
-      if(diferencaClasse>0){
-        sugestoes.push({
-          ticker:'—', nome:`Cadastre um ativo em ${classe}`, tipo:classe,
-          classe, pideal:cideal, pidealLabel:`${cideal}% da carteira`,
-          valorIdeal:valorIdealClasse, valorAtual:0, diferenca:diferencaClasse,
-          cotacao:'—', qtdSugerida:0, valorSugerido:diferencaClasse,
-          moeda:'BRL', semAtivo:true,
-        });
-      }
-      return;
+    if(!cideal) return;
+    // Verificar se a classe tem ativos — se tiver, já foi coberta acima
+    const temAtivos=ativos.some(a=>classeKey(a.tipo)===classe);
+    if(temAtivos) return;
+    const valorIdeal=novoTotal*(cideal/100);
+    if(valorIdeal>0){
+      sugestoes.push({
+        ticker:'—', nome:`Sem ativo cadastrado em ${classe}`, tipo:classe,
+        pideal:cideal, valorIdeal, valorAtual:0, diferenca:valorIdeal,
+        cotacao:'—', qtdSugerida:0,
+        valorSugerido:valorIdeal, moeda:'BRL', semAtivo:true,
+      });
     }
-
-    // ── Classe com ativos ────────────────────────────────────────────────────
-    // Valor atual total da classe
-    const valorAtualClasse=ativosClasse.reduce((s,a)=>s+calcBRL(a,calcAtual(a)),0);
-    const diferencaClasse=valorIdealClasse-valorAtualClasse;
-
-    // Verificar se algum ativo tem % individual dentro da classe
-    const ativosComPeso=ativosClasse.filter(a=>toNumber((pesos[`inv_peso_${a.ticker}`]||{}).ideal||0)>0);
-    const somaPesosIndividuais=ativosComPeso.reduce((s,a)=>s+toNumber((pesos[`inv_peso_${a.ticker}`]||{}).ideal||0),0);
-
-    ativosClasse.forEach(a=>{
-      const pk=`inv_peso_${a.ticker}`;
-      const pidealAtivo=toNumber((pesos[pk]||{}).ideal||0);
-
-      // Fração deste ativo dentro da classe:
-      // — Se tem peso individual → usa o peso individual / soma dos pesos da classe
-      // — Se nenhum ativo tem peso → divide igualmente
-      let fracaoAtivo;
-      if(somaPesosIndividuais>0){
-        fracaoAtivo = pidealAtivo>0 ? pidealAtivo/somaPesosIndividuais : 0;
-      } else {
-        fracaoAtivo = 1/ativosClasse.length;
-      }
-
-      // Se ativo sem peso individual quando outros têm → não alocar nele
-      if(fracaoAtivo===0) return;
-
-      // Valor ideal deste ativo = fração × valor ideal da classe
-      const valorIdealAtivo=valorIdealClasse*fracaoAtivo;
-      const valorAtualAtivo=calcBRL(a,calcAtual(a));
-      const diferenca=valorIdealAtivo-valorAtualAtivo;
-
-      const cotacao=toNumber(a.cotacao_atual||a.preco_medio);
-      const moeda  =a.moeda||'BRL';
-      const cotBRL =moeda==='USD'?cotacao*dolarAtual:cotacao;
-      const qtdSugerida=cotBRL>0?Math.floor(diferenca/cotBRL):0;
-
-      if(diferenca>0 && (qtdSugerida>0 || moeda==='BRL')){
-        sugestoes.push({
-          ticker:a.ticker, nome:a.nome||'', tipo:tipoLabel(a.tipo),
-          classe,
-          pideal:cideal,
-          pidealLabel: pidealAtivo>0
-            ? `${pidealAtivo}% na classe (${cideal}% carteira)`
-            : `${(fracaoAtivo*100).toFixed(0)}% na classe (${cideal}% carteira)`,
-          valorIdeal:valorIdealAtivo, valorAtual:valorAtualAtivo, diferenca,
-          cotacao:fmtMoeda(cotacao,moeda), qtdSugerida,
-          valorSugerido: moeda==='BRL' && cotBRL<=0 ? diferenca : qtdSugerida*cotBRL,
-          moeda, semAtivo:false,
-        });
-      }
-    });
   });
 
   sugestoes.sort((a,b)=>b.diferenca-a.diferenca);
@@ -877,50 +789,41 @@ function calcularBalanceamento(){
   const sobra=aporte-totalSugerido;
 
   if(!sugestoes.length){
-    el('balResultado').innerHTML='<p class="muted" style="margin-top:16px">Nenhuma classe com % ideal definido. Defina os pesos acima e clique em "Salvar pesos".</p>';
+    el('balResultado').innerHTML='<p class="muted" style="margin-top:16px">Carteira já está balanceada ou nenhum ativo tem % ideal definido.</p>';
     return;
   }
 
   el('balResultado').innerHTML=`
     <div class="bal-sugestao">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-        <div><strong>Sugestão — aporte de ${formatCurrency(aporte,'BRL')}</strong></div>
-        <div class="muted" style="font-size:12px;">Sobra: ${formatCurrency(Math.max(sobra,0),'BRL')}</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <div><strong>Sugestão de aporte: ${formatCurrency(aporte,'BRL')}</strong></div>
+        <div class="muted" style="font-size:12px;">Sobra: ${formatCurrency(sobra,'BRL')}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 80px 100px 80px 100px;gap:8px;
+        font-size:11px;font-weight:800;color:var(--muted);padding-bottom:8px;border-bottom:1px solid var(--border);">
+        <span>Ativo</span><span>% Ideal</span><span>Falta</span><span>Qtd</span><span>Valor</span>
       </div>
       ${sugestoes.map(s=>s.semAtivo?`
-        <div style="background:rgba(255,200,0,.06);border:1px solid rgba(255,200,0,.2);border-radius:10px;
-          padding:12px 14px;margin-bottom:8px;opacity:.85;">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-            <div>
-              <strong style="font-size:14px;">⚠️ ${s.tipo}</strong>
-              <div class="muted" style="font-size:11px;margin-top:2px;">sem ativo cadastrado</div>
-            </div>
-            <div style="text-align:right;">
-              <div class="positive" style="font-weight:800;font-size:15px;">+${formatCurrency(s.diferenca,'BRL')}</div>
-              <div class="muted" style="font-size:11px;">${s.pidealLabel}</div>
-            </div>
-          </div>
+        <div class="bal-sugestao-item" style="display:grid;grid-template-columns:1fr 80px 100px 80px 100px;gap:8px;opacity:.75;background:var(--surface-2,rgba(255,200,0,.04));border-radius:6px;padding:4px 0;">
+          <span><strong>${s.tipo}</strong> <span class="muted" style="font-size:11px">⚠️ sem ativo cadastrado</span></span>
+          <span>${formatPercent(s.pideal)}</span>
+          <span class="positive">+${formatCurrency(s.diferenca,'BRL')}</span>
+          <span class="muted">—</span>
+          <span class="money">${formatCurrency(s.valorSugerido,'BRL')}</span>
         </div>
       `:`
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;
-          padding:12px 14px;margin-bottom:8px;">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-            <div>
-              <strong style="font-size:15px;">${s.ticker}</strong>
-              <span class="muted" style="font-size:12px;margin-left:6px;">${s.tipo}</span>
-              <div class="muted" style="font-size:11px;margin-top:3px;">${s.pidealLabel}</div>
-            </div>
-            <div style="text-align:right;flex-shrink:0;">
-              <div class="positive" style="font-weight:800;font-size:15px;">+${formatCurrency(s.diferenca,'BRL')}</div>
-              ${s.qtdSugerida>0?`<div style="font-size:12px;margin-top:2px;"><strong>${s.qtdSugerida}</strong> <span class="muted">cotas · ${formatCurrency(s.valorSugerido,'BRL')}</span></div>`:`<div class="muted" style="font-size:11px;">cotação não disponível</div>`}
-            </div>
-          </div>
+        <div class="bal-sugestao-item" style="display:grid;grid-template-columns:1fr 80px 100px 80px 100px;gap:8px;">
+          <span><strong>${s.ticker}</strong> <span class="muted" style="font-size:11px">${s.tipo}</span></span>
+          <span>${formatPercent(s.pideal)}</span>
+          <span class="positive">+${formatCurrency(s.diferenca,'BRL')}</span>
+          <span><strong>${s.qtdSugerida}</strong> cotas</span>
+          <span class="money">${formatCurrency(s.valorSugerido,'BRL')}</span>
         </div>
       `).join('')}
-      <div style="margin-top:4px;padding:14px;background:rgba(75,132,243,.1);border:1px solid rgba(75,132,243,.25);
-        border-radius:10px;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:15px;">
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);
+        display:flex;justify-content:space-between;font-weight:800;">
         <span>Total a aportar</span>
-        <span class="positive">${formatCurrency(totalSugerido,'BRL')}</span>
+        <span class="money positive">${formatCurrency(totalSugerido,'BRL')}</span>
       </div>
     </div>
   `;
@@ -933,14 +836,6 @@ function calcularBalanceamento(){
 function renderizarTudo(){
   renderizarKPIs();
   renderizarCarteira();
-  renderIndicadores();
-  // Expõe estado atual para o onclick inline do botão Atualizar
-  window._finzenAtivos = ativos;
-  window._finzenPesos  = pesos;
-  window._finzenDolar  = dolarAtual;
-  // Atualiza display do dólar no Termômetro se estiver visível
-  const d = document.getElementById('termDolarDisplay');
-  if (d && dolarAtual) d.textContent = dolarAtual.toFixed(4);
 }
 
 // ─────────────────────────────────────────────
@@ -1050,143 +945,13 @@ if(selAno){
 }
 
 // Balancear
-el('btnSalvarPesos')?.addEventListener('click',salvarPesos);
-el('btnCalcularBal')?.addEventListener('click',calcularBalanceamento);
+el('btnSalvarPesos').addEventListener('click',salvarPesos);
+el('btnCalcularBal').addEventListener('click',calcularBalanceamento);
 
 el('dataAtivo').value=hojeISO();
-
-// Expor função para onclick no HTML (necessário com type=module)
-window.calcularBalanceamento = calcularBalanceamento;
 el('divData').value=hojeISO();
 
 // ─────────────────────────────────────────────
-// ── Cotação manual ────────────────────────────────────
-async function atualizarCotacaoManual(id, ticker, moeda) {
-  const ativo = ativos.find(a => a.id === id);
-  if(!ativo) return;
-
-  const cotAtual = toNumber(ativo.cotacao_atual || ativo.preco_medio);
-  const simbolo  = moeda === 'USD' ? 'US$ ' : 'R$ ';
-  const nova = prompt(`💹 ${ticker} — Cotação atual: ${simbolo}${cotAtual.toLocaleString('pt-BR',{minimumFractionDigits:2})}\n\nInforme a nova cotação:`);
-
-  if(nova === null || nova.trim() === '') return;
-  const novaNum = parseFloat(nova.replace(',','.'));
-  if(isNaN(novaNum) || novaNum <= 0) { alert('Valor inválido.'); return; }
-
-  const agora = new Date().toISOString();
-  const { error } = await supabase.from('investments')
-    .update({ cotacao_atual: novaNum, atualizado_em: agora })
-    .eq('id', id).eq('user_id', user.id);
-
-  if(error) { alert('Erro ao salvar: ' + error.message); return; }
-  ativo.cotacao_atual = novaNum;
-  ativo.atualizado_em = agora;
-  msg('mensagemCotacao', `✏️ ${ticker} atualizado manualmente: ${simbolo}${novaNum.toLocaleString('pt-BR',{minimumFractionDigits:2})}`, 'success');
-  renderizarTudo();
-}
-
-// ── Indicadores de rentabilidade da carteira ──────────
-async function renderIndicadores() {
-  const container = el('blocoIndicadores');
-  if(!container) return;
-
-  let cdiAnual = 0, ipcaAnual = 0;
-
-  // CDI e IPCA via BrasilAPI
-  try {
-    const r = await fetch('https://brasilapi.com.br/api/taxas/v1');
-    if(r.ok) {
-      const taxas = await r.json();
-      const cdi  = taxas.find(t => t.nome === 'CDI');
-      const ipca = taxas.find(t => t.nome === 'IPCA');
-      if(cdi?.valor)  cdiAnual  = cdi.valor;
-      if(ipca?.valor) ipcaAnual = ipca.valor;
-    }
-  } catch(_) {}
-
-  // Rentabilidade da carteira
-  // Tudo convertido para BRL para comparação correta
-  const totalAplicado = ativos.filter(a=>!isRF(a.tipo)).reduce((s,a)=>s+calcBRL(a,calcAplicado(a)),0);
-  const totalAtual    = ativos.filter(a=>!isRF(a.tipo)).reduce((s,a)=>s+calcBRL(a,calcAtual(a)),0);
-  const rentCarteira  = totalAplicado > 0 ? (totalAtual - totalAplicado) / totalAplicado * 100 : 0;
-  const ganho         = totalAtual - totalAplicado;
-
-  // Por classe
-  const classes = {};
-  ativos.filter(a=>!isRF(a.tipo)).forEach(a => {
-    const c = a.tipo || 'Outros';
-    if(!classes[c]) classes[c] = { aplic:0, atual:0 };
-    classes[c].aplic += calcBRL(a, calcAplicado(a));
-    classes[c].atual += calcBRL(a, calcAtual(a));
-  });
-
-  const cor    = v => v >= 0 ? '#22c55e' : '#ef4444';
-  const fmtPct = v => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
-
-  function badge(carteira, indicador, label) {
-    if(!indicador) return '';
-    const diff = carteira - indicador;
-    const c    = diff >= 0 ? '#22c55e' : '#ef4444';
-    return `<div style="font-size:11px;color:${c};font-weight:700">${diff >= 0 ? '✅' : '⚠️'} ${diff >= 0 ? '+' : ''}${diff.toFixed(2)}% vs ${label}</div>`;
-  }
-
-  container.innerHTML = `
-    <!-- Carteira principal -->
-    <div style="background:linear-gradient(135deg,rgba(79,132,243,.12),rgba(34,197,94,.08));border:1px solid rgba(79,132,243,.25);border-radius:12px;padding:16px;margin-bottom:16px">
-      <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px">📈 Sua Carteira (desde o início)</div>
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div>
-          <div style="font-size:34px;font-weight:900;color:${cor(rentCarteira)};line-height:1">${fmtPct(rentCarteira)}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:4px">${ganho >= 0 ? '+' : ''}${formatCurrency(ganho,'BRL')} sobre ${formatCurrency(totalAplicado,'BRL')}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;text-align:right">
-          ${badge(rentCarteira, cdiAnual,  'CDI')}
-          ${badge(rentCarteira, ipcaAnual, 'IPCA')}
-        </div>
-      </div>
-    </div>
-
-    <!-- Indicadores de mercado -->
-    <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Indicadores de mercado</div>
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-weight:700">💰 CDI a.a.</div>
-        <div style="font-size:18px;font-weight:900;color:#f59e0b">${cdiAnual ? fmtPct(cdiAnual) : '--'}</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-weight:700">📊 IPCA a.a.</div>
-        <div style="font-size:18px;font-weight:900;color:#8b5cf6">${ipcaAnual ? fmtPct(ipcaAnual) : '--'}</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
-      </div>
-    </div>
-
-    <!-- Por classe -->
-    <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Por classe de ativo</div>
-    <div style="display:flex;flex-direction:column;gap:6px">
-      ${Object.entries(classes).sort((a,b)=>{
-        const rA=a[1].aplic>0?(a[1].atual-a[1].aplic)/a[1].aplic*100:0;
-        const rB=b[1].aplic>0?(b[1].atual-b[1].aplic)/b[1].aplic*100:0;
-        return rB-rA;
-      }).map(([classe,v])=>{
-        const rent=v.aplic>0?(v.atual-v.aplic)/v.aplic*100:0;
-        const pct=totalAtual>0?v.atual/totalAtual*100:0;
-        return `
-          <div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px">
-              <span style="flex:1;font-size:13px;font-weight:700">${tipoLabel(classe)}</span>
-              <span style="font-size:11px;color:var(--muted)">${pct.toFixed(1)}%</span>
-              <span style="font-size:15px;font-weight:900;color:${cor(rent)}">${fmtPct(rent)}</span>
-            </div>
-            <div style="height:4px;background:var(--border);border-radius:99px;overflow:hidden">
-              <div style="height:4px;width:${Math.min(Math.abs(rent)/Math.max(Math.abs(rentCarteira),1)*100,100).toFixed(0)}%;background:${cor(rent)};border-radius:99px"></div>
-            </div>
-          </div>`;
-      }).join('')}
-    </div>
-  `;
-}
-
 // INICIALIZAÇÃO
 // ─────────────────────────────────────────────
 await carregarDolar();
@@ -1195,38 +960,3 @@ await carregarAtivos();
 await carregarPesos();
 renderizarTudo();
 await atualizarCotacoes(true);
-
-// ─────────────────────────────────────────────
-// TERMÔMETRO DE ALOCAÇÃO
-// ─────────────────────────────────────────────
-let _termMacro = null;
-
-async function renderizarTermometro() {
-  const selic  = parseFloat(el('macroSelic')?.value) || (_termMacro?.selic || 14.75);
-  const ipca   = parseFloat(el('macroIPCA')?.value)  || (_termMacro?.ipca  || 4.86);
-  const taxa   = dolarAtual > 0 ? dolarAtual : (window._finzenDolar || DEFAULT_USD_BRL);
-  const macro  = { selic, ipca, dolar: taxa };
-  _termMacro   = macro;
-  // Atualiza display informativo do dólar
-  if (el('termDolarDisplay')) el('termDolarDisplay').textContent = taxa.toFixed(4);
-  termometro.render(ativos, pesos, taxa, macro);
-}
-
-// Inicializa módulos auxiliares
-termometro.init(supabase, user.id).then(macro => {
-  _termMacro = macro;
-  if (el('macroSelic')) el('macroSelic').value = macro.selic;
-  if (el('macroIPCA'))  el('macroIPCA').value  = macro.ipca;
-});
-
-diarioTese.init(supabase, user.id);
-
-// btnSalvarMacro — addEventListener direto (estava funcionando antes)
-el('btnSalvarMacro')?.addEventListener('click', async () => {
-  const s = parseFloat(el('macroSelic')?.value) || 14.75;
-  const i = parseFloat(el('macroIPCA')?.value)  || 4.86;
-  await termometro.salvarMacro(s, i);
-  const btn = el('btnSalvarMacro');
-  if (btn) { btn.textContent = '✅ Salvo!'; setTimeout(() => { btn.textContent = 'Salvar macro'; }, 1500); }
-  await renderizarTermometro();
-});

@@ -147,7 +147,7 @@ function abrirModalAporte(id, nome, falta, sugestao){
           ${sugestao ? `
           <div style="display:flex;justify-content:space-between;font-size:12px">
             <span class="muted">Aporte sugerido/mês</span>
-            <strong style="color:#4b84f3">${fmt(sugestao)}</strong>
+            <strong style="color:#f59e0b">${fmt(sugestao)}</strong>
           </div>` : ''}
         </div>
 
@@ -303,7 +303,7 @@ function renderMetas(metas){
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
             <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Necessário/mês</div>
-            <strong style="color:#4b84f3;font-size:14px">${fmt(analise.porMesNecessario)}</strong>
+            <strong style="color:#f59e0b;font-size:14px">${fmt(analise.porMesNecessario)}</strong>
           </div>
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
             <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Sua média atual</div>

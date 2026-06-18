@@ -3,63 +3,35 @@ import { supabase } from './supabaseClient.js';
 
 const NAV_GROUPS = [
   {
-    label: null, // Dashboard fixo sem grupo
+    label:'FinZen',
     items:[
-      {title:'Dashboard', icon:'🏠', href:'./dashboard.html', badge:true},
-    ]
-  },
-  {
-    label:'Financeiro',
-    collapsible: true,
-    items:[
-      {title:'Movimentações', icon:'💸', href:'./movements.html'},
-      {title:'Extrato',       icon:'🧾', href:'./account-statement.html'},
-      {title:'Cartões',       icon:'💳', href:'./cards.html'},
-      {title:'Faturas',       icon:'📄', href:'./card-bills.html'},
-      {title:'Orçamentos',    icon:'🎯', href:'./budgets.html'},
-    ]
-  },
-  {
-    label:'Investimentos',
-    collapsible: true,
-    items:[
-      {title:'Carteira',      icon:'📈', href:'./investments.html'},
-      {title:'Patrimônio',    icon:'💎', href:'./patrimony-history.html'},
-      {title:'Metas',         icon:'🏆', href:'./goals.html'},
-      {title:'FIRE',          icon:'🔥', href:'./fire.html'},
-      {title:'Comparador',    icon:'⚖️', href:'./comparador.html'},
-    ]
-  },
-  {
-    label:'Gestão Pessoal',
-    collapsible: true,
-    items:[
-      {title:'Calendário',    icon:'📅', href:'./calendar.html'},
-      {title:'Offshore',      icon:'⚓', href:'./offshore.html'},
-    ]
-  },
-  {
-    label:'Inteligência',
-    collapsible: true,
-    items:[
-      {title:'Chat IA',   icon:'💬', href:'./chat.html'},
-      {title:'Relatório', icon:'📊', href:'./reports.html'},
-      {title:'Analytics', icon:'📉', href:'./analytics.html'},
+      {title:'Dashboard',      icon:'🏠', href:'./dashboard.html', badge:true},
+      {title:'Movimentações',  icon:'💸', href:'./movements.html'},
+      {title:'Extrato',        icon:'🧾', href:'./account-statement.html'},
+      {title:'Cartões',        icon:'💳', href:'./cards.html'},
+      {title:'Faturas',        icon:'📄', href:'./card-bills.html'},
+      {title:'Investimentos',  icon:'📈', href:'./investments.html'},
+      {title:'Patrimônio',     icon:'💎', href:'./patrimony-history.html'},
+      {title:'Orçamento',      icon:'🎯', href:'./budgets.html'},
+      {title:'Metas',          icon:'🏆', href:'./goals.html'},
+      {title:'FIRE',           icon:'🔥', href:'./fire.html'},
+      {title:'Comparador',     icon:'⚖️', href:'./comparador.html'},
+      {title:'Chat IA',        icon:'💬', href:'./chat.html'},
+      {title:'Relatório',      icon:'📊', href:'./reports.html'},
+      {title:'Analytics',      icon:'📈', href:'./analytics.html'},
+      {title:'Cadastros',      icon:'⚙️', href:'./registrations.html'}
     ]
   },
   {
     label:'Sistema',
-    collapsible: true,
     items:[
-      {title:'Busca',         icon:'🔍', href:'./search.html'},
-      {title:'Notificações',  icon:'🔔', href:'./notifications.html'},
-      {title:'Cadastros',     icon:'⚙️', href:'./registrations.html'},
-      {title:'Meu Perfil',    icon:'👤', href:'./profile.html'},
-      {title:'Importar',      icon:'📥', href:'./importer.html'},
-      {title:'Backup',        icon:'💾', href:'./backup.html'},
-      {title:'Restaurar',     icon:'📤', href:'./restore.html'},
+      {title:'Busca',          icon:'🔍', href:'./search.html'},
+      {title:'Importar',       icon:'📥', href:'./importer.html'},
+      {title:'Notificações',   icon:'🔔', href:'./notifications.html'},
+      {title:'Backup',         icon:'💾', href:'./backup.html'},
+      {title:'Restaurar',      icon:'📤', href:'./restore.html'}
     ]
-  },
+  }
 ];
 
 function currentFile(){
@@ -82,8 +54,6 @@ function isActive(href){
   if(file === 'card-bills.html'      && target === 'card-bills.html')      return true;
   if(file === 'categories.html'      && target === 'registrations.html')   return true;
   if(file === 'wealth-dashboard.html'&& target === 'patrimony-history.html') return true;
-  if(file === 'calendar.html'        && target === 'calendar.html')        return true;
-  if(file === 'offshore.html'        && target === 'offshore.html')        return true;
 
   return false;
 }
@@ -116,40 +86,13 @@ async function carregarBadges(){
 }
 
 function navHtml(){
-  // Limpar chaves antigas do localStorage que possam causar conflito
-  const STORAGE_VERSION = 'nav_v2';
-  if (localStorage.getItem('nav_version') !== STORAGE_VERSION) {
-    Object.keys(localStorage).forEach(k => {
-      if (k.startsWith('nav_collapsed_')) localStorage.removeItem(k);
-    });
-    localStorage.setItem('nav_version', STORAGE_VERSION);
-  }
-
   const groups = NAV_GROUPS.map(group => {
-    const collapsible   = group.collapsible === true;
-    const isGroupActive = group.items.some(i => isActive(i.href));
+    const collapsible = group.label === 'Sistema';
+    const isGroupActive = collapsible && group.items.some(i => isActive(i.href));
+    const storageKey = `nav_collapsed_${group.label}`;
+    const collapsed = collapsible && !isGroupActive && localStorage.getItem(storageKey) !== 'open';
 
-    const itemsHtml = group.items.map(item => `
-      <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">
-        <span class="nav-icon">${item.icon}</span>
-        <span>${item.title}</span>
-        ${item.badge ? '<span class="nav-badge nav-dashboard-badge" style="display:none">0</span>' : ''}
-      </a>
-    `).join('');
-
-    // Dashboard — sem label, sempre visível
-    if (!group.label) {
-      return itemsHtml;
-    }
-
-    // Grupo colapsável
-    if (collapsible) {
-      // Abre só se é o grupo da página atual
-      // Após interação do usuário, usa localStorage
-      const storageKey  = `nav_collapsed_v2_${group.label}`;
-      const stored      = localStorage.getItem(storageKey);
-      const collapsed   = stored === null ? !isGroupActive : stored === '1';
-
+    if(collapsible){
       return `
         <div class="nav-section-collapsible ${collapsed ? 'collapsed' : ''}" data-group="${group.label}">
           <button class="nav-section-toggle" type="button" onclick="window._finzenToggleNav('${group.label}')">
@@ -157,57 +100,37 @@ function navHtml(){
             <span class="nav-section-arrow">▾</span>
           </button>
           <div class="nav-section-items">
-            ${itemsHtml}
+            ${group.items.map(item => `
+              <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">
+                <span class="nav-icon">${item.icon}</span>
+                <span>${item.title}</span>
+                ${item.badge ? '<span class="nav-badge nav-dashboard-badge" style="display:none">0</span>' : ''}
+              </a>
+            `).join('')}
           </div>
         </div>`;
     }
 
     return `
       <div class="nav-section-label">${group.label}</div>
-      ${itemsHtml}`;
+      ${group.items.map(item => `
+        <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">
+          <span class="nav-icon">${item.icon}</span>
+          <span>${item.title}</span>
+          ${item.badge ? '<span class="nav-badge nav-dashboard-badge" style="display:none">0</span>' : ''}
+        </a>
+      `).join('')}`;
   }).join('');
 
-  return groups + `
-    <div class="nav-version">v${APP_VERSION}</div>
-    <button class="nav-blur-btn" id="btnToggleBlur" onclick="window._finzenToggleBlur()" title="Ocultar/mostrar valores">
-      <span id="blurBtnIcon">👁️</span>
-      <span id="blurBtnLabel">Ocultar valores</span>
-    </button>
-  `;
-}
-
-// ── Toggle blur de valores ────────────────────────────
-window._finzenToggleBlur = function() {
-  const ativo = document.body.classList.toggle('finzen-valores-ocultos');
-  localStorage.setItem('finzen_blur_valores', ativo ? '1' : '0');
-  _finzenAtualizarBotaoBlur(ativo);
-};
-
-function _finzenAtualizarBotaoBlur(ativo) {
-  document.querySelectorAll('#btnToggleBlur').forEach(btn => {
-    btn.classList.toggle('ativo', ativo);
-  });
-  document.querySelectorAll('#blurBtnIcon').forEach(el => {
-    el.textContent = ativo ? '🙈' : '👁️';
-  });
-  document.querySelectorAll('#blurBtnLabel').forEach(el => {
-    el.textContent = ativo ? 'Mostrar valores' : 'Ocultar valores';
-  });
-}
-
-function _finzenInitBlur() {
-  const ativo = localStorage.getItem('finzen_blur_valores') === '1';
-  if(ativo) document.body.classList.add('finzen-valores-ocultos');
-  _finzenAtualizarBotaoBlur(ativo);
+  return groups + `<div class="nav-version">v${APP_VERSION}</div>`;
 }
 
 window._finzenToggleNav = function(groupLabel){
-  const storageKey = `nav_collapsed_v2_${groupLabel}`;
+  const storageKey = `nav_collapsed_${groupLabel}`;
   const els = document.querySelectorAll(`.nav-section-collapsible[data-group="${groupLabel}"]`);
   const isCollapsed = els[0]?.classList.contains('collapsed');
   els.forEach(el => el.classList.toggle('collapsed'));
-  // '1' = collapsed, '0' = open
-  localStorage.setItem(storageKey, isCollapsed ? '0' : '1');
+  localStorage.setItem(storageKey, isCollapsed ? 'open' : 'closed');
 };
 
 function injectStyles(){
@@ -220,7 +143,7 @@ function injectStyles(){
     *::-webkit-scrollbar{ width:8px; height:8px; }
     *::-webkit-scrollbar-track{ background:transparent; }
     *::-webkit-scrollbar-thumb{ background:rgba(139,144,168,.28); border-radius:999px; border:2px solid transparent; background-clip:content-box; }
-    *::-webkit-scrollbar-thumb:hover{ background:rgba(75,132,243,.45); border:2px solid transparent; background-clip:content-box; }
+    *::-webkit-scrollbar-thumb:hover{ background:rgba(245,158,11,.45); border:2px solid transparent; background-clip:content-box; }
 
     .nav-badge{
       display:inline-flex;align-items:center;justify-content:center;
@@ -230,60 +153,9 @@ function injectStyles(){
       vertical-align:middle;line-height:1;
     }
     .nav-version{
-      padding:8px 16px 4px;
+      margin-top:auto; padding:12px 16px;
       font-size:11px; color:var(--muted);
       opacity:.55; letter-spacing:.5px;
-    }
-
-    /* ── Botão ocultar valores ── */
-    .nav-blur-btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      width: calc(100% - 32px);
-      margin: 4px 16px 16px;
-      padding: 8px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      font-size: 12px;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all .15s;
-    }
-    .nav-blur-btn:hover {
-      border-color: var(--accent);
-      color: var(--text);
-    }
-    .nav-blur-btn.ativo {
-      border-color: rgba(245,158,11,.4);
-      background: rgba(245,158,11,.08);
-      color: #f59e0b;
-    }
-
-    /* ── Blur dos valores quando ativo ── */
-    body.finzen-valores-ocultos .money,
-    body.finzen-valores-ocultos .positive,
-    body.finzen-valores-ocultos .negative,
-    body.finzen-valores-ocultos .dash-kpi strong,
-    body.finzen-valores-ocultos .ff-flow-main strong,
-    body.finzen-valores-ocultos .ff-flow-card strong,
-    body.finzen-valores-ocultos .mob-saldo-valor,
-    body.finzen-valores-ocultos .mob-kpi-valor,
-    body.finzen-valores-ocultos .mob-alerta-valor,
-    body.finzen-valores-ocultos .mob-lanc-valor,
-    body.finzen-valores-ocultos [class*="kpi"] strong,
-    body.finzen-valores-ocultos .inv-valor,
-    body.finzen-valores-ocultos .stmt-valor {
-      filter: blur(6px);
-      user-select: none;
-      transition: filter .2s;
-    }
-    body.finzen-valores-ocultos .money:hover,
-    body.finzen-valores-ocultos .positive:hover,
-    body.finzen-valores-ocultos .negative:hover {
-      filter: blur(0);
     }
 
     /* ── Grupo colapsável (Sistema) ── */
@@ -460,13 +332,7 @@ function ensureDesktopSidebar(){
   if(!sidebar){
     sidebar = document.createElement('aside');
     sidebar.className = 'sidebar';
-    sidebar.innerHTML = `
-      <div class="sidebar-brand" style="padding:20px 20px 8px;text-align:center;">
-        <div style="font-size:22px;font-weight:900;background:var(--gold-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.5px;line-height:1.1;">FinZen</div>
-        <div style="width:32px;height:2px;background:var(--gold-gradient);margin:4px auto 2px;border-radius:99px;"></div>
-        <div style="font-size:9px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-weight:600;">Assessor Pessoal</div>
-      </div>
-      <nav class="sidebar-nav"></nav>`;
+    sidebar.innerHTML = '<div class="sidebar-brand">FinZen</div><nav class="sidebar-nav"></nav>';
     shell.prepend(sidebar);
   }
 
@@ -494,10 +360,10 @@ function ensureMobileDrawer(){
   drawer.className = 'mobile-drawer';
   drawer.innerHTML = `
     <div class="drawer-profile">
-      <div class="drawer-avatar" style="background:var(--gold-gradient);color:#000;">FZ</div>
+      <div class="drawer-avatar">FZ</div>
       <div>
-        <div class="drawer-name" style="background:var(--gold-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">FinZen</div>
-        <div class="drawer-email" style="color:var(--accent);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:600;">Assessor Pessoal</div>
+        <div class="drawer-name">FinZen</div>
+        <div class="drawer-email">Menu principal</div>
       </div>
       <button class="drawer-close" type="button" aria-label="Fechar menu">×</button>
     </div>
@@ -624,7 +490,7 @@ function injectFABStyles(){
       color:#fff;
       font-size:28px;
       line-height:1;
-      box-shadow:0 8px 28px rgba(75,132,243,.45);
+      box-shadow:0 8px 28px rgba(245,158,11,.45);
       cursor:pointer;
       transition:transform .2s ease, background .2s ease;
       display:flex;
@@ -715,10 +581,9 @@ function initNavigation(){
   ensureMobileDrawer();
   ensureMenuButton();
   ensureFAB();
-  _finzenInitBlur();
   // Registrar SW e agendar alertas silenciosamente
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    navigator.serviceWorker.register('../sw.js', { scope: '../' })
       .then(async () => {
         if(Notification.permission === 'granted'){
           const { supabase } = await import('./supabaseClient.js');

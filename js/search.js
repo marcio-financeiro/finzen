@@ -44,8 +44,6 @@ async function buscar(){
     { data: investments },
     { data: accounts },
     { data: categories },
-    { data: goals },
-    { data: budgets },
   ] = await Promise.all([
     supabase.from('transactions')
       .select('id,type,amount,description,date,status,categories:category_id(nome,icon),accounts:account_id(nome,currency)')
@@ -91,19 +89,6 @@ async function buscar(){
       .select('id,nome,tipo,icon')
       .eq('user_id', user.id)
       .ilike('nome', `%${termo}%`),
-
-    supabase.from('goals')
-      .select('id,nome,descricao,valor_alvo,valor_atual,data_alvo,ativo')
-      .eq('user_id', user.id)
-      .eq('ativo', true)
-      .or(`nome.ilike.%${termo}%,descricao.ilike.%${termo}%`)
-      .limit(20),
-
-    supabase.from('budgets')
-      .select('id,limite,mes_referencia,categories:category_id(nome,icon)')
-      .eq('user_id', user.id)
-      .ilike('categories.nome', `%${termo}%`)
-      .limit(20),
   ]);
 
   let html = '';
@@ -251,57 +236,6 @@ async function buscar(){
     html += '</tbody></table></div></div>';
   }
 
-  // ── Metas ────────────────────────────────────
-  if(goals?.length){
-    total += goals.length;
-    html += `<div class="panel" style="margin-bottom:12px">
-      <div class="panel-header"><h2>🏆 Metas <span class="muted" style="font-size:13px;font-weight:400">(${goals.length})</span></h2></div>
-      <div class="table-wrap"><table class="data-table"><thead><tr>
-        <th>Nome</th><th>Descrição</th><th>Prazo</th><th style="text-align:right">Alvo</th><th style="text-align:right">Atual</th><th style="text-align:right">Progresso</th>
-      </tr></thead><tbody>`;
-    goals.forEach(g => {
-      const alvo   = Number(g.valor_alvo  || 0);
-      const atual  = Number(g.valor_atual || 0);
-      const pct    = alvo > 0 ? Math.min(atual / alvo * 100, 100) : 0;
-      const cor    = pct >= 100 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--accent)';
-      html += `<tr>
-        <td><strong>${highlight(g.nome, termo)}</strong></td>
-        <td>${highlight(g.descricao||'-', termo)}</td>
-        <td style="white-space:nowrap">${g.data_alvo ? formatDate(g.data_alvo) : '-'}</td>
-        <td class="money" style="text-align:right">${formatCurrency(alvo,'BRL')}</td>
-        <td class="money positive" style="text-align:right">${formatCurrency(atual,'BRL')}</td>
-        <td style="text-align:right;min-width:120px">
-          <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
-            <div style="width:60px;height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden">
-              <div style="width:${pct.toFixed(0)}%;height:100%;background:${cor};border-radius:99px"></div>
-            </div>
-            <span style="font-size:12px;font-weight:700;color:${cor}">${pct.toFixed(0)}%</span>
-          </div>
-        </td>
-      </tr>`;
-    });
-    html += '</tbody></table></div></div>';
-  }
-
-  // ── Orçamentos ───────────────────────────────
-  if(budgets?.filter(b => b.categories).length){
-    const budgetsValidos = budgets.filter(b => b.categories);
-    total += budgetsValidos.length;
-    html += `<div class="panel" style="margin-bottom:12px">
-      <div class="panel-header"><h2>🎯 Orçamentos <span class="muted" style="font-size:13px;font-weight:400">(${budgetsValidos.length})</span></h2></div>
-      <div class="table-wrap"><table class="data-table"><thead><tr>
-        <th>Categoria</th><th>Mês</th><th style="text-align:right">Limite</th>
-      </tr></thead><tbody>`;
-    budgetsValidos.forEach(b => {
-      html += `<tr>
-        <td>${b.categories?.icon||''} ${highlight(b.categories?.nome||'-', termo)}</td>
-        <td>${b.mes_referencia||'-'}</td>
-        <td class="money" style="text-align:right">${formatCurrency(b.limite||0,'BRL')}</td>
-      </tr>`;
-    });
-    html += '</tbody></table></div></div>';
-  }
-
   if(!total){
     results.innerHTML = `<p class="muted" style="padding:24px;text-align:center">
       Nenhum resultado para "<strong>${termo}</strong>".
@@ -317,5 +251,5 @@ async function buscar(){
 function highlight(texto, termo){
   if(!texto || !termo) return texto || '';
   const re = new RegExp(`(${termo.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
-  return String(texto).replace(re, '<mark style="background:rgba(75,132,243,.3);border-radius:3px;padding:0 2px">$1</mark>');
+  return String(texto).replace(re, '<mark style="background:rgba(245,158,11,.3);border-radius:3px;padding:0 2px">$1</mark>');
 }

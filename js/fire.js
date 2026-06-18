@@ -252,7 +252,7 @@ function renderGrafico(patrimonioInicial, aporte, rentMensal, meta, totalMeses, 
         {
           label: 'Só rendimentos',
           data: semAporte,
-          borderColor: '#4b84f3',
+          borderColor: '#f59e0b',
           backgroundColor: 'rgba(79,132,243,.05)',
           borderWidth: 1.5,
           borderDash: [4,4],

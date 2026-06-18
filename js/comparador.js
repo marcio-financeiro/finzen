@@ -50,7 +50,7 @@ const PRODUTOS_PADRAO = [
   {
     id: 'cdb_100',
     nome: 'CDB 100% CDI',
-    cor: '#4b84f3',
+    cor: '#f59e0b',
     ativo: true,
     ir: true,
     iof: false,

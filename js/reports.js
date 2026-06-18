@@ -120,7 +120,7 @@ function renderGrafico12Meses(tx, meses){
 }
 
 // ── Pizza por categoria ───────────────────────────────
-const CORES = ['#4b84f3','#22c55e','#f59e0b','#ef4444','#7c5cfc','#06b6d4','#f97316','#ec4899','#84cc16','#8b5cf6'];
+const CORES = ['#f59e0b','#22c55e','#f59e0b','#ef4444','#7c5cfc','#06b6d4','#f97316','#ec4899','#84cc16','#8b5cf6'];
 
 function renderPizzaCategorias(despesas){
   if(!despesas.length){
@@ -213,14 +213,14 @@ async function exportarPDF(){
   <title>Relatório FinZen — ${periodo}</title>
   <style>
     body{font-family:Arial,sans-serif;color:#1a1a2e;padding:32px;max-width:800px;margin:0 auto}
-    h1{color:#4b84f3;margin-bottom:4px}
+    h1{color:#f59e0b;margin-bottom:4px}
     .sub{color:#888;font-size:13px;margin-bottom:24px}
     .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
     .kpi{border:1px solid #e0e0e0;border-radius:10px;padding:14px;text-align:center}
     .kpi span{display:block;font-size:11px;color:#888;margin-bottom:4px}
     .kpi strong{font-size:17px;font-weight:800}
     .positive{color:#22c55e} .negative{color:#ef4444}
-    h2{font-size:14px;font-weight:800;margin:20px 0 10px;border-bottom:2px solid #4b84f3;padding-bottom:4px}
+    h2{font-size:14px;font-weight:800;margin:20px 0 10px;border-bottom:2px solid #f59e0b;padding-bottom:4px}
     table{width:100%;border-collapse:collapse;font-size:13px}
     th{background:#f5f5f5;padding:8px 10px;text-align:left;font-weight:700}
     td{padding:8px 10px;border-bottom:1px solid #eee}
