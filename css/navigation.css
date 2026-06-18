@@ -1,79 +1,37 @@
+/* FinZen — navigation.css (complemento ao injectStyles do navigation.js) */
 
-/* FinZen 12.0 - Navegação Global Unificada */
-.sidebar-nav::before{
-  content:none !important;
+/* Garante que sidebar-nav não exiba pseudo-elemento "Principal" legado */
+.sidebar-nav::before { content: none !important; }
+
+/* Ícone nav padrão */
+.nav-icon {
+  width: 20px;
+  text-align: center;
+  display: inline-block;
 }
 
-.nav-section-label{
-  padding:16px 20px 6px;
-  font-size:10px;
-  font-weight:800;
-  letter-spacing:2px;
-  text-transform:uppercase;
-  color:var(--muted);
+/* Topbar actions: esconde em mobile (botões ficam nos fixed buttons) */
+.topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+@media (max-width: 820px) {
+  .topbar-actions { display: none; }
+
+  .mobile-nav a::before { content: none !important; }
+  .mobile-nav-icon { font-size: 18px; line-height: 1; }
+  .mobile-nav a { gap: 3px; }
 }
 
-.nav-icon{
-  width:20px;
-  text-align:center;
-  display:inline-block;
-}
-
-.topbar-actions{
-  display:flex;
-  gap:8px;
-  align-items:center;
-}
-
-@media (max-width:700px){
-  .mobile-nav a::before{
-    content:none !important;
-  }
-
-  .mobile-nav-icon{
-    font-size:18px;
-    line-height:1;
-  }
-
-  .mobile-nav a{
-    gap:3px;
-  }
-
-  .topbar-actions{
-    display:none;
-  }
-}
-
-.sidebar-nav .nav-section-label{
-  display:block;
-  box-sizing:border-box;
-  width:100%;
-  padding:16px 20px 6px;
-  margin:0;
-  font-size:10px;
-  font-weight:800;
-  letter-spacing:2px;
-  line-height:1.2;
-  text-transform:uppercase;
-  color:var(--muted);
-}
-
+/* Sidebar nav links — redefinição limpa */
 .sidebar-nav .nav-icon,
-.drawer-nav .nav-icon{
-  width:20px;
-  min-width:20px;
-  text-align:center;
-  display:inline-block;
+.drawer-nav  .nav-icon {
+  width: 20px;
+  min-width: 20px;
+  text-align: center;
+  display: inline-block;
 }
 
-.drawer-nav .nav-section-label{
-  display:block;
-  padding:14px 10px 6px;
-  margin:0;
-  font-size:10px;
-  font-weight:800;
-  letter-spacing:2px;
-  line-height:1.2;
-  text-transform:uppercase;
-  color:var(--muted);
+/* Drawer nav — grupo toggle padding menor no mobile */
+@media (max-width: 820px) {
+  .drawer-nav .nav-group-toggle { padding: 10px 12px 4px; }
+  .drawer-nav .nav-group-items a { padding: 10px 12px; }
 }
