@@ -5,8 +5,8 @@
   justify-content:center;
   padding:24px;
   background:
-    radial-gradient(circle at top left,rgba(75,132,243,.16),transparent 32%),
-    radial-gradient(circle at bottom right,rgba(123,92,229,.14),transparent 34%),
+    radial-gradient(circle at top left,rgba(245,158,11,.08),transparent 32%),
+    radial-gradient(circle at bottom right,rgba(245,158,11,.05),transparent 34%),
     var(--app-bg);
 }
 
@@ -38,14 +38,17 @@
   border-radius:14px;
   display:grid;
   place-items:center;
-  background:linear-gradient(135deg,var(--accent),var(--purple));
-  color:white;
+  background:var(--accent-dim);
+  color:var(--accent);
   font-weight:900;
-  box-shadow:0 16px 36px rgba(75,132,243,.32);
+  font-size:22px;
+  border:1px solid rgba(245,158,11,0.25);
+  box-shadow:0 16px 36px rgba(245,158,11,.15);
 }
 
 .brand h1{
   margin-bottom:4px;
+  color:var(--accent);
 }
 
 .form-group{
@@ -124,8 +127,9 @@ textarea:focus{
 
 .btn-primary{
   background:var(--accent);
-  color:#fff;
-  box-shadow:0 10px 24px rgba(75,132,243,.25);
+  color:#000;
+  font-weight:800;
+  box-shadow:0 10px 24px rgba(245,158,11,.20);
 }
 
 .btn-secondary{
@@ -254,7 +258,7 @@ textarea:focus{
 }
 .kpi-clickable:hover{
   transform:translateY(-2px);
-  box-shadow:0 4px 16px rgba(75,132,243,.18);
+  box-shadow:0 4px 16px rgba(245,158,11,.15);
 }
 
 .table-wrap{
@@ -270,7 +274,7 @@ textarea:focus{
 .data-table th,
 .data-table td{
   padding:11px 14px;
-  border-bottom:1px solid rgba(42,45,69,.62);
+  border-bottom:1px solid rgba(31,33,48,.8);
   text-align:left;
   vertical-align:middle;
   font-size:13px;
@@ -325,7 +329,7 @@ textarea:focus{
 
 .badge.info{
   color:var(--info);
-  background:rgba(34,211,238,.12);
+  background:rgba(59,130,246,.12);
 }
 
 .badge.neutral{
@@ -333,13 +337,12 @@ textarea:focus{
   background:var(--warning-dim);
 }
 
-/* Visual helpers inspired by the FinZen mockup */
 .quick-action{
   display:inline-flex;
   align-items:center;
   gap:6px;
   background:var(--accent);
-  color:white;
+  color:#000;
   border-radius:8px;
   padding:8px 13px;
   font-size:12px;
@@ -352,4 +355,15 @@ textarea:focus{
   font-weight:800;
   letter-spacing:2px;
   text-transform:uppercase;
+}
+
+/* Autofill fix */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active{
+  -webkit-box-shadow:0 0 0 40px var(--surface-2) inset !important;
+  -webkit-text-fill-color:#ffffff !important;
+  caret-color:var(--accent);
+  transition:background-color 5000s ease-in-out 0s;
 }

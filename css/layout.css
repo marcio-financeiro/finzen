@@ -26,19 +26,20 @@
   font-size:18px;
   font-weight:800;
   letter-spacing:-0.02em;
+  color:var(--accent);
 }
 
 .sidebar-brand::before{
-  content:"☯";
+  content:"◈";
   width:32px;
   height:32px;
   display:grid;
   place-items:center;
   border-radius:8px;
-  background:linear-gradient(135deg,var(--accent),var(--purple));
-  color:white;
+  background:var(--accent-dim);
+  color:var(--accent);
   font-size:17px;
-  box-shadow:0 8px 24px rgba(75,132,243,.25);
+  border:1px solid rgba(245,158,11,0.25);
 }
 
 .sidebar-nav{

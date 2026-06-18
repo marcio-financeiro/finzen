@@ -150,3 +150,10 @@
     flex-direction:column;
   }
 }
+
+/* PWA safe areas iOS */
+@supports (padding: env(safe-area-inset-bottom)){
+  .mobile-nav{
+    padding-bottom:calc(10px + env(safe-area-inset-bottom));
+  }
+}

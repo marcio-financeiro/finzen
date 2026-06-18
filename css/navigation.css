@@ -1,5 +1,5 @@
 
-/* FinZen 9.4.3.4 - Navegação Global Unificada */
+/* FinZen 12.0 - Navegação Global Unificada */
 .sidebar-nav::before{
   content:none !important;
 }
@@ -44,8 +44,6 @@
   }
 }
 
-
-/* 9.4.3.4 - Correção da sidebar unificada */
 .sidebar-nav .nav-section-label{
   display:block;
   box-sizing:border-box;
