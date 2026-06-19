@@ -61,18 +61,41 @@ export default async function handler(req, res) {
     } catch (_) {}
   }
 
-  // ── Cotações EUA — Yahoo Finance ──────────────────────────────────────────
-  for (const ticker of [...new Set(tickersEUA)]) {
-    try {
-      const r = await fetch(
+  // ── Cotações EUA — Yahoo Finance (paralelo, com timeout e fallback query2) ─
+  if (tickersEUA.length) {
+    const YAHOO_TIMEOUT_MS = 5000;
+
+    const fetchYahoo = async (ticker) => {
+      const endpoints = [
         `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`,
-        { headers: { 'User-Agent': 'Mozilla/5.0' } }
-      );
-      if (!r.ok) continue;
-      const j = await r.json();
-      const p = j?.chart?.result?.[0]?.meta?.regularMarketPrice;
-      if (p) resultado[ticker] = parseFloat(p);
-    } catch (_) {}
+        `https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`,
+      ];
+      for (const url of endpoints) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), YAHOO_TIMEOUT_MS);
+          const r = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            signal: controller.signal,
+          });
+          clearTimeout(timer);
+          if (!r.ok) continue;
+          const j = await r.json();
+          const p = j?.chart?.result?.[0]?.meta?.regularMarketPrice;
+          if (p) return { ticker, price: parseFloat(p) };
+        } catch (_) {}
+      }
+      return null;
+    };
+
+    const resultados = await Promise.allSettled(
+      [...new Set(tickersEUA)].map(t => fetchYahoo(t))
+    );
+    resultados.forEach(r => {
+      if (r.status === 'fulfilled' && r.value) {
+        resultado[r.value.ticker] = r.value.price;
+      }
+    });
   }
 
   // ── Fallback brapi para tickers EUA que não vieram do Yahoo ──────────────
