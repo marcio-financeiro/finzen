@@ -282,7 +282,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
       <span class="mob-logo">FinZen</span>
       <span class="mob-greeting" id="mobGreeting">Bom dia!</span>
     </div>
-    <div class="mob-avatar" id="mobAvatar" onclick="irParaDashboard()">FZ</div>
+    <div class="mob-avatar" id="mobAvatar" data-action="irParaDashboard">FZ</div>
   </div>
 
   <!-- Conteúdo scrollável -->
@@ -338,7 +338,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
     </div>
 
     <!-- Botão modo avançado -->
-    <button class="mob-advanced-btn" onclick="ativarModoAvancado()">
+    <button class="mob-advanced-btn" data-action="ativarModoAvancado">
       🖥️ Abrir modo avançado (desktop)
     </button>
 
@@ -346,7 +346,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 
   <!-- Bottom Nav -->
   <nav class="mob-bottom-nav">
-    <a class="mob-nav-item ativo" onclick="scrollTop()">
+    <a class="mob-nav-item ativo" data-action="scrollTop">
       <span class="mob-nav-item-icon">🏠</span>
       <span>Início</span>
     </a>
@@ -354,7 +354,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
       <span class="mob-nav-item-icon">📊</span>
       <span>Analytics</span>
     </a>
-    <button class="mob-fab" id="mobFab" onclick="abrirModal()">＋</button>
+    <button class="mob-fab" id="mobFab" data-action="abrirModal">＋</button>
     <a class="mob-nav-item" href="./budgets.html">
       <span class="mob-nav-item-icon">🎯</span>
       <span>Orçamento</span>
@@ -368,20 +368,20 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 </div>
 
 <!-- Modal de lançamento rápido -->
-<div class="mob-modal-overlay" id="mobModalOverlay" onclick="fecharModalFora(event)">
+<div class="mob-modal-overlay" id="mobModalOverlay" data-action="fecharModalFora">
   <div class="mob-modal" id="mobModal">
     <div class="mob-modal-handle"></div>
     <div class="mob-modal-title">⚡ Lançamento rápido</div>
 
     <!-- Tipo -->
     <div class="mob-tipo-tabs">
-      <button class="mob-tipo-btn despesa ativo" id="btnTipoDespesa" onclick="selecionarTipo('despesa')">
+      <button class="mob-tipo-btn despesa ativo" id="btnTipoDespesa" data-action="selecionarTipo" data-tipo="despesa">
         ↓ Despesa
       </button>
-      <button class="mob-tipo-btn receita" id="btnTipoReceita" onclick="selecionarTipo('receita')">
+      <button class="mob-tipo-btn receita" id="btnTipoReceita" data-action="selecionarTipo" data-tipo="receita">
         ↑ Receita
       </button>
-      <button class="mob-tipo-btn" id="btnTipoCartao" onclick="selecionarTipo('cartao')"
+      <button class="mob-tipo-btn" id="btnTipoCartao" data-action="selecionarTipo" data-tipo="cartao"
         style="background:rgba(79,132,243,.15);color:var(--accent)">
         💳 Cartão
       </button>
@@ -442,7 +442,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
       <input type="date" id="mobData">
     </div>
 
-    <button class="mob-btn-salvar" id="mobBtnSalvar" onclick="salvarLancamento()">
+    <button class="mob-btn-salvar" id="mobBtnSalvar" data-action="salvarLancamento">
       ✓ Salvar lançamento
     </button>
   </div>

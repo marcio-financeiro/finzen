@@ -144,17 +144,17 @@
 
           <div class="comp-input-group">
             <label>Valor inicial (R$)</label>
-            <input type="number" id="valorInicial" value="10000" min="0" step="1000" inputmode="decimal" oninput="simular()">
+            <input type="number" id="valorInicial" value="10000" min="0" step="1000" inputmode="decimal" data-action-input="simular">
           </div>
 
           <div class="comp-input-group">
             <label>Aporte mensal (R$)</label>
-            <input type="number" id="aporteMensal" value="500" min="0" step="100" inputmode="decimal" oninput="simular()">
+            <input type="number" id="aporteMensal" value="500" min="0" step="100" inputmode="decimal" data-action-input="simular">
           </div>
 
           <div class="comp-input-group">
             <label>IPCA anual estimado (%)</label>
-            <input type="number" id="ipca" value="4.5" min="0" max="30" step="0.1" inputmode="decimal" oninput="simular()">
+            <input type="number" id="ipca" value="4.5" min="0" max="30" step="0.1" inputmode="decimal" data-action-input="simular">
             <div class="comp-cdi-info" id="infoCDI">CDI atual: carregando...</div>
           </div>
         </div>
@@ -172,7 +172,7 @@
               <input type="text" id="customNome" placeholder="Ex: LCI do Banco X">
               <input type="number" id="customTaxa" placeholder="% a.a." min="0" step="0.1" inputmode="decimal">
             </div>
-            <button class="btn btn-secondary compact" style="margin-top:8px;width:100%" onclick="adicionarCustom()">
+            <button class="btn btn-secondary compact" style="margin-top:8px;width:100%" data-action="adicionarCustom">
               + Adicionar
             </button>
           </div>
@@ -185,12 +185,12 @@
         <div class="comp-panel" style="padding-bottom:4px">
           <h2>📅 Período de simulação</h2>
           <div class="comp-periodos">
-            <button class="comp-periodo-btn" data-anos="1"  onclick="selecionarPeriodo(this)">1 ano</button>
-            <button class="comp-periodo-btn" data-anos="2"  onclick="selecionarPeriodo(this)">2 anos</button>
-            <button class="comp-periodo-btn ativo" data-anos="5"  onclick="selecionarPeriodo(this)">5 anos</button>
-            <button class="comp-periodo-btn" data-anos="10" onclick="selecionarPeriodo(this)">10 anos</button>
-            <button class="comp-periodo-btn" data-anos="20" onclick="selecionarPeriodo(this)">20 anos</button>
-            <button class="comp-periodo-btn" data-anos="30" onclick="selecionarPeriodo(this)">30 anos</button>
+            <button class="comp-periodo-btn" data-anos="1"  data-action="selecionarPeriodo">1 ano</button>
+            <button class="comp-periodo-btn" data-anos="2"  data-action="selecionarPeriodo">2 anos</button>
+            <button class="comp-periodo-btn ativo" data-anos="5"  data-action="selecionarPeriodo">5 anos</button>
+            <button class="comp-periodo-btn" data-anos="10" data-action="selecionarPeriodo">10 anos</button>
+            <button class="comp-periodo-btn" data-anos="20" data-action="selecionarPeriodo">20 anos</button>
+            <button class="comp-periodo-btn" data-anos="30" data-action="selecionarPeriodo">30 anos</button>
           </div>
         </div>
 
