@@ -1,5 +1,6 @@
 import { confirmarExclusao } from './confirmModal.js';
 import { D, somaSegura, multSegura, diferencaSegura, divSegura, valorDoPercentual, percentualDe } from './decimalMath.js';
+import { registrarAcao } from './eventBus.js';
 import { getCotacoes, getDolar, limparCache } from './quoteCache.js';
 import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
@@ -303,8 +304,8 @@ function renderizarCarteira(){
             <button class="btn btn-secondary compact inv-acoes-btn" data-menu="${a.id}" title="Ações">⋯</button>
             <div class="inv-acoes-menu" id="menu-${a.id}">
               <button data-editar="${a.id}">✏️ Editar</button>
-              <button data-cot-manual="${a.id}" data-ticker="${a.ticker}">💲 Cotação manual</button>
-              <button data-tese="${a.id}" data-ticker="${a.ticker}">📓 Diário de tese</button>
+              <button data-action="abrirCotacaoManual" data-cot-manual="${a.id}" data-ticker="${a.ticker}">💲 Cotação manual</button>
+              <button data-action="abrirDiarioTese" data-tese="${a.id}" data-ticker="${a.ticker}">📓 Diário de tese</button>
               <button data-excluir="${a.id}" data-ticker="${a.ticker}" style="color:var(--danger)">🗑️ Excluir</button>
             </div>
           </div>
@@ -334,8 +335,8 @@ function renderizarCarteira(){
         </div>
         <div class="inv-mobile-actions">
           <button class="btn btn-secondary compact" data-editar="${a.id}">✏️ Editar</button>
-          <button class="btn btn-secondary compact" data-cot-manual="${a.id}" data-ticker="${a.ticker}">💲 Cotação</button>
-          <button class="btn btn-secondary compact" data-tese="${a.id}" data-ticker="${a.ticker}">📓 Tese</button>
+          <button class="btn btn-secondary compact" data-action="abrirCotacaoManual" data-cot-manual="${a.id}" data-ticker="${a.ticker}">💲 Cotação</button>
+          <button class="btn btn-secondary compact" data-action="abrirDiarioTese" data-tese="${a.id}" data-ticker="${a.ticker}">📓 Tese</button>
           <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">🗑️</button>
         </div>
       </div>`;
@@ -362,8 +363,7 @@ function renderizarCarteira(){
   document.addEventListener('click', () => {
     document.querySelectorAll('.inv-acoes-menu.open').forEach(m => m.classList.remove('open'));
   });
-  el('listaCarteira').querySelectorAll('[data-cot-manual]').forEach(b=>b.addEventListener('click',()=>abrirCotacaoManual(b.dataset.cotManual,b.dataset.ticker)));
-  el('listaCarteira').querySelectorAll('[data-tese]').forEach(b=>b.addEventListener('click',()=>abrirDiarioTese(b.dataset.tese,b.dataset.ticker)));
+  // abrirCotacaoManual e abrirDiarioTese agora são tratados pelo eventBus via data-action
 }
 
 // ─────────────────────────────────────────────
@@ -979,9 +979,11 @@ el('divData').value=hojeISO();
 // ─────────────────────────────────────────────
 // COTAÇÃO MANUAL
 // ─────────────────────────────────────────────
-window.abrirCotacaoManual = function(id, ticker) {
-  const atual = ativos.find(a => a.id == id)?.cotacao_atual || '';
-  const val = prompt(`Informe a cotação manual para ${ticker}:`, atual);
+registrarAcao('abrirCotacaoManual', (el) => {
+  const id     = el.dataset.cotManual;
+  const ticker = el.dataset.ticker;
+  const atual  = ativos.find(a => a.id == id)?.cotacao_atual || '';
+  const val    = prompt(`Informe a cotação manual para ${ticker}:`, atual);
   if (val === null) return; // cancelado
   const nova = toNumber(val);
   if (nova <= 0) { alert('Cotação inválida.'); return; }
@@ -997,12 +999,14 @@ window.abrirCotacaoManual = function(id, ticker) {
       renderizarTudo();
       msg('mensagemCotacao', `Cotação de ${ticker} atualizada manualmente: ${nova}`, 'success');
     });
-};
+});
 
 // ─────────────────────────────────────────────
 // DIÁRIO DE TESE (painel lateral simplificado)
 // ─────────────────────────────────────────────
-window.abrirDiarioTese = async function(id, ticker) {
+registrarAcao('abrirDiarioTese', async (el) => {
+  const id     = el.dataset.tese;
+  const ticker = el.dataset.ticker;
   // Busca tese existente
   const { data: tese } = await supabase
     .from('investments')
@@ -1066,15 +1070,17 @@ window.abrirDiarioTese = async function(id, ticker) {
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
           <button onclick="document.getElementById('modalTese').remove()"
             class="btn btn-secondary">Cancelar</button>
-          <button onclick="window.salvarTese('${id}','${ticker}')"
+          <button data-action="salvarTese" data-tese="${id}" data-ticker="${ticker}"
             class="btn btn-primary">💾 Salvar</button>
         </div>
       </div>
     </div>
   `;
-};
+});
 
-window.salvarTese = async function(id, ticker) {
+registrarAcao('salvarTese', async (el) => {
+  const id     = el.dataset.tese;
+  const ticker = el.dataset.ticker;
   const tese     = document.getElementById('teseTese')?.value || '';
   const gatilho  = document.getElementById('teseGatilho')?.value || '';
   const convicao = document.getElementById('teseConvicao')?.value || '';
@@ -1089,7 +1095,7 @@ window.salvarTese = async function(id, ticker) {
   if (error) { alert('Erro ao salvar tese.'); return; }
   document.getElementById('modalTese')?.remove();
   msg('mensagemCotacao', `Tese de ${ticker} salva com sucesso.`, 'success');
-};
+});
 
 // ─────────────────────────────────────────────
 // INICIALIZAÇÃO
