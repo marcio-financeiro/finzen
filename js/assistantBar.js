@@ -16,7 +16,20 @@ const CACHE_TTL  = 6 * 60 * 60 * 1000; // 6 horas
 
 // ── Cache ─────────────────────────────────────────────────────────────────────
 function lerCache() {
-  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch(_){ return null; }
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Validação: cache deve ter insights (array) e ts (number)
+    if (!Array.isArray(parsed?.insights) || typeof parsed?.ts !== 'number') {
+      localStorage.removeItem(CACHE_KEY);
+      return null;
+    }
+    return parsed;
+  } catch(_) {
+    localStorage.removeItem(CACHE_KEY); // cache corrompido — limpar
+    return null;
+  }
 }
 function salvarCache(insights) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ insights, ts: Date.now() })); } catch(_){}
@@ -31,15 +44,8 @@ async function coletarContexto(userId) {
   const ref      = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
   const inicio   = `${ref}-01`;
 
-  const [
-    { data: contas },
-    { data: txMes },
-    { data: faturas },
-    { data: pendentes },
-    { data: ciclos },
-    { data: eventos },
-    { data: metas },
-  ] = await Promise.all([
+  // Cada query roda isolada — uma falha não derruba as outras (allSettled)
+  const queries = [
     supabase.from('accounts').select('saldo_atual,currency').eq('user_id', userId).eq('active', true),
     supabase.from('transactions').select('type,amount,status').eq('user_id', userId).gte('date', inicio).lte('date', hojeISO),
     supabase.from('card_transactions').select('valor_parcela').eq('user_id', userId).eq('status', 'aberta').eq('fatura_referencia', ref),
@@ -47,7 +53,18 @@ async function coletarContexto(userId) {
     supabase.from('offshore_cycles').select('data_embarque,data_desembarque').eq('user_id', userId).order('data_embarque', { ascending: false }).limit(3),
     supabase.from('calendar_events').select('titulo,data_inicio').eq('user_id', userId).gte('data_inicio', hojeISO).lte('data_inicio', em7).order('data_inicio').limit(5),
     supabase.from('goals').select('nome,valor_atual,valor_alvo').eq('user_id', userId).eq('ativo', true).limit(3),
-  ]);
+  ];
+
+  const results = await Promise.allSettled(queries);
+  const extrair = (r) => (r.status === 'fulfilled' ? (r.value?.data || []) : []);
+
+  const [contas, txMes, faturas, pendentes, ciclos, eventos, metas] = results.map(extrair);
+
+  // Log de diagnóstico — aparece no console se alguma query falhar
+  results.forEach((r, i) => {
+    if (r.status === 'rejected') console.warn('[assistantBar] query', i, 'falhou:', r.reason);
+    else if (r.value?.error) console.warn('[assistantBar] query', i, 'erro Supabase:', r.value.error.message);
+  });
 
   // Calcular saldo BRL
   const saldo = (contas||[]).filter(c => (c.currency||'BRL')==='BRL').reduce((s,c)=>s+Number(c.saldo_atual||0),0);
@@ -111,10 +128,17 @@ async function buscarInsights(userId) {
       salvarCache(insights);
       return insights;
     }
-  } catch (_) {}
+  } catch (err) {
+    console.warn('[assistantBar] IA indisponível, usando fallback local:', err.message);
+  }
 
   // Fallback: insights locais sem IA
-  return await insightsFallback(userId);
+  try {
+    return await insightsFallback(userId);
+  } catch (err) {
+    console.error('[assistantBar] fallback também falhou:', err);
+    return ['✅ Tudo em ordem por hoje'];
+  }
 }
 
 // ── Fallback local sem IA ─────────────────────────────────────────────────────
@@ -199,11 +223,19 @@ function renderBar(insights) {
 // ── Init ──────────────────────────────────────────────────────────────────────
 export async function initAssistantBar(userId) {
   const track = document.getElementById('abTrack');
-  if (!track) return;
+  if (!track) {
+    console.warn('[assistantBar] #abTrack não encontrado no DOM');
+    return;
+  }
 
   // Mostrar loading
   track.innerHTML = '<span class="ab-item" style="color:var(--muted);opacity:.5">Carregando insights…</span>';
 
-  const insights = await buscarInsights(userId);
-  renderBar(insights);
+  try {
+    const insights = await buscarInsights(userId);
+    renderBar(insights);
+  } catch (err) {
+    console.error('[assistantBar] erro fatal:', err);
+    track.innerHTML = '<span class="ab-item">✅ Tudo em ordem por hoje</span>';
+  }
 }
