@@ -328,56 +328,52 @@
 
 
 
-/* ── Faixa proativa do assistente ── */
-#assistantBar {
-  margin: 0 -24px 20px;   /* sangra nas bordas, sem margin-top negativo */
-  height: 38px;
-  display: flex;
-  align-items: stretch;
-  background: rgba(245,158,11,.07);
-  border-bottom: 1px solid rgba(245,158,11,.18);
-  font-size: 12px;
-  overflow: hidden;
-  position: relative;
-  z-index: 1;
+/* ── Painel proativo do assistente ── */
+/* Card estático, sem scroll/animação — robusto e legível, segue o
+   padrão visual dos outros blocos do dashboard (.score-block etc). */
+.assistant-panel {
+  border: 1px solid rgba(245,158,11,.22);
+  background: linear-gradient(135deg, rgba(245,158,11,.07), rgba(245,158,11,.02));
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
 }
-#abLabel {
-  padding: 0 14px;
+.assistant-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: .14em;
   color: var(--accent);
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  background: rgba(245,158,11,.1);
-  border-right: 1px solid rgba(245,158,11,.2);
+  text-transform: uppercase;
+}
+.assistant-panel-head .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
   flex-shrink: 0;
 }
-#abScroll {
-  flex: 1;
-  overflow: hidden;
-  position: relative;
+.assistant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
 }
-#abTrack {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  transform: translateY(-50%);
-  display: flex;
-  white-space: nowrap;
-  align-items: center;
-}
-.ab-item {
-  padding: 0 24px;
+.assistant-item {
+  font-size: 13px;
   color: var(--text);
-  border-right: 1px solid rgba(245,158,11,.1);
-  line-height: 38px;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  line-height: 1.4;
+  padding: 8px 12px;
+  background: rgba(0,0,0,.15);
+  border-radius: 10px;
+  border: 1px solid rgba(245,158,11,.1);
+}
+.assistant-loading {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 4px 0;
 }
 
 </style>
@@ -408,9 +404,11 @@
       </div>
     </header>
 
-    <div id="assistantBar">
-  <div id="abLabel">✦ ASSISTENTE</div>
-  <div id="abScroll"><div id="abTrack"></div></div>
+    <div class="assistant-panel">
+  <div class="assistant-panel-head"><span class="dot"></span> Assistente</div>
+  <div class="assistant-grid" id="assistantGrid">
+    <div class="assistant-loading">Carregando insights…</div>
+  </div>
 </div>
 
 
