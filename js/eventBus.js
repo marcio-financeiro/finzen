@@ -15,6 +15,11 @@
  * Um único listener no documento captura o clique, lê o data-action,
  * e dispara a função registrada — sem nunca tocar no window.
  *
+ * Também suporta input e change (ex: campos numéricos que recalculam
+ * em tempo real, selects, checkboxes):
+ *   <input data-action-input="simular">
+ *   <select data-action-change="toggleProduto">
+ *
  * Uso em qualquer módulo:
  *   import { registrarAcao } from './eventBus.js';
  *   registrarAcao('abrirModal', () => { ... });
@@ -48,28 +53,32 @@ export function removerAcao(nome) {
   _acoes.delete(nome);
 }
 
+function disparar(attr, evento) {
+  const el = evento.target.closest(`[${attr}]`);
+  if (!el) return;
+
+  const nome = el.getAttribute(attr);
+  const handler = _acoes.get(nome);
+
+  if (!handler) {
+    console.warn(`[eventBus] Nenhuma ação registrada para "${nome}"`);
+    return;
+  }
+
+  handler(el, evento);
+}
+
 /**
- * Inicializa o listener global. Chamado automaticamente na primeira
+ * Inicializa os listeners globais. Chamado automaticamente na primeira
  * importação deste módulo — não precisa chamar manualmente.
  */
 function init() {
   if (_inicializado) return;
   _inicializado = true;
 
-  document.addEventListener('click', (e) => {
-    const el = e.target.closest('[data-action]');
-    if (!el) return;
-
-    const nome = el.dataset.action;
-    const handler = _acoes.get(nome);
-
-    if (!handler) {
-      console.warn(`[eventBus] Nenhuma ação registrada para "${nome}"`);
-      return;
-    }
-
-    handler(el, e);
-  });
+  document.addEventListener('click',  (e) => disparar('data-action', e));
+  document.addEventListener('input',  (e) => disparar('data-action-input', e));
+  document.addEventListener('change', (e) => disparar('data-action-change', e));
 }
 
 init();

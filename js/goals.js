@@ -2,6 +2,7 @@ import { supabase }         from './supabaseClient.js';
 import { navigate }         from './router.js';
 import { formatCurrency }   from './utils.js';
 import { confirmarExclusao} from './confirmModal.js';
+import { registrarAcao }    from './eventBus.js';
 
 const { data: sd } = await supabase.auth.getSession();
 if(!sd.session){ navigate('../login.html'); }
@@ -123,7 +124,12 @@ async function carregarContexto(){
 }
 
 // ── Modal de Aporte ───────────────────────────────────
-function abrirModalAporte(id, nome, falta, sugestao){
+registrarAcao('abrirModalAporte', (el) => {
+  const id       = el.dataset.metaId;
+  const nome     = el.dataset.metaNome;
+  const falta    = Number(el.dataset.falta);
+  const sugestao = Number(el.dataset.sugestao);
+
   // Remove modal anterior
   document.getElementById('modalAporte')?.remove();
 
@@ -161,7 +167,7 @@ function abrirModalAporte(id, nome, falta, sugestao){
             style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer">
             Cancelar
           </button>
-          <button onclick="window.confirmarAporte('${id}','${nome.replace(/'/g,"\\'")}')"
+          <button data-action="confirmarAporte" data-meta-id="${id}" data-meta-nome="${nome.replace(/"/g,'&quot;')}"
             style="flex:2;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-weight:700;cursor:pointer;font-size:13px">
             ✓ Confirmar aporte
           </button>
@@ -171,9 +177,11 @@ function abrirModalAporte(id, nome, falta, sugestao){
   document.body.appendChild(modal);
   document.getElementById('inputAporte').focus();
   document.getElementById('inputAporte').select();
-}
+});
 
-window.confirmarAporte = async function(id, nome){
+registrarAcao('confirmarAporte', async (el) => {
+  const id   = el.dataset.metaId;
+  const nome = el.dataset.metaNome;
   const valor = parseFloat((document.getElementById('inputAporte')?.value||'0').replace(',','.'));
   if(isNaN(valor) || valor <= 0){ alert('Informe um valor válido.'); return; }
 
@@ -186,7 +194,7 @@ window.confirmarAporte = async function(id, nome){
   document.getElementById('modalAporte')?.remove();
   msg(`Aporte de ${fmt(valor)} registrado para "${nome}"!`, 'success');
   await carregar();
-};
+});
 
 // ── Salvar / Editar ───────────────────────────────────
 async function salvar(){
@@ -224,7 +232,8 @@ function limpar(){
   el('btnCancelarEdicao').style.display='none';
 }
 
-window.editarMeta = async function(id){
+registrarAcao('editarMeta', async (el) => {
+  const id = el.dataset.metaId;
   const { data } = await supabase.from('goals').select('*').eq('id',id).single();
   if(!data) return;
   editandoId = id;
@@ -239,13 +248,15 @@ window.editarMeta = async function(id){
   el('btnCancelarEdicao').style.display='inline-block';
   el('nomeMeta').focus();
   el('nomeMeta').scrollIntoView({behavior:'smooth'});
-};
+});
 
-window.excluirMeta = async function(id, nome){
+registrarAcao('excluirMeta', async (el) => {
+  const id   = el.dataset.metaId;
+  const nome = el.dataset.metaNome;
   if(!await confirmarExclusao(`Excluir a meta <strong>${nome}</strong>?`)) return;
   await supabase.from('goals').update({ativo:false}).eq('id',id).eq('user_id',user.id);
   await carregar();
-};
+});
 
 // ── Carregar ──────────────────────────────────────────
 async function carregar(){
@@ -340,10 +351,10 @@ function renderMetas(metas){
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0">
             ${falta>0?`<button class="btn btn-primary compact"
-              onclick="abrirModalAporte('${m.id}','${m.nome.replace(/'/g,"\\'")}',${falta},${analise?.sugestaoAporte||0})">
+              data-action="abrirModalAporte" data-meta-id="${m.id}" data-meta-nome="${m.nome.replace(/"/g,'&quot;')}" data-falta="${falta}" data-sugestao="${analise?.sugestaoAporte||0}">
               💰 Aportar</button>`:''}
-            <button class="btn btn-secondary compact" onclick="editarMeta('${m.id}')">✏️</button>
-            <button class="btn btn-danger compact" onclick="excluirMeta('${m.id}','${m.nome.replace(/'/g,"\\'")}')">✕</button>
+            <button class="btn btn-secondary compact" data-action="editarMeta" data-meta-id="${m.id}">✏️</button>
+            <button class="btn btn-danger compact" data-action="excluirMeta" data-meta-id="${m.id}" data-meta-nome="${m.nome.replace(/"/g,'&quot;')}">✕</button>
           </div>
         </div>
 
@@ -373,7 +384,6 @@ function renderMetas(metas){
   }).join('');
 }
 
-window.abrirModalAporte = abrirModalAporte;
 
 el('btnSalvarMeta').addEventListener('click', salvar);
 el('btnCancelarEdicao').addEventListener('click', limpar);

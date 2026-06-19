@@ -1,5 +1,6 @@
 import { APP_VERSION } from './config.js';
 import { supabase } from './supabaseClient.js';
+import { registrarAcao } from './eventBus.js';
 
 // ─── Estrutura de navegação em 6 grupos colapsáveis ───────────────────────────
 const NAV_GROUPS = [
@@ -142,14 +143,14 @@ function togglePrivacy() {
   applyPrivacy(next);
 }
 
-window._finzenTogglePrivacy = togglePrivacy;
+registrarAcao('togglePrivacy', togglePrivacy);
 
 function privacyBtnHtml(extraStyle = '') {
   const hidden = getPrivacy();
   return `<button
     class="privacy-toggle-btn"
     type="button"
-    onclick="window._finzenTogglePrivacy()"
+    data-action="togglePrivacy"
     title="${hidden ? 'Mostrar valores' : 'Ocultar valores'}"
     aria-pressed="${hidden ? 'true' : 'false'}"
     style="${extraStyle}"
@@ -178,7 +179,7 @@ function groupHtml(group, forDrawer = false) {
   return `
     <div class="nav-group ${collapsed ? 'collapsed' : ''}" data-group="${group.label}" data-prefix="${prefix}">
       <button class="nav-group-toggle" type="button"
-        onclick="window._finzenToggleNav('${group.label}')">
+        data-action="toggleNavGroup" data-group-label="${group.label}">
         <span class="nav-group-icon">${group.icon}</span>
         <span class="nav-group-label">${group.label}</span>
         <span class="nav-group-arrow">▾</span>
@@ -193,14 +194,15 @@ function navHtml(forDrawer = false) {
 }
 
 // ─── Toggle de grupo ──────────────────────────────────────────────────────────
-window._finzenToggleNav = function(groupLabel) {
+registrarAcao('toggleNavGroup', (el) => {
+  const groupLabel = el.dataset.groupLabel;
   const storeKey   = `nav_collapsed_v3_${groupLabel}`;
   const elements   = document.querySelectorAll(`.nav-group[data-group="${groupLabel}"]`);
   const isCollapsed = elements[0]?.classList.contains('collapsed');
 
-  elements.forEach(el => el.classList.toggle('collapsed'));
+  elements.forEach(elGrupo => elGrupo.classList.toggle('collapsed'));
   localStorage.setItem(storeKey, isCollapsed ? 'open' : 'closed');
-};
+});
 
 // ─── Injeção de estilos globais ───────────────────────────────────────────────
 function injectStyles() {

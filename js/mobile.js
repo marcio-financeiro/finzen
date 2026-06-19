@@ -7,6 +7,7 @@
 import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
+import { registrarAcao }  from './eventBus.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -73,7 +74,11 @@ function mostrarOfflineBanner() {
 }
 
 // ── Pagar fatura pelo mobile ──────────────────────────
-window.pagarFaturaMobile = async function(idx, cartaoId, cartaoNome, total) {
+registrarAcao('pagarFaturaMobile', async (el) => {
+  const idx        = el.dataset.idx;
+  const cartaoId    = el.dataset.cartaoId;
+  const cartaoNome  = el.dataset.cartaoNome;
+  const total       = Number(el.dataset.total);
   if(!confirm(`Pagar fatura ${cartaoNome}\n${fmt(total)}\n\nSelecione a conta de débito.`)) return;
 
   // Mostrar select de contas
@@ -120,10 +125,14 @@ window.pagarFaturaMobile = async function(idx, cartaoId, cartaoNome, total) {
   } catch(e) {
     alert('Erro ao pagar: ' + e.message);
   }
-};
+});
 
 // ── Pagar lançamento pendente pelo mobile ─────────────
-window.pagarPendenteMobile = async function(idx, txId, valor, contaId) {
+registrarAcao('pagarPendenteMobile', async (el) => {
+  const idx     = el.dataset.idx;
+  const txId    = el.dataset.txId;
+  const valor   = Number(el.dataset.valor);
+  const contaId = el.dataset.contaId;
   if(!confirm(`Confirmar pagamento?\n${fmt(valor)}`)) return;
 
   try {
@@ -145,7 +154,7 @@ window.pagarPendenteMobile = async function(idx, txId, valor, contaId) {
   } catch(e) {
     alert('Erro: ' + e.message);
   }
-};
+});
 
 function renderizarDados(c) {
   // Saldo
@@ -282,13 +291,15 @@ async function carregar() {
           <div class="mob-alerta-sub">${a.sub}</div>
         </div>
         ${a.isFatura ? `
-          <button class="mob-pagar-btn" onclick="pagarFaturaMobile(${i},'${a.cartaoId}','${a.cartaoNome}',${a.totalCartao})"
+          <button class="mob-pagar-btn" data-action="pagarFaturaMobile"
+            data-idx="${i}" data-cartao-id="${a.cartaoId}" data-cartao-nome="${a.cartaoNome}" data-total="${a.totalCartao}"
             style="padding:6px 12px;border-radius:8px;border:none;background:#22c55e;color:#fff;
               font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
             ✓ Pagar
           </button>` : ''}
         ${a.isPendente ? `
-          <button class="mob-pagar-btn" onclick="pagarPendenteMobile(${i},'${a.txId}',${a.txValor},'${a.txConta||''}')"
+          <button class="mob-pagar-btn" data-action="pagarPendenteMobile"
+            data-idx="${i}" data-tx-id="${a.txId}" data-valor="${a.txValor}" data-conta-id="${a.txConta||''}"
             style="padding:6px 12px;border-radius:8px;border:none;background:#22c55e;color:#fff;
               font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
             ✓ Pagar
@@ -395,22 +406,23 @@ function renderCategorias(tipo) {
   const lista = categorias.filter(c=>c.tipo===tipo).slice(0,8);
   el('mobCatsGrid').innerHTML = lista.map(c=>`
     <button class="mob-cat-btn ${catSelecionada===c.id?'ativo':''}"
-      onclick="selecionarCat('${c.id}')">
+      data-action="selecionarCat" data-cat-id="${c.id}">
       <span class="mob-cat-btn-icon">${c.icon||'📌'}</span>
       <span class="mob-cat-btn-label">${c.nome.slice(0,8)}</span>
     </button>`).join('');
 }
 
-window.selecionarCat = function(id) {
+registrarAcao('selecionarCat', (elClicado) => {
+  const id = elClicado.dataset.catId;
   catSelecionada = id;
   el('mobCatSelect').value = '';
   document.querySelectorAll('.mob-cat-btn').forEach(b=>{
-    b.classList.toggle('ativo', b.getAttribute('onclick')?.includes(`'${id}'`));
+    b.classList.toggle('ativo', b.dataset.catId === id);
   });
-};
+});
 
 // ── Tipo de lançamento ────────────────────────────────
-window.selecionarTipo = function(tipo) {
+function selecionarTipo(tipo) {
   tipoAtual = tipo;
   catSelecionada = null;
 
@@ -426,17 +438,22 @@ window.selecionarTipo = function(tipo) {
 
   // Categorias de despesa para cartão
   renderCategorias(tipo === 'receita' ? 'receita' : 'despesa');
-};
+}
+
+// Ponto de entrada via clique — lê o tipo do data-attribute do botão
+registrarAcao('selecionarTipo', (elClicado) => {
+  selecionarTipo(elClicado.dataset.tipo);
+});
 
 // ── Modal ─────────────────────────────────────────────
-window.abrirModal = function() {
+registrarAcao('abrirModal', () => {
   el('mobModalOverlay').classList.add('aberto');
   setTimeout(()=>el('mobValor').focus(), 300);
-};
+});
 
-window.fecharModalFora = function(e) {
-  if(e.target === el('mobModalOverlay')) fecharModal();
-};
+registrarAcao('fecharModalFora', (elClicado, evento) => {
+  if(evento.target === el('mobModalOverlay')) fecharModal();
+});
 
 function fecharModal() {
   el('mobModalOverlay').classList.remove('aberto');
@@ -450,7 +467,7 @@ function fecharModal() {
 }
 
 // ── Salvar lançamento ─────────────────────────────────
-window.salvarLancamento = async function() {
+registrarAcao('salvarLancamento', async () => {
   const valor   = parseFloat((el('mobValor').value || '0').replace(',', '.'));
   const desc    = el('mobDescricao').value.trim();
   const catId   = catSelecionada || el('mobCatSelect').value || null;
@@ -525,21 +542,21 @@ window.salvarLancamento = async function() {
     btn.disabled = false;
     btn.textContent = '✓ Salvar lançamento';
   }
-};
+});
 
 // ── Navegação ─────────────────────────────────────────
-window.scrollTop = function() {
+registrarAcao('scrollTop', () => {
   el('mobScroll').scrollTo({ top: 0, behavior: 'smooth' });
-};
+});
 
-window.irParaDashboard = function() {
+registrarAcao('irParaDashboard', () => {
   location.href = '../pages/dashboard.html';
-};
+});
 
-window.ativarModoAvancado = function() {
+registrarAcao('ativarModoAvancado', () => {
   localStorage.setItem('finzen_modo_avancado', 'true');
   location.href = '../pages/dashboard.html';
-};
+});
 
 // ── Inicializar ───────────────────────────────────────
 await carregar();

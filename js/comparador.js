@@ -7,6 +7,7 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { registrarAcao }  from './eventBus.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -197,7 +198,7 @@ function calcularProduto(produto, valorInicial, aporteMensal, anos, cdi, ipca) {
 }
 
 // ── Simular todos os produtos ─────────────────────────
-window.simular = function() {
+function simular() {
   const valorInicial = Number(el('valorInicial').value || 0);
   const aporteMensal = Number(el('aporteMensal').value || 0);
   const ipca         = Number(el('ipca').value || 4.5);
@@ -244,7 +245,10 @@ window.simular = function() {
 
   // Atualizar gráfico
   renderGrafico(resultados, anosSimulacao);
-};
+}
+
+// Ponto de entrada via digitação nos campos (data-action-input="simular")
+registrarAcao('simular', () => simular());
 
 // ── Gráfico de evolução ───────────────────────────────
 function renderGrafico(resultados, anos) {
@@ -291,12 +295,12 @@ function renderGrafico(resultados, anos) {
 }
 
 // ── Selecionar período ────────────────────────────────
-window.selecionarPeriodo = function(btn) {
+registrarAcao('selecionarPeriodo', (btn) => {
   document.querySelectorAll('.comp-periodo-btn').forEach(b => b.classList.remove('ativo'));
   btn.classList.add('ativo');
   anosSimulacao = parseInt(btn.dataset.anos);
   simular();
-};
+});
 
 // ── Renderizar lista de produtos ──────────────────────
 function renderProdutos() {
@@ -308,25 +312,26 @@ function renderProdutos() {
   el('listaProdutos').innerHTML = todos.map(p => `
     <div class="comp-produto">
       <input type="checkbox" id="chk_${p.id}" ${p.ativo ? 'checked' : ''}
-        onchange="toggleProduto('${p.id}')">
+        data-action-change="toggleProduto" data-produto-id="${p.id}">
       <span class="comp-produto-cor" style="background:${p.cor}"></span>
       <span class="comp-produto-nome">${p.nome}</span>
       <span class="comp-produto-taxa">${p.taxaAnual ? p.taxaAnual.toFixed(1)+'%' : ''}</span>
-      ${p.custom ? `<button onclick="removerCustom('${p.id}')" style="border:none;background:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px">×</button>` : ''}
+      ${p.custom ? `<button data-action="removerCustom" data-produto-id="${p.id}" style="border:none;background:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px">×</button>` : ''}
     </div>
   `).join('');
 }
 
-window.toggleProduto = function(id) {
+registrarAcao('toggleProduto', (el) => {
+  const id = el.dataset.produtoId;
   const p = PRODUTOS_PADRAO.find(x => x.id === id) || produtosCustom.find(x => x.id === id);
   if(p) p.ativo = !p.ativo;
   simular();
-};
+});
 
 // ── Produto customizado ───────────────────────────────
 const CORES_EXTRA = ['#ec4899','#84cc16','#14b8a6','#a855f7','#fb923c'];
 
-window.adicionarCustom = function() {
+registrarAcao('adicionarCustom', () => {
   const nome = el('customNome').value.trim();
   const taxa  = parseFloat(el('customTaxa').value);
   if(!nome || isNaN(taxa) || taxa <= 0) return;
@@ -348,13 +353,14 @@ window.adicionarCustom = function() {
   el('customTaxa').value = '';
   renderProdutos();
   simular();
-};
+});
 
-window.removerCustom = function(id) {
+registrarAcao('removerCustom', (el) => {
+  const id = el.dataset.produtoId;
   produtosCustom = produtosCustom.filter(p => p.id !== id);
   renderProdutos();
   simular();
-};
+});
 
 // ── Buscar CDI atual (AwesomeAPI) ─────────────────────
 async function buscarCDI() {
