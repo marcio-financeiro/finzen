@@ -1,4 +1,5 @@
 import { confirmarExclusao } from './confirmModal.js';
+import { D, somaSegura, multSegura, diferencaSegura, divSegura, valorDoPercentual, percentualDe } from './decimalMath.js';
 import { getCotacoes, getDolar, limparCache } from './quoteCache.js';
 import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
@@ -49,8 +50,8 @@ document.querySelectorAll('.inv-tab').forEach(btn => {
 function hojeISO(){ return new Date().toISOString().split('T')[0]; }
 function fmtData(d){ if(!d) return '-'; const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; }
 function fmtMoeda(v,m){ return m==='USD'?formatUSD(v):formatCurrency(v,'BRL'); }
-function calcAplicado(a){ return toNumber(a.quantidade)*toNumber(a.preco_medio); }
-function calcAtual(a){ return toNumber(a.quantidade)*toNumber(a.cotacao_atual||a.preco_medio); }
+function calcAplicado(a){ return multSegura(toNumber(a.quantidade),toNumber(a.preco_medio)); }
+function calcAtual(a){ return multSegura(toNumber(a.quantidade),toNumber(a.cotacao_atual||a.preco_medio)); }
 function calcBRL(a,v){ return (a.moeda||'BRL')==='USD'?v*dolarAtual:v; }
 function isBR(t){ return ['acao_br','fii','etf_br'].includes(t); }
 function isEUA(t){ return ['acao_eua','etf_eua'].includes(t); }
@@ -197,11 +198,11 @@ async function carregarPesos(){
 // KPIs
 // ─────────────────────────────────────────────
 function renderizarKPIs(){
-  const aplicBRL  = ativos.reduce((s,a)=>s+calcBRL(a,calcAplicado(a)),0);
-  const patrimBRL = ativos.reduce((s,a)=>s+calcBRL(a,calcAtual(a)),0);
+  const aplicBRL  = somaSegura(ativos.map(a=>calcBRL(a,calcAplicado(a))));
+  const patrimBRL = somaSegura(ativos.map(a=>calcBRL(a,calcAtual(a))));
   const resultado = patrimBRL-aplicBRL;
   const pct       = aplicBRL?resultado/aplicBRL*100:0;
-  const usdTotal  = ativos.filter(a=>(a.moeda||'BRL')==='USD').reduce((s,a)=>s+calcAtual(a),0);
+  const usdTotal  = somaSegura(ativos.filter(a=>(a.moeda||'BRL')==='USD').map(a=>calcAtual(a)));
 
   el('kpiPatrimonio').innerText=formatCurrency(patrimBRL,'BRL');
   el('kpiAplicado').innerText=formatCurrency(aplicBRL,'BRL');
@@ -220,7 +221,7 @@ function renderizarCarteira(){
   const lista  = filtro ? ativos.filter(a=>a.corretora===filtro||
     corretoras.find(c=>c.id===a.corretora_id)?.nome===filtro) : ativos;
 
-  const patrimTotal = lista.reduce((s,a)=>s+calcBRL(a,calcAtual(a)),0);
+  const patrimTotal = somaSegura(lista.map(a=>calcBRL(a,calcAtual(a))));
 
   // Agrupar por classe
   const classes={};
@@ -228,14 +229,14 @@ function renderizarCarteira(){
     const k=classeKey(a.tipo);
     if(!classes[k]) classes[k]={ativos:[],total:0};
     classes[k].ativos.push(a);
-    classes[k].total+=calcBRL(a,calcAtual(a));
+    classes[k].total=D(classes[k].total).plus(calcBRL(a,calcAtual(a))).toNumber();
   });
 
   if(!lista.length){ el('listaCarteira').innerHTML='<p class="muted">Nenhum ativo cadastrado.</p>'; return; }
 
   let html='';
   for(const [classe,grupo] of Object.entries(classes)){
-    const pctReal = patrimTotal?grupo.total/patrimTotal*100:0;
+    const pctReal = patrimTotal?percentualDe(grupo.total,patrimTotal):0;
     const pesoChave = `inv_peso_classe_${classe.replace(/\s/g,'_')}`;
     const pesoObj   = pesos[pesoChave]||{};
     const pctIdeal  = toNumber(pesoObj.ideal||0);
@@ -752,8 +753,8 @@ function calcularBalanceamento(){
   const aporte=toNumber(el('balValorAporte').value);
   if(!aporte){ msg('mensagemBal','Informe o valor do aporte.','warning'); return; }
 
-  const patrimAtual=ativos.reduce((s,a)=>s+calcBRL(a,calcAtual(a)),0);
-  const novoTotal  =patrimAtual+aporte;
+  const patrimAtual=somaSegura(ativos.map(a=>calcBRL(a,calcAtual(a))));
+  const novoTotal  =patrimAtual+aporte; // soma simples de 2 valores — risco de float desprezível aqui
 
   // Sugestões por ativo (incluindo classes sem ativos com % ideal definido)
   const sugestoes=[];
@@ -764,20 +765,22 @@ function calcularBalanceamento(){
     const pideal=toNumber((pesos[pk]||{}).ideal||0);
     if(!pideal) return;
 
-    const valorIdeal  =novoTotal*(pideal/100);
+    // Cálculo encadeado: % de um total grande, multiplicado por cotação em USD/BRL.
+    // Aqui o erro de float pode se acumular — usar Decimal.js.
+    const valorIdeal  =valorDoPercentual(pideal, novoTotal);
     const valorAtual  =calcBRL(a,calcAtual(a));
-    const diferenca   =valorIdeal-valorAtual;
+    const diferenca   =diferencaSegura(valorIdeal, valorAtual);
     const cotacao     =toNumber(a.cotacao_atual||a.preco_medio);
     const moeda       =a.moeda||'BRL';
-    const cotBRL      =moeda==='USD'?cotacao*dolarAtual:cotacao;
-    const qtdSugerida =cotBRL>0?Math.floor(diferenca/cotBRL):0;
+    const cotBRL      =moeda==='USD'?multSegura(cotacao,dolarAtual):cotacao;
+    const qtdSugerida =cotBRL>0?Math.floor(divSegura(diferenca,cotBRL)):0;
 
     if(diferenca>0&&qtdSugerida>0){
       sugestoes.push({
         ticker:a.ticker, nome:a.nome||'', tipo:tipoLabel(a.tipo),
         pideal, valorIdeal, valorAtual, diferenca,
         cotacao:fmtMoeda(cotacao,moeda), qtdSugerida,
-        valorSugerido:qtdSugerida*cotBRL, moeda,
+        valorSugerido:multSegura(qtdSugerida,cotBRL), moeda,
       });
     }
   });
@@ -790,7 +793,7 @@ function calcularBalanceamento(){
     // Verificar se a classe tem ativos — se tiver, já foi coberta acima
     const temAtivos=ativos.some(a=>classeKey(a.tipo)===classe);
     if(temAtivos) return;
-    const valorIdeal=novoTotal*(cideal/100);
+    const valorIdeal=valorDoPercentual(cideal,novoTotal);
     if(valorIdeal>0){
       sugestoes.push({
         ticker:'—', nome:`Sem ativo cadastrado em ${classe}`, tipo:classe,
