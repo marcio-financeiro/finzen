@@ -330,7 +330,7 @@
 
 /* ── Faixa proativa do assistente ── */
 #assistantBar {
-  margin: -24px -24px 20px;   /* sangra nas bordas como o topbar */
+  margin: 0 -24px 20px;   /* sangra nas bordas, sem margin-top negativo */
   height: 38px;
   display: flex;
   align-items: stretch;
@@ -338,6 +338,8 @@
   border-bottom: 1px solid rgba(245,158,11,.18);
   font-size: 12px;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 #abLabel {
   padding: 0 14px;
