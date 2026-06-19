@@ -50,6 +50,29 @@ function aplicarClasse(el, valor){
 // Paleta de cores para pizza
 const CORES = ['#f59e0b','#22c55e','#f59e0b','#ef4444','#7c5cfc','#06b6d4','#f97316','#ec4899','#84cc16','#8b5cf6'];
 
+// ── Navegação de mês — card "Previsão de Saldo do Mês" ─
+const MESES_NOMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const PREVISAO_MIN_OFFSET = -12; // até 12 meses no passado
+const PREVISAO_MAX_OFFSET = 6;   // até 6 meses no futuro
+let previsaoOffset = 0;
+let previsaoCarregando = false;
+let previsaoBase = null;        // dados do mês atual, calculados em carregarDashboard()
+let previsaoSaldoFimAtual = 0;  // saldo previsto fim do mês atual (ponto de partida p/ meses futuros)
+let previsaoReceitasRec = 0;    // receitas fixas/mês (igual ao card Receita Líquida Recorrente)
+let previsaoDespesasRec = 0;    // despesas fixas/mês
+
+function mesComOffset(offset){
+  const d = hoje();
+  const base = new Date(d.getFullYear(), d.getMonth()+offset, 1);
+  const ultimo = new Date(base.getFullYear(), base.getMonth()+1, 0);
+  return {
+    inicio: `${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,'0')}-01`,
+    fim: `${ultimo.getFullYear()}-${String(ultimo.getMonth()+1).padStart(2,'0')}-${String(ultimo.getDate()).padStart(2,'0')}`,
+    ref: `${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,'0')}`,
+    label: `${MESES_NOMES[base.getMonth()]} ${base.getFullYear()}`,
+  };
+}
+
 // ── Carregamento paralelo ─────────────────────────────
 async function carregarDashboard(){
   const inicio = primeiroDiaMes();
@@ -114,6 +137,7 @@ async function carregarDashboard(){
   renderReceitaLiquida(recorrentes||[]);
 
   // ── Previsão de saldo do mês ────────────────────
+  previsaoBase = { saldoAtual: totalSaldo, receitasPagas: receitas, despesasPagas: despesas, txPendentes: pendentesRestantesMes||[], faturasCartao: totalFaturas };
   renderPrevisao(totalSaldo, receitas, despesas, pendentesRestantesMes||[], totalFaturas);
 
   // ── Últimos lançamentos ──────────────────────────
@@ -363,6 +387,8 @@ function renderMetas(metas){
 function renderReceitaLiquida(recorrentes){
   const receitasRec = recorrentes.filter(r=>r.type==='receita').reduce((s,r)=>s+Number(r.amount||0),0);
   const despesasRec = recorrentes.filter(r=>r.type==='despesa').reduce((s,r)=>s+Number(r.amount||0),0);
+  previsaoReceitasRec = receitasRec;
+  previsaoDespesasRec = despesasRec;
   const liquida = receitasRec - despesasRec;
   const pctDespesas = receitasRec>0 ? (despesasRec/receitasRec*100).toFixed(0) : 0;
 
@@ -402,6 +428,7 @@ function renderPrevisao(saldoAtual, receitasPagas, despesasPagas, txPendentes, f
   const despesasPend  = txPendentes.filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0);
   const faturas       = Number(faturasCartao||0);
   const saldoPrevisto = saldoAtual + receitasPend - despesasPend - faturas;
+  previsaoSaldoFimAtual = saldoPrevisto;
 
   const diff = saldoPrevisto - saldoInicial;
 
@@ -453,6 +480,151 @@ function renderPrevisao(saldoAtual, receitasPagas, despesasPagas, txPendentes, f
     <p class="muted" style="font-size:11px;text-align:center">
       ${receitasPend>0?`+${fmt(receitasPend)} a receber `:''}${despesasPend>0?`−${fmt(despesasPend)} a pagar `:''}${faturas>0?`−${fmt(faturas)} faturas cartão`:''}
     </p>
+  `;
+}
+
+// ── Navegação do card "Previsão de Saldo do Mês" ──────
+function atualizarNavPrevisao(offset, carregando){
+  el('previsaoMesLabel').textContent = mesComOffset(offset).label;
+  el('btnPrevisaoAnterior').classList.toggle('is-disabled', carregando || offset <= PREVISAO_MIN_OFFSET);
+  el('btnPrevisaoProximo').classList.toggle('is-disabled', carregando || offset >= PREVISAO_MAX_OFFSET);
+}
+
+async function carregarPrevisaoMes(offset){
+  if(previsaoCarregando) return;
+  if(offset === 0 && !previsaoBase) return; // mês atual ainda não carregou
+
+  previsaoCarregando = true;
+  atualizarNavPrevisao(offset, true);
+
+  if(offset === 0){
+    renderPrevisao(previsaoBase.saldoAtual, previsaoBase.receitasPagas, previsaoBase.despesasPagas, previsaoBase.txPendentes, previsaoBase.faturasCartao);
+  } else {
+    el('blocoPrevisao').innerHTML = '<p class="muted" style="font-size:13px;text-align:center;padding:20px 0">Carregando...</p>';
+    if(offset < 0){
+      await carregarPrevisaoPassado(offset);
+    } else {
+      await carregarPrevisaoFuturo(offset);
+    }
+  }
+
+  previsaoCarregando = false;
+  atualizarNavPrevisao(offset, false);
+}
+
+// Mês passado: dados reais (já fechados) — sem projeção
+async function carregarPrevisaoPassado(offset){
+  const { inicio, fim, ref } = mesComOffset(offset);
+
+  const [
+    { data: txMes },
+    { data: parcelasMes },
+  ] = await Promise.all([
+    supabase.from('transactions').select('type,amount,status').eq('user_id',user.id).eq('status','pago').gte('date',inicio).lte('date',fim),
+    supabase.from('card_transactions').select('valor_parcela').eq('user_id',user.id).eq('fatura_referencia',ref),
+  ]);
+
+  const receitas   = (txMes||[]).filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
+  const despesasTx = (txMes||[]).filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0);
+  const faturas    = (parcelasMes||[]).reduce((s,p)=>s+Number(p.valor_parcela||0),0);
+  const despesas   = despesasTx + faturas;
+
+  renderPrevisaoPassado(receitas, despesas);
+}
+
+function renderPrevisaoPassado(receitas, despesas){
+  const resultado = receitas - despesas;
+  el('blocoPrevisao').innerHTML = `
+    <div class="previsao-grid">
+      <div class="previsao-kpi">
+        <span>Receitas do mês</span>
+        <strong class="positive">${fmt(receitas)}</strong>
+      </div>
+      <div class="previsao-kpi">
+        <span>Despesas do mês</span>
+        <strong class="negative">${fmt(despesas)}</strong>
+      </div>
+      <div class="previsao-kpi">
+        <span>Resultado do mês</span>
+        <strong class="${resultado>=0?'positive':'negative'}" style="font-size:17px">${fmt(resultado)}</strong>
+      </div>
+    </div>
+    <p class="muted" style="font-size:11px;text-align:center;margin-top:10px">
+      📅 Mês encerrado — valores já realizados (receitas, despesas e faturas de cartão pagas).
+    </p>
+  `;
+}
+
+// Mês futuro: previsão encadeada a partir do saldo previsto do mês atual
+async function carregarPrevisaoFuturo(offset){
+  const inicioRange = mesComOffset(1).inicio;
+  const refInicial  = mesComOffset(1).ref;
+  const { fim: fimRange, ref: refAlvo } = mesComOffset(offset);
+
+  const [
+    { data: parcelasFuturas },
+    { data: pendentesFuturos },
+  ] = await Promise.all([
+    supabase.from('card_transactions').select('valor_parcela,fatura_referencia').eq('user_id',user.id).eq('status','aberta').gte('fatura_referencia',refInicial).lte('fatura_referencia',refAlvo),
+    supabase.from('transactions').select('type,amount,date').eq('user_id',user.id).eq('status','pendente').gte('date',inicioRange).lte('date',fimRange),
+  ]);
+
+  const faturasPorMes = {};
+  (parcelasFuturas||[]).forEach(p => {
+    faturasPorMes[p.fatura_referencia] = (faturasPorMes[p.fatura_referencia]||0) + Number(p.valor_parcela||0);
+  });
+
+  const pendentesPorMes = {};
+  (pendentesFuturos||[]).forEach(t => {
+    const refMes = String(t.date).slice(0,7);
+    if(!pendentesPorMes[refMes]) pendentesPorMes[refMes] = { receita:0, despesa:0 };
+    pendentesPorMes[refMes][t.type] = (pendentesPorMes[refMes][t.type]||0) + Number(t.amount||0);
+  });
+
+  let saldoFim = previsaoSaldoFimAtual;
+  let saldoInicio = saldoFim;
+  for(let i=1; i<=offset; i++){
+    const { ref } = mesComOffset(i);
+    const receitasPrev = previsaoReceitasRec + (pendentesPorMes[ref]?.receita||0);
+    const despesasPrev = previsaoDespesasRec + (pendentesPorMes[ref]?.despesa||0) + (faturasPorMes[ref]||0);
+    saldoInicio = saldoFim;
+    saldoFim    = saldoInicio + receitasPrev - despesasPrev;
+  }
+
+  renderPrevisaoFuturo(saldoInicio, saldoFim);
+}
+
+function renderPrevisaoFuturo(saldoInicio, saldoFim){
+  const pontos = [saldoInicio, saldoFim];
+  const minV = Math.min(...pontos);
+  const maxV = Math.max(...pontos);
+  const range = maxV - minV || 1;
+  const W=500, H=56, pad=6;
+  const xs = [pad, W-pad];
+  const corLinha = saldoFim >= saldoInicio ? '#22c55e' : '#ef4444';
+  const yInicio = H - pad - ((saldoInicio-minV)/range)*(H-pad*2);
+  const yFim    = H - pad - ((saldoFim-minV)/range)*(H-pad*2);
+
+  const svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:56px;display:block;margin:12px 0;">
+    <line x1="${xs[0]}" y1="${yInicio}" x2="${xs[1]}" y2="${yFim}"
+      stroke="${corLinha}" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="6 5"/>
+    <circle cx="${xs[0]}" cy="${yInicio}" r="5" fill="var(--surface)" stroke="${corLinha}" stroke-width="2" stroke-dasharray="3 2"/>
+    <circle cx="${xs[1]}" cy="${yFim}" r="5" fill="var(--surface)" stroke="${corLinha}" stroke-width="2" stroke-dasharray="3 2"/>
+  </svg>`;
+
+  el('blocoPrevisao').innerHTML = `
+    <div class="previsao-grid" style="grid-template-columns:1fr 1fr">
+      <div class="previsao-kpi">
+        <span>Início previsto</span>
+        <strong class="${saldoInicio>=0?'positive':'negative'}">${fmt(saldoInicio)}</strong>
+      </div>
+      <div class="previsao-kpi">
+        <span>Previsto fim do mês</span>
+        <strong class="${saldoFim>=saldoInicio?'positive':'negative'}">${fmt(saldoFim)}</strong>
+      </div>
+    </div>
+    ${svg}
+    <p class="previsao-disclaimer">📊 Previsão — baseada em receitas/despesas fixas e parcelas de cartão já agendadas. Os valores reais podem variar.</p>
   `;
 }
 
@@ -595,6 +767,19 @@ function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investiment
 
   el('blocoScore').style.display = 'flex';
 }
+
+// ── Listeners de navegação — Previsão de Saldo do Mês ─
+el('btnPrevisaoAnterior').addEventListener('click', () => {
+  if(previsaoOffset <= PREVISAO_MIN_OFFSET) return;
+  previsaoOffset -= 1;
+  carregarPrevisaoMes(previsaoOffset);
+});
+el('btnPrevisaoProximo').addEventListener('click', () => {
+  if(previsaoOffset >= PREVISAO_MAX_OFFSET) return;
+  previsaoOffset += 1;
+  carregarPrevisaoMes(previsaoOffset);
+});
+atualizarNavPrevisao(previsaoOffset, false);
 
 carregarDashboard();
 initAssistantBar(user.id).catch(() => {});
