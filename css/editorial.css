@@ -1,0 +1,165 @@
+/**
+ * editorial.css — "Relatório de Bordo"
+ *
+ * Evolução do design system do FinZen rumo a um registro editorial,
+ * inspirado em instrumentos técnicos de bordo: preciso, sem ruído,
+ * com a sobriedade de um documento de trabalho — não de um app de
+ * banco digital genérico.
+ *
+ * Esta folha SOBRESCREVE tokens de base.css. Carregar DEPOIS de base.css,
+ * components.css etc. Não remove nada — apenas redefine variáveis e
+ * acrescenta classes novas (.eb-*, .display, .rule).
+ *
+ * Fase 1 do redesign: aplicado apenas ao Dashboard como prova de conceito.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&display=swap');
+
+:root {
+  /* ── Paleta redefinida — âmbar dessaturado, tons terrosos ── */
+  --bg:           #0a0c10;
+  --app-bg:       #0a0c10;
+
+  --surface:      #12151c;
+  --surface-2:    #181c24;
+  --surface-3:    #20242e;
+
+  --border:       #232732;
+
+  --accent:       #c08a3e;          /* âmbar de latão — era #f59e0b */
+  --accent-dim:   rgba(192,138,62,0.14);
+
+  --success:      #3f8f63;          /* verde dessaturado — era #10b981 */
+  --success-dim:  rgba(63,143,99,0.14);
+
+  --danger:       #b1503f;          /* terracota — era #ef4444 */
+  --danger-dim:   rgba(177,80,63,0.14);
+
+  --warning:      #c08a3e;
+  --warning-dim:  rgba(192,138,62,0.14);
+
+  --text:         #e8e4d8;
+  --muted:        #7a7669;
+
+  /* ── Tipografia: 3 papéis, não 1 ── */
+  --font-display: 'Fraunces', 'DM Serif Display', serif;
+  --font-main:    'Inter', Arial, sans-serif;       /* corpo — mantido por neutralidade */
+  --font-mono:    'JetBrains Mono', 'DM Mono', 'Courier New', monospace;
+}
+
+/* ── Assinatura visual: traço de profundidade ──
+   Linha fina horizontal em vez de border-radius genérico nos divisores
+   principais — referência a marcações de instrumento de bordo. ── */
+.rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-dim) 15%, var(--accent-dim) 85%, transparent);
+  margin: 20px 0;
+  border: none;
+}
+
+/* ── Headlines com a fonte display ── */
+.display,
+h1.display,
+.dash-kpi strong,
+.score-gauge + div,
+#scoreCircle ~ text {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* ── KPIs do dashboard com tratamento editorial ── */
+.dash-kpi {
+  border-radius: 4px; /* cantos quase retos — não 16px genérico */
+  position: relative;
+  overflow: hidden;
+}
+
+.dash-kpi::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 2px;
+  height: 100%;
+  background: var(--accent);
+  opacity: 0.4;
+  transition: opacity .2s ease;
+}
+
+.dash-kpi:hover::before {
+  opacity: 1;
+}
+
+.dash-kpi strong {
+  font-size: 22px;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+/* ── Painel do assistente com a nova paleta ── */
+.assistant-panel {
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  position: relative;
+}
+
+.assistant-panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+.assistant-panel-head {
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.assistant-panel-head .dot {
+  background: var(--accent);
+}
+
+.assistant-item {
+  background: rgba(0,0,0,.18);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: var(--font-main);
+}
+
+/* ── Score de Saúde Financeira — número grande em display ── */
+.score-gauge {
+  position: relative;
+}
+
+/* ── Botões com cantos quase retos ── */
+.btn {
+  border-radius: 4px;
+  letter-spacing: 0.01em;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #0a0c10;
+  box-shadow: 0 8px 20px rgba(192,138,62,.18);
+}
+
+/* ── Cards e blocos gerais — cantos consistentes com a assinatura ── */
+.score-block,
+.panel,
+.card {
+  border-radius: 4px;
+}
+
+/* ── Topbar — leve ajuste de tom ── */
+.topbar h1 {
+  font-family: var(--font-display);
+  font-size: 26px;
+}
