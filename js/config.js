@@ -1,3 +1,3 @@
 export const SUPABASE_URL = 'https://qgamphwnlrriwalcbhbl.supabase.co';
 export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnYW1waHdubHJyaXdhbGNiaGJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNTkzMzUsImV4cCI6MjA5NjYzNTMzNX0.AV0mCZqYlNyqz9XVWeHImMljnpt4klxpUjBa1HHlYkM';
-export const APP_VERSION = '11.1';
+export const APP_VERSION = '11.2';
