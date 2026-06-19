@@ -119,6 +119,19 @@
 .previsao-kpi span{ font-size:10px;color:var(--muted);font-weight:700;display:block; }
 .previsao-kpi strong{ font-size:14px;font-family:var(--font-mono); }
 
+/* Navegação de mês do card Previsão */
+.previsao-nav{ display:flex;align-items:center;gap:8px; }
+.previsao-nav button{
+  width:26px;height:26px;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text);font-size:15px;line-height:1;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:border-color .15s,color .15s;
+}
+.previsao-nav button:hover{ border-color:var(--accent);color:var(--accent); }
+.previsao-nav button.is-disabled{ opacity:.35;pointer-events:none; }
+.previsao-nav span{ font-size:12px;font-weight:700;color:var(--muted);min-width:80px;text-align:center; }
+.previsao-disclaimer{ font-size:10.5px;color:var(--accent);text-align:center;margin-top:8px; }
+
 /* Linha do tempo previsão */
 .previsao-linha{
   height:40px;position:relative;margin-top:4px;
@@ -459,6 +472,23 @@
       </div>
     </div>
 
+    <!-- Previsão de saldo do mês -->
+    <div class="dash-full">
+      <div class="dash-block">
+        <div class="dash-block-header">
+          <h2>📈 Previsão de Saldo do Mês</h2>
+          <div class="previsao-nav">
+            <button type="button" id="btnPrevisaoAnterior" title="Mês anterior" aria-label="Mês anterior">‹</button>
+            <span id="previsaoMesLabel">—</span>
+            <button type="button" id="btnPrevisaoProximo" title="Próximo mês" aria-label="Próximo mês">›</button>
+          </div>
+        </div>
+        <div class="dash-block-body" id="blocoPrevisao">
+          <p class="muted" style="font-size:13px">Carregando...</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Alertas de vencimento -->
     <div class="dash-full">
       <div class="dash-block">
@@ -523,18 +553,6 @@
         </div>
       </div>
 
-    </div>
-
-    <!-- Previsão de saldo 30 dias -->
-    <div class="dash-full">
-      <div class="dash-block">
-        <div class="dash-block-header">
-          <h2>📈 Previsão de Saldo do Mês</h2>
-        </div>
-        <div class="dash-block-body" id="blocoPrevisao">
-          <p class="muted" style="font-size:13px">Carregando...</p>
-        </div>
-      </div>
     </div>
 
     <!-- Previsão IA de Fluxo de Caixa -->
