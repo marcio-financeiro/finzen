@@ -377,18 +377,50 @@ function injectStyles() {
 
     /* ── Efeito blur nos valores sensíveis ── */
     [data-privacy="on"] .money,
+    [data-privacy="on"] .positive,
+    [data-privacy="on"] .negative,
     [data-privacy="on"] .kpi-card strong,
     [data-privacy="on"] .dash-kpi strong,
     [data-privacy="on"] .kpi-value,
+    [data-privacy="on"] .inv-kpi strong,
+    [data-privacy="on"] .bill-total,
+    [data-privacy="on"] .stmt-kpi strong,
+    [data-privacy="on"] .stmt-amount,
+    [data-privacy="on"] .fire-kpi strong,
+    [data-privacy="on"] .fire-resultado-valor,
+    [data-privacy="on"] .an-kpi strong,
+    [data-privacy="on"] .previsao-kpi strong,
+    [data-privacy="on"] .alerta-valor,
+    [data-privacy="on"] .wlt-kpi strong,
+    [data-privacy="on"] .exec-kpi strong,
+    [data-privacy="on"] .goal-amount,
+    [data-privacy="on"] .bal-total,
+    [data-privacy="on"] .bill-card-right .bill-total,
     [data-privacy="on"] [data-sensitive] {
       filter: blur(6px);
       user-select: none;
       transition: filter .25s ease;
     }
     [data-privacy="off"] .money,
+    [data-privacy="off"] .positive,
+    [data-privacy="off"] .negative,
     [data-privacy="off"] .kpi-card strong,
     [data-privacy="off"] .dash-kpi strong,
     [data-privacy="off"] .kpi-value,
+    [data-privacy="off"] .inv-kpi strong,
+    [data-privacy="off"] .bill-total,
+    [data-privacy="off"] .stmt-kpi strong,
+    [data-privacy="off"] .stmt-amount,
+    [data-privacy="off"] .fire-kpi strong,
+    [data-privacy="off"] .fire-resultado-valor,
+    [data-privacy="off"] .an-kpi strong,
+    [data-privacy="off"] .previsao-kpi strong,
+    [data-privacy="off"] .alerta-valor,
+    [data-privacy="off"] .wlt-kpi strong,
+    [data-privacy="off"] .exec-kpi strong,
+    [data-privacy="off"] .goal-amount,
+    [data-privacy="off"] .bal-total,
+    [data-privacy="off"] .bill-card-right .bill-total,
     [data-privacy="off"] [data-sensitive] {
       filter: none;
       transition: filter .25s ease;
