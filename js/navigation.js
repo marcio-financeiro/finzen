@@ -120,6 +120,42 @@ async function carregarBadges() {
   } catch (_) {}
 }
 
+// ─── Toggle de tema (claro / escuro) ─────────────────────────────────────────
+const THEME_KEY = 'finzen_theme';
+
+function getTheme() {
+  return localStorage.getItem(THEME_KEY) || 'dark';
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.querySelectorAll('.theme-toggle-btn').forEach(btn => {
+    btn.textContent = theme === 'light' ? '🌙' : '☀️';
+    btn.title       = theme === 'light' ? 'Modo escuro' : 'Modo claro';
+    btn.setAttribute('aria-pressed', theme === 'light' ? 'true' : 'false');
+  });
+}
+
+function toggleTheme() {
+  const next = getTheme() === 'dark' ? 'light' : 'dark';
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+}
+
+registrarAcao('toggleTheme', toggleTheme);
+
+function themeBtnHtml(extraStyle = '') {
+  const theme = getTheme();
+  return `<button
+    class="theme-toggle-btn"
+    type="button"
+    data-action="toggleTheme"
+    title="${theme === 'light' ? 'Modo escuro' : 'Modo claro'}"
+    aria-pressed="${theme === 'light' ? 'true' : 'false'}"
+    style="${extraStyle}"
+  >${theme === 'light' ? '🌙' : '☀️'}</button>`;
+}
+
 // ─── Toggle de privacidade (ocultar/mostrar valores) ─────────────────────────
 const PRIVACY_KEY = 'finzen_privacy';
 
@@ -318,8 +354,9 @@ function injectStyles() {
       gap: 8px;
     }
 
-    /* ── Botão de privacidade ── */
-    .privacy-toggle-btn {
+    /* ── Botões de privacidade e tema ── */
+    .privacy-toggle-btn,
+    .theme-toggle-btn {
       background: transparent;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -332,7 +369,8 @@ function injectStyles() {
       align-items: center;
       justify-content: center;
     }
-    .privacy-toggle-btn:hover {
+    .privacy-toggle-btn:hover,
+    .theme-toggle-btn:hover {
       border-color: var(--accent);
       background: var(--accent-dim);
     }
@@ -571,10 +609,11 @@ function ensureDesktopSidebar() {
     sidebar.appendChild(footer);
   }
   footer.innerHTML = `
-    ${privacyBtnHtml()}
-    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-      <span class="nav-version" style="padding:0;opacity:.45">v${APP_VERSION}</span>
+    <div style="display:flex;gap:6px;align-items:center">
+      ${privacyBtnHtml()}
+      ${themeBtnHtml()}
     </div>
+    <span class="nav-version" style="padding:0;opacity:.45">v${APP_VERSION}</span>
   `;
 }
 
@@ -599,7 +638,10 @@ function ensureMobileDrawer() {
     </div>
     <nav class="drawer-nav">${navHtml(true)}</nav>
     <div class="drawer-footer">
-      ${privacyBtnHtml('font-size:18px;')}
+      <div style="display:flex;gap:6px;align-items:center">
+        ${privacyBtnHtml('font-size:18px;')}
+        ${themeBtnHtml('font-size:18px;')}
+      </div>
       <span class="drawer-footer-version">v${APP_VERSION}</span>
     </div>
   `;
@@ -728,6 +770,9 @@ function initNavigation() {
   ensureMenuButton();
   ensureMobilePrivacyBtn();
   ensureFAB();
+
+  // Aplicar tema imediatamente
+  applyTheme(getTheme());
 
   // Aplicar estado de privacidade imediatamente
   applyPrivacy(getPrivacy());

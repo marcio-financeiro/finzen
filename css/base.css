@@ -36,6 +36,67 @@
 
   --font-main:'Inter',Arial,sans-serif;
   --font-mono:'DM Mono','JetBrains Mono','Courier New',monospace;
+
+  --input-color:#ffffff;
+  --hover-overlay:rgba(255,255,255,.04);
+}
+
+/* ── Tema claro ── */
+html[data-theme="light"]{
+  --bg:#f2f3f7;
+  --app-bg:#f2f3f7;
+
+  --surface:#ffffff;
+  --surface-2:#eceef4;
+  --surface-3:#e2e5ed;
+
+  --border:#d8dce8;
+
+  --accent-dim:rgba(245,158,11,0.15);
+  --success-dim:rgba(16,185,129,0.15);
+  --danger-dim:rgba(239,68,68,0.15);
+  --warning-dim:rgba(245,158,11,0.15);
+
+  --text:#1a1b2e;
+  --muted:#6b6e87;
+
+  --shadow:0 24px 70px rgba(0,0,0,.10);
+
+  --input-color:#1a1b2e;
+  --hover-overlay:rgba(0,0,0,.04);
+}
+
+/* Overrides pontuais para o tema claro */
+html[data-theme="light"] .data-table th,
+html[data-theme="light"] .data-table td{
+  border-bottom-color:var(--border);
+}
+
+html[data-theme="light"] .data-table tbody tr:hover{
+  background:rgba(0,0,0,.03);
+}
+
+html[data-theme="light"] .sidebar-nav a:hover{
+  background:var(--hover-overlay);
+}
+
+html[data-theme="light"] .nav-group+.nav-group{
+  border-top-color:var(--border);
+}
+
+html[data-theme="light"] .mobile-menu-button,
+html[data-theme="light"] .mobile-privacy-btn,
+html[data-theme="light"] .mobile-theme-btn{
+  background:rgba(255,255,255,.92);
+  color:var(--text);
+}
+
+html[data-theme="light"] .mobile-nav{
+  box-shadow:0 -20px 50px rgba(0,0,0,.08);
+}
+
+html[data-theme="light"] .drawer-overlay{
+  background:rgba(0,0,0,.35);
 }
 
 *{
