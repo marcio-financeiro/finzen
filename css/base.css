@@ -41,28 +41,30 @@
   --hover-overlay:rgba(255,255,255,.04);
 }
 
-/* ── Tema claro ── */
+/* ── Tema claro (Slate Fintech) ── */
 html[data-theme="light"]{
-  --bg:#cdd3eb;
-  --app-bg:#cdd3eb;
+  --bg:#F2F5F9;
+  --app-bg:#F2F5F9;
 
-  --surface:#dce2f5;
-  --surface-2:#d3d9ee;
-  --surface-3:#c8cfe6;
+  --surface:#FFFFFF;
+  --surface-2:#F7F9FC;
+  --surface-3:#ECEFF4;
 
-  --border:#b0b8d4;
+  --border:#DEE3EA;
 
+  --accent:#C07408;
+  --warning:#C07408;
   --accent-dim:rgba(245,158,11,0.15);
   --success-dim:rgba(16,185,129,0.15);
   --danger-dim:rgba(239,68,68,0.15);
   --warning-dim:rgba(245,158,11,0.15);
 
-  --text:#1a1b2e;
-  --muted:#6b6e87;
+  --text:#11151C;
+  --muted:#677183;
 
   --shadow:0 24px 70px rgba(0,0,0,.10);
 
-  --input-color:#1a1b2e;
+  --input-color:#11151C;
   --hover-overlay:rgba(0,0,0,.04);
 }
 
