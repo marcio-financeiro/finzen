@@ -18,8 +18,7 @@ export default async function handler(req, res) {
   const tickers = (tickersRaw || '').split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
   const resultado = {};
 
-  // Token brapi via variável de ambiente (nunca exposto no código)
-  const BRAPI_TOKEN = process.env.BRAPI_TOKEN || 'anonymous';
+  const BRAPI_TOKEN = process.env.BRAPI_TOKEN || 'bGZu7dGPyW94PcfXVCiA7t';
 
   // ── Dólar ─────────────────────────────────────────────────────────────────
   if (dolar === 'true') {
