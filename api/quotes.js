@@ -40,24 +40,32 @@ export default async function handler(req, res) {
   const tickersBR  = tickers.filter(t => /\d/.test(t));
   const tickersEUA = tickers.filter(t => /^[A-Z]{1,5}$/.test(t));
 
-  // ── Cotações BR — brapi.dev ───────────────────────────────────────────────
+  // ── Cotações BR — brapi.dev (1 ativo por req no plano free → paralelo) ────
   if (tickersBR.length) {
-    try {
-      const lista = [...new Set(tickersBR)].join(',');
-      const params = fundamental === 'true' ? '&fundamental=true' : '';
-      const r = await fetch(
-        `https://brapi.dev/api/quote/${lista}?token=${BRAPI_TOKEN}${params}`,
-        { headers: { 'User-Agent': 'FinZen/1.0' } }
-      );
-      if (r.ok) {
+    const fundParams = fundamental === 'true' ? '&fundamental=true' : '';
+    const fetchBR = async (ticker) => {
+      try {
+        const r = await fetch(
+          `https://brapi.dev/api/quote/${ticker}?token=${BRAPI_TOKEN}${fundParams}`,
+          { headers: { 'User-Agent': 'FinZen/1.0' } }
+        );
+        if (!r.ok) return null;
         const j = await r.json();
-        (j.results || []).forEach(i => {
-          if (i.symbol && i.regularMarketPrice) {
-            resultado[i.symbol.toUpperCase()] = parseFloat(i.regularMarketPrice);
-          }
-        });
+        return j.results?.[0] || null;
+      } catch (_) { return null; }
+    };
+
+    const resBR = await Promise.allSettled(
+      [...new Set(tickersBR)].map(t => fetchBR(t))
+    );
+    resBR.forEach(r => {
+      if (r.status === 'fulfilled' && r.value) {
+        const i = r.value;
+        if (i.symbol && i.regularMarketPrice) {
+          resultado[i.symbol.toUpperCase()] = parseFloat(i.regularMarketPrice);
+        }
       }
-    } catch (_) {}
+    });
   }
 
   // ── Cotações EUA — Yahoo Finance (paralelo, com timeout e fallback query2) ─
