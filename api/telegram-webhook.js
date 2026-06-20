@@ -123,8 +123,16 @@ Comando: "${texto}"`;
   });
 
   const data = await res.json();
-  const raw  = data.choices?.[0]?.message?.content?.trim() || '{}';
-  return JSON.parse(raw);
+
+  // Groq retornou erro de API
+  if (data.error) throw new Error('Groq: ' + (data.error.message || JSON.stringify(data.error)));
+
+  const content = data.choices?.[0]?.message?.content?.trim() || '';
+  if (!content) throw new Error('Groq retornou resposta vazia');
+
+  // Extrair JSON mesmo se vier dentro de ```json ... ```
+  const match = content.match(/\{[\s\S]*\}/);
+  return match ? JSON.parse(match[0]) : {};
 }
 
 // ── Utilitários ───────────────────────────────────────────────────────────────
@@ -181,8 +189,8 @@ async function execResumo() {
 }
 
 async function execLancar(tipo, valor, descricao, nomeConta, todasContas) {
-  // Buscar conta por nome (ignora acentos e maiúsculas)
-  const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  // Buscar conta por nome (ignora acentos, maiúsculas e @)
+  const norm = s => (s || '').replace(/^@/, '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   const conta = todasContas.find(c => norm(c.nome) === norm(nomeConta))
              || todasContas.find(c => norm(c.nome).includes(norm(nomeConta)))
              || todasContas.find(c => c.sort_order >= 1)
@@ -224,11 +232,19 @@ async function execAjuda() {
 
 // ── Processador principal ────────────────────────────────────────────────────
 async function processar(texto) {
-  // Carregar contas (necessário para Claude e para lançamentos)
+  const t = texto.toLowerCase().trim();
+
+  // Comandos diretos — sem precisar de IA
+  if (t === 'saldo' || t === 'quanto tenho' || t === 'contas')  return execSaldo();
+  if (t === 'extrato' || t === 'historico' || t === 'histórico') return execExtrato();
+  if (t === 'resumo' || t === 'resumo do mes' || t === 'resumo do mês') return execResumo();
+  if (t === 'ajuda' || t === 'help' || t === '/start' || t === '/help') return execAjuda();
+
+  // Carregar contas para IA e para lançamentos
   const contas = await sbGet('accounts', 'active=eq.true&order=sort_order.asc,nome.asc');
   const contasValidas = Array.isArray(contas) ? contas : [];
 
-  // Interpretar com Claude
+  // Interpretar com Groq
   const acao = await interpretarComClaude(texto, contasValidas);
 
   switch (acao.acao) {
