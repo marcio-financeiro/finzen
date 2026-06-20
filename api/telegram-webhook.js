@@ -425,7 +425,7 @@ async function execLancarCartao(valor, descricao, nomeCartao, categoriaNome, dat
       user_id: USER_ID, card_id: cartao.id,
       descricao: desc, valor_total: valor,
       parcelas: nParcelas, parcela_atual: i + 1, valor_parcela: valorParcela,
-      data_compra: dataStr, fatura_referencia: fRef, status: 'pendente',
+      data_compra: dataStr, fatura_referencia: fRef, status: 'aberta',
     };
     if (categoria) payload.category_id = categoria.id;
     await sbPost('card_transactions', payload);

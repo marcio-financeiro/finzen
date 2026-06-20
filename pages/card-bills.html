@@ -180,6 +180,36 @@
   </main>
 </div>
 
+<!-- Modal editar lançamento de cartão -->
+<div id="modalEditarItem" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:420px">
+    <h3 style="margin:0 0 16px;font-size:1rem">Editar lançamento</h3>
+    <div class="form-group">
+      <label>Descrição</label>
+      <input type="text" id="editDescricao" class="form-control">
+    </div>
+    <div class="form-group">
+      <label>Valor da parcela (R$)</label>
+      <input type="number" id="editValor" step="0.01" min="0" class="form-control">
+    </div>
+    <div class="form-group">
+      <label>Categoria</label>
+      <select id="editCategoria" class="form-control">
+        <option value="">Sem categoria</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Data da compra</label>
+      <input type="date" id="editDataCompra" class="form-control">
+    </div>
+    <div id="editMensagem" class="message" style="margin-top:8px"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button type="button" class="btn btn-primary" onclick="salvarEdicaoItem()">Salvar</button>
+      <button type="button" class="btn" onclick="fecharModalItem()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <script src="../js/version.js"></script>
 <script type="module" src="../js/navigation.js"></script>
 <script type="module" src="../js/cardBills.js"></script>
