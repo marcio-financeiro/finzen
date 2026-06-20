@@ -43,12 +43,27 @@ document.querySelectorAll('.inv-tab').forEach(btn => {
     if(btn.dataset.tab === 'dividendos') carregarDividendos();
     if(btn.dataset.tab === 'balancear')  renderizarBalancear();
     if(btn.dataset.tab === 'aportar')    carregarTransacoes();
+    if(btn.dataset.tab === 'comite')     restaurarAnalise();
   });
 });
 
 // ─────────────────────────────────────────────
 // COMITÊ DE INVESTIMENTOS
 // ─────────────────────────────────────────────
+function restaurarAnalise() {
+  const msgEl = el('comiteMensagem');
+  const resEl = el('comiteResultado');
+  if (resEl.innerHTML) return; // já tem conteúdo na sessão atual
+
+  try {
+    const salvo = JSON.parse(localStorage.getItem('finzen_comite_analise') || 'null');
+    if (!salvo) return;
+    const quando = new Date(salvo.ts).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    msgEl.className = 'message info';
+    msgEl.innerText = `Última análise: ${quando} · ${salvo.ativos} ativos — clique em "Gerar análise" para atualizar`;
+    resEl.innerHTML = salvo.html;
+  } catch (_) {}
+}
 function montarPayloadCarteira() {
   const patrimonio_total = somaSegura(ativos.map(a => calcBRL(a, calcAtual(a))));
   const total_brl_brl    = somaSegura(ativos.filter(a => (a.moeda||'BRL') === 'BRL').map(a => calcAtual(a)));
@@ -199,7 +214,14 @@ async function gerarAnaliseComite() {
     msgEl.className = 'message success';
     msgEl.innerText = `Análise gerada em ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} · ${ativos.length} ativos`;
 
-    resEl.innerHTML = `<div class="comite-output">${mdParaHtml(analise)}</div>`;
+    const htmlAnalise = `<div class="comite-output">${mdParaHtml(analise)}</div>`;
+    resEl.innerHTML = htmlAnalise;
+
+    localStorage.setItem('finzen_comite_analise', JSON.stringify({
+      html: htmlAnalise,
+      ts: Date.now(),
+      ativos: ativos.length,
+    }));
 
   } catch (e) {
     msgEl.className = 'message danger';
