@@ -63,9 +63,9 @@ async function cmdAjuda() {
     `🤖 <b>FinZen · Assessor</b>\n\n` +
     `<b>Lançamentos:</b>\n` +
     `  <code>despesa 50 café</code>\n` +
-    `  <code>receita 1000 salário</code>\n` +
-    `  <code>d 50 café</code>  (atalho)\n` +
-    `  <code>r 1000 salário</code>  (atalho)\n\n` +
+    `  <code>despesa 50 café @nubank</code>\n` +
+    `  <code>d 50 café @itaú</code>  (atalho)\n` +
+    `  <code>r 1000 salário @nubank</code>  (atalho)\n\n` +
     `<b>Consultas:</b>\n` +
     `  <code>saldo</code> — saldos das contas\n` +
     `  <code>extrato</code> — últimas 10 movimentações\n` +
@@ -100,15 +100,17 @@ async function cmdExtrato() {
 }
 
 async function cmdResumo() {
-  const agora  = new Date();
-  const mes    = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`;
-  const inicio = `${mes}-01`;
-  const fim    = `${mes}-31`;
+  const agora    = new Date();
+  const ano      = agora.getFullYear();
+  const mesNum   = agora.getMonth() + 1;
+  const mesLabel = `${ano}-${String(mesNum).padStart(2, '0')}`;
+  const inicio   = `${mesLabel}-01`;
+  // Primeiro dia do próximo mês como limite superior (exclusive)
+  const proxMes  = mesNum === 12 ? 1 : mesNum + 1;
+  const proxAno  = mesNum === 12 ? ano + 1 : ano;
+  const proximo  = `${proxAno}-${String(proxMes).padStart(2, '0')}-01`;
 
-  const txs = await sbGet(
-    'transactions',
-    `date=gte.${inicio}&date=lte.${fim}&select=type,amount`
-  );
+  const txs = await sbGet('transactions', `date=gte.${inicio}&date=lt.${proximo}`);
   if (!Array.isArray(txs)) { await enviar('Erro ao consultar resumo.'); return; }
 
   const receitas = txs.filter(t => t.type === 'receita').reduce((s, t) => s + Number(t.amount || 0), 0);
@@ -116,7 +118,7 @@ async function cmdResumo() {
   const saldo    = receitas - despesas;
 
   await enviar(
-    `📊 <b>Resumo — ${mes}</b>\n\n` +
+    `📊 <b>Resumo — ${mesLabel}</b>\n\n` +
     `💰 Receitas: <b>R$ ${fmt(receitas)}</b>\n` +
     `💸 Despesas: <b>R$ ${fmt(despesas)}</b>\n` +
     `${saldo >= 0 ? '✅' : '🔴'} Resultado: <b>R$ ${fmt(saldo)}</b>`
@@ -124,32 +126,52 @@ async function cmdResumo() {
 }
 
 async function cmdLancar(tipo, textoOriginal) {
-  // "despesa 50.50 café da manhã" ou "d 50 café"
-  const partes  = textoOriginal.trim().split(/\s+/);
+  // Sintaxe: "despesa 50 café @nubank" ou "d 50 café" (usa primeira conta)
+  const partes = textoOriginal.trim().split(/\s+/);
   partes.shift(); // remove "despesa" | "d" | "receita" | "r"
 
   const valor = parseFloat((partes.shift() || '').replace(',', '.'));
   if (!valor || valor <= 0 || isNaN(valor)) {
-    await enviar(`❌ Valor inválido.\nEx: <code>${tipo} 50 descrição</code>`);
+    await enviar(`❌ Valor inválido.\nEx: <code>${tipo} 50 descrição @conta</code>`);
     return;
   }
 
-  const descricao = partes.join(' ').trim() || (tipo === 'despesa' ? 'Despesa' : 'Receita');
+  // Separar @conta da descrição (se houver)
+  let contaBusca = null;
+  const filtrado = partes.filter(p => {
+    if (p.startsWith('@')) { contaBusca = p.slice(1).toLowerCase(); return false; }
+    return true;
+  });
+  const descricao = filtrado.join(' ').trim() || (tipo === 'despesa' ? 'Despesa' : 'Receita');
 
-  const contas = await sbGet('accounts', 'active=eq.true&order=sort_order.asc&limit=1');
-  if (!Array.isArray(contas) || !contas.length) {
+  // Buscar contas ativas
+  const todasContas = await sbGet('accounts', 'active=eq.true&order=sort_order.asc,nome.asc');
+  if (!Array.isArray(todasContas) || !todasContas.length) {
     await enviar('Nenhuma conta ativa encontrada.'); return;
   }
-  const conta = contas[0];
+
+  let conta = null;
+  if (contaBusca) {
+    conta = todasContas.find(c => c.nome.toLowerCase().includes(contaBusca));
+    if (!conta) {
+      const lista = todasContas.map(c => `• @${c.nome.split(' ')[0].toLowerCase()} → ${c.nome}`).join('\n');
+      await enviar(`❌ Conta "@${contaBusca}" não encontrada.\n\nContas disponíveis:\n${lista}`);
+      return;
+    }
+  } else {
+    // Sem @conta: usa a segunda conta ativa (sort_order 1) como padrão mais comum
+    // Se só tiver uma, usa ela
+    conta = todasContas.find(c => c.sort_order >= 1) || todasContas[0];
+  }
 
   await sbPost('transactions', {
-    user_id:    USER_ID,
-    account_id: conta.id,
-    type:       tipo,
-    amount:     valor,
-    description:descricao,
-    date:       hoje(),
-    status:     'pago',
+    user_id:     USER_ID,
+    account_id:  conta.id,
+    type:        tipo,
+    amount:      valor,
+    description: descricao,
+    date:        hoje(),
+    status:      'pago',
   });
 
   const novoSaldo = Number(conta.saldo_atual || 0) + (tipo === 'receita' ? valor : -valor);
