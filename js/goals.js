@@ -3,6 +3,7 @@ import { navigate }         from './router.js';
 import { formatCurrency }   from './utils.js';
 import { confirmarExclusao} from './confirmModal.js';
 import { registrarAcao }    from './eventBus.js';
+import { notificarMetaAtingida } from './telegram.js';
 
 const { data: sd } = await supabase.auth.getSession();
 if(!sd.session){ navigate('../login.html'); }
@@ -185,11 +186,15 @@ registrarAcao('confirmarAporte', async (el) => {
   const valor = parseFloat((document.getElementById('inputAporte')?.value||'0').replace(',','.'));
   if(isNaN(valor) || valor <= 0){ alert('Informe um valor válido.'); return; }
 
-  const { data: meta } = await supabase.from('goals').select('valor_atual').eq('id',id).single();
+  const { data: meta } = await supabase.from('goals').select('valor_atual,valor_alvo').eq('id',id).single();
   if(!meta) return;
 
   const novoValor = Number(meta.valor_atual||0) + valor;
   await supabase.from('goals').update({ valor_atual: novoValor }).eq('id',id).eq('user_id',user.id);
+
+  if(novoValor >= Number(meta.valor_alvo||0) && meta.valor_alvo > 0){
+    notificarMetaAtingida({ id, nome, valor: novoValor }).catch(()=>{});
+  }
 
   document.getElementById('modalAporte')?.remove();
   msg(`Aporte de ${fmt(valor)} registrado para "${nome}"!`, 'success');

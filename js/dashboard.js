@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient.js';
 import { initAssistantBar } from './assistantBar.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { notificarContasVencendo, notificarFaturaVencendo } from './telegram.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
@@ -228,6 +229,12 @@ function renderAlertas(pendentes, cartoes, parcelasMes){
 
   // Ordenar por urgência
   alertas.sort((a, b) => a.dias - b.dias);
+
+  // Notificações Telegram (fire-and-forget)
+  const alertasDespesas = alertas.filter(a => a.tipo === 'despesa');
+  const alertasFaturas  = alertas.filter(a => a.tipo === 'fatura');
+  if(alertasDespesas.length) notificarContasVencendo(alertasDespesas).catch(()=>{});
+  alertasFaturas.forEach(a => notificarFaturaVencendo({ cartao:a.titulo.replace('Fatura ',''), valor:a.valor, dias:a.dias }).catch(()=>{}));
 
   if(!alertas.length){
     el('blocoAlertas').innerHTML = '<p class="muted" style="font-size:13px">✅ Nenhum vencimento nos próximos 7 dias.</p>';

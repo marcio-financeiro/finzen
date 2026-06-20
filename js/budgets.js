@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { confirmarExclusao } from './confirmModal.js';
+import { notificarOrcamentoEstourado } from './telegram.js';
 
 const { data: sd } = await supabase.auth.getSession();
 if(!sd.session){ navigate('../login.html'); }
@@ -42,6 +43,18 @@ async function carregar(){
 
   renderKpis();
   renderLista();
+
+  // Notificações Telegram para orçamentos estourados
+  orcamentos.forEach(o => {
+    const planejado = Number(o.valor_planejado||0);
+    const gasto     = gastos[o.category_id]||0;
+    if(planejado > 0 && gasto > planejado){
+      notificarOrcamentoEstourado({
+        categoria: o.categories?.nome || 'Categoria',
+        gasto, limite: planejado, mes: ref,
+      }).catch(()=>{});
+    }
+  });
 }
 
 function renderKpis(){

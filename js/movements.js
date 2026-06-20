@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { notificarTransacao } from './telegram.js';
 
 // ─────────────────────────────────────────────
 // ELEMENTOS DO DOM
@@ -483,6 +484,8 @@ async function saveAccountTransaction(description, amount, date, notes){
   }
 
   showMessage(isRecurring ? 'Movimentação salva como recorrente.' : 'Movimentação salva.','success');
+  const contaNome = (accounts||[]).find(a=>a.id===accountId)?.nome || 'Conta';
+  notificarTransacao({ tipo:type, descricao:description, valor:amount, conta:contaNome }).catch(()=>{});
   clearForm();
   await refreshAll();
 }
