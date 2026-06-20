@@ -43,14 +43,14 @@
 
 /* ── Tema claro ── */
 html[data-theme="light"]{
-  --bg:#e4e7ef;
-  --app-bg:#e4e7ef;
+  --bg:#cdd3eb;
+  --app-bg:#cdd3eb;
 
-  --surface:#eef0f7;
-  --surface-2:#e6e9f2;
-  --surface-3:#dde1ec;
+  --surface:#dce2f5;
+  --surface-2:#d3d9ee;
+  --surface-3:#c8cfe6;
 
-  --border:#cdd2e0;
+  --border:#b0b8d4;
 
   --accent-dim:rgba(245,158,11,0.15);
   --success-dim:rgba(16,185,129,0.15);
