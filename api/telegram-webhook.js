@@ -47,18 +47,19 @@ async function enviar(texto) {
   });
 }
 
-async function enviarBotoesContas(tipo, valor, descricao, contas) {
+// Callback data: tx|{t}|{valor}|{desc12}|{cat10}|{nomeConta}
+async function enviarBotoesContas(tipo, valor, descricao, categoriaNome, contas) {
   const emoji  = tipo === 'receita' ? '💰' : '💸';
-  const desc15 = descricao.slice(0, 15);
+  const desc12 = descricao.slice(0, 12);
+  const cat10  = (categoriaNome || '').slice(0, 10);
 
-  // Botões em linhas de 2
   const linhas = [];
   for (let i = 0; i < contas.length; i += 2) {
     const linha = [];
     for (let j = i; j < Math.min(i + 2, contas.length); j++) {
       linha.push({
         text: contas[j].nome,
-        callback_data: `tx|${tipo[0]}|${valor}|${desc15}|${contas[j].nome}`,
+        callback_data: `tx|${tipo[0]}|${valor}|${desc12}|${cat10}|${contas[j].nome}`,
       });
     }
     linhas.push(linha);
@@ -69,7 +70,7 @@ async function enviarBotoesContas(tipo, valor, descricao, contas) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: CHAT_ID,
-      text: `${emoji} <b>R$ ${fmt(valor)} — ${descricao}</b>\n\nQual conta?`,
+      text: `${emoji} <b>R$ ${fmt(valor)} — ${descricao}</b>${categoriaNome ? `\n🏷️ ${categoriaNome}` : ''}\n\nQual conta?`,
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: linhas },
     }),
@@ -111,17 +112,22 @@ async function transcreverVoz(fileId) {
   return text || '';
 }
 
-// ── Groq Llama — interpretação de linguagem natural (gratuito) ──────────────
-async function interpretarComGroq(texto, contas) {
+// ── Groq Llama — interpretação + categorização ───────────────────────────────
+async function interpretarComGroq(texto, contas, categorias) {
   const nomesContas = contas.map(c => c.nome).join(', ');
+
+  const catsDespesa  = categorias.filter(c => c.tipo === 'despesa').map(c => c.nome).join(', ');
+  const catsReceita  = categorias.filter(c => c.tipo === 'receita').map(c => c.nome).join(', ');
 
   const prompt = `Você é o assistente financeiro do FinZen. Interprete o comando em português e retorne APENAS um JSON válido, sem markdown nem texto extra.
 
 Contas disponíveis: ${nomesContas}
+Categorias de despesa: ${catsDespesa}
+Categorias de receita: ${catsReceita}
 
 Formatos de resposta:
-{"acao":"lancar","tipo":"despesa","valor":NUMBER,"descricao":"STRING","conta":"NOME_EXATO_OU_NULL"}
-{"acao":"lancar","tipo":"receita","valor":NUMBER,"descricao":"STRING","conta":"NOME_EXATO_OU_NULL"}
+{"acao":"lancar","tipo":"despesa","valor":NUMBER,"descricao":"STRING","conta":"NOME_EXATO_OU_NULL","categoria":"NOME_EXATO_OU_NULL"}
+{"acao":"lancar","tipo":"receita","valor":NUMBER,"descricao":"STRING","conta":"NOME_EXATO_OU_NULL","categoria":"NOME_EXATO_OU_NULL"}
 {"acao":"saldo"}
 {"acao":"extrato"}
 {"acao":"resumo"}
@@ -129,13 +135,19 @@ Formatos de resposta:
 {"acao":"desconhecido","mensagem":"STRING"}
 
 Regras:
-- "conta": use o nome exato se o usuário mencionar uma conta; use null se NÃO mencionar
+- "conta": nome exato se o usuário mencionar; null se NÃO mencionar
+- "categoria": escolha a categoria mais adequada com base na descrição; null se não souber
 - Valores por extenso: "cinquenta"=50, "cem"=100, "duzentos"=200, "mil"=1000
 - despesa: gastei, paguei, comprei, saiu, débito
 - receita: recebi, entrou, salário, renda, crédito
-- saldo: saldo, quanto tenho, minhas contas
-- extrato: extrato, últimas, histórico, movimentações
-- resumo: resumo, mês, resultado
+
+Exemplos de categorização:
+- restaurante, almoço, jantar, café, mercado → Alimentação
+- uber, táxi, gasolina, posto → Transporte
+- farmácia, médico, plano de saúde → Saúde
+- netflix, spotify, amazon → Assinaturas
+- salário, holerite → Salário
+- freelance, bico → Renda Extra
 
 Comando: "${texto}"`;
 
@@ -170,6 +182,17 @@ function fmt(v) {
 
 function hoje() {
   return new Date().toISOString().split('T')[0];
+}
+
+function normStr(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/^@/, '').trim();
+}
+
+function buscarCategoria(nome, lista) {
+  if (!nome || nome === 'null') return null;
+  return lista.find(c => normStr(c.nome) === normStr(nome))
+      || lista.find(c => normStr(c.nome).includes(normStr(nome)))
+      || null;
 }
 
 // ── Executores de ação ────────────────────────────────────────────────────────
@@ -216,18 +239,24 @@ async function execResumo() {
   );
 }
 
-async function execLancar(tipo, valor, descricao, nomeConta, todasContas) {
-  const norm = s => (s || '').replace(/^@/, '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  const conta = todasContas.find(c => norm(c.nome) === norm(nomeConta))
-             || todasContas.find(c => norm(c.nome).includes(norm(nomeConta)))
+async function execLancar(tipo, valor, descricao, nomeConta, todasContas, categoriaNome, todasCategorias) {
+  // Resolver conta
+  const conta = todasContas.find(c => normStr(c.nome) === normStr(nomeConta))
+             || todasContas.find(c => normStr(c.nome).includes(normStr(nomeConta)))
              || todasContas.find(c => c.sort_order >= 1)
              || todasContas[0];
 
-  await sbPost('transactions', {
+  // Resolver categoria
+  const categoria = buscarCategoria(categoriaNome, todasCategorias);
+
+  const payload = {
     user_id: USER_ID, account_id: conta.id,
     type: tipo, amount: valor, description: descricao,
     date: hoje(), status: 'pago',
-  });
+  };
+  if (categoria) payload.category_id = categoria.id;
+
+  await sbPost('transactions', payload);
 
   const novoSaldo = Number(conta.saldo_atual || 0) + (tipo === 'receita' ? valor : -valor);
   await sbPatch('accounts', conta.id, { saldo_atual: novoSaldo });
@@ -239,6 +268,7 @@ async function execLancar(tipo, valor, descricao, nomeConta, todasContas) {
     `📝 ${descricao}\n` +
     `💵 R$ ${sinal}${fmt(valor)}\n` +
     `🏦 ${conta.nome}\n` +
+    (categoria ? `🏷️ ${categoria.nome}\n` : '') +
     `💳 Novo saldo: <b>R$ ${fmt(novoSaldo)}</b>`
   );
 }
@@ -264,34 +294,47 @@ async function handleCallback(callbackQuery) {
   const data = callbackQuery.data || '';
   if (!data.startsWith('tx|')) return;
 
-  const partes = data.split('|');
-  const tipoChar  = partes[1];
-  const valor     = parseFloat(partes[2]);
-  const descricao = partes[3];
-  const nomeConta = partes.slice(4).join('|'); // conta pode ter | no nome (improvável mas seguro)
+  // formato: tx|{t}|{valor}|{desc12}|{cat10}|{nomeConta}
+  const partes        = data.split('|');
+  const tipoChar      = partes[1];
+  const valor         = parseFloat(partes[2]);
+  const descricao     = partes[3];
+  const categoriaNome = partes[4];
+  const nomeConta     = partes.slice(5).join('|');
 
   const tipo = tipoChar === 'r' ? 'receita' : 'despesa';
 
-  const contas = await sbGet('accounts', 'active=eq.true&order=sort_order.asc,nome.asc');
-  const contasValidas = Array.isArray(contas) ? contas : [];
+  const [contas, categorias] = await Promise.all([
+    sbGet('accounts',   'active=eq.true&order=sort_order.asc,nome.asc'),
+    sbGet('categories', 'order=nome.asc'),
+  ]);
 
-  await execLancar(tipo, valor, descricao, nomeConta, contasValidas);
+  await execLancar(
+    tipo, valor, descricao, nomeConta,
+    Array.isArray(contas) ? contas : [],
+    categoriaNome,
+    Array.isArray(categorias) ? categorias : []
+  );
 }
 
 // ── Processador principal ────────────────────────────────────────────────────
 async function processar(texto) {
   const t = texto.toLowerCase().trim();
 
-  // Comandos diretos — sem precisar de IA
+  // Comandos diretos — sem IA
   if (t === 'saldo' || t === 'quanto tenho' || t === 'contas')   return execSaldo();
   if (t === 'extrato' || t === 'historico' || t === 'histórico') return execExtrato();
   if (t === 'resumo' || t === 'resumo do mes' || t === 'resumo do mês') return execResumo();
   if (t === 'ajuda' || t === 'help' || t === '/start' || t === '/help') return execAjuda();
 
-  const contas = await sbGet('accounts', 'active=eq.true&order=sort_order.asc,nome.asc');
-  const contasValidas = Array.isArray(contas) ? contas : [];
+  const [contas, categorias] = await Promise.all([
+    sbGet('accounts',   'active=eq.true&order=sort_order.asc,nome.asc'),
+    sbGet('categories', 'order=nome.asc'),
+  ]);
+  const contasValidas     = Array.isArray(contas)     ? contas     : [];
+  const categoriasValidas = Array.isArray(categorias) ? categorias : [];
 
-  const acao = await interpretarComGroq(texto, contasValidas);
+  const acao = await interpretarComGroq(texto, contasValidas, categoriasValidas);
 
   switch (acao.acao) {
     case 'lancar':
@@ -300,10 +343,12 @@ async function processar(texto) {
         return;
       }
       if (!acao.conta || acao.conta === 'null') {
-        // Usuário não especificou conta → mostrar botões
-        await enviarBotoesContas(acao.tipo, acao.valor, acao.descricao || acao.tipo, contasValidas);
+        await enviarBotoesContas(acao.tipo, acao.valor, acao.descricao || acao.tipo, acao.categoria, contasValidas);
       } else {
-        await execLancar(acao.tipo, acao.valor, acao.descricao || acao.tipo, acao.conta, contasValidas);
+        await execLancar(
+          acao.tipo, acao.valor, acao.descricao || acao.tipo, acao.conta,
+          contasValidas, acao.categoria, categoriasValidas
+        );
       }
       break;
     case 'saldo':   await execSaldo();   break;
@@ -330,7 +375,6 @@ export default async function handler(req, res) {
 
   const body = req.body || {};
 
-  // Botão inline pressionado
   if (body.callback_query) {
     const cq = body.callback_query;
     if (String(cq.message?.chat?.id) === String(CHAT_ID)) {
@@ -341,7 +385,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
-  // Mensagem de texto ou voz
   const { message } = body;
   if (!message || String(message.chat?.id) !== String(CHAT_ID)) {
     return res.status(200).json({ ok: true });
