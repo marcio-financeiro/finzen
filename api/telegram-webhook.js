@@ -49,6 +49,10 @@ async function enviar(texto) {
   });
 }
 
+function normalizar(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
 function fmt(v) {
   return Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -152,9 +156,9 @@ async function cmdLancar(tipo, textoOriginal) {
 
   let conta = null;
   if (contaBusca) {
-    conta = todasContas.find(c => c.nome.toLowerCase().includes(contaBusca));
+    conta = todasContas.find(c => normalizar(c.nome).includes(normalizar(contaBusca)));
     if (!conta) {
-      const lista = todasContas.map(c => `• @${c.nome.split(' ')[0].toLowerCase()} → ${c.nome}`).join('\n');
+      const lista = todasContas.map(c => `• @${normalizar(c.nome.split(' ')[0])} → ${c.nome}`).join('\n');
       await enviar(`❌ Conta "@${contaBusca}" não encontrada.\n\nContas disponíveis:\n${lista}`);
       return;
     }
