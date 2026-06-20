@@ -81,27 +81,29 @@ async function enviarBotoesContas(tipo, valor, descricao, categoriaNome, contas)
   });
 }
 
-// Botões de cartões: cc|{t}|{valor}|{desc10}|{cat10}|{data}|{cartao10}
-async function enviarBotoesCartoes(tipo, valor, descricao, categoriaNome, dataCompra, cartoes) {
+// Botões de cartões: cc|{t}|{valor}|{desc10}|{cat10}|{data}|{parcelas}|{cartao10}
+async function enviarBotoesCartoes(tipo, valor, descricao, categoriaNome, dataCompra, parcelas, cartoes) {
   const emoji  = tipo === 'receita' ? '💰' : '💸';
   const data   = dataCompra || 'ndt';
+  const parc   = parcelas || 1;
   const linhas = [];
   for (let i = 0; i < cartoes.length; i += 2) {
     const row = [];
     for (let j = i; j < Math.min(i + 2, cartoes.length); j++) {
       row.push({
         text: '💳 ' + cartoes[j].nome,
-        callback_data: `cc|${tipo[0]}|${valor}|${descricao.slice(0,10)}|${(categoriaNome||'').slice(0,10)}|${data}|${cartoes[j].nome.slice(0,10)}`,
+        callback_data: `cc|${tipo[0]}|${valor}|${descricao.slice(0,10)}|${(categoriaNome||'').slice(0,10)}|${data}|${parc}|${cartoes[j].nome.slice(0,10)}`,
       });
     }
     linhas.push(row);
   }
+  const parcLabel = parc > 1 ? ` · ${parc}x de R$ ${fmt(valor/parc)}` : '';
   await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: CHAT_ID,
-      text: `${emoji} <b>R$ ${fmt(valor)} — ${descricao}</b>${categoriaNome ? `\n🏷️ ${categoriaNome}` : ''}\n\nQual cartão?`,
+      text: `${emoji} <b>R$ ${fmt(valor)} — ${descricao}</b>${parcLabel}${categoriaNome ? `\n🏷️ ${categoriaNome}` : ''}\n\nQual cartão?`,
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: linhas },
     }),
@@ -126,13 +128,13 @@ async function enviarBotoesContasECartoes(tipo, valor, descricao, categoriaNome,
     linhas.push(row);
   }
 
-  // Cartões de crédito
+  // Cartões de crédito (comprovante = sempre 1x)
   for (let i = 0; i < cartoes.length; i += 2) {
     const row = [];
     for (let j = i; j < Math.min(i + 2, cartoes.length); j++) {
       row.push({
         text: '💳 ' + cartoes[j].nome,
-        callback_data: `cc|${tipo[0]}|${valor}|${descricao.slice(0,10)}|${(categoriaNome||'').slice(0,10)}|${data}|${cartoes[j].nome.slice(0,10)}`,
+        callback_data: `cc|${tipo[0]}|${valor}|${descricao.slice(0,10)}|${(categoriaNome||'').slice(0,10)}|${data}|1|${cartoes[j].nome.slice(0,10)}`,
       });
     }
     linhas.push(row);
@@ -240,7 +242,7 @@ Categorias de receita: ${catsReceita}
 Formatos de resposta:
 {"acao":"lancar","tipo":"despesa","valor":NUMBER,"descricao":"STRING","conta":"NOME_OU_NULL","categoria":"NOME_OU_NULL"}
 {"acao":"lancar","tipo":"receita","valor":NUMBER,"descricao":"STRING","conta":"NOME_OU_NULL","categoria":"NOME_OU_NULL"}
-{"acao":"lancar_cartao","tipo":"despesa","valor":NUMBER,"descricao":"STRING","cartao":"NOME_OU_NULL","categoria":"NOME_OU_NULL"}
+{"acao":"lancar_cartao","tipo":"despesa","valor":NUMBER,"descricao":"STRING","cartao":"NOME_OU_NULL","categoria":"NOME_OU_NULL","parcelas":NUMBER}
 {"acao":"saldo"}
 {"acao":"extrato"}
 {"acao":"resumo"}
@@ -250,6 +252,7 @@ Formatos de resposta:
 Regras:
 - Use lancar_cartao quando o usuário disser "cartão", "crédito", ou o nome de um cartão
 - "conta"/"cartao": nome exato se mencionado; null se não especificado
+- "parcelas": número de parcelas se mencionado (ex: "3x", "em 3 vezes", "parcelado em 12"); default 1
 - Valores por extenso: "cinquenta"=50, "cem"=100, "mil"=1000
 - despesa: gastei, paguei, comprei, saiu
 - receita: recebi, entrou, salário, renda
@@ -380,24 +383,36 @@ async function execLancar(tipo, valor, descricao, nomeConta, todasContas, catego
   );
 }
 
-async function execLancarCartao(valor, descricao, nomeCartao, categoriaNome, dataCompra, todosCartoes, todasCategorias) {
+async function execLancarCartao(valor, descricao, nomeCartao, categoriaNome, dataCompra, todosCartoes, todasCategorias, parcelas = 1) {
   const cartao = todosCartoes.find(c => normStr(c.nome) === normStr(nomeCartao))
               || todosCartoes.find(c => normStr(c.nome).includes(normStr(nomeCartao)))
               || todosCartoes[0];
-  const categoria = buscarCategoria(categoriaNome, todasCategorias);
+  const categoria    = buscarCategoria(categoriaNome, todasCategorias);
+  const dataStr      = (dataCompra && dataCompra !== 'ndt') ? dataCompra : hoje();
+  const nParcelas    = Math.max(1, parseInt(parcelas) || 1);
+  const valorParcela = Math.round((valor / nParcelas) * 100) / 100;
+  const faturaBase   = calcFaturaRef(dataStr, cartao.fechamento_dia);
+  const [fatAno, fatMes] = faturaBase.split('-').map(Number);
 
-  const dataStr    = (dataCompra && dataCompra !== 'ndt') ? dataCompra : hoje();
-  const faturaRef  = calcFaturaRef(dataStr, cartao.fechamento_dia);
+  // Cria uma linha por parcela com a fatura correta de cada mês
+  for (let i = 0; i < nParcelas; i++) {
+    const ref  = new Date(fatAno, fatMes - 1 + i, 1);
+    const fRef = `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}`;
+    const desc = nParcelas > 1 ? `${descricao} (${i + 1}/${nParcelas})` : descricao;
+    const payload = {
+      user_id: USER_ID, card_id: cartao.id,
+      descricao: desc, valor_total: valor,
+      parcelas: nParcelas, parcela_atual: i + 1, valor_parcela: valorParcela,
+      data_compra: dataStr, fatura_referencia: fRef, status: 'pendente',
+    };
+    if (categoria) payload.category_id = categoria.id;
+    await sbPost('card_transactions', payload);
+  }
 
-  const payload = {
-    user_id: USER_ID, card_id: cartao.id,
-    descricao, valor_total: valor,
-    parcelas: 1, parcela_atual: 1, valor_parcela: valor,
-    data_compra: dataStr, fatura_referencia: faturaRef, status: 'pendente',
-  };
-  if (categoria) payload.category_id = categoria.id;
-
-  await sbPost('card_transactions', payload);
+  const parcLabel = nParcelas > 1 ? `🔄 ${nParcelas}x de R$ ${fmt(valorParcela)}\n` : '';
+  const fatLabel  = nParcelas > 1
+    ? `📅 Faturas: ${faturaBase} → ${fatAno}-${String((fatMes - 1 + nParcelas - 1) % 12 + 1).padStart(2,'0')}`
+    : `📅 Fatura: ${faturaBase}`;
 
   await enviar(
     `💳 <b>Lançado no cartão!</b>\n\n` +
@@ -405,7 +420,8 @@ async function execLancarCartao(valor, descricao, nomeCartao, categoriaNome, dat
     `💵 R$ -${fmt(valor)}\n` +
     `💳 ${cartao.nome}\n` +
     (categoria ? `🏷️ ${categoria.nome}\n` : '') +
-    `📅 Fatura: ${faturaRef}`
+    parcLabel +
+    fatLabel
   );
 }
 
@@ -443,11 +459,13 @@ async function handleCallback(cq) {
     await execLancar(tipo, valor, p[3], p[5], ca, p[4], ct);
 
   } else if (data.startsWith('cc|')) {
-    // cc|{t}|{valor}|{desc10}|{cat10}|{data}|{cartao10}
+    // cc|{t}|{valor}|{desc10}|{cat10}|{data}|{parcelas}|{cartao10}
     const p = data.split('|');
-    const valor = parseFloat(p[2]);
+    const valor      = parseFloat(p[2]);
     const dataCompra = p[5] !== 'ndt' ? p[5] : null;
-    await execLancarCartao(valor, p[3], p[6], p[4], dataCompra, cr, ct);
+    const parcelas   = parseInt(p[6]) || 1;
+    const nomeCartao = p[7];
+    await execLancarCartao(valor, p[3], nomeCartao, p[4], dataCompra, cr, ct, parcelas);
   }
 }
 
@@ -484,17 +502,19 @@ async function processar(texto) {
       }
       break;
 
-    case 'lancar_cartao':
+    case 'lancar_cartao': {
       if (!acao.valor || acao.valor <= 0) {
         await enviar('❌ Não consegui identificar o valor.');
         return;
       }
+      const parcelas = acao.parcelas || 1;
       if (!acao.cartao || acao.cartao === 'null') {
-        await enviarBotoesCartoes('despesa', acao.valor, acao.descricao || 'Compra', acao.categoria, null, cr);
+        await enviarBotoesCartoes('despesa', acao.valor, acao.descricao || 'Compra', acao.categoria, null, parcelas, cr);
       } else {
-        await execLancarCartao(acao.valor, acao.descricao || 'Compra', acao.cartao, acao.categoria, null, cr, ct);
+        await execLancarCartao(acao.valor, acao.descricao || 'Compra', acao.cartao, acao.categoria, null, cr, ct, parcelas);
       }
       break;
+    }
 
     case 'saldo':   await execSaldo();   break;
     case 'extrato': await execExtrato(); break;
