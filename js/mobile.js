@@ -8,6 +8,7 @@ import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
 import { registrarAcao }  from './eventBus.js';
+import { notificarTransacao } from './telegram.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -532,6 +533,8 @@ registrarAcao('salvarLancamento', async () => {
         await supabase.from('accounts').update({saldo_atual:novoSaldo}).eq('id',contaId);
         conta.saldo_atual = novoSaldo;
       }
+
+      notificarTransacao({ tipo:tipoAtual, descricao:desc, valor, conta:conta?.nome||'Conta' }).catch(()=>{});
     }
 
     fecharModal();

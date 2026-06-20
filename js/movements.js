@@ -1110,17 +1110,19 @@ async function loadMovements(){
               <td class="money ${r.sign==='+'?'positive':r.sign==='-'?'negative':''}">
                 ${r.sign}${formatCurrency(r.value,'BRL')}
               </td>
-              <td>
+              <td style="white-space:nowrap">
                 ${r.source==='transaction' ? `
                   ${r.status==='pendente' ? `
                   <button type="button" class="btn btn-primary compact"
                     onclick="window.pagarMovimentoFinZen('${r.id}')"
-                    style="background:#22c55e;border-color:#22c55e">✓ Pagar</button>
+                    style="background:#22c55e;border-color:#22c55e;padding:6px 8px" title="Marcar como pago">✓</button>
                   ` : ''}
                   <button type="button" class="btn btn-secondary compact"
-                    onclick="window.editMovementFinZen('${r.id}')">Editar</button>
+                    onclick="window.editMovementFinZen('${r.id}')"
+                    style="padding:6px 8px" title="Editar">✏️</button>
                   <button type="button" class="btn btn-danger compact"
-                    onclick="window.deleteMovementFinZen('${r.id}')">Excluir</button>
+                    onclick="window.deleteMovementFinZen('${r.id}')"
+                    style="padding:6px 8px" title="Excluir">🗑️</button>
                 ` : '<span class="muted">-</span>'}
               </td>
             </tr>
