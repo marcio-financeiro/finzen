@@ -211,6 +211,7 @@ async function analisarComprovante(fileId) {
 - valor: valor total da transação
 - descricao: nome do estabelecimento (curto, máx 20 chars)
 - data: data da transação em YYYY-MM-DD, null se não visível
+  IMPORTANTE: hoje é ${hoje()}. Se o comprovante mostrar uma data com ano anterior ao atual, use o ano atual (${new Date().getFullYear()}).
 - categoria: Alimentação | Transporte | Saúde | Lazer | Assinaturas | Moradia | Educação | Roupa | Presentes | Cuidados Pessoais | null`,
           },
         ],
