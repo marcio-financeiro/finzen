@@ -47,7 +47,7 @@ async function enviar(texto) {
   });
 }
 
-// ── Whisper — transcrição de voz ─────────────────────────────────────────────
+// ── Groq Whisper — transcrição de voz ───────────────────────────────────────
 async function transcreverVoz(fileId) {
   // 1. Pegar URL do arquivo no Telegram
   const infoRes = await fetch(
@@ -60,15 +60,15 @@ async function transcreverVoz(fileId) {
   const audioRes  = await fetch(audioUrl);
   const audioBlob = await audioRes.blob();
 
-  // 3. Enviar ao Whisper
+  // 3. Enviar ao Groq Whisper (gratuito)
   const form = new FormData();
   form.append('file', audioBlob, 'voice.ogg');
-  form.append('model', 'whisper-1');
+  form.append('model', 'whisper-large-v3');
   form.append('language', 'pt');
 
-  const whisperRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+  const whisperRes = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+    headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
     body: form,
   });
 
@@ -77,7 +77,7 @@ async function transcreverVoz(fileId) {
   return text || '';
 }
 
-// ── Claude Haiku — interpretação de linguagem natural ────────────────────────
+// ── Groq Llama — interpretação de linguagem natural (gratuito) ──────────────
 async function interpretarComClaude(texto, contas) {
   const nomesContas = contas.map(c => c.nome).join(', ');
   const contaPadrao = contas.find(c => c.sort_order >= 1)?.nome || contas[0]?.nome || 'Itaú';
@@ -108,22 +108,22 @@ Regras:
 
 Comando: "${texto}"`;
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
+      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5',
+      model: 'llama3-70b-8192',
       max_tokens: 200,
+      temperature: 0.1,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
 
   const data = await res.json();
-  const raw  = data.content?.[0]?.text?.trim() || '{}';
+  const raw  = data.choices?.[0]?.message?.content?.trim() || '{}';
   return JSON.parse(raw);
 }
 
