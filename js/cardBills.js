@@ -93,7 +93,7 @@ async function carregarFaturas() {
       id, card_id, category_id, valor_parcela, valor_total, fatura_referencia,
       status, descricao, parcela_atual, parcelas, data_compra,
       credit_cards:card_id(id, nome, banco),
-      categories:category_id(nome, icone)
+      categories:category_id(nome, icon)
     `)
     .eq('user_id', user.id)
     // ── FIX: inclui 'pendente' (status salvo pelo bot Telegram) e 'aberta'
@@ -198,7 +198,7 @@ function billCardHtml(fatura, key, isAtual) {
   ).join('');
 
   const itensHtml = fatura.itens.map(item => {
-    const cat = item.categories ? `${item.categories.icone || ''} ${item.categories.nome}` : '-';
+    const cat = item.categories ? `${item.categories.icon || ''} ${item.categories.nome}` : '-';
     return `
       <tr>
         <td>${item.descricao}</td>
