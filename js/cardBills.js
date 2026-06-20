@@ -197,10 +197,18 @@ function billCardHtml(fatura, key, isAtual) {
     `<option value="${c.id}">${c.nome}${c.bank ? ' - ' + c.bank : ''} (${formatCurrency(c.saldo_atual || 0, c.currency || 'BRL')})</option>`
   ).join('');
 
-  const itensHtml = fatura.itens.map(item => {
-    const cat = item.categories ? `${item.categories.icon || ''} ${item.categories.nome}` : '-';
+  const itensOrdenados = [...fatura.itens].sort((a, b) =>
+    (a.data_compra || '').localeCompare(b.data_compra || '')
+  );
+
+  const itensHtml = itensOrdenados.map(item => {
+    const cat  = item.categories ? `${item.categories.icon || ''} ${item.categories.nome}` : '-';
+    const data = item.data_compra
+      ? item.data_compra.split('-').reverse().join('/')
+      : '-';
     return `
       <tr>
+        <td style="white-space:nowrap">${data}</td>
         <td>${item.descricao}</td>
         <td>${cat}</td>
         <td style="text-align:center">${item.parcela_atual}/${item.parcelas}</td>
@@ -233,6 +241,7 @@ function billCardHtml(fatura, key, isAtual) {
         <table class="bill-items-table">
           <thead>
             <tr>
+              <th>Data</th>
               <th>Descrição</th>
               <th>Categoria</th>
               <th style="text-align:center">Parcela</th>
