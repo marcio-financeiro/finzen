@@ -6,6 +6,7 @@ import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
 import { DEFAULT_USD_BRL, formatPercent, formatUSD, getUsdBrlRate, saveUsdBrlRate, toNumber } from './services/financeService.js';
+import { FINZEN_SECRET }  from './apiClient.js';
 
 // ─────────────────────────────────────────────
 // AUTH
@@ -44,6 +45,124 @@ document.querySelectorAll('.inv-tab').forEach(btn => {
     if(btn.dataset.tab === 'aportar')    carregarTransacoes();
   });
 });
+
+// ─────────────────────────────────────────────
+// COMITÊ DE INVESTIMENTOS
+// ─────────────────────────────────────────────
+function montarPayloadCarteira() {
+  const patrimonio_total = somaSegura(ativos.map(a => calcBRL(a, calcAtual(a))));
+  const total_brl_brl    = somaSegura(ativos.filter(a => (a.moeda||'BRL') === 'BRL').map(a => calcAtual(a)));
+  const total_brl_usd    = somaSegura(ativos.filter(a => (a.moeda||'BRL') === 'USD').map(a => calcAtual(a) * dolarAtual));
+
+  // Distribuição por classe
+  const dist_classe = {};
+  ativos.forEach(a => {
+    const cl = classeKey(a.tipo);
+    const vl = calcBRL(a, calcAtual(a));
+    if (!dist_classe[cl]) dist_classe[cl] = { valor: 0, pct: 0 };
+    dist_classe[cl].valor += vl;
+  });
+  Object.keys(dist_classe).forEach(k => {
+    dist_classe[k].pct = patrimonio_total > 0 ? (dist_classe[k].valor / patrimonio_total) * 100 : 0;
+  });
+
+  const ativosPayload = ativos.map(a => {
+    const valApl = calcBRL(a, calcAplicado(a));
+    const valAtl = calcBRL(a, calcAtual(a));
+    const rent   = valApl > 0 ? ((valAtl - valApl) / valApl) * 100 : 0;
+    const peso   = patrimonio_total > 0 ? (valAtl / patrimonio_total) * 100 : 0;
+    return {
+      ticker:         a.ticker,
+      nome:           a.nome || tipoLabel(a.tipo),
+      tipo:           a.tipo,
+      classe:         classeKey(a.tipo),
+      moeda:          a.moeda || 'BRL',
+      quantidade:     toNumber(a.quantidade),
+      preco_medio:    toNumber(a.preco_medio).toFixed(2),
+      cotacao_atual:  toNumber(a.cotacao_atual || a.preco_medio).toFixed(2),
+      valor_atual_brl: valAtl.toFixed(0),
+      peso_pct:       peso.toFixed(1),
+      rent_pct:       rent.toFixed(1),
+    };
+  }).sort((a, b) => parseFloat(b.peso_pct) - parseFloat(a.peso_pct));
+
+  return { dolar: dolarAtual.toFixed(4), patrimonio_total, total_brl_brl, total_brl_usd, ativos: ativosPayload, dist_classe };
+}
+
+function markdownToHtml(md) {
+  return md
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, s => `<ul>${s}</ul>`)
+    .replace(/\n{2,}/g, '</p><p>')
+    .replace(/^(?!<[hul])(.+)$/gm, s => s ? s : '')
+    .replace(/\n/g, '<br>');
+}
+
+async function gerarAnaliseComite() {
+  const btnGerar = el('btnGerarAnalise');
+  const msgEl    = el('comiteMensagem');
+  const resEl    = el('comiteResultado');
+
+  if (!ativos.length) {
+    msgEl.className = 'message warning';
+    msgEl.innerText = 'Nenhum ativo cadastrado na carteira.';
+    return;
+  }
+
+  btnGerar.disabled = true;
+  btnGerar.innerHTML = '<span class="inv-spinner"></span> Analisando...';
+  msgEl.className = 'message info';
+  msgEl.innerText = 'Claude Sonnet está analisando sua carteira — pode levar ~30s...';
+  resEl.innerHTML = '';
+
+  try {
+    const carteira = montarPayloadCarteira();
+    const r = await fetch('/api/portfolio-analysis', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-finzen-secret': FINZEN_SECRET,
+      },
+      body: JSON.stringify({ carteira }),
+    });
+
+    if (!r.ok) {
+      const err = await r.json();
+      throw new Error(err.error || `Erro ${r.status}`);
+    }
+
+    const { analise } = await r.json();
+
+    msgEl.className = 'message success';
+    msgEl.innerText = `Análise gerada em ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} · ${ativos.length} ativos`;
+
+    // Converter markdown simples para HTML
+    const html = analise
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/^[\-\*] (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>[^<]*<\/li>\n?)+/g, s => `<ul>${s}</ul>`)
+      .replace(/\|(.+)\|/g, (_, row) => {
+        const cells = row.split('|').map(c => c.trim());
+        return '<tr>' + cells.map(c => /^[-:\s]+$/.test(c) ? '' : `<td>${c}</td>`).join('') + '</tr>';
+      })
+      .replace(/(<tr>.*<\/tr>\n?){2,}/gs, s => `<table>${s}</table>`)
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+
+    resEl.innerHTML = `<div class="comite-output"><p>${html}</p></div>`;
+
+  } catch (e) {
+    msgEl.className = 'message danger';
+    msgEl.innerText = 'Erro: ' + e.message;
+  } finally {
+    btnGerar.disabled = false;
+    btnGerar.innerHTML = '🧠 Gerar análise';
+  }
+}
 
 // ─────────────────────────────────────────────
 // UTILITÁRIOS
@@ -971,6 +1090,7 @@ if(selAno){
 // Balancear
 el('btnSalvarPesos').addEventListener('click',salvarPesos);
 el('btnCalcularBal').addEventListener('click',calcularBalanceamento);
+el('btnGerarAnalise').addEventListener('click', gerarAnaliseComite);
 
 el('dataAtivo').value=hojeISO();
 el('divData').value=hojeISO();
