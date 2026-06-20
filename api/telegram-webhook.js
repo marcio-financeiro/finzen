@@ -1,11 +1,12 @@
-// api/telegram-webhook.js — FinZen Assessor Telegram
+// api/telegram-webhook.js — FinZen Assessor Telegram (multi-usuário)
 // Setup: GET /api/telegram-webhook?setup=1
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const CHAT_ID   = process.env.TELEGRAM_CHAT_ID;
-const SB_URL    = process.env.SUPABASE_URL;
-const SB_KEY    = process.env.SUPABASE_SERVICE_KEY;
-const USER_ID   = process.env.FINZEN_USER_ID;
+const BOT_TOKEN       = process.env.TELEGRAM_BOT_TOKEN;
+const SB_URL          = process.env.SUPABASE_URL;
+const SB_KEY          = process.env.SUPABASE_SERVICE_KEY;
+// Fallback para o usuário original (transição transparente)
+const LEGACY_CHAT_ID  = process.env.TELEGRAM_CHAT_ID;
+const LEGACY_USER_ID  = process.env.FINZEN_USER_ID;
 
 // ── Supabase REST ────────────────────────────────────────────────────────────
 const sbHeaders = {
@@ -13,6 +14,78 @@ const sbHeaders = {
   Authorization: `Bearer ${SB_KEY}`,
   'Content-Type': 'application/json',
 };
+
+// Contexto da requisição atual (resolvido no handler, usado pelas funções)
+let CHAT_ID = null;
+let USER_ID = null;
+
+async function resolveUser(chatId) {
+  // 1. Buscar na tabela de vínculos
+  const r = await fetch(
+    `${SB_URL}/rest/v1/telegram_links?chat_id=eq.${chatId}&select=user_id`,
+    { headers: sbHeaders }
+  );
+  const data = await r.json();
+  if (data[0]?.user_id) {
+    // Registrar último uso (silencioso)
+    return data[0].user_id;
+  }
+
+  // 2. Fallback: usuário original (env var) — auto-vincula na primeira mensagem
+  if (LEGACY_CHAT_ID && String(chatId) === String(LEGACY_CHAT_ID) && LEGACY_USER_ID) {
+    // Auto-inserir o vínculo permanente
+    await fetch(`${SB_URL}/rest/v1/telegram_links`, {
+      method: 'POST',
+      headers: { ...sbHeaders, Prefer: 'return=minimal' },
+      body: JSON.stringify({ user_id: LEGACY_USER_ID, chat_id: String(chatId) }),
+    }).catch(() => {});
+    return LEGACY_USER_ID;
+  }
+
+  return null;
+}
+
+async function vincularBot(chatId, code) {
+  // Buscar código pendente
+  const r = await fetch(
+    `${SB_URL}/rest/v1/telegram_pending?code=eq.${code}&select=user_id,expires_at`,
+    { headers: sbHeaders }
+  );
+  const data = await r.json();
+  if (!data[0]) {
+    await enviarPara(chatId, '❌ Código inválido ou expirado. Gere um novo código no seu perfil FinZen.');
+    return;
+  }
+  if (new Date(data[0].expires_at) < new Date()) {
+    await enviarPara(chatId, '⏱ Código expirado. Gere um novo código no seu perfil FinZen.');
+    return;
+  }
+
+  const userId = data[0].user_id;
+
+  // Remover código usado
+  await fetch(`${SB_URL}/rest/v1/telegram_pending?code=eq.${code}`, {
+    method: 'DELETE', headers: sbHeaders,
+  });
+
+  // Remover vínculo anterior deste chat_id (se houver)
+  await fetch(`${SB_URL}/rest/v1/telegram_links?chat_id=eq.${chatId}`, {
+    method: 'DELETE', headers: sbHeaders,
+  });
+
+  // Criar vínculo
+  await fetch(`${SB_URL}/rest/v1/telegram_links`, {
+    method: 'POST',
+    headers: { ...sbHeaders, Prefer: 'return=minimal' },
+    body: JSON.stringify({ user_id: userId, chat_id: String(chatId) }),
+  });
+
+  await enviarPara(chatId,
+    '✅ <b>Telegram vinculado com sucesso!</b>\n\n' +
+    'Agora você pode usar todos os recursos do FinZen aqui.\n' +
+    'Digite <code>ajuda</code> para ver os comandos disponíveis.'
+  );
+}
 
 async function sbGet(table, qs = '') {
   const r = await fetch(
@@ -39,12 +112,16 @@ async function sbPatch(table, id, body) {
 }
 
 // ── Telegram ─────────────────────────────────────────────────────────────────
-async function enviar(texto) {
+async function enviarPara(chatId, texto) {
   await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: CHAT_ID, text: texto, parse_mode: 'HTML' }),
+    body: JSON.stringify({ chat_id: chatId, text: texto, parse_mode: 'HTML' }),
   });
+}
+
+async function enviar(texto) {
+  await enviarPara(CHAT_ID, texto);
 }
 
 async function responderCallback(id) {
@@ -719,19 +796,45 @@ export default async function handler(req, res) {
 
   const body = req.body || {};
 
+  // Determinar chatId da requisição
+  const incomingChatId = String(
+    body.callback_query?.message?.chat?.id ||
+    body.message?.chat?.id || ''
+  );
+  if (!incomingChatId) return res.status(200).json({ ok: true });
+
+  // Resolver usuário dinamicamente
+  USER_ID = await resolveUser(incomingChatId);
+  CHAT_ID = incomingChatId;
+
   // Botão inline
   if (body.callback_query) {
     const cq = body.callback_query;
-    if (String(cq.message?.chat?.id) === String(CHAT_ID)) {
-      try { await handleCallback(cq); } catch (e) {
-        await enviar('⚠️ Erro: ' + e.message).catch(() => {});
-      }
+    if (!USER_ID) return res.status(200).json({ ok: true }); // ignora não vinculados
+    try { await handleCallback(cq); } catch (e) {
+      await enviar('⚠️ Erro: ' + e.message).catch(() => {});
     }
     return res.status(200).json({ ok: true });
   }
 
   const { message } = body;
-  if (!message || String(message.chat?.id) !== String(CHAT_ID)) {
+  if (!message) return res.status(200).json({ ok: true });
+
+  // Usuário não vinculado — só aceita /vincular CÓDIGO
+  if (!USER_ID) {
+    const txt = (message.text || '').trim();
+    const codigoMatch = txt.match(/^(?:\/vincular\s+)?(FZ-\d{6})$/i);
+    if (codigoMatch) {
+      await vincularBot(incomingChatId, codigoMatch[1].toUpperCase());
+    } else {
+      await enviarPara(incomingChatId,
+        '👋 Olá! Para usar o FinZen aqui, vincule sua conta:\n\n' +
+        '1. Acesse <b>finzen-rho.vercel.app</b>\n' +
+        '2. Vá em <b>Perfil → Telegram</b>\n' +
+        '3. Clique em <b>Gerar código de vinculação</b>\n' +
+        '4. Envie o código aqui (ex: <code>FZ-482916</code>)'
+      );
+    }
     return res.status(200).json({ ok: true });
   }
 
@@ -739,18 +842,17 @@ export default async function handler(req, res) {
     // Foto / comprovante
     if (message.photo) {
       await enviar('📸 <i>Analisando comprovante...</i>');
-      const fileId  = message.photo[message.photo.length - 1].file_id; // maior resolução
-      const result  = await analisarComprovante(fileId);
+      const fileId = message.photo[message.photo.length - 1].file_id;
+      const result = await analisarComprovante(fileId);
 
       if (!result || !result.valor) {
         await enviar('❌ Não consegui ler o valor no comprovante. Tente tirar uma foto mais nítida.');
         return res.status(200).json({ ok: true });
       }
 
-      const [contas, cartoes, categorias] = await Promise.all([
+      const [contas, cartoes] = await Promise.all([
         sbGet('accounts',    'active=eq.true&order=sort_order.asc,nome.asc'),
         sbGet('credit_cards','ativo=eq.true&order=sort_order.asc,nome.asc'),
-        sbGet('categories',  'order=nome.asc'),
       ]);
 
       await enviarBotoesContasECartoes(
@@ -767,10 +869,15 @@ export default async function handler(req, res) {
     if (message.voice) {
       await enviar('🎙️ <i>Transcrevendo áudio...</i>');
       texto = await transcreverVoz(message.voice.file_id);
-      if (!texto) { await enviar('❌ Não consegui entender o áudio. Tente novamente.'); return res.status(200).json({ ok: true }); }
+      if (!texto) { await enviar('❌ Não consegui entender o áudio.'); return res.status(200).json({ ok: true }); }
       await enviar(`📝 <i>Entendi: "${texto}"</i>`);
     } else {
       texto = (message.text || '').trim();
+      // Aceitar código de vinculação mesmo estando já vinculado (por engano)
+      if (/^FZ-\d{6}$/i.test(texto)) {
+        await enviar('✅ Você já está vinculado ao FinZen. Nenhuma ação necessária.');
+        return res.status(200).json({ ok: true });
+      }
     }
 
     if (texto) await processar(texto);

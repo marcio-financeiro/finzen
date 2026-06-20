@@ -98,6 +98,32 @@
           💾 Salvar perfil
         </button>
 
+        <!-- Telegram -->
+        <h2 style="font-size:14px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:28px 0 16px;">🤖 Telegram</h2>
+
+        <div id="telegramStatus" style="padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span id="telegramDot" style="width:10px;height:10px;border-radius:50%;background:var(--muted);flex-shrink:0;"></span>
+            <span id="telegramLabel" style="font-size:13px;font-weight:600;">Verificando...</span>
+          </div>
+          <div id="telegramInfo" style="font-size:12px;color:var(--muted);margin-top:6px;display:none;"></div>
+        </div>
+
+        <div id="telegramCodigo" style="display:none;padding:14px;border-radius:12px;border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.06);margin-bottom:12px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Envie este código para o bot no Telegram:</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <code id="codigoValor" style="font-size:1.4rem;font-weight:900;color:var(--accent);letter-spacing:2px;font-family:var(--font-mono);">—</code>
+            <button class="btn compact" onclick="copiarCodigo()" style="font-size:12px;padding:4px 10px;">Copiar</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px;">⏱ Expira em 15 minutos</div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-secondary compact" id="btnGerarCodigo">📲 Gerar código de vinculação</button>
+          <button class="btn btn-danger compact" id="btnDesvincular" style="display:none;">Desvincular</button>
+        </div>
+        <div id="telegramMsg" class="message" style="min-height:0;margin-top:8px;"></div>
+
         <!-- Segurança -->
         <h2 style="font-size:14px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:28px 0 16px;">Segurança</h2>
 

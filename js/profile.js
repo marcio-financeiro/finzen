@@ -6,6 +6,7 @@
 
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
+import { FINZEN_SECRET } from './apiClient.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -107,8 +108,77 @@ el('btnAlterarSenha').addEventListener('click', async () => {
   }
 });
 
+// ── Telegram ─────────────────────────────────────────
+async function verificarTelegram() {
+  try {
+    const r = await fetch(`/api/telegram-link?user_id=${user.id}`, {
+      headers: { 'x-finzen-secret': FINZEN_SECRET },
+    });
+    const d = await r.json();
+    const dot   = el('telegramDot');
+    const label = el('telegramLabel');
+    const info  = el('telegramInfo');
+    const btnD  = el('btnDesvincular');
+
+    if (d.vinculado) {
+      dot.style.background   = 'var(--success, #10b981)';
+      label.textContent      = 'Telegram vinculado';
+      const quando = d.linked_at ? new Date(d.linked_at).toLocaleDateString('pt-BR') : '';
+      info.textContent = `Chat ID: ${d.chat_id}${quando ? ' · Vinculado em ' + quando : ''}`;
+      info.style.display = 'block';
+      btnD.style.display = 'inline-flex';
+    } else {
+      dot.style.background = 'var(--muted)';
+      label.textContent    = 'Telegram não vinculado';
+      info.style.display   = 'none';
+      btnD.style.display   = 'none';
+    }
+  } catch (_) {}
+}
+
+el('btnGerarCodigo').addEventListener('click', async () => {
+  el('btnGerarCodigo').textContent = 'Gerando...';
+  try {
+    const r = await fetch('/api/telegram-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-finzen-secret': FINZEN_SECRET },
+      body: JSON.stringify({ action: 'generate', user_id: user.id }),
+    });
+    const d = await r.json();
+    if (d.code) {
+      el('codigoValor').textContent = d.code;
+      el('telegramCodigo').style.display = 'block';
+      msg('telegramMsg', `Envie "${d.code}" para o bot no Telegram`, 'info');
+    }
+  } catch (e) {
+    msg('telegramMsg', 'Erro: ' + e.message, 'danger');
+  }
+  el('btnGerarCodigo').textContent = '📲 Gerar código de vinculação';
+});
+
+el('btnDesvincular').addEventListener('click', async () => {
+  if (!confirm('Desvincular seu Telegram desta conta?')) return;
+  await fetch('/api/telegram-link', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-finzen-secret': FINZEN_SECRET },
+    body: JSON.stringify({ action: 'unlink', user_id: user.id }),
+  });
+  el('telegramCodigo').style.display = 'none';
+  msg('telegramMsg', 'Telegram desvinculado.', 'success');
+  await verificarTelegram();
+});
+
+window.copiarCodigo = function() {
+  const code = el('codigoValor').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    msg('telegramMsg', `Código ${code} copiado! Cole no Telegram.`, 'success');
+  });
+};
+
 // ── Inicializar ───────────────────────────────────────
 await carregarPerfil();
+
+await verificarTelegram();
 
 // ── Exportar função para uso em outros módulos ────────
 export async function getPerfilEmail(supabaseClient, userId) {
