@@ -89,15 +89,76 @@ function montarPayloadCarteira() {
   return { dolar: dolarAtual.toFixed(4), patrimonio_total, total_brl_brl, total_brl_usd, ativos: ativosPayload, dist_classe };
 }
 
-function markdownToHtml(md) {
-  return md
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+function mdParaHtml(md) {
+  const inline = s => s
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>\n?)+/g, s => `<ul>${s}</ul>`)
-    .replace(/\n{2,}/g, '</p><p>')
-    .replace(/^(?!<[hul])(.+)$/gm, s => s ? s : '')
-    .replace(/\n/g, '<br>');
+    .replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  const lines = md.split('\n');
+  let html = '';
+  let inUl    = false;
+  let inOl    = false;
+  let inTable = false;
+  let tHead   = true;
+
+  const closeList  = () => { if (inUl) { html += '</ul>'; inUl = false; } if (inOl) { html += '</ol>'; inOl = false; } };
+  const closeTable = () => { if (inTable) { html += '</tbody></table>'; inTable = false; } };
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+
+    // ── H2
+    if (/^## /.test(line)) {
+      closeList(); closeTable();
+      html += `<h2>${inline(line.slice(3))}</h2>`;
+      continue;
+    }
+    // ── H3
+    if (/^### /.test(line)) {
+      closeList(); closeTable();
+      html += `<h3>${inline(line.slice(4))}</h3>`;
+      continue;
+    }
+    // ── Tabela
+    if (/^\|.+\|/.test(line)) {
+      closeList();
+      const cells = line.split('|').slice(1, -1).map(c => c.trim());
+      if (cells.every(c => /^[-: ]+$/.test(c))) {
+        html += '</thead><tbody>'; tHead = false; continue;
+      }
+      if (!inTable) { html += '<table><thead>'; inTable = true; tHead = true; }
+      const tag = tHead ? 'th' : 'td';
+      html += `<tr>${cells.map(c => `<${tag}>${inline(c)}</${tag}>`).join('')}</tr>`;
+      continue;
+    }
+    if (inTable && !/^\|/.test(line)) closeTable();
+
+    // ── Lista não-ordenada
+    if (/^[\-\*] /.test(line)) {
+      closeTable();
+      if (inOl) { html += '</ol>'; inOl = false; }
+      if (!inUl) { html += '<ul>'; inUl = true; }
+      html += `<li>${inline(line.slice(2))}</li>`;
+      continue;
+    }
+    // ── Lista ordenada
+    if (/^\d+\. /.test(line)) {
+      closeTable();
+      if (inUl) { html += '</ul>'; inUl = false; }
+      if (!inOl) { html += '<ol>'; inOl = true; }
+      html += `<li>${inline(line.replace(/^\d+\. /, ''))}</li>`;
+      continue;
+    }
+
+    // ── Linha vazia
+    if (line.trim() === '') { closeList(); closeTable(); continue; }
+
+    // ── Parágrafo
+    closeList(); closeTable();
+    html += `<p>${inline(line)}</p>`;
+  }
+  closeList(); closeTable();
+  return html;
 }
 
 async function gerarAnaliseComite() {
@@ -138,22 +199,7 @@ async function gerarAnaliseComite() {
     msgEl.className = 'message success';
     msgEl.innerText = `Análise gerada em ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} · ${ativos.length} ativos`;
 
-    // Converter markdown simples para HTML
-    const html = analise
-      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/^[\-\*] (.+)$/gm, '<li>$1</li>')
-      .replace(/(<li>[^<]*<\/li>\n?)+/g, s => `<ul>${s}</ul>`)
-      .replace(/\|(.+)\|/g, (_, row) => {
-        const cells = row.split('|').map(c => c.trim());
-        return '<tr>' + cells.map(c => /^[-:\s]+$/.test(c) ? '' : `<td>${c}</td>`).join('') + '</tr>';
-      })
-      .replace(/(<tr>.*<\/tr>\n?){2,}/gs, s => `<table>${s}</table>`)
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/\n/g, '<br>');
-
-    resEl.innerHTML = `<div class="comite-output"><p>${html}</p></div>`;
+    resEl.innerHTML = `<div class="comite-output">${mdParaHtml(analise)}</div>`;
 
   } catch (e) {
     msgEl.className = 'message danger';
