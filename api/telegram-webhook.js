@@ -47,20 +47,54 @@ async function enviar(texto) {
   });
 }
 
+async function enviarBotoesContas(tipo, valor, descricao, contas) {
+  const emoji  = tipo === 'receita' ? '💰' : '💸';
+  const desc15 = descricao.slice(0, 15);
+
+  // Botões em linhas de 2
+  const linhas = [];
+  for (let i = 0; i < contas.length; i += 2) {
+    const linha = [];
+    for (let j = i; j < Math.min(i + 2, contas.length); j++) {
+      linha.push({
+        text: contas[j].nome,
+        callback_data: `tx|${tipo[0]}|${valor}|${desc15}|${contas[j].nome}`,
+      });
+    }
+    linhas.push(linha);
+  }
+
+  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: CHAT_ID,
+      text: `${emoji} <b>R$ ${fmt(valor)} — ${descricao}</b>\n\nQual conta?`,
+      parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: linhas },
+    }),
+  });
+}
+
+async function responderCallback(callbackQueryId) {
+  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ callback_query_id: callbackQueryId }),
+  });
+}
+
 // ── Groq Whisper — transcrição de voz ───────────────────────────────────────
 async function transcreverVoz(fileId) {
-  // 1. Pegar URL do arquivo no Telegram
   const infoRes = await fetch(
     `https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`
   );
   const { result } = await infoRes.json();
   const audioUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${result.file_path}`;
 
-  // 2. Baixar o áudio
   const audioRes  = await fetch(audioUrl);
   const audioBlob = await audioRes.blob();
 
-  // 3. Enviar ao Groq Whisper (gratuito)
   const form = new FormData();
   form.append('file', audioBlob, 'voice.ogg');
   form.append('model', 'whisper-large-v3');
@@ -78,18 +112,16 @@ async function transcreverVoz(fileId) {
 }
 
 // ── Groq Llama — interpretação de linguagem natural (gratuito) ──────────────
-async function interpretarComClaude(texto, contas) {
+async function interpretarComGroq(texto, contas) {
   const nomesContas = contas.map(c => c.nome).join(', ');
-  const contaPadrao = contas.find(c => c.sort_order >= 1)?.nome || contas[0]?.nome || 'Itaú';
 
   const prompt = `Você é o assistente financeiro do FinZen. Interprete o comando em português e retorne APENAS um JSON válido, sem markdown nem texto extra.
 
 Contas disponíveis: ${nomesContas}
-Conta padrão (quando não especificada): ${contaPadrao}
 
 Formatos de resposta:
-{"acao":"lancar","tipo":"despesa","valor":NUMBER,"descricao":"STRING","conta":"NOME_EXATO"}
-{"acao":"lancar","tipo":"receita","valor":NUMBER,"descricao":"STRING","conta":"NOME_EXATO"}
+{"acao":"lancar","tipo":"despesa","valor":NUMBER,"descricao":"STRING","conta":"NOME_EXATO_OU_NULL"}
+{"acao":"lancar","tipo":"receita","valor":NUMBER,"descricao":"STRING","conta":"NOME_EXATO_OU_NULL"}
 {"acao":"saldo"}
 {"acao":"extrato"}
 {"acao":"resumo"}
@@ -97,8 +129,7 @@ Formatos de resposta:
 {"acao":"desconhecido","mensagem":"STRING"}
 
 Regras:
-- "conta" deve ser exatamente um dos nomes disponíveis acima
-- Se não mencionar conta, use ${contaPadrao}
+- "conta": use o nome exato se o usuário mencionar uma conta; use null se NÃO mencionar
 - Valores por extenso: "cinquenta"=50, "cem"=100, "duzentos"=200, "mil"=1000
 - despesa: gastei, paguei, comprei, saiu, débito
 - receita: recebi, entrou, salário, renda, crédito
@@ -123,14 +154,11 @@ Comando: "${texto}"`;
   });
 
   const data = await res.json();
-
-  // Groq retornou erro de API
   if (data.error) throw new Error('Groq: ' + (data.error.message || JSON.stringify(data.error)));
 
   const content = data.choices?.[0]?.message?.content?.trim() || '';
   if (!content) throw new Error('Groq retornou resposta vazia');
 
-  // Extrair JSON mesmo se vier dentro de ```json ... ```
   const match = content.match(/\{[\s\S]*\}/);
   return match ? JSON.parse(match[0]) : {};
 }
@@ -189,7 +217,6 @@ async function execResumo() {
 }
 
 async function execLancar(tipo, valor, descricao, nomeConta, todasContas) {
-  // Buscar conta por nome (ignora acentos, maiúsculas e @)
   const norm = s => (s || '').replace(/^@/, '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   const conta = todasContas.find(c => norm(c.nome) === norm(nomeConta))
              || todasContas.find(c => norm(c.nome).includes(norm(nomeConta)))
@@ -230,22 +257,41 @@ async function execAjuda() {
   );
 }
 
+// ── Callback de botões inline ─────────────────────────────────────────────────
+async function handleCallback(callbackQuery) {
+  await responderCallback(callbackQuery.id);
+
+  const data = callbackQuery.data || '';
+  if (!data.startsWith('tx|')) return;
+
+  const partes = data.split('|');
+  const tipoChar  = partes[1];
+  const valor     = parseFloat(partes[2]);
+  const descricao = partes[3];
+  const nomeConta = partes.slice(4).join('|'); // conta pode ter | no nome (improvável mas seguro)
+
+  const tipo = tipoChar === 'r' ? 'receita' : 'despesa';
+
+  const contas = await sbGet('accounts', 'active=eq.true&order=sort_order.asc,nome.asc');
+  const contasValidas = Array.isArray(contas) ? contas : [];
+
+  await execLancar(tipo, valor, descricao, nomeConta, contasValidas);
+}
+
 // ── Processador principal ────────────────────────────────────────────────────
 async function processar(texto) {
   const t = texto.toLowerCase().trim();
 
   // Comandos diretos — sem precisar de IA
-  if (t === 'saldo' || t === 'quanto tenho' || t === 'contas')  return execSaldo();
+  if (t === 'saldo' || t === 'quanto tenho' || t === 'contas')   return execSaldo();
   if (t === 'extrato' || t === 'historico' || t === 'histórico') return execExtrato();
   if (t === 'resumo' || t === 'resumo do mes' || t === 'resumo do mês') return execResumo();
   if (t === 'ajuda' || t === 'help' || t === '/start' || t === '/help') return execAjuda();
 
-  // Carregar contas para IA e para lançamentos
   const contas = await sbGet('accounts', 'active=eq.true&order=sort_order.asc,nome.asc');
   const contasValidas = Array.isArray(contas) ? contas : [];
 
-  // Interpretar com Groq
-  const acao = await interpretarComClaude(texto, contasValidas);
+  const acao = await interpretarComGroq(texto, contasValidas);
 
   switch (acao.acao) {
     case 'lancar':
@@ -253,7 +299,12 @@ async function processar(texto) {
         await enviar('❌ Não consegui identificar o valor. Tente: "gastei 50 no café"');
         return;
       }
-      await execLancar(acao.tipo, acao.valor, acao.descricao || acao.tipo, acao.conta, contasValidas);
+      if (!acao.conta || acao.conta === 'null') {
+        // Usuário não especificou conta → mostrar botões
+        await enviarBotoesContas(acao.tipo, acao.valor, acao.descricao || acao.tipo, contasValidas);
+      } else {
+        await execLancar(acao.tipo, acao.valor, acao.descricao || acao.tipo, acao.conta, contasValidas);
+      }
       break;
     case 'saldo':   await execSaldo();   break;
     case 'extrato': await execExtrato(); break;
@@ -269,7 +320,6 @@ async function processar(texto) {
 
 // ── Handler Vercel ────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
-  // Registrar webhook
   if (req.method === 'GET' && req.query?.setup === '1') {
     const url = `https://${req.headers.host}/api/telegram-webhook`;
     const r   = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=${url}`);
@@ -278,7 +328,21 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') return res.status(200).json({ ok: true });
 
-  const { message } = req.body || {};
+  const body = req.body || {};
+
+  // Botão inline pressionado
+  if (body.callback_query) {
+    const cq = body.callback_query;
+    if (String(cq.message?.chat?.id) === String(CHAT_ID)) {
+      try { await handleCallback(cq); } catch (e) {
+        await enviar('⚠️ Erro: ' + e.message).catch(() => {});
+      }
+    }
+    return res.status(200).json({ ok: true });
+  }
+
+  // Mensagem de texto ou voz
+  const { message } = body;
   if (!message || String(message.chat?.id) !== String(CHAT_ID)) {
     return res.status(200).json({ ok: true });
   }
@@ -287,11 +351,10 @@ export default async function handler(req, res) {
     let texto = '';
 
     if (message.voice) {
-      // Mensagem de voz → Whisper → texto
       await enviar('🎙️ <i>Transcrevendo áudio...</i>');
       texto = await transcreverVoz(message.voice.file_id);
-      if (!texto) { await enviar('❌ Não consegui entender o áudio. Tente novamente.'); }
-      else { await enviar(`📝 <i>Entendi: "${texto}"</i>`); }
+      if (!texto) { await enviar('❌ Não consegui entender o áudio. Tente novamente.'); return; }
+      await enviar(`📝 <i>Entendi: "${texto}"</i>`);
     } else {
       texto = (message.text || '').trim();
     }
