@@ -246,6 +246,10 @@ Formatos de resposta:
 {"acao":"saldo"}
 {"acao":"extrato"}
 {"acao":"resumo"}
+{"acao":"agenda_hoje"}
+{"acao":"agenda_semana"}
+{"acao":"offshore"}
+{"acao":"marcar_evento","titulo":"STRING","data":"YYYY-MM-DD_OU_NULL","hora":"HH:MM_OU_NULL","tipo":"STRING_OU_NULL"}
 {"acao":"ajuda"}
 {"acao":"desconhecido","mensagem":"STRING"}
 
@@ -256,6 +260,13 @@ Regras:
 - Valores por extenso: "cinquenta"=50, "cem"=100, "mil"=1000
 - despesa: gastei, paguei, comprei, saiu
 - receita: recebi, entrou, salário, renda
+- agenda_hoje: hoje, tarefas, minha agenda, compromissos hoje
+- agenda_semana: semana, próximos dias, agenda da semana
+- offshore: embarque, plataforma, ciclo offshore, quando embarco
+- marcar_evento: marcar, agendar, lembrar, compromisso, consulta, reunião
+  - data: calcule a data exata (hoje=hoje, amanhã=hoje+1, "próxima sexta"=próxima sexta, etc.)
+  - hora: formato HH:MM se mencionada
+  - tipo: saude | compromisso | financeiro | pessoal (inferir pelo contexto)
 
 Exemplos de categoria: restaurante→Alimentação, uber→Transporte, farmácia→Saúde, netflix→Assinaturas, salário→Salário
 
@@ -307,6 +318,17 @@ function calcFaturaRef(dataCompra, fechamentoDia) {
     ? new Date(d.getFullYear(), d.getMonth() + 1, 1)
     : new Date(d.getFullYear(), d.getMonth(), 1);
   return `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function formatarData(dateStr) {
+  if (!dateStr) return '';
+  const [ano, mes, dia] = dateStr.split('-');
+  const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  return `${dia}/${meses[parseInt(mes) - 1]}/${ano}`;
+}
+
+function diasEntre(a, b) {
+  return Math.ceil((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000);
 }
 
 // ── Executores ────────────────────────────────────────────────────────────────
@@ -429,12 +451,158 @@ async function execAjuda() {
   await enviar(
     `🤖 <b>FinZen · Assessor</b>\n\n` +
     `Fale naturalmente, mande voz ou comprovante:\n\n` +
-    `🎙️ <i>"gastei 80 no almoço no itaú"</i>\n` +
-    `🎙️ <i>"comprei 150 na amazon no cartão nubank"</i>\n` +
-    `📸 <i>envie foto do comprovante</i>\n\n` +
-    `<b>Comandos:</b>\n` +
-    `  <code>saldo</code> · <code>extrato</code> · <code>resumo</code> · <code>ajuda</code>`
+    `💸 <i>"gastei 80 no almoço no itaú"</i>\n` +
+    `💳 <i>"comprei 150 no cartão nubank em 3x"</i>\n` +
+    `📸 <i>envie foto do comprovante</i>\n` +
+    `📅 <i>"marcar consulta médica amanhã às 14h"</i>\n\n` +
+    `<b>Consultas rápidas:</b>\n` +
+    `  <code>hoje</code> · <code>agenda</code> · <code>offshore</code>\n` +
+    `  <code>saldo</code> · <code>extrato</code> · <code>resumo</code>`
   );
+}
+
+// ── Executores de agenda ──────────────────────────────────────────────────────
+async function execAgendaHoje() {
+  const hj = hoje();
+
+  const [eventos, cicloAtual, pendentes] = await Promise.all([
+    sbGet('calendar_events', `data_inicio=lte.${hj}&data_fim=gte.${hj}&order=hora.asc`),
+    sbGet('offshore_cycles', `data_embarque=lte.${hj}&data_desembarque=gte.${hj}&limit=1`),
+    sbGet('transactions',    `date=eq.${hj}&status=eq.pendente`),
+  ]);
+
+  const diasSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const d = new Date(hj + 'T12:00:00');
+  let msg = `📅 <b>${diasSemana[d.getDay()]}, ${formatarData(hj)}</b>\n\n`;
+
+  // Status offshore
+  if (Array.isArray(cicloAtual) && cicloAtual.length) {
+    const c = cicloAtual[0];
+    const restantes = diasEntre(hj, c.data_desembarque);
+    msg += `🚢 <b>EMBARCADO</b> — ${c.plataforma}\n`;
+    msg += `🏠 Desembarque em ${restantes} dia${restantes !== 1 ? 's' : ''} (${formatarData(c.data_desembarque)})\n\n`;
+  } else {
+    const proximo = await sbGet('offshore_cycles', `data_embarque=gt.${hj}&status=eq.planejado&order=data_embarque.asc&limit=1`);
+    if (Array.isArray(proximo) && proximo.length) {
+      const diasAte = diasEntre(hj, proximo[0].data_embarque);
+      msg += `🏠 Em terra · embarque em <b>${diasAte} dia${diasAte !== 1 ? 's' : ''}</b> (${proximo[0].plataforma})\n\n`;
+    } else {
+      msg += `🏠 Em terra\n\n`;
+    }
+  }
+
+  // Compromissos do dia
+  if (Array.isArray(eventos) && eventos.length) {
+    msg += `📋 <b>Compromissos:</b>\n`;
+    for (const e of eventos) {
+      const hora  = e.hora ? e.hora.slice(0, 5) + ' · ' : '';
+      const check = e.status === 'concluido' ? '✅' : e.status === 'cancelado' ? '❌' : '🔹';
+      msg += `${check} ${hora}${e.titulo}\n`;
+    }
+    msg += '\n';
+  } else {
+    msg += `📋 Sem compromissos hoje\n\n`;
+  }
+
+  // Contas pendentes
+  if (Array.isArray(pendentes) && pendentes.length) {
+    msg += `💸 <b>Contas a pagar:</b>\n`;
+    for (const t of pendentes) {
+      msg += `• ${t.description} — R$ ${fmt(t.amount)}\n`;
+    }
+  }
+
+  await enviar(msg.trim());
+}
+
+async function execAgendaSemana() {
+  const hj  = hoje();
+  const fim = new Date(hj + 'T12:00:00');
+  fim.setDate(fim.getDate() + 7);
+  const fimStr = fim.toISOString().split('T')[0];
+
+  const eventos = await sbGet('calendar_events', `data_inicio=gte.${hj}&data_inicio=lte.${fimStr}&order=data_inicio.asc,hora.asc`);
+
+  if (!Array.isArray(eventos) || !eventos.length) {
+    await enviar('📅 Nenhum compromisso nos próximos 7 dias.');
+    return;
+  }
+
+  const diasSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const byDate = {};
+  for (const e of eventos) {
+    if (!byDate[e.data_inicio]) byDate[e.data_inicio] = [];
+    byDate[e.data_inicio].push(e);
+  }
+
+  let msg = '📅 <b>Agenda — próximos 7 dias</b>\n\n';
+  for (const [data, evs] of Object.entries(byDate)) {
+    const dw = new Date(data + 'T12:00:00');
+    msg += `<b>${diasSemana[dw.getDay()]} ${formatarData(data)}</b>\n`;
+    for (const e of evs) {
+      const hora = e.hora ? e.hora.slice(0, 5) + ' ' : '';
+      msg += `  🔹 ${hora}${e.titulo}\n`;
+    }
+    msg += '\n';
+  }
+
+  await enviar(msg.trim());
+}
+
+async function execMarcarEvento(titulo, data, hora, tipo) {
+  const dataEvento = data || hoje();
+  const tipoEvento = tipo || 'compromisso';
+
+  await sbPost('calendar_events', {
+    user_id: USER_ID,
+    titulo,
+    tipo: tipoEvento,
+    status: 'pendente',
+    data_inicio: dataEvento,
+    data_fim: dataEvento,
+    hora: hora || null,
+    recorrente: false,
+  });
+
+  const horaStr = hora ? ` às ${hora}` : '';
+  await enviar(
+    `📅 <b>Evento marcado!</b>\n\n` +
+    `📋 ${titulo}\n` +
+    `📆 ${formatarData(dataEvento)}${horaStr}`
+  );
+}
+
+async function execOffshore() {
+  const hj = hoje();
+
+  const atual = await sbGet('offshore_cycles', `data_embarque=lte.${hj}&data_desembarque=gte.${hj}&order=data_embarque.desc&limit=1`);
+
+  if (Array.isArray(atual) && atual.length) {
+    const c = atual[0];
+    const restantes = diasEntre(hj, c.data_desembarque);
+    await enviar(
+      `🚢 <b>Ciclo Offshore</b>\n\n` +
+      `📍 Plataforma: <b>${c.plataforma}</b>\n` +
+      `🛳️ Embarque: ${formatarData(c.data_embarque)}\n` +
+      `🏠 Desembarque: ${formatarData(c.data_desembarque)}\n` +
+      `⏳ ${restantes} dia${restantes !== 1 ? 's' : ''} restante${restantes !== 1 ? 's' : ''}`
+    );
+    return;
+  }
+
+  const proximo = await sbGet('offshore_cycles', `data_embarque=gt.${hj}&order=data_embarque.asc&limit=1`);
+  if (Array.isArray(proximo) && proximo.length) {
+    const c = proximo[0];
+    const diasAte = diasEntre(hj, c.data_embarque);
+    await enviar(
+      `🏠 <b>Em terra</b>\n\n` +
+      `Próximo embarque em <b>${diasAte} dia${diasAte !== 1 ? 's' : ''}</b>\n` +
+      `📍 ${c.plataforma}\n` +
+      `🛳️ ${formatarData(c.data_embarque)} → ${formatarData(c.data_desembarque)}`
+    );
+  } else {
+    await enviar('🏠 Em terra · Nenhum embarque planejado.');
+  }
 }
 
 // ── Callback de botões inline ─────────────────────────────────────────────────
@@ -476,6 +644,9 @@ async function processar(texto) {
   if (t === 'saldo' || t === 'quanto tenho' || t === 'contas')   return execSaldo();
   if (t === 'extrato' || t === 'historico' || t === 'histórico') return execExtrato();
   if (t === 'resumo' || t === 'resumo do mes' || t === 'resumo do mês') return execResumo();
+  if (t === 'hoje' || t === 'tarefas' || t === 'agenda hoje' || t === 'compromissos') return execAgendaHoje();
+  if (t === 'agenda' || t === 'semana' || t === 'agenda da semana') return execAgendaSemana();
+  if (t === 'offshore' || t === 'embarque' || t === 'ciclo') return execOffshore();
   if (t === 'ajuda' || t === 'help' || t === '/start' || t === '/help') return execAjuda();
 
   const [contas, cartoes, categorias] = await Promise.all([
@@ -516,9 +687,16 @@ async function processar(texto) {
       break;
     }
 
-    case 'saldo':   await execSaldo();   break;
-    case 'extrato': await execExtrato(); break;
-    case 'resumo':  await execResumo();  break;
+    case 'saldo':        await execSaldo();       break;
+    case 'extrato':      await execExtrato();     break;
+    case 'resumo':       await execResumo();      break;
+    case 'agenda_hoje':  await execAgendaHoje();  break;
+    case 'agenda_semana':await execAgendaSemana();break;
+    case 'offshore':     await execOffshore();    break;
+    case 'marcar_evento':
+      if (!acao.titulo) { await enviar('❌ Não identifiquei o título do evento.'); return; }
+      await execMarcarEvento(acao.titulo, acao.data, acao.hora, acao.tipo);
+      break;
     case 'ajuda':   await execAjuda();   break;
     default:
       await enviar(acao.mensagem
