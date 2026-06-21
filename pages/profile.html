@@ -5,12 +5,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Meu Perfil — FinZen</title>
-<link rel="stylesheet" href="../css/base.css?v=1102">
-<link rel="stylesheet" href="../css/layout.css?v=1102">
-<link rel="stylesheet" href="../css/components.css?v=1102">
-<link rel="stylesheet" href="../css/mobile.css?v=1102">
-<link rel="stylesheet" href="../css/navigation.css?v=1102">
-<link rel="stylesheet" href="../css/editorial.css?v=1102">
+<link rel="stylesheet" href="../css/base.css?v=1103">
+<link rel="stylesheet" href="../css/layout.css?v=1103">
+<link rel="stylesheet" href="../css/components.css?v=1103">
+<link rel="stylesheet" href="../css/mobile.css?v=1103">
+<link rel="stylesheet" href="../css/navigation.css?v=1103">
+<link rel="stylesheet" href="../css/editorial.css?v=1103">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#f59e0b">
 </head>
@@ -34,17 +34,28 @@
         <!-- Avatar -->
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;
           padding:20px;background:var(--surface-2);border-radius:12px;border:1px solid var(--border);">
-          <div id="perfilAvatar" style="
-            width:64px;height:64px;border-radius:50%;
-            background:var(--gold-gradient);color:#000;
-            display:flex;align-items:center;justify-content:center;
-            font-size:26px;font-weight:900;flex-shrink:0;
-            box-shadow:var(--gold-glow);
-          ">?</div>
+          <div style="position:relative;flex-shrink:0;">
+            <div id="perfilAvatar" onclick="document.getElementById('pfAvatarInput').click()" title="Clique para trocar a foto"
+              style="width:72px;height:72px;border-radius:50%;
+                background:var(--gold-gradient);color:#000;
+                display:flex;align-items:center;justify-content:center;
+                font-size:28px;font-weight:900;cursor:pointer;
+                box-shadow:var(--gold-glow);overflow:hidden;position:relative;">
+              <img id="perfilAvatarImg" src="" alt="Avatar"
+                style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;">
+              <span id="perfilAvatarInicial">?</span>
+            </div>
+            <div onclick="document.getElementById('pfAvatarInput').click()"
+              style="position:absolute;bottom:0;right:0;width:22px;height:22px;border-radius:50%;
+                background:var(--gold-gradient);display:flex;align-items:center;justify-content:center;
+                cursor:pointer;border:2px solid var(--bg);font-size:11px;">📷</div>
+          </div>
+          <input type="file" id="pfAvatarInput" accept="image/*" style="display:none">
           <div>
             <div id="perfilNomeDisplay" style="font-size:18px;font-weight:900;">—</div>
             <div id="perfilEmailDisplay" style="font-size:12px;color:var(--muted);margin-top:2px;">—</div>
             <div style="font-size:11px;color:var(--accent);margin-top:4px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;">Assessor Pessoal</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:6px;">Clique na foto para trocar</div>
           </div>
         </div>
 
@@ -156,8 +167,8 @@
   </main>
 </div>
 
-<script src="../js/version.js?v=1102"></script>
-<script type="module" src="../js/navigation.js?v=1102"></script>
-<script type="module" src="../js/profile.js?v=1102"></script>
+<script src="../js/version.js?v=1103"></script>
+<script type="module" src="../js/navigation.js?v=1103"></script>
+<script type="module" src="../js/profile.js?v=1103"></script>
 </body>
 </html>

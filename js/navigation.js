@@ -219,21 +219,62 @@ async function carregarBadges() {
   } catch (_) {}
 }
 
-// ─── Profile card: dados reais ───────────────────────────────────────────────
+// ─── Profile card: nome, avatar e stats ──────────────────────────────────────
+const PROFILE_CACHE_KEY = 'finzen_profile_cache';
+
 async function carregarProfileCard() {
   try {
     const { data: sd } = await supabase.auth.getSession();
     if (!sd?.session) return;
     const user = sd.session.user;
 
-    const name    = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário';
+    // Tentar cache de sessão para evitar query repetida entre páginas
+    let profileData = null;
+    try { profileData = JSON.parse(sessionStorage.getItem(PROFILE_CACHE_KEY) || 'null'); } catch(_) {}
+
+    if (!profileData) {
+      const { data } = await supabase
+        .from('user_settings')
+        .select('setting_key,setting_value')
+        .eq('user_id', user.id)
+        .in('setting_key', ['perfil_nome', 'perfil_avatar_url']);
+
+      const cfg = {};
+      (data || []).forEach(r => { cfg[r.setting_key] = r.setting_value; });
+
+      profileData = {
+        name:      cfg['perfil_nome']      || user.email?.split('@')[0] || 'Usuário',
+        avatarUrl: cfg['perfil_avatar_url'] || '',
+      };
+      try { sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profileData)); } catch(_) {}
+    }
+
+    const { name, avatarUrl } = profileData;
     const initial = name.charAt(0).toUpperCase();
 
-    const nameEl = document.getElementById('sidebarUserName');
+    // Atualizar avatar na sidebar
     const initEl = document.getElementById('sidebarAvatarInitial');
-    if (nameEl) nameEl.textContent = name;
-    if (initEl) initEl.textContent = initial;
+    const imgEl  = document.getElementById('sidebarAvatarImg');
+    if (avatarUrl && imgEl) {
+      imgEl.src = avatarUrl;
+      imgEl.style.display = 'block';
+      if (initEl) initEl.style.display = 'none';
+    } else if (initEl) {
+      initEl.textContent   = initial;
+      initEl.style.display = 'flex';
+    }
 
+    // Atualizar nome na sidebar, topbar e drawer
+    const els = {
+      sidebarUserName: document.getElementById('sidebarUserName'),
+      userEmail:       document.getElementById('userEmail'),
+      drawerUserName:  document.getElementById('drawerUserName'),
+    };
+    if (els.sidebarUserName) els.sidebarUserName.textContent = name;
+    if (els.userEmail)       els.userEmail.textContent       = name;
+    if (els.drawerUserName)  els.drawerUserName.textContent  = name;
+
+    // Stats: saldo / cartões / metas
     const [
       { data: contas },
       { count: numCartoes },
@@ -805,7 +846,10 @@ function ensureDesktopSidebar() {
     profileCard = document.createElement('div');
     profileCard.className = 'sidebar-profile';
     profileCard.innerHTML = `
-      <div class="sidebar-avatar-ring"><div class="sidebar-avatar" id="sidebarAvatarInitial">?</div></div>
+      <div class="sidebar-avatar-ring">
+        <img id="sidebarAvatarImg" class="sidebar-avatar-img" src="" alt="Avatar" style="display:none">
+        <div class="sidebar-avatar" id="sidebarAvatarInitial">?</div>
+      </div>
       <div class="sidebar-profile-info">
         <div class="sidebar-profile-name" id="sidebarUserName">FinZen</div>
         <div class="sidebar-profile-sub">Assessor Pessoal</div>
@@ -922,11 +966,15 @@ function ensureMobileDrawer() {
     a.addEventListener('click', closeDrawer);
   });
 
-  // Preencher nome do usuário no drawer
+  // Preencher nome do usuário no drawer (usa cache se disponível)
   supabase.auth.getSession().then(({ data: sd }) => {
     if (!sd?.session) return;
-    const u    = sd.session.user;
-    const name = u.user_metadata?.full_name || u.email?.split('@')[0] || 'Usuário';
+    const u = sd.session.user;
+    let name = u.email?.split('@')[0] || 'Usuário';
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(PROFILE_CACHE_KEY) || 'null');
+      if (cached?.name) name = cached.name;
+    } catch(_) {}
     const nameEl = document.getElementById('drawerUserName');
     const subEl  = document.getElementById('drawerUserSub');
     if (nameEl) nameEl.textContent = name;

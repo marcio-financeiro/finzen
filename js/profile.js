@@ -30,29 +30,86 @@ el('btnLogoutPerfil').addEventListener('click', async () => {
   navigate('../login.html');
 });
 
+// ── Redimensionar imagem para base64 (max 120px) ─────
+async function resizeImagem(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = e => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const max    = 120;
+        const scale  = Math.min(max / img.width, max / img.height, 1);
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.round(img.width  * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Exibir avatar no card do perfil ─────────────────
+function exibirAvatar(dataUrl) {
+  const imgEl    = el('perfilAvatarImg');
+  const inicialEl = el('perfilAvatarInicial');
+  if (dataUrl && imgEl) {
+    imgEl.src          = dataUrl;
+    imgEl.style.display = 'block';
+    if (inicialEl) inicialEl.style.display = 'none';
+  } else if (inicialEl) {
+    inicialEl.style.display = 'flex';
+    if (imgEl) imgEl.style.display = 'none';
+  }
+}
+
+let avatarDataUrl = ''; // avatar atual (data URL ou '')
+
 // ── Carregar perfil salvo ─────────────────────────────
 async function carregarPerfil() {
   const { data } = await supabase
     .from('user_settings')
     .select('setting_key,setting_value')
     .eq('user_id', user.id)
-    .in('setting_key', ['perfil_nome','perfil_email_notif','perfil_regime','perfil_empresa']);
+    .in('setting_key', ['perfil_nome','perfil_email_notif','perfil_regime','perfil_empresa','perfil_avatar_url']);
 
   const cfg = {};
   (data || []).forEach(r => { cfg[r.setting_key] = r.setting_value; });
 
   const nome = cfg['perfil_nome'] || '';
-  el('pfNome').value      = nome;
+  el('pfNome').value       = nome;
   el('pfEmailNotif').value = cfg['perfil_email_notif'] || user.email || '';
-  el('pfRegime').value    = cfg['perfil_regime']  || '14x21';
-  el('pfEmpresa').value   = cfg['perfil_empresa'] || '';
+  el('pfRegime').value     = cfg['perfil_regime']  || '14x21';
+  el('pfEmpresa').value    = cfg['perfil_empresa'] || '';
 
-  // Avatar e display
+  avatarDataUrl = cfg['perfil_avatar_url'] || '';
+
+  // Exibir avatar ou inicial
   const inicial = nome ? nome[0].toUpperCase() : user.email[0].toUpperCase();
-  el('perfilAvatar').textContent    = inicial;
-  el('perfilNomeDisplay').textContent = nome || user.email;
+  if (el('perfilAvatarInicial')) el('perfilAvatarInicial').textContent = inicial;
+  exibirAvatar(avatarDataUrl);
+
+  el('perfilNomeDisplay').textContent  = nome || user.email;
   el('perfilEmailDisplay').textContent = cfg['perfil_email_notif'] || user.email || '';
 }
+
+// ── Upload de foto ────────────────────────────────────
+el('pfAvatarInput').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    avatarDataUrl = await resizeImagem(file);
+    exibirAvatar(avatarDataUrl);
+    msg('pfMsg', 'Foto carregada — clique em Salvar perfil para confirmar.', 'info');
+  } catch(_) {
+    msg('pfMsg', 'Erro ao carregar imagem.', 'danger');
+  }
+  e.target.value = ''; // permitir selecionar o mesmo arquivo novamente
+});
 
 // ── Salvar perfil ─────────────────────────────────────
 el('btnSalvarPerfil').addEventListener('click', async () => {
@@ -67,19 +124,24 @@ el('btnSalvarPerfil').addEventListener('click', async () => {
   el('btnSalvarPerfil').textContent = 'Salvando...';
 
   const upserts = [
-    { user_id: user.id, setting_key: 'perfil_nome',        setting_value: nome    },
-    { user_id: user.id, setting_key: 'perfil_email_notif', setting_value: emailN  },
-    { user_id: user.id, setting_key: 'perfil_regime',      setting_value: regime  },
-    { user_id: user.id, setting_key: 'perfil_empresa',     setting_value: empresa },
+    { user_id: user.id, setting_key: 'perfil_nome',        setting_value: nome         },
+    { user_id: user.id, setting_key: 'perfil_email_notif', setting_value: emailN       },
+    { user_id: user.id, setting_key: 'perfil_regime',      setting_value: regime       },
+    { user_id: user.id, setting_key: 'perfil_empresa',     setting_value: empresa      },
+    { user_id: user.id, setting_key: 'perfil_avatar_url',  setting_value: avatarDataUrl },
   ];
 
   for (const u of upserts) {
     await supabase.from('user_settings').upsert(u, { onConflict: 'user_id,setting_key' });
   }
 
+  // Invalidar cache de sessão para que a sidebar recarregue o nome correto
+  try { sessionStorage.removeItem('finzen_profile_cache'); } catch(_) {}
+
   // Atualizar display
-  el('perfilAvatar').textContent     = nome[0].toUpperCase();
-  el('perfilNomeDisplay').textContent = nome;
+  if (el('perfilAvatarInicial')) el('perfilAvatarInicial').textContent = nome[0].toUpperCase();
+  exibirAvatar(avatarDataUrl);
+  el('perfilNomeDisplay').textContent  = nome;
   el('perfilEmailDisplay').textContent = emailN;
 
   el('btnSalvarPerfil').textContent = '💾 Salvar perfil';

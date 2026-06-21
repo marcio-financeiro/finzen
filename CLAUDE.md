@@ -17,7 +17,7 @@
 ## Verificação antes de entregar
 - Checar que funções usadas em `onclick=""` estão expostas via `window.funcao = funcao`
 - Checar que toda função que usa `await` é declarada como `async`
-- Checar que `?v=XXXX` foi incrementado nas importações HTML quando JS/CSS mudou (versão atual: **v=1102**)
+- Checar que `?v=XXXX` foi incrementado nas importações HTML quando JS/CSS mudou (versão atual: **v=1103**)
 - Nunca deixar quebrar páginas que não foram pedidas para alterar
 
 ## Contexto do projeto
