@@ -419,7 +419,7 @@ async function execSaldo() {
 }
 
 async function execExtrato() {
-  const txs = await sbGet('transactions', 'order=date.desc,created_at.desc&limit=10');
+  const txs = await sbGet('transactions', 'order=created_at.desc&limit=10');
   if (!Array.isArray(txs) || !txs.length) { await enviar('Nenhuma movimentação encontrada.'); return; }
   const lista = txs.map(t => {
     const emoji = t.type === 'receita' ? '💰' : '💸';

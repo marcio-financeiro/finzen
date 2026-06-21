@@ -101,7 +101,7 @@ async function carregarDashboard(){
       supabase.from('budgets').select('*,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',ref),                                                                                   // orcamentos
       supabase.from('goals').select('*').eq('user_id',user.id).eq('ativo',true).order('data_alvo',{ascending:true}).limit(5),                                                                                  // metas
       supabase.from('transactions').select('type,amount,recurrence_frequency').eq('user_id',user.id).eq('is_recurring',true).eq('recurrence_active',true),                                                     // recorrentes
-      supabase.from('transactions').select('id,type,amount,description,date,status,accounts:account_id(nome,currency),categories:category_id(nome,icon)').eq('user_id',user.id).order('date',{ascending:false}).order('created_at',{ascending:false}).limit(8), // ultimosLanc
+      supabase.from('transactions').select('id,type,amount,description,date,status,accounts:account_id(nome,currency),categories:category_id(nome,icon)').eq('user_id',user.id).order('created_at',{ascending:false}).limit(8), // ultimosLanc
       supabase.from('categories').select('id,nome,icon,cor').eq('user_id',user.id),                                                                                                                            // categorias
       supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date',ultimoDiaMes()),                 // pendentesRestantesMes
       supabase.from('credit_cards').select('id,nome,vencimento_dia').eq('user_id',user.id).eq('ativo',true),                                                                                                   // cartoes
@@ -801,3 +801,7 @@ atualizarNavPrevisao(previsaoOffset, false);
 
 carregarDashboard();
 initAssistantBar(user.id).catch(() => {});
+
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible') carregarDashboard();
+});
