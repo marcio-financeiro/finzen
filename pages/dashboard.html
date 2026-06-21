@@ -50,12 +50,12 @@
         <h1>Dashboard</h1>
         <p id="userEmail" class="muted"></p>
       </div>
+      <button type="button" class="btn btn-secondary compact" id="btnModoSimples"
+        onclick="localStorage.removeItem('finzen_modo_avancado');location.href='./mobile.html'"
+        style="display:none">
+        📱 Modo Simples
+      </button>
       <div class="topbar-actions">
-        <button type="button" class="btn btn-secondary compact" id="btnModoSimples"
-          onclick="localStorage.removeItem('finzen_modo_avancado');location.href='./mobile.html'"
-          style="display:none">
-          📱 Modo Simples
-        </button>
         <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
       </div>
     </header>
