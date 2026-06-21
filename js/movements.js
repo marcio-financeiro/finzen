@@ -69,7 +69,7 @@ if(!sessionData.session){
 }
 
 const user = sessionData.session.user;
-userEmail.innerText = user.email;
+userEmail.innerText = user.user_metadata?.full_name || user.email.split('@')[0];
 
 btnLogout.addEventListener('click', async () => {
   await supabase.auth.signOut();

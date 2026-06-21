@@ -64,7 +64,7 @@ if(!data.session){
 }
 
 user = data.session.user;
-userEmail.innerText = user.email;
+userEmail.innerText = user.user_metadata?.full_name || user.email.split('@')[0];
 dataCompra.value = hojeISO();
 
 btnLogout.addEventListener('click', async () => {

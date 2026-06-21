@@ -5,7 +5,7 @@ import { formatCurrency } from './utils.js';
 const { data: sessionData } = await supabase.auth.getSession();
 if(!sessionData.session){ navigate('../login.html'); }
 const user = sessionData.session.user;
-document.getElementById('userEmail').innerText = user.email;
+document.getElementById('userEmail').innerText = user.user_metadata?.full_name || user.email.split('@')[0];
 document.getElementById('btnLogout').addEventListener('click', async ()=>{
   await supabase.auth.signOut(); navigate('../login.html');
 });

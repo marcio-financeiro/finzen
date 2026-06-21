@@ -25,7 +25,7 @@ if(!data.session){
 }
 
 const user = data.session.user;
-userEmail.innerText = user.email;
+userEmail.innerText = user.user_metadata?.full_name || user.email.split('@')[0];
 
 function mostrarMensagem(texto, tipo = 'info'){
   mensagemCartao.className = `message ${tipo}`;
