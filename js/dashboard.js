@@ -76,96 +76,100 @@ function mesComOffset(offset){
 
 // ── Carregamento paralelo ─────────────────────────────
 async function carregarDashboard(){
-  const inicio = primeiroDiaMes();
-  const fim    = ultimoDiaMes();
-  const ref    = refMesAtual();
+  try {
+    const inicio = primeiroDiaMes();
+    const fim    = ultimoDiaMes();
+    const ref    = refMesAtual();
 
-  const [
-    { data: contas },
-    { data: transacoesMes },
-    { data: parcelasMes },
-    { data: transacoesPendentes },
-    { data: orcamentos },
-    { data: metas },
-    { data: recorrentes },
-    { data: ultimosLanc },
-    { data: categorias },
-    { data: pendentesRestantesMes },
-    { data: cartoes },
-  ] = await Promise.all([
-    supabase.from('accounts').select('id,nome,currency,saldo_atual,color').eq('user_id',user.id).eq('active',true),                                                                                          // contas
-    supabase.from('transactions').select('type,amount,status,date,category_id,categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),                              // transacoesMes
-    supabase.from('card_transactions').select('valor_parcela,fatura_referencia,status,card_id,category_id').eq('user_id',user.id).eq('status','aberta').eq('fatura_referencia',ref),                                     // parcelasMes
-    supabase.from('transactions').select('id,description,amount,date,type,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date', (() => { const d=new Date(hoje()); d.setDate(d.getDate()+7); return d.toISOString().split('T')[0]; })()).order('date',{ascending:true}).limit(5), // transacoesPendentes
-    supabase.from('budgets').select('*,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',ref),                                                                                   // orcamentos
-    supabase.from('goals').select('*').eq('user_id',user.id).eq('ativo',true).order('data_alvo',{ascending:true}).limit(5),                                                                                  // metas
-    supabase.from('transactions').select('type,amount,recurrence_frequency').eq('user_id',user.id).eq('is_recurring',true).eq('recurrence_active',true),                                                     // recorrentes
-    supabase.from('transactions').select('id,type,amount,description,date,status,accounts:account_id(nome,currency),categories:category_id(nome,icon)').eq('user_id',user.id).order('date',{ascending:false}).order('created_at',{ascending:false}).limit(8), // ultimosLanc
-    supabase.from('categories').select('id,nome,icon,cor').eq('user_id',user.id),                                                                                                                            // categorias
-    supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date',ultimoDiaMes()),                 // pendentesRestantesMes
-    supabase.from('credit_cards').select('id,nome,vencimento_dia').eq('user_id',user.id).eq('ativo',true),                                                                                                   // cartoes
-  ]);
+    const [
+      { data: contas },
+      { data: transacoesMes },
+      { data: parcelasMes },
+      { data: transacoesPendentes },
+      { data: orcamentos },
+      { data: metas },
+      { data: recorrentes },
+      { data: ultimosLanc },
+      { data: categorias },
+      { data: pendentesRestantesMes },
+      { data: cartoes },
+    ] = await Promise.all([
+      supabase.from('accounts').select('id,nome,currency,saldo_atual,color').eq('user_id',user.id).eq('active',true),                                                                                          // contas
+      supabase.from('transactions').select('type,amount,status,date,category_id,categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),                              // transacoesMes
+      supabase.from('card_transactions').select('valor_parcela,fatura_referencia,status,card_id,category_id').eq('user_id',user.id).eq('status','aberta').eq('fatura_referencia',ref),                                     // parcelasMes
+      supabase.from('transactions').select('id,description,amount,date,type,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date', (() => { const d=new Date(hoje()); d.setDate(d.getDate()+7); return d.toISOString().split('T')[0]; })()).order('date',{ascending:true}).limit(5), // transacoesPendentes
+      supabase.from('budgets').select('*,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',ref),                                                                                   // orcamentos
+      supabase.from('goals').select('*').eq('user_id',user.id).eq('ativo',true).order('data_alvo',{ascending:true}).limit(5),                                                                                  // metas
+      supabase.from('transactions').select('type,amount,recurrence_frequency').eq('user_id',user.id).eq('is_recurring',true).eq('recurrence_active',true),                                                     // recorrentes
+      supabase.from('transactions').select('id,type,amount,description,date,status,accounts:account_id(nome,currency),categories:category_id(nome,icon)').eq('user_id',user.id).order('date',{ascending:false}).order('created_at',{ascending:false}).limit(8), // ultimosLanc
+      supabase.from('categories').select('id,nome,icon,cor').eq('user_id',user.id),                                                                                                                            // categorias
+      supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date',ultimoDiaMes()),                 // pendentesRestantesMes
+      supabase.from('credit_cards').select('id,nome,vencimento_dia').eq('user_id',user.id).eq('ativo',true),                                                                                                   // cartoes
+    ]);
 
-  // ── KPIs ─────────────────────────────────────────
-  const totalSaldo = (contas||[]).filter(c=>(c.currency||'BRL')==='BRL').reduce((s,c)=>s+Number(c.saldo_atual||0),0);
-  const tx = transacoesMes||[];
-  const pagas = tx.filter(t=>t.status==='pago');
-  const receitas = pagas.filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
-  const despesas = pagas.filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0);
-  const resultado = receitas - despesas;
-  const totalFaturas = (parcelasMes||[]).reduce((s,p)=>s+Number(p.valor_parcela||0),0);
+    // ── KPIs ─────────────────────────────────────────
+    const totalSaldo = (contas||[]).filter(c=>(c.currency||'BRL')==='BRL').reduce((s,c)=>s+Number(c.saldo_atual||0),0);
+    const tx = transacoesMes||[];
+    const pagas = tx.filter(t=>t.status==='pago');
+    const receitas = pagas.filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
+    const despesas = pagas.filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0);
+    const resultado = receitas - despesas;
+    const totalFaturas = (parcelasMes||[]).reduce((s,p)=>s+Number(p.valor_parcela||0),0);
 
-  el('kpiSaldo').innerText     = fmt(totalSaldo);
-  el('kpiReceitas').innerText  = fmt(receitas);
-  el('kpiDespesas').innerText  = fmt(despesas);
-  el('kpiResultado').innerText = fmt(resultado);
-  el('kpiFaturas').innerText   = fmt(totalFaturas);
-  aplicarClasse(el('kpiResultado'), resultado);
+    el('kpiSaldo').innerText     = fmt(totalSaldo);
+    el('kpiReceitas').innerText  = fmt(receitas);
+    el('kpiDespesas').innerText  = fmt(despesas);
+    el('kpiResultado').innerText = fmt(resultado);
+    el('kpiFaturas').innerText   = fmt(totalFaturas);
+    aplicarClasse(el('kpiResultado'), resultado);
 
-  // ── Alertas de vencimento ─────────────────────────
-  renderAlertas(transacoesPendentes||[], cartoes||[], parcelasMes||[]);
+    // ── Alertas de vencimento ─────────────────────────
+    renderAlertas(transacoesPendentes||[], cartoes||[], parcelasMes||[]);
 
-  // ── Pizza de despesas ─────────────────────────────
-  renderPizza(pagas.filter(t=>t.type==='despesa'));
+    // ── Pizza de despesas ─────────────────────────────
+    renderPizza(pagas.filter(t=>t.type==='despesa'));
 
-  // ── Saúde do orçamento ───────────────────────────
-  renderOrcamento(orcamentos||[], pagas.filter(t=>t.type==='despesa'), parcelasMes||[]);
+    // ── Saúde do orçamento ───────────────────────────
+    renderOrcamento(orcamentos||[], pagas.filter(t=>t.type==='despesa'), parcelasMes||[]);
 
-  // ── Metas ────────────────────────────────────────
-  renderMetas(metas||[]);
+    // ── Metas ────────────────────────────────────────
+    renderMetas(metas||[]);
 
-  // ── Receita líquida recorrente ───────────────────
-  renderReceitaLiquida(recorrentes||[]);
+    // ── Receita líquida recorrente ───────────────────
+    renderReceitaLiquida(recorrentes||[]);
 
-  // ── Previsão de saldo do mês ────────────────────
-  previsaoBase = { saldoAtual: totalSaldo, receitasPagas: receitas, despesasPagas: despesas, txPendentes: pendentesRestantesMes||[], faturasCartao: totalFaturas };
-  renderPrevisao(totalSaldo, receitas, despesas, pendentesRestantesMes||[], totalFaturas);
+    // ── Previsão de saldo do mês ────────────────────
+    previsaoBase = { saldoAtual: totalSaldo, receitasPagas: receitas, despesasPagas: despesas, txPendentes: pendentesRestantesMes||[], faturasCartao: totalFaturas };
+    renderPrevisao(totalSaldo, receitas, despesas, pendentesRestantesMes||[], totalFaturas);
 
-  // ── Últimos lançamentos ──────────────────────────
-  renderUltimos(ultimosLanc||[]);
+    // ── Últimos lançamentos ──────────────────────────
+    renderUltimos(ultimosLanc||[]);
 
-  // ── Score de Saúde Financeira ────────────────────
-  // Buscar investimentos para o score (query separada para não travar o dashboard)
-  const { data: investimentos } = await supabase
-    .from('investments')
-    .select('tipo,quantidade,preco_medio,cotacao_atual')
-    .eq('user_id', user.id).eq('ativo', true);
+    // ── Score de Saúde Financeira ────────────────────
+    // Buscar investimentos para o score (query separada para não travar o dashboard)
+    const { data: investimentos } = await supabase
+      .from('investments')
+      .select('tipo,quantidade,preco_medio,cotacao_atual')
+      .eq('user_id', user.id).eq('ativo', true);
 
-  const { data: cartaoLimites } = await supabase
-    .from('credit_cards')
-    .select('limite,nome')
-    .eq('user_id', user.id).eq('ativo', true);
+    const { data: cartaoLimites } = await supabase
+      .from('credit_cards')
+      .select('limite,nome')
+      .eq('user_id', user.id).eq('ativo', true);
 
-  renderScore({
-    totalSaldo,
-    receitas,
-    despesas,
-    totalFaturas,
-    investimentos:  investimentos  || [],
-    cartaoLimites:  cartaoLimites  || [],
-    metas:          metas          || [],
-    recorrentes:    recorrentes    || [],
-  });
+    renderScore({
+      totalSaldo,
+      receitas,
+      despesas,
+      totalFaturas,
+      investimentos:  investimentos  || [],
+      cartaoLimites:  cartaoLimites  || [],
+      metas:          metas          || [],
+      recorrentes:    recorrentes    || [],
+    });
+  } catch(err) {
+    console.error('[Dashboard]', err);
+  }
 }
 
 // ── Alertas ───────────────────────────────────────────
@@ -521,22 +525,24 @@ async function carregarPrevisaoMes(offset){
 
 // Mês passado: dados reais (já fechados) — sem projeção
 async function carregarPrevisaoPassado(offset){
-  const { inicio, fim, ref } = mesComOffset(offset);
-
-  const [
-    { data: txMes },
-    { data: parcelasMes },
-  ] = await Promise.all([
-    supabase.from('transactions').select('type,amount,status').eq('user_id',user.id).eq('status','pago').gte('date',inicio).lte('date',fim),
-    supabase.from('card_transactions').select('valor_parcela').eq('user_id',user.id).eq('fatura_referencia',ref),
-  ]);
-
-  const receitas   = (txMes||[]).filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
-  const despesasTx = (txMes||[]).filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0);
-  const faturas    = (parcelasMes||[]).reduce((s,p)=>s+Number(p.valor_parcela||0),0);
-  const despesas   = despesasTx + faturas;
-
-  renderPrevisaoPassado(receitas, despesas);
+  try {
+    const { inicio, fim, ref } = mesComOffset(offset);
+    const [
+      { data: txMes },
+      { data: parcelasMes },
+    ] = await Promise.all([
+      supabase.from('transactions').select('type,amount,status').eq('user_id',user.id).eq('status','pago').gte('date',inicio).lte('date',fim),
+      supabase.from('card_transactions').select('valor_parcela').eq('user_id',user.id).eq('fatura_referencia',ref),
+    ]);
+    const receitas   = (txMes||[]).filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
+    const despesasTx = (txMes||[]).filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0);
+    const faturas    = (parcelasMes||[]).reduce((s,p)=>s+Number(p.valor_parcela||0),0);
+    const despesas   = despesasTx + faturas;
+    renderPrevisaoPassado(receitas, despesas);
+  } catch(err) {
+    console.error('[Dashboard:Passado]', err);
+    el('blocoPrevisao').innerHTML = '<p class="block-loading">Erro ao carregar dados do mês.</p>';
+  }
 }
 
 function renderPrevisaoPassado(receitas, despesas){
@@ -564,41 +570,46 @@ function renderPrevisaoPassado(receitas, despesas){
 
 // Mês futuro: previsão encadeada a partir do saldo previsto do mês atual
 async function carregarPrevisaoFuturo(offset){
-  const inicioRange = mesComOffset(1).inicio;
-  const refInicial  = mesComOffset(1).ref;
-  const { fim: fimRange, ref: refAlvo } = mesComOffset(offset);
+  try {
+    const inicioRange = mesComOffset(1).inicio;
+    const refInicial  = mesComOffset(1).ref;
+    const { fim: fimRange, ref: refAlvo } = mesComOffset(offset);
 
-  const [
-    { data: parcelasFuturas },
-    { data: pendentesFuturos },
-  ] = await Promise.all([
-    supabase.from('card_transactions').select('valor_parcela,fatura_referencia').eq('user_id',user.id).eq('status','aberta').gte('fatura_referencia',refInicial).lte('fatura_referencia',refAlvo),
-    supabase.from('transactions').select('type,amount,date').eq('user_id',user.id).eq('status','pendente').gte('date',inicioRange).lte('date',fimRange),
-  ]);
+    const [
+      { data: parcelasFuturas },
+      { data: pendentesFuturos },
+    ] = await Promise.all([
+      supabase.from('card_transactions').select('valor_parcela,fatura_referencia').eq('user_id',user.id).eq('status','aberta').gte('fatura_referencia',refInicial).lte('fatura_referencia',refAlvo),
+      supabase.from('transactions').select('type,amount,date').eq('user_id',user.id).eq('status','pendente').gte('date',inicioRange).lte('date',fimRange),
+    ]);
 
-  const faturasPorMes = {};
-  (parcelasFuturas||[]).forEach(p => {
-    faturasPorMes[p.fatura_referencia] = (faturasPorMes[p.fatura_referencia]||0) + Number(p.valor_parcela||0);
-  });
+    const faturasPorMes = {};
+    (parcelasFuturas||[]).forEach(p => {
+      faturasPorMes[p.fatura_referencia] = (faturasPorMes[p.fatura_referencia]||0) + Number(p.valor_parcela||0);
+    });
 
-  const pendentesPorMes = {};
-  (pendentesFuturos||[]).forEach(t => {
-    const refMes = String(t.date).slice(0,7);
-    if(!pendentesPorMes[refMes]) pendentesPorMes[refMes] = { receita:0, despesa:0 };
-    pendentesPorMes[refMes][t.type] = (pendentesPorMes[refMes][t.type]||0) + Number(t.amount||0);
-  });
+    const pendentesPorMes = {};
+    (pendentesFuturos||[]).forEach(t => {
+      const refMes = String(t.date).slice(0,7);
+      if(!pendentesPorMes[refMes]) pendentesPorMes[refMes] = { receita:0, despesa:0 };
+      pendentesPorMes[refMes][t.type] = (pendentesPorMes[refMes][t.type]||0) + Number(t.amount||0);
+    });
 
-  let saldoFim = previsaoSaldoFimAtual;
-  let saldoInicio = saldoFim;
-  for(let i=1; i<=offset; i++){
-    const { ref } = mesComOffset(i);
-    const receitasPrev = previsaoReceitasRec + (pendentesPorMes[ref]?.receita||0);
-    const despesasPrev = previsaoDespesasRec + (pendentesPorMes[ref]?.despesa||0) + (faturasPorMes[ref]||0);
-    saldoInicio = saldoFim;
-    saldoFim    = saldoInicio + receitasPrev - despesasPrev;
+    let saldoFim = previsaoSaldoFimAtual;
+    let saldoInicio = saldoFim;
+    for(let i=1; i<=offset; i++){
+      const { ref } = mesComOffset(i);
+      const receitasPrev = previsaoReceitasRec + (pendentesPorMes[ref]?.receita||0);
+      const despesasPrev = previsaoDespesasRec + (pendentesPorMes[ref]?.despesa||0) + (faturasPorMes[ref]||0);
+      saldoInicio = saldoFim;
+      saldoFim    = saldoInicio + receitasPrev - despesasPrev;
+    }
+
+    renderPrevisaoFuturo(saldoInicio, saldoFim);
+  } catch(err) {
+    console.error('[Dashboard:Futuro]', err);
+    el('blocoPrevisao').innerHTML = '<p class="block-loading">Erro ao calcular previsão.</p>';
   }
-
-  renderPrevisaoFuturo(saldoInicio, saldoFim);
 }
 
 function renderPrevisaoFuturo(saldoInicio, saldoFim){

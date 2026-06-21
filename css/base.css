@@ -12,7 +12,6 @@
 
   --accent:#f59e0b;
   --accent-dim:rgba(245,158,11,0.12);
-  --purple:#f59e0b;
 
   --success:#10b981;
   --success-dim:rgba(16,185,129,0.12);
@@ -26,13 +25,15 @@
   --info:#3b82f6;
 
   --text:#f0efe8;
-  --muted:#6b6a60;
+  --muted:#8e8d85;
 
   --radius-sm:8px;
   --radius-md:10px;
   --radius-lg:12px;
 
   --shadow:0 24px 70px rgba(0,0,0,.5);
+  --transition-fast: .15s ease;
+  --transition-ui:   .25s ease;
 
   --font-main:'Inter',Arial,sans-serif;
   --font-mono:'DM Mono','JetBrains Mono','Courier New',monospace;
@@ -172,4 +173,33 @@ h3{
 ::selection{
   background:var(--accent-dim);
   color:var(--text);
+}
+
+/* ── Utilitário: texto pequeno ── */
+.text-sm{
+  font-size:13px;
+}
+
+/* ── Skeleton loading: placeholder pulsante ── */
+.block-loading{
+  font-size:13px;
+  color:var(--muted);
+  animation:loading-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes loading-pulse{
+  0%,100%{ opacity:1 }
+  50%{ opacity:.45 }
+}
+
+/* ── Animação de entrada para cards ── */
+@keyframes fadeInUp{
+  from{ opacity:0; transform:translateY(6px); }
+  to{   opacity:1; transform:translateY(0); }
+}
+
+.panel,
+.kpi-card,
+.auth-card{
+  animation:fadeInUp .3s ease both;
 }
