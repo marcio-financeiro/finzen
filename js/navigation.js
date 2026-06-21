@@ -308,7 +308,7 @@ function navHtml(forDrawer = false) {
   return standalone + groups;
 }
 
-// ─── Toggle de grupo ──────────────────────────────────────────────────────────
+// ─── Toggle de grupo (accordion) ─────────────────────────────────────────────
 registrarAcao('toggleNavGroup', (el) => {
   // Em modo rail o flyout assume — não colapsar grupos
   if (document.documentElement.classList.contains('sidebar-rail')) return;
@@ -320,6 +320,16 @@ registrarAcao('toggleNavGroup', (el) => {
 
   elements.forEach(elGrupo => elGrupo.classList.toggle('collapsed'));
   localStorage.setItem(storeKey, isCollapsed ? 'open' : 'closed');
+
+  // Accordion: ao abrir um grupo, fechar todos os outros
+  if (isCollapsed) {
+    NAV_GROUPS.forEach(g => {
+      if (g.label === groupLabel) return;
+      document.querySelectorAll(`.nav-group[data-group="${g.label}"]`)
+        .forEach(elGrupo => elGrupo.classList.add('collapsed'));
+      localStorage.setItem(`nav_collapsed_v3_${g.label}`, 'closed');
+    });
+  }
 });
 
 // ─── Injeção de estilos globais ───────────────────────────────────────────────
@@ -723,7 +733,7 @@ function ensureDesktopSidebar() {
     sidebar.appendChild(footer);
   }
   footer.innerHTML = `
-    <div style="display:flex;gap:6px;align-items:center">
+    <div class="footer-btns">
       ${privacyBtnHtml()}
       ${themeBtnHtml()}
     </div>
