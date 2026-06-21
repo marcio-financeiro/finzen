@@ -6,7 +6,9 @@
 
 .sidebar{
   flex-shrink:0;
-  background:var(--surface);
+  background:rgba(14,15,24,.62);
+  backdrop-filter:blur(22px);
+  -webkit-backdrop-filter:blur(22px);
   border-right:1px solid var(--border);
   position:sticky;
   top:0;

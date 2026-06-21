@@ -8,6 +8,33 @@ if (localStorage.getItem(SIDEBAR_RAIL_KEY) === 'collapsed') {
   document.documentElement.classList.add('sidebar-rail');
 }
 
+// ─── SVG Sprite ───────────────────────────────────────────────────────────────
+function injectSvgSprite() {
+  if (document.getElementById('finzen-svg-sprite')) return;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.id = 'finzen-svg-sprite';
+  svg.setAttribute('style', 'display:none');
+  svg.innerHTML = `
+    <symbol id="ic-dashboard"    viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.4"/><rect x="14" y="3" width="7" height="7" rx="1.4"/><rect x="3" y="14" width="7" height="7" rx="1.4"/><rect x="14" y="14" width="7" height="7" rx="1.4"/></symbol>
+    <symbol id="ic-wallet"       viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="16" cy="14.5" r="1.2" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="ic-trend"        viewBox="0 0 24 24"><polyline points="3,17 9,11 13,15 21,6"/><polyline points="15,6 21,6 21,12"/></symbol>
+    <symbol id="ic-calendar"     viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="ic-chat"         viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></symbol>
+    <symbol id="ic-settings"     viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="2" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="ic-moon"         viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+    <symbol id="ic-sun"          viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/></symbol>
+    <symbol id="ic-eye"          viewBox="0 0 24 24"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="ic-eye-off"      viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></symbol>
+    <symbol id="ic-chevron-left" viewBox="0 0 24 24"><polyline points="15,4 9,12 15,20"/></symbol>
+    <symbol id="ic-chevron-down" viewBox="0 0 24 24"><polyline points="6,9 12,15 18,9"/></symbol>
+  `;
+  document.body.insertBefore(svg, document.body.firstChild);
+}
+
+function navIcon(id) {
+  return `<svg class="nav-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#${id}"/></svg>`;
+}
+
 // ─── Flyout state ─────────────────────────────────────────────────────────────
 let _flyoutTimer  = null;
 let _flyoutPinned = false;
@@ -72,14 +99,14 @@ registrarAcao('toggleSidebarRail', toggleSidebarRail);
 
 // ─── Item solto: Dashboard (sem grupo, sem flyout) ────────────────────────────
 const NAV_STANDALONE = [
-  { title: 'Dashboard', icon: '🏠', href: './dashboard.html', badge: true },
+  { title: 'Dashboard', icon: 'ic-dashboard', href: './dashboard.html', badge: true },
 ];
 
 // ─── Grupos colapsáveis ───────────────────────────────────────────────────────
 const NAV_GROUPS = [
   {
     label: 'Financeiro',
-    icon: '💳',
+    icon: 'ic-wallet',
     items: [
       { title: 'Movimentações',  icon: '💸', href: './movements.html' },
       { title: 'Extrato',        icon: '🧾', href: './account-statement.html' },
@@ -90,7 +117,7 @@ const NAV_GROUPS = [
   },
   {
     label: 'Investimentos',
-    icon: '📈',
+    icon: 'ic-trend',
     items: [
       { title: 'Carteira',       icon: '📈', href: './investments.html' },
       { title: 'Patrimônio',     icon: '💎', href: './patrimony-history.html' },
@@ -101,7 +128,7 @@ const NAV_GROUPS = [
   },
   {
     label: 'Gestão Pessoal',
-    icon: '📅',
+    icon: 'ic-calendar',
     items: [
       { title: 'Calendário',     icon: '📅', href: './calendar.html' },
       { title: 'Offshore',       icon: '🛢️', href: './offshore.html' },
@@ -109,7 +136,7 @@ const NAV_GROUPS = [
   },
   {
     label: 'Inteligência',
-    icon: '🤖',
+    icon: 'ic-chat',
     items: [
       { title: 'Chat IA',        icon: '💬', href: './chat.html' },
       { title: 'Relatório',      icon: '📊', href: './reports.html' },
@@ -118,7 +145,7 @@ const NAV_GROUPS = [
   },
   {
     label: 'Sistema',
-    icon: '⚙️',
+    icon: 'ic-settings',
     items: [
       { title: 'Busca',          icon: '🔍', href: './search.html' },
       { title: 'Cadastros',      icon: '⚙️', href: './registrations.html' },
@@ -192,6 +219,48 @@ async function carregarBadges() {
   } catch (_) {}
 }
 
+// ─── Profile card: dados reais ───────────────────────────────────────────────
+async function carregarProfileCard() {
+  try {
+    const { data: sd } = await supabase.auth.getSession();
+    if (!sd?.session) return;
+    const user = sd.session.user;
+
+    const name    = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário';
+    const initial = name.charAt(0).toUpperCase();
+
+    const nameEl = document.getElementById('sidebarUserName');
+    const initEl = document.getElementById('sidebarAvatarInitial');
+    if (nameEl) nameEl.textContent = name;
+    if (initEl) initEl.textContent = initial;
+
+    const [
+      { data: contas },
+      { count: numCartoes },
+      { count: numMetas },
+    ] = await Promise.all([
+      supabase.from('accounts').select('saldo_atual,currency').eq('user_id', user.id).eq('active', true),
+      supabase.from('credit_cards').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('ativo', true),
+      supabase.from('goals').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('ativo', true),
+    ]);
+
+    const saldo = (contas || [])
+      .filter(c => (c.currency || 'BRL') === 'BRL')
+      .reduce((s, c) => s + Number(c.saldo_atual || 0), 0);
+
+    const fmtSaldo = saldo >= 1000
+      ? `R$${(saldo / 1000).toFixed(1)}k`
+      : `R$${saldo.toFixed(0)}`;
+
+    const saldoEl   = document.getElementById('statSaldo');
+    const cartoesEl = document.getElementById('statCartoes');
+    const metasEl   = document.getElementById('statMetas');
+    if (saldoEl)   saldoEl.textContent   = fmtSaldo;
+    if (cartoesEl) cartoesEl.textContent = numCartoes || 0;
+    if (metasEl)   metasEl.textContent   = numMetas   || 0;
+  } catch (_) {}
+}
+
 // ─── Toggle de tema (claro / escuro) ─────────────────────────────────────────
 const THEME_KEY = 'finzen_theme';
 
@@ -202,8 +271,10 @@ function getTheme() {
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   document.querySelectorAll('.theme-toggle-btn').forEach(btn => {
-    btn.textContent = theme === 'light' ? '🌙' : '☀️';
-    btn.title       = theme === 'light' ? 'Modo escuro' : 'Modo claro';
+    const use = btn.querySelector('use');
+    if (use) use.setAttribute('href', `#${theme === 'light' ? 'ic-moon' : 'ic-sun'}`);
+    else btn.textContent = theme === 'light' ? '🌙' : '☀️';
+    btn.title = theme === 'light' ? 'Modo escuro' : 'Modo claro';
     btn.setAttribute('aria-pressed', theme === 'light' ? 'true' : 'false');
   });
 }
@@ -216,16 +287,16 @@ function toggleTheme() {
 
 registrarAcao('toggleTheme', toggleTheme);
 
-function themeBtnHtml(extraStyle = '') {
-  const theme = getTheme();
+function themeBtnHtml() {
+  const theme  = getTheme();
+  const iconId = theme === 'light' ? 'ic-moon' : 'ic-sun';
   return `<button
-    class="theme-toggle-btn"
+    class="theme-toggle-btn sidebar-icon-btn"
     type="button"
     data-action="toggleTheme"
     title="${theme === 'light' ? 'Modo escuro' : 'Modo claro'}"
     aria-pressed="${theme === 'light' ? 'true' : 'false'}"
-    style="${extraStyle}"
-  >${theme === 'light' ? '🌙' : '☀️'}</button>`;
+  >${navIcon(iconId)}</button>`;
 }
 
 // ─── Toggle de privacidade (ocultar/mostrar valores) ─────────────────────────
@@ -237,10 +308,11 @@ function getPrivacy() {
 
 function applyPrivacy(hidden) {
   document.documentElement.setAttribute('data-privacy', hidden ? 'on' : 'off');
-  // Atualiza todos os botões de toggle presentes na página
   document.querySelectorAll('.privacy-toggle-btn').forEach(btn => {
-    btn.textContent    = hidden ? '🙈' : '👁️';
-    btn.title          = hidden ? 'Mostrar valores' : 'Ocultar valores';
+    const use = btn.querySelector('use');
+    if (use) use.setAttribute('href', `#${hidden ? 'ic-eye-off' : 'ic-eye'}`);
+    else btn.textContent = hidden ? '🙈' : '👁️';
+    btn.title = hidden ? 'Mostrar valores' : 'Ocultar valores';
     btn.setAttribute('aria-pressed', hidden ? 'true' : 'false');
   });
 }
@@ -253,16 +325,16 @@ function togglePrivacy() {
 
 registrarAcao('togglePrivacy', togglePrivacy);
 
-function privacyBtnHtml(extraStyle = '') {
+function privacyBtnHtml() {
   const hidden = getPrivacy();
+  const iconId = hidden ? 'ic-eye-off' : 'ic-eye';
   return `<button
-    class="privacy-toggle-btn"
+    class="privacy-toggle-btn sidebar-icon-btn"
     type="button"
     data-action="togglePrivacy"
     title="${hidden ? 'Mostrar valores' : 'Ocultar valores'}"
     aria-pressed="${hidden ? 'true' : 'false'}"
-    style="${extraStyle}"
-  >${hidden ? '🙈' : '👁️'}</button>`;
+  >${navIcon(iconId)}</button>`;
 }
 
 // ─── HTML dos grupos de navegação ─────────────────────────────────────────────
@@ -288,9 +360,9 @@ function groupHtml(group, forDrawer = false) {
     <div class="nav-group ${collapsed ? 'collapsed' : ''}" data-group="${group.label}" data-prefix="${prefix}">
       <button class="nav-group-toggle" type="button"
         data-action="toggleNavGroup" data-group-label="${group.label}">
-        <span class="nav-group-icon">${group.icon}</span>
+        <span class="nav-group-icon">${navIcon(group.icon)}</span>
         <span class="nav-group-label">${group.label}</span>
-        <span class="nav-group-arrow">▾</span>
+        <span class="nav-group-arrow">${navIcon('ic-chevron-down')}</span>
       </button>
       <div class="nav-group-items">${itemsHtml}</div>
     </div>`;
@@ -299,7 +371,7 @@ function groupHtml(group, forDrawer = false) {
 function navHtml(forDrawer = false) {
   const standalone = NAV_STANDALONE.map(item => `
     <a class="nav-standalone ${isActive(item.href) ? 'active' : ''}" href="${item.href}">
-      <span class="nav-icon">${item.icon}</span>
+      <span class="nav-icon">${navIcon(item.icon)}</span>
       <span class="nav-item-text">${item.title}</span>
       ${item.badge ? '<span class="nav-badge nav-dashboard-badge" style="display:none">0</span>' : ''}
     </a>
@@ -378,7 +450,10 @@ function injectStyles() {
       color: var(--muted); text-align: left;
     }
 
-    .nav-group-icon { font-size: 13px; }
+    .nav-group-icon {
+      display: flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px; flex-shrink: 0;
+    }
 
     .nav-group-label {
       flex: 1;
@@ -388,13 +463,15 @@ function injectStyles() {
     }
 
     .nav-group-arrow {
-      font-size: 11px;
+      display: flex; align-items: center; justify-content: center;
       transition: transform .2s ease;
-      color: var(--muted);
-      opacity: .6;
+      color: var(--muted); opacity: .6;
     }
 
     .nav-group.collapsed .nav-group-arrow { transform: rotate(-90deg); }
+
+    /* ── nav-icon padrão (subitens) ── */
+    .nav-svg-icon { width: 18px; height: 18px; flex-shrink: 0; }
 
     .nav-group-items {
       overflow: hidden;
@@ -714,7 +791,32 @@ function ensureDesktopSidebar() {
     brand.className = 'sidebar-brand';
     sidebar.prepend(brand);
   }
-  brand.innerHTML = '<span class="brand-text">FinZen</span>';
+  brand.innerHTML = `
+    <div class="sidebar-logo-mark">FZ</div>
+    <div class="sidebar-logo-text">
+      <span class="sidebar-logo-name">FinZen</span>
+      <span class="sidebar-logo-sub">ASSESSOR PESSOAL</span>
+    </div>
+  `;
+
+  // Card de perfil
+  let profileCard = sidebar.querySelector('.sidebar-profile');
+  if (!profileCard) {
+    profileCard = document.createElement('div');
+    profileCard.className = 'sidebar-profile';
+    profileCard.innerHTML = `
+      <div class="sidebar-avatar-ring"><div class="sidebar-avatar" id="sidebarAvatarInitial">?</div></div>
+      <div class="sidebar-profile-info">
+        <div class="sidebar-profile-name" id="sidebarUserName">FinZen</div>
+        <div class="sidebar-profile-sub">Assessor Pessoal</div>
+      </div>
+      <div class="sidebar-profile-stats" id="sidebarProfileStats">
+        <div class="sidebar-stat"><span class="sidebar-stat-val" id="statSaldo">—</span><span class="sidebar-stat-lbl">Saldo</span></div>
+        <div class="sidebar-stat"><span class="sidebar-stat-val" id="statCartoes">—</span><span class="sidebar-stat-lbl">Cartões</span></div>
+        <div class="sidebar-stat"><span class="sidebar-stat-val" id="statMetas">—</span><span class="sidebar-stat-lbl">Metas</span></div>
+      </div>
+    `;
+  }
 
   // Nav
   let nav = sidebar.querySelector('.sidebar-nav');
@@ -723,6 +825,12 @@ function ensureDesktopSidebar() {
     nav.className = 'sidebar-nav';
     sidebar.appendChild(nav);
   }
+
+  // Inserir profile card entre brand e nav
+  if (!sidebar.querySelector('.sidebar-profile')) {
+    sidebar.insertBefore(profileCard, nav);
+  }
+
   nav.innerHTML = navHtml(false);
 
   // Footer: toggle privacidade + versão
@@ -748,7 +856,7 @@ function ensureDesktopSidebar() {
     railToggle.type      = 'button';
     railToggle.setAttribute('aria-label',
       localStorage.getItem(SIDEBAR_RAIL_KEY) === 'collapsed' ? 'Expandir menu' : 'Recolher menu');
-    railToggle.innerHTML = '<span class="rail-toggle-chevron">‹</span>';
+    railToggle.innerHTML = `<svg class="nav-svg-icon rail-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ic-chevron-left"/></svg>`;
     railToggle.addEventListener('click', toggleSidebarRail);
     document.body.appendChild(railToggle);
   }
@@ -921,8 +1029,10 @@ function initNavigation() {
   );
   oldKeys.forEach(k => localStorage.removeItem(k));
 
+  injectSvgSprite();
   injectStyles();
   ensureDesktopSidebar();
+  carregarProfileCard().catch(() => {});
   removeOldBottomNav();
   ensureMobileDrawer();
   ensureMenuButton();
