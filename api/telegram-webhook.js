@@ -419,12 +419,37 @@ async function execSaldo() {
 }
 
 async function execExtrato() {
-  const txs = await sbGet('transactions', 'order=created_at.desc&limit=10');
-  if (!Array.isArray(txs) || !txs.length) { await enviar('Nenhuma movimentação encontrada.'); return; }
-  const lista = txs.map(t => {
-    const emoji = t.type === 'receita' ? '💰' : '💸';
-    return `${emoji} ${t.date} — ${t.description} — <b>R$ ${fmt(t.amount)}</b>`;
-  }).join('\n');
+  const [txs, cardTxs] = await Promise.all([
+    sbGet('transactions', 'order=created_at.desc&limit=10'),
+    sbGet('card_transactions', 'select=descricao,valor_total,data_compra,created_at&parcela_atual=eq.1&order=created_at.desc&limit=10'),
+  ]);
+
+  const normTx = (Array.isArray(txs) ? txs : []).map(t => ({
+    emoji: t.type === 'receita' ? '💰' : '💸',
+    date: t.date,
+    description: t.description,
+    amount: t.amount,
+    created_at: t.created_at,
+  }));
+
+  const normCard = (Array.isArray(cardTxs) ? cardTxs : []).map(c => ({
+    emoji: '💳',
+    date: c.data_compra,
+    description: c.descricao,
+    amount: c.valor_total,
+    created_at: c.created_at,
+  }));
+
+  const todos = [...normTx, ...normCard]
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    .slice(0, 10);
+
+  if (!todos.length) { await enviar('Nenhuma movimentação encontrada.'); return; }
+
+  const lista = todos.map(t =>
+    `${t.emoji} ${t.date} — ${t.description} — <b>R$ ${fmt(t.amount)}</b>`
+  ).join('\n');
+
   await enviar(`📋 <b>Extrato recente</b>\n\n${lista}`);
 }
 

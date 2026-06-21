@@ -93,6 +93,7 @@ async function carregarDashboard(){
       { data: categorias },
       { data: pendentesRestantesMes },
       { data: cartoes },
+      { data: ultimosCartao },
     ] = await Promise.all([
       supabase.from('accounts').select('id,nome,currency,saldo_atual,color').eq('user_id',user.id).eq('active',true),                                                                                          // contas
       supabase.from('transactions').select('type,amount,status,date,category_id,categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),                              // transacoesMes
@@ -101,10 +102,11 @@ async function carregarDashboard(){
       supabase.from('budgets').select('*,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',ref),                                                                                   // orcamentos
       supabase.from('goals').select('*').eq('user_id',user.id).eq('ativo',true).order('data_alvo',{ascending:true}).limit(5),                                                                                  // metas
       supabase.from('transactions').select('type,amount,recurrence_frequency').eq('user_id',user.id).eq('is_recurring',true).eq('recurrence_active',true),                                                     // recorrentes
-      supabase.from('transactions').select('id,type,amount,description,date,status,accounts:account_id(nome,currency),categories:category_id(nome,icon)').eq('user_id',user.id).order('created_at',{ascending:false}).limit(8), // ultimosLanc
+      supabase.from('transactions').select('id,type,amount,description,date,status,created_at,accounts:account_id(nome,currency),categories:category_id(nome,icon)').eq('user_id',user.id).order('created_at',{ascending:false}).limit(8), // ultimosLanc
       supabase.from('categories').select('id,nome,icon,cor').eq('user_id',user.id),                                                                                                                            // categorias
       supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date',ultimoDiaMes()),                 // pendentesRestantesMes
       supabase.from('credit_cards').select('id,nome,vencimento_dia').eq('user_id',user.id).eq('ativo',true),                                                                                                   // cartoes
+      supabase.from('card_transactions').select('id,descricao,valor_total,data_compra,status,created_at,credit_cards:card_id(nome),categories:category_id(nome,icon)').eq('user_id',user.id).eq('parcela_atual',1).order('created_at',{ascending:false}).limit(8), // ultimosCartao
     ]);
 
     // ── KPIs ─────────────────────────────────────────
@@ -143,7 +145,7 @@ async function carregarDashboard(){
     renderPrevisao(totalSaldo, receitas, despesas, pendentesRestantesMes||[], totalFaturas);
 
     // ── Últimos lançamentos ──────────────────────────
-    renderUltimos(ultimosLanc||[]);
+    renderUltimos(ultimosLanc||[], ultimosCartao||[]);
 
     // ── Score de Saúde Financeira ────────────────────
     // Buscar investimentos para o score (query separada para não travar o dashboard)
@@ -647,8 +649,23 @@ function renderPrevisaoFuturo(saldoInicio, saldoFim){
 }
 
 // ── Últimos lançamentos ───────────────────────────────
-function renderUltimos(lancamentos){
-  if(!lancamentos.length){
+function renderUltimos(lancamentos, cartaoLanc){
+  const cartaoNorm = (cartaoLanc||[]).map(c => ({
+    type: 'despesa',
+    amount: c.valor_total,
+    description: c.descricao,
+    date: c.data_compra,
+    status: c.status,
+    created_at: c.created_at,
+    accounts: { nome: '💳 ' + (c.credit_cards?.nome || 'Cartão'), currency: 'BRL' },
+    categories: c.categories,
+  }));
+
+  const todos = [...(lancamentos||[]), ...cartaoNorm]
+    .sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0))
+    .slice(0, 8);
+
+  if(!todos.length){
     el('ultimosLancamentos').innerHTML = '<p class="muted" style="padding:16px;font-size:13px">Nenhum lançamento cadastrado.</p>';
     return;
   }
@@ -657,10 +674,10 @@ function renderUltimos(lancamentos){
     <table class="data-table">
       <thead><tr>
         <th>Data</th><th>Tipo</th><th>Descrição</th>
-        <th>Conta</th><th>Categoria</th><th>Valor</th>
+        <th>Conta / Cartão</th><th>Categoria</th><th>Valor</th>
       </tr></thead>
       <tbody>
-        ${lancamentos.map(item => `
+        ${todos.map(item => `
           <tr>
             <td style="white-space:nowrap">${item.date?.split('-').reverse().join('/')}</td>
             <td><span class="badge ${item.type==='receita'?'success':'danger'}">${item.type}</span></td>
