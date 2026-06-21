@@ -7,7 +7,6 @@ const el = id => document.getElementById(id);
 const { data: sessionData } = await supabase.auth.getSession();
 if(!sessionData.session){ navigate('../login.html'); }
 const user = sessionData.session.user;
-el('userEmail').innerText = user.user_metadata?.full_name || user.email.split('@')[0];
 el('btnLogout').addEventListener('click', async () => {
   await supabase.auth.signOut(); navigate('../login.html');
 });

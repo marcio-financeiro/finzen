@@ -11,7 +11,6 @@ import { emailService } from './emailService.js';
 const { data: sd } = await supabase.auth.getSession();
 if (!sd.session) navigate('../login.html');
 const user = sd.session.user;
-document.getElementById('userEmail').innerText = user.user_metadata?.full_name || user.email.split('@')[0];
 document.getElementById('btnVoltar').addEventListener('click', () => navigate('./dashboard.html'));
 
 const el  = id => document.getElementById(id);

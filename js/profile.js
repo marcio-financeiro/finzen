@@ -132,10 +132,17 @@ el('btnSalvarPerfil').addEventListener('click', async () => {
   ];
 
   for (const u of upserts) {
-    await supabase.from('user_settings').upsert(u, { onConflict: 'user_id,setting_key' });
+    const { error } = await supabase
+      .from('user_settings')
+      .upsert(u, { onConflict: 'user_id,setting_key' });
+    if (error) {
+      el('btnSalvarPerfil').textContent = '💾 Salvar perfil';
+      msg('pfMsg', `Erro ao salvar ${u.setting_key}: ${error.message}`, 'danger');
+      return;
+    }
   }
 
-  // Invalidar cache de sessão para que a sidebar recarregue o nome correto
+  // Invalidar cache para que sidebar recarregue o nome correto
   try { sessionStorage.removeItem('finzen_profile_cache'); } catch(_) {}
 
   // Atualizar display

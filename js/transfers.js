@@ -43,7 +43,6 @@ if(!sessionData.session){
 }
 
 const user = sessionData.session.user;
-userEmail.innerText = user.user_metadata?.full_name || user.email.split('@')[0];
 
 let contas = [];
 

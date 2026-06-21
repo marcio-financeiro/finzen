@@ -14,7 +14,6 @@ const modoAvancado = localStorage.getItem('finzen_modo_avancado') === 'true';
 if(isMobile && !modoAvancado){ navigate('./mobile.html'); }
 
 const user = sessionData.session.user;
-document.getElementById('userEmail').innerText = user.user_metadata?.full_name || user.email.split('@')[0];
 document.getElementById('btnLogout').addEventListener('click', async () => {
   await supabase.auth.signOut(); navigate('../login.html');
 });

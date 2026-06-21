@@ -1080,6 +1080,16 @@ function initNavigation() {
   injectSvgSprite();
   injectStyles();
   ensureDesktopSidebar();
+
+  // Aplicar nome correto imediatamente (sem esperar query async)
+  try {
+    const _pc = JSON.parse(sessionStorage.getItem(PROFILE_CACHE_KEY) || 'null');
+    if (_pc?.name) {
+      const _uel = document.getElementById('userEmail');
+      if (_uel) _uel.textContent = _pc.name;
+    }
+  } catch(_) {}
+
   carregarProfileCard().catch(() => {});
   removeOldBottomNav();
   ensureMobileDrawer();

@@ -66,7 +66,6 @@ if(!data.session){
 }
 
 user = data.session.user;
-userEmail.innerText = user.user_metadata?.full_name || user.email.split('@')[0];
 anoFiltro.value = anoAtual();
 
 btnLogout.addEventListener('click', async () => {

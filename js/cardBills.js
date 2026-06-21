@@ -22,7 +22,6 @@ let editandoId = null;
 const { data } = await supabase.auth.getSession();
 if (!data.session) { navigate('../login.html'); }
 user = data.session.user;
-userEmail.innerText = user.user_metadata?.full_name || user.email.split('@')[0];
 
 btnLogout.addEventListener('click', async () => {
   await supabase.auth.signOut();
