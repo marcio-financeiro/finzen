@@ -142,14 +142,33 @@ el('btnSalvarPerfil').addEventListener('click', async () => {
     }
   }
 
-  // Invalidar cache para que sidebar recarregue o nome correto
-  try { sessionStorage.removeItem('finzen_profile_cache'); } catch(_) {}
+  // Atualizar cache com dados novos (não apenas invalidar)
+  try {
+    sessionStorage.setItem('finzen_profile_cache', JSON.stringify({ name: nome, avatarUrl: avatarDataUrl }));
+  } catch(_) {}
 
-  // Atualizar display
+  // Atualizar display do perfil
   if (el('perfilAvatarInicial')) el('perfilAvatarInicial').textContent = nome[0].toUpperCase();
   exibirAvatar(avatarDataUrl);
   el('perfilNomeDisplay').textContent  = nome;
   el('perfilEmailDisplay').textContent = emailN;
+
+  // Atualizar sidebar sem recarregar a página
+  const sidebarImg     = document.getElementById('sidebarAvatarImg');
+  const sidebarInicial = document.getElementById('sidebarAvatarInitial');
+  const sidebarNome    = document.getElementById('sidebarUserName');
+  if (avatarDataUrl && sidebarImg) {
+    sidebarImg.src          = avatarDataUrl;
+    sidebarImg.style.display = 'block';
+    if (sidebarInicial) sidebarInicial.style.display = 'none';
+  } else if (sidebarInicial) {
+    sidebarInicial.textContent = nome[0].toUpperCase();
+    sidebarInicial.style.display = 'flex';
+    if (sidebarImg) sidebarImg.style.display = 'none';
+  }
+  if (sidebarNome) sidebarNome.textContent = nome;
+  const uel = document.getElementById('userEmail');
+  if (uel) uel.textContent = nome;
 
   el('btnSalvarPerfil').textContent = '💾 Salvar perfil';
   msg('pfMsg', '✅ Perfil salvo com sucesso!', 'success');
