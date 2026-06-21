@@ -562,4 +562,13 @@ registrarAcao('ativarModoAvancado', () => {
 });
 
 // ── Inicializar ───────────────────────────────────────
-await carregar();
+try {
+  await carregar();
+} catch(e) {
+  console.error('[mobile] Erro ao carregar:', e);
+  const loadEl = document.getElementById('mobLoading');
+  if (loadEl) {
+    loadEl.innerHTML = `<p style="color:var(--red,#ef4444);padding:16px">
+      Erro ao carregar. Verifique sua conexão e recarregue a página.</p>`;
+  }
+}

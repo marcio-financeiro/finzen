@@ -149,11 +149,14 @@ function addMonthsRef(ref, months){
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
 }
 
-function invoiceRef(dateISO, closingDay){
+function invoiceRef(dateISO, closingDay, dueDay){
   const [y,m,d] = dateISO.split('-').map(Number);
   let date = new Date(y, m-1, 1);
   if(d > Number(closingDay || 1)){
     date = new Date(y, m, 1);
+  }
+  if(dueDay && Number(dueDay) < Number(closingDay)){
+    date = new Date(date.getFullYear(), date.getMonth() + 1, 1);
   }
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
 }
@@ -362,7 +365,7 @@ function fillInvoices(){
     movementInvoice.innerHTML = '<option value="">Selecione cartão e data</option>';
     return;
   }
-  const base = invoiceRef(movementDate.value, card.fechamento_dia);
+  const base = invoiceRef(movementDate.value, card.fechamento_dia, card.vencimento_dia);
   const options = [];
   for(let i=0; i<6; i++){
     const ref = addMonthsRef(base, i);

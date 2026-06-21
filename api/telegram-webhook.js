@@ -390,11 +390,14 @@ function buscarCategoria(nome, lista) {
       || null;
 }
 
-function calcFaturaRef(dataCompra, fechamentoDia) {
+function calcFaturaRef(dataCompra, fechamentoDia, vencimentoDia) {
   const d = dataCompra ? new Date(dataCompra + 'T12:00:00') : new Date();
-  const ref = d.getDate() > fechamentoDia
+  const ref = d.getDate() > Number(fechamentoDia)
     ? new Date(d.getFullYear(), d.getMonth() + 1, 1)
     : new Date(d.getFullYear(), d.getMonth(), 1);
+  if (vencimentoDia && Number(vencimentoDia) < Number(fechamentoDia)) {
+    ref.setMonth(ref.getMonth() + 1);
+  }
   return `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}`;
 }
 
@@ -516,7 +519,7 @@ async function execLancarCartao(valor, descricao, nomeCartao, categoriaNome, dat
   const dataStr      = (dataCompra && dataCompra !== 'ndt') ? dataCompra : hoje();
   const nParcelas    = Math.max(1, parseInt(parcelas) || 1);
   const valorParcela = Math.round((valor / nParcelas) * 100) / 100;
-  const faturaBase   = calcFaturaRef(dataStr, cartao.fechamento_dia);
+  const faturaBase   = calcFaturaRef(dataStr, cartao.fechamento_dia, cartao.vencimento_dia);
   const [fatAno, fatMes] = faturaBase.split('-').map(Number);
 
   // Cria uma linha por parcela com a fatura correta de cada mês
@@ -873,6 +876,14 @@ export default async function handler(req, res) {
       if (!result || !result.valor) {
         await enviar('❌ Não consegui ler o valor no comprovante. Tente tirar uma foto mais nítida.');
         return res.status(200).json({ ok: true });
+      }
+
+      // Sanitizar ano extraído pela IA — "14:25" pode ser lido como "2025"
+      if (result.data) {
+        const anoExtraido = parseInt(result.data.split('-')[0], 10);
+        if (anoExtraido !== new Date().getFullYear()) {
+          result.data = hoje();
+        }
       }
 
       const [contas, cartoes] = await Promise.all([

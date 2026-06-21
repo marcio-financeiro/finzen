@@ -147,11 +147,17 @@ async function carregarFaturas() {
 
 // ─── RENDERIZAR ────────────────────────────────
 function renderFaturas() {
-  const atual   = mesAtualRef();
-  const doMes   = faturas.filter(f => f.referencia === atual);
-  const futuras = faturas.filter(f => f.referencia >  atual);
+  const atual     = mesAtualRef();
+  const passadas  = faturas.filter(f => f.referencia <  atual);
+  const doMes     = faturas.filter(f => f.referencia === atual);
+  const futuras   = faturas.filter(f => f.referencia >  atual);
 
   let html = '';
+
+  if (passadas.length) {
+    html += `<p class="bills-section-title" style="color:var(--danger,#ef4444)">⚠️ Faturas anteriores</p>`;
+    passadas.forEach((f, i) => { html += billCardHtml(f, `passada_${i}`, false); });
+  }
 
   if (doMes.length) {
     html += `<p class="bills-section-title">📅 Fatura do mês atual — ${formatRef(atual)}</p>`;
@@ -293,6 +299,15 @@ window.abrirEditarItem = function(id) {
   document.getElementById('editDescricao').value  = item.descricao || '';
   document.getElementById('editValor').value      = item.valor_parcela || '';
   document.getElementById('editDataCompra').value = item.data_compra || '';
+  document.getElementById('editFaturaRef').value  = item.fatura_referencia || '';
+
+  const parcelasDiv = document.getElementById('editAtualizarParcelas');
+  if (item.parcelas > 1 && item.parcela_atual < item.parcelas) {
+    parcelasDiv.style.display = 'block';
+    document.getElementById('editAtualizarTodasParcelas').checked = true;
+  } else {
+    parcelasDiv.style.display = 'none';
+  }
 
   const sel = document.getElementById('editCategoria');
   sel.innerHTML = '<option value="">Sem categoria</option>' +
@@ -313,11 +328,13 @@ window.fecharModalItem = function() {
 window.salvarEdicaoItem = async function() {
   if (!editandoId) return;
 
-  const descricao    = document.getElementById('editDescricao').value.trim();
-  const valorParcela = parseFloat(document.getElementById('editValor').value);
-  const dataCompra   = document.getElementById('editDataCompra').value;
-  const categoryId   = document.getElementById('editCategoria').value || null;
-  const msgEl        = document.getElementById('editMensagem');
+  const descricao      = document.getElementById('editDescricao').value.trim();
+  const valorParcela   = parseFloat(document.getElementById('editValor').value);
+  const dataCompra     = document.getElementById('editDataCompra').value;
+  const categoryId     = document.getElementById('editCategoria').value || null;
+  const faturaRef      = document.getElementById('editFaturaRef').value || null;
+  const atualizarTodas = document.getElementById('editAtualizarTodasParcelas')?.checked;
+  const msgEl          = document.getElementById('editMensagem');
 
   if (!descricao || isNaN(valorParcela) || valorParcela <= 0) {
     msgEl.className = 'message danger';
@@ -325,15 +342,40 @@ window.salvarEdicaoItem = async function() {
     return;
   }
 
+  const payload = { descricao, valor_parcela: valorParcela, data_compra: dataCompra || null, category_id: categoryId };
+  if (faturaRef) payload.fatura_referencia = faturaRef;
+
   const { error } = await supabase
     .from('card_transactions')
-    .update({ descricao, valor_parcela: valorParcela, data_compra: dataCompra || null, category_id: categoryId })
+    .update(payload)
     .eq('id', editandoId).eq('user_id', user.id);
 
   if (error) {
     msgEl.className = 'message danger';
     msgEl.innerText = 'Erro: ' + error.message;
     return;
+  }
+
+  // Atualizar parcelas futuras quando fatura foi alterada em compra parcelada
+  const item = itensPorId[editandoId];
+  if (faturaRef && atualizarTodas && item && item.parcelas > 1 && item.parcela_atual < item.parcelas) {
+    const [anoBase, mesBase] = faturaRef.split('-').map(Number);
+    const { data: futuras } = await supabase
+      .from('card_transactions')
+      .select('id, parcela_atual')
+      .eq('user_id', user.id)
+      .eq('card_id', item.card_id)
+      .eq('parcelas', item.parcelas)
+      .eq('valor_total', item.valor_total)
+      .gt('parcela_atual', item.parcela_atual);
+
+    for (const f of (futuras || [])) {
+      const diff = f.parcela_atual - item.parcela_atual;
+      const refDate = new Date(anoBase, mesBase - 1 + diff, 1);
+      const novaRef = `${refDate.getFullYear()}-${String(refDate.getMonth() + 1).padStart(2, '0')}`;
+      await supabase.from('card_transactions').update({ fatura_referencia: novaRef })
+        .eq('id', f.id).eq('user_id', user.id);
+    }
   }
 
   window.fecharModalItem();
