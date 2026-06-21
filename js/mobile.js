@@ -202,6 +202,7 @@ async function carregar() {
     { data: pendentes },
     { data: orcamentos },
     { data: ultimos },
+    { data: ultimosCartao },
     { data: cats },
     { data: cartoes },
   ] = await Promise.all([
@@ -210,7 +211,8 @@ async function carregar() {
     supabase.from('card_transactions').select('valor_parcela,credit_cards:card_id(nome,vencimento_dia)').eq('user_id',user.id).eq('status','aberta').eq('fatura_referencia',anoMes),
     supabase.from('transactions').select('description,amount,date,type').eq('user_id',user.id).eq('status','pendente').gte('date',hojeISO).lte('date',em7).order('date'),
     supabase.from('budgets').select('valor_planejado,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',anoMes),
-    supabase.from('transactions').select('type,amount,date,description,categories:category_id(nome,icon),accounts:account_id(nome)').eq('user_id',user.id).eq('status','pago').order('date',{ascending:false}).limit(5),
+    supabase.from('transactions').select('type,amount,date,created_at,description,categories:category_id(nome,icon),accounts:account_id(nome)').eq('user_id',user.id).eq('status','pago').order('created_at',{ascending:false}).limit(5),
+    supabase.from('card_transactions').select('descricao,valor_total,data_compra,created_at,credit_cards:card_id(nome),categories:category_id(nome,icon)').eq('user_id',user.id).eq('parcela_atual',1).order('created_at',{ascending:false}).limit(5),
     supabase.from('categories').select('id,nome,icon,tipo').eq('user_id',user.id).eq('ativo',true),
     supabase.from('credit_cards').select('id,nome,vencimento_dia').eq('user_id',user.id).eq('ativo',true),
   ]);
@@ -332,8 +334,20 @@ async function carregar() {
 
   // ── Últimos lançamentos ──────────────────────────────
   const lancList = el('mobLancamentosList');
-  if((ultimos||[]).length){
-    lancList.innerHTML = (ultimos||[]).map(t=>{
+  const cartaoNorm = (ultimosCartao||[]).map(c => ({
+    type: 'despesa',
+    amount: c.valor_total,
+    description: c.descricao,
+    date: c.data_compra,
+    created_at: c.created_at,
+    categories: c.categories,
+    accounts: { nome: '💳 ' + (c.credit_cards?.nome || 'Cartão') },
+  }));
+  const todosLanc = [...(ultimos||[]), ...cartaoNorm]
+    .sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0))
+    .slice(0, 5);
+  if(todosLanc.length){
+    lancList.innerHTML = todosLanc.map(t=>{
       const isRec = t.type==='receita';
       const icon  = t.categories?.icon || (isRec?'💚':'🔴');
       return `
