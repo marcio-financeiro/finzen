@@ -29,6 +29,16 @@ function ultimoDiaMes(){
   const ultimo = new Date(d.getFullYear(), d.getMonth()+1, 0);
   return `${ultimo.getFullYear()}-${String(ultimo.getMonth()+1).padStart(2,'0')}-${String(ultimo.getDate()).padStart(2,'0')}`;
 }
+function primeiroDiaMesAnterior(){
+  const d=hoje();
+  const p = new Date(d.getFullYear(), d.getMonth()-1, 1);
+  return `${p.getFullYear()}-${String(p.getMonth()+1).padStart(2,'0')}-01`;
+}
+function ultimoDiaMesAnterior(){
+  const d=hoje();
+  const u = new Date(d.getFullYear(), d.getMonth(), 0);
+  return `${u.getFullYear()}-${String(u.getMonth()+1).padStart(2,'0')}-${String(u.getDate()).padStart(2,'0')}`;
+}
 function refMesAtual(){
   const d=hoje();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
@@ -93,6 +103,7 @@ async function carregarDashboard(){
       { data: pendentesRestantesMes },
       { data: cartoes },
       { data: ultimosCartao },
+      { data: txMesAnterior },
     ] = await Promise.all([
       supabase.from('accounts').select('id,nome,currency,saldo_atual,color').eq('user_id',user.id).eq('active',true),                                                                                          // contas
       supabase.from('transactions').select('type,amount,status,date,category_id,categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),                              // transacoesMes
@@ -106,6 +117,7 @@ async function carregarDashboard(){
       supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date',ultimoDiaMes()),                 // pendentesRestantesMes
       supabase.from('credit_cards').select('id,nome,vencimento_dia').eq('user_id',user.id).eq('ativo',true),                                                                                                   // cartoes
       supabase.from('card_transactions').select('id,descricao,valor_total,data_compra,status,created_at,credit_cards:card_id(nome),categories:category_id(nome,icon)').eq('user_id',user.id).eq('parcela_atual',1).order('created_at',{ascending:false}).limit(8), // ultimosCartao
+      supabase.from('transactions').select('type,amount,status').eq('user_id',user.id).eq('status','pago').gte('date',primeiroDiaMesAnterior()).lte('date',ultimoDiaMesAnterior()),  // txMesAnterior
     ]);
 
     // ── KPIs ─────────────────────────────────────────
@@ -124,8 +136,24 @@ async function carregarDashboard(){
     el('kpiFaturas').innerText   = fmt(totalFaturas);
     aplicarClasse(el('kpiResultado'), resultado);
 
-    // ── Alertas de vencimento ─────────────────────────
-    renderAlertas(transacoesPendentes||[], cartoes||[], parcelasMes||[]);
+    // ── Ring cards (Stage 2) ─────────────────────────
+    const recAnt  = (txMesAnterior||[]).filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
+    const despAnt = (txMesAnterior||[]).filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0);
+    const despesasRec = (recorrentes||[]).filter(r=>r.type==='despesa').reduce((s,r)=>s+Number(r.amount||0),0);
+    const refEmerg = despesasRec > 0 ? despesasRec : (despesas > 0 ? despesas : 1);
+
+    atualizarRing('ringSaldo','ringSaldoPct','deltaSaldo',
+      Math.min(totalSaldo / (refEmerg * 6) * 100, 100), null, null);
+    atualizarRing('ringReceitas','ringReceitasPct','deltaReceitas',
+      Math.min(receitas / Math.max(receitas + despesas, 1) * 100, 100),
+      receitas, recAnt);
+    atualizarRing('ringDespesas','ringDespesasPct','deltaDespesas',
+      Math.min(despesas / Math.max(receitas, 1) * 100, 100),
+      despesas, despAnt);
+
+    // ── Alertas + Próximas faturas (Stage 2) ─────────
+    renderAlertas(transacoesPendentes||[]);
+    renderFaturas(cartoes||[], parcelasMes||[]);
 
     // ── Pizza de despesas ─────────────────────────────
     renderPizza(pagas.filter(t=>t.type==='despesa'));
@@ -173,8 +201,35 @@ async function carregarDashboard(){
   }
 }
 
-// ── Alertas ───────────────────────────────────────────
-function renderAlertas(pendentes, cartoes, parcelasMes){
+// ── Ring helper ───────────────────────────────────────
+function atualizarRing(ringId, pctId, deltaId, pct, valorAtual, valorAnt) {
+  const ringEl = document.getElementById(ringId);
+  const pctEl  = document.getElementById(pctId);
+  const delEl  = document.getElementById(deltaId);
+  const p = Math.max(0, Math.round(pct));
+  if (ringEl) ringEl.style.setProperty('--pct', p);
+  if (pctEl)  pctEl.textContent = p + '%';
+  if (delEl && valorAtual !== null && valorAnt !== null) {
+    if (valorAnt === 0) {
+      delEl.className = 'delta neu';
+      delEl.textContent = '—';
+    } else {
+      const diff = ((valorAtual - valorAnt) / valorAnt) * 100;
+      const cls  = diff > 0 ? 'up' : diff < 0 ? 'down' : 'neu';
+      const icon = diff > 0
+        ? `<svg style="width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#db-arrow-up-right"/></svg>`
+        : `<svg style="width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#db-arrow-down-right"/></svg>`;
+      delEl.className = `delta ${cls}`;
+      delEl.innerHTML = `${icon} ${Math.abs(diff).toFixed(1)}% vs mês ant.`;
+    }
+  } else if (delEl) {
+    delEl.className = 'delta neu';
+    delEl.textContent = '—';
+  }
+}
+
+// ── Alertas (Stage 2 — somente transações pendentes) ─
+function renderAlertas(pendentes){
   const alertas = [];
 
   // Despesas pendentes nos próximos 7 dias
@@ -191,72 +246,83 @@ function renderAlertas(pendentes, cartoes, parcelasMes){
     }
   });
 
-  // Faturas de cartão — calcular data de vencimento do mês atual
-  const d = hoje();
-  const ano = d.getFullYear();
-  const mes = d.getMonth() + 1;
-
-  cartoes.forEach(cartao => {
-    if(!cartao.vencimento_dia) return;
-
-    // Calcular data de vencimento deste mês
-    let anoVenc = ano;
-    let mesVenc = mes;
-    let diaVenc = cartao.vencimento_dia;
-
-    // Se o dia já passou esse mês, o próximo vencimento é no mês seguinte
-    if(diaVenc < d.getDate()){
-      mesVenc = mes + 1;
-      if(mesVenc > 12){ mesVenc = 1; anoVenc++; }
-    }
-
-    const dataVenc = `${anoVenc}-${String(mesVenc).padStart(2,'0')}-${String(diaVenc).padStart(2,'0')}`;
-    const dias = diasAte(dataVenc);
-
-    if(dias === null || dias < 0 || dias > 14) return;
-
-    // Calcular total da fatura (parcelas abertas do mês de referência)
-    const ref = `${ano}-${String(mes).padStart(2,'0')}`;
-    const totalFatura = parcelasMes
-      .filter(p => p.card_id === cartao.id)
-      .reduce((s, p) => s + Number(p.valor_parcela || 0), 0);
-
-    if(totalFatura <= 0) return;
-
-    alertas.push({
-      tipo: 'fatura',
-      titulo: `Fatura ${cartao.nome}`,
-      subtitulo: `Vence dia ${diaVenc} · ${formatData(dataVenc)}`,
-      valor: totalFatura,
-      dias,
-    });
-  });
-
   // Ordenar por urgência
   alertas.sort((a, b) => a.dias - b.dias);
 
   // Notificações Telegram (fire-and-forget)
-  const alertasDespesas = alertas.filter(a => a.tipo === 'despesa');
-  const alertasFaturas  = alertas.filter(a => a.tipo === 'fatura');
-  if(alertasDespesas.length) notificarContasVencendo(alertasDespesas).catch(()=>{});
-  alertasFaturas.forEach(a => notificarFaturaVencendo({ cartao:a.titulo.replace('Fatura ',''), valor:a.valor, dias:a.dias }).catch(()=>{}));
+  if(alertas.length) notificarContasVencendo(alertas).catch(()=>{});
 
   if(!alertas.length){
-    el('blocoAlertas').innerHTML = '<p class="muted" style="font-size:13px">✅ Nenhum vencimento nos próximos 7 dias.</p>';
+    el('blocoAlertas').innerHTML = `
+      <div class="alert-row success">
+        <svg class="alert-icon"><use href="#db-check-circle"/></svg>
+        <div class="alert-body"><p>Tudo em dia!</p><span>Nenhuma despesa pendente nos próximos 7 dias</span></div>
+      </div>`;
     return;
   }
 
   el('blocoAlertas').innerHTML = alertas.map(a => {
-    const urgencia = a.dias === 0 ? '🔴' : a.dias <= 2 ? '🟡' : '🟢';
-    const label    = a.dias === 0 ? 'hoje' : a.dias === 1 ? 'amanhã' : `em ${a.dias} dias`;
-    const icone    = a.tipo === 'fatura' ? '💳' : '📄';
-    return `<div class="alerta-item">
-      <span class="alerta-icon">${urgencia}</span>
-      <div class="alerta-info">
-        <strong>${icone} ${a.titulo}</strong>
-        <small>Vence ${label} · ${a.subtitulo}</small>
+    const label = a.dias === 0 ? 'hoje' : a.dias === 1 ? 'amanhã' : `em ${a.dias} dias`;
+    const tipo  = a.dias === 0 ? 'danger' : a.dias <= 2 ? 'warning' : 'info';
+    const icon  = a.dias === 0 ? 'db-x-circle' : a.dias <= 2 ? 'db-alert-triangle' : 'db-info-circle';
+    return `<div class="alert-row ${tipo}">
+      <svg class="alert-icon"><use href="#${icon}"/></svg>
+      <div class="alert-body">
+        <p>${a.titulo}</p>
+        <span>${a.subtitulo} · Vence ${label}</span>
       </div>
-      <span class="alerta-valor negative">-${fmt(a.valor)}</span>
+      <span class="alert-valor">−${fmt(a.valor)}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Próximas faturas (Stage 2) ────────────────────────
+function renderFaturas(cartoes, parcelasMes){
+  const d   = hoje();
+  const ano = d.getFullYear();
+  const mes = d.getMonth() + 1;
+  const faturas = [];
+
+  cartoes.forEach(cartao => {
+    if(!cartao.vencimento_dia) return;
+    let anoV = ano, mesV = mes, diaV = cartao.vencimento_dia;
+    if(diaV < d.getDate()){ mesV++; if(mesV>12){mesV=1;anoV++;} }
+    const dataVenc = `${anoV}-${String(mesV).padStart(2,'0')}-${String(diaV).padStart(2,'0')}`;
+    const dias = diasAte(dataVenc);
+    if(dias === null || dias < 0) return;
+
+    const refMes = `${ano}-${String(mes).padStart(2,'0')}`;
+    const total  = parcelasMes.filter(p=>p.card_id===cartao.id).reduce((s,p)=>s+Number(p.valor_parcela||0),0);
+
+    faturas.push({ nome: cartao.nome, diaVenc: diaV, dataVenc, total, dias });
+  });
+
+  // Notificações Telegram
+  faturas.forEach(f => {
+    if(f.dias <= 7 && f.total > 0)
+      notificarFaturaVencendo({ cartao: f.nome, valor: f.total, dias: f.dias }).catch(()=>{});
+  });
+
+  if(!faturas.length){
+    el('blocoFaturas').innerHTML = '<p class="muted" style="font-size:13px">Nenhum cartão ativo cadastrado.</p>';
+    return;
+  }
+
+  el('blocoFaturas').innerHTML = faturas.sort((a,b)=>a.dias-b.dias).map(f => {
+    const pillClass = f.dias === 0 ? 'urgente' : f.total === 0 ? 'pago' : 'pendente';
+    const pillLabel = f.dias === 0 ? 'Vence hoje' : f.total === 0 ? 'Sem lançamentos' : 'Pendente';
+    return `<div class="invoice-row">
+      <div class="invoice-icon">
+        <svg><use href="#db-credit-card"/></svg>
+      </div>
+      <div class="invoice-meta">
+        <b>${f.nome}</b>
+        <span>Vence dia ${f.diaVenc} · ${formatData(f.dataVenc)}</span>
+      </div>
+      <div class="invoice-amount">
+        <b>${f.total > 0 ? fmt(f.total) : '—'}</b>
+        <span class="invoice-pill ${pillClass}">${pillLabel}</span>
+      </div>
     </div>`;
   }).join('');
 }
