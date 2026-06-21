@@ -1,11 +1,11 @@
 .app-shell{
-  display:grid;
-  grid-template-columns:220px 1fr;
+  display:flex;
   min-height:100vh;
   background:var(--bg);
 }
 
 .sidebar{
+  flex-shrink:0;
   background:var(--surface);
   border-right:1px solid var(--border);
   position:sticky;
@@ -91,6 +91,7 @@
 }
 
 .content{
+  flex:1;
   min-width:0;
   background:var(--bg);
   padding:24px;

@@ -2,13 +2,85 @@ import { APP_VERSION } from './config.js';
 import { supabase } from './supabaseClient.js';
 import { registrarAcao } from './eventBus.js';
 
-// ─── Estrutura de navegação em 6 grupos colapsáveis ───────────────────────────
+// ─── Sidebar rail: aplicar antes do primeiro paint (anti-flash) ───────────────
+const SIDEBAR_RAIL_KEY = 'finzen_sidebar_rail';
+if (localStorage.getItem(SIDEBAR_RAIL_KEY) === 'collapsed') {
+  document.documentElement.classList.add('sidebar-rail');
+}
+
+// ─── Flyout state ─────────────────────────────────────────────────────────────
+let _flyoutTimer  = null;
+let _flyoutPinned = false;
+let _flyoutGroup  = null;
+
+function showFlyout(triggerEl, group, pinned = false) {
+  clearTimeout(_flyoutTimer);
+
+  let flyout = document.getElementById('sidebarFlyout');
+  if (!flyout) {
+    flyout = document.createElement('div');
+    flyout.id        = 'sidebarFlyout';
+    flyout.className = 'sidebar-flyout';
+    document.body.appendChild(flyout);
+    flyout.addEventListener('mouseenter', () => clearTimeout(_flyoutTimer));
+    flyout.addEventListener('mouseleave', () => { if (!_flyoutPinned) scheduleFlyoutHide(); });
+  }
+
+  _flyoutGroup  = group.label;
+  _flyoutPinned = pinned;
+
+  const rect = triggerEl.getBoundingClientRect();
+  flyout.innerHTML = `
+    <div class="flyout-title">${group.label}</div>
+    ${group.items.map(item => `
+      <a class="flyout-item${isActive(item.href) ? ' active' : ''}" href="${item.href}">${item.title}</a>
+    `).join('')}
+  `;
+
+  flyout.style.top  = rect.top + 'px';
+  flyout.style.left = (rect.right + 8) + 'px';
+  flyout.classList.add('visible');
+
+  requestAnimationFrame(() => {
+    const r = flyout.getBoundingClientRect();
+    if (r.bottom > window.innerHeight - 8) {
+      flyout.style.top = (window.innerHeight - r.height - 8) + 'px';
+    }
+  });
+}
+
+function hideFlyout() {
+  const flyout = document.getElementById('sidebarFlyout');
+  if (flyout) flyout.classList.remove('visible');
+  _flyoutPinned = false;
+  _flyoutGroup  = null;
+}
+
+function scheduleFlyoutHide(delay = 150) {
+  _flyoutTimer = setTimeout(hideFlyout, delay);
+}
+
+function toggleSidebarRail() {
+  const collapsed = document.documentElement.classList.toggle('sidebar-rail');
+  localStorage.setItem(SIDEBAR_RAIL_KEY, collapsed ? 'collapsed' : 'expanded');
+  const btn = document.getElementById('sidebarRailToggle');
+  if (btn) btn.setAttribute('aria-label', collapsed ? 'Expandir menu' : 'Recolher menu');
+  hideFlyout();
+}
+
+registrarAcao('toggleSidebarRail', toggleSidebarRail);
+
+// ─── Item solto: Dashboard (sem grupo, sem flyout) ────────────────────────────
+const NAV_STANDALONE = [
+  { title: 'Dashboard', icon: '🏠', href: './dashboard.html', badge: true },
+];
+
+// ─── Grupos colapsáveis ───────────────────────────────────────────────────────
 const NAV_GROUPS = [
   {
     label: 'Financeiro',
-    icon: '💰',
+    icon: '💳',
     items: [
-      { title: 'Dashboard',      icon: '🏠', href: './dashboard.html',        badge: true },
       { title: 'Movimentações',  icon: '💸', href: './movements.html' },
       { title: 'Extrato',        icon: '🧾', href: './account-statement.html' },
       { title: 'Cartões',        icon: '💳', href: './cards.html' },
@@ -225,15 +297,25 @@ function groupHtml(group, forDrawer = false) {
 }
 
 function navHtml(forDrawer = false) {
+  const standalone = NAV_STANDALONE.map(item => `
+    <a class="nav-standalone ${isActive(item.href) ? 'active' : ''}" href="${item.href}">
+      <span class="nav-icon">${item.icon}</span>
+      <span class="nav-item-text">${item.title}</span>
+      ${item.badge ? '<span class="nav-badge nav-dashboard-badge" style="display:none">0</span>' : ''}
+    </a>
+  `).join('');
   const groups = NAV_GROUPS.map(g => groupHtml(g, forDrawer)).join('');
-  return groups;
+  return standalone + groups;
 }
 
 // ─── Toggle de grupo ──────────────────────────────────────────────────────────
 registrarAcao('toggleNavGroup', (el) => {
-  const groupLabel = el.dataset.groupLabel;
-  const storeKey   = `nav_collapsed_v3_${groupLabel}`;
-  const elements   = document.querySelectorAll(`.nav-group[data-group="${groupLabel}"]`);
+  // Em modo rail o flyout assume — não colapsar grupos
+  if (document.documentElement.classList.contains('sidebar-rail')) return;
+
+  const groupLabel  = el.dataset.groupLabel;
+  const storeKey    = `nav_collapsed_v3_${groupLabel}`;
+  const elements    = document.querySelectorAll(`.nav-group[data-group="${groupLabel}"]`);
   const isCollapsed = elements[0]?.classList.contains('collapsed');
 
   elements.forEach(elGrupo => elGrupo.classList.toggle('collapsed'));
@@ -622,7 +704,7 @@ function ensureDesktopSidebar() {
     brand.className = 'sidebar-brand';
     sidebar.prepend(brand);
   }
-  brand.textContent = 'FinZen';
+  brand.innerHTML = '<span class="brand-text">FinZen</span>';
 
   // Nav
   let nav = sidebar.querySelector('.sidebar-nav');
@@ -647,6 +729,40 @@ function ensureDesktopSidebar() {
     </div>
     <span class="nav-version" style="padding:0;opacity:.45">v${APP_VERSION}</span>
   `;
+
+  // Botão toggle rail (fixo na borda direita da sidebar)
+  if (!document.getElementById('sidebarRailToggle')) {
+    const railToggle = document.createElement('button');
+    railToggle.id        = 'sidebarRailToggle';
+    railToggle.className = 'sidebar-rail-toggle';
+    railToggle.type      = 'button';
+    railToggle.setAttribute('aria-label',
+      localStorage.getItem(SIDEBAR_RAIL_KEY) === 'collapsed' ? 'Expandir menu' : 'Recolher menu');
+    railToggle.innerHTML = '<span class="rail-toggle-chevron">‹</span>';
+    railToggle.addEventListener('click', toggleSidebarRail);
+    document.body.appendChild(railToggle);
+  }
+
+  // Flyout: listeners nos botões de grupo (hover + clique)
+  nav.querySelectorAll('.nav-group-toggle').forEach(btn => {
+    const label = btn.dataset.groupLabel;
+    const group = NAV_GROUPS.find(g => g.label === label);
+    if (!group) return;
+
+    btn.addEventListener('mouseenter', () => {
+      if (document.documentElement.classList.contains('sidebar-rail')) showFlyout(btn, group);
+    });
+    btn.addEventListener('mouseleave', () => {
+      if (document.documentElement.classList.contains('sidebar-rail')) scheduleFlyoutHide();
+    });
+    btn.addEventListener('click', e => {
+      if (!document.documentElement.classList.contains('sidebar-rail')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (_flyoutPinned && _flyoutGroup === label) hideFlyout();
+      else showFlyout(btn, group, true);
+    });
+  });
 }
 
 // ─── Drawer mobile ────────────────────────────────────────────────────────────
@@ -808,6 +924,16 @@ function initNavigation() {
 
   // Aplicar estado de privacidade imediatamente
   applyPrivacy(getPrivacy());
+
+  // Fechar flyout ao clicar fora (capture para pegar antes dos outros handlers)
+  document.addEventListener('click', e => {
+    if (!_flyoutPinned) return;
+    const flyout  = document.getElementById('sidebarFlyout');
+    const sidebar = document.querySelector('.sidebar');
+    if (flyout  && flyout.contains(e.target))  return;
+    if (sidebar && sidebar.contains(e.target)) return;
+    hideFlyout();
+  }, true);
 
   // Carregar badges async
   carregarBadges().catch(() => {});
