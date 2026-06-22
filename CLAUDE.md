@@ -15,9 +15,9 @@
 - Credenciais Supabase no client-side são aceitáveis (uso pessoal)
 
 ## Verificação antes de entregar
-- Checar que funções usadas em `onclick=""` estão expostas via `window.funcao = funcao`
 - Checar que toda função que usa `await` é declarada como `async`
-- Checar que `?v=XXXX` foi incrementado nas importações HTML quando JS/CSS mudou (versão atual: **v=1107**)
+- Ao alterar JS ou CSS, incrementar `ASSET_VERSION` em `js/version.js` (atual: **1113**) — ele aplica automaticamente em todas as páginas
+- Ao alterar o SW (`sw.js`), incrementar `CACHE_NAME` (ex: `finzen-v11.3` → `finzen-v11.4`)
 - Nunca deixar quebrar páginas que não foram pedidas para alterar
 
 ## Contexto do projeto
@@ -43,10 +43,12 @@ git push  # → Vercel auto-deploy em ~30s
 ## Arquitetura
 
 ```
-pages/          → 35 HTMLs (uma página por módulo)
+pages/          → 36 HTMLs (uma página por módulo)
 js/             → Módulos ES6 (um .js por página)
-js/services/    → financeService, investmentService, accountService, transferService
-css/            → base.css · layout.css · components.css · navigation.css · mobile.css
+js/version.js   → Controle central de versão de assets (ASSET_VERSION)
+js/eventBus.js  → Delegação de eventos via data-action (preferido ao window.fn)
+js/services/    → financeService, accountService, transferService
+css/            → base.css · layout.css · components.css · navigation.css · mobile.css · editorial.css
 api/quotes.js   → Serverless Function (proxy brapi.dev + Yahoo Finance)
 database/       → Migrations SQL (YYYY_MM_DD_descricao.sql)
 js/config.js    → SUPABASE_URL, SUPABASE_ANON_KEY, APP_VERSION
@@ -81,8 +83,8 @@ vercel.json     → {} (Node.js padrão)
 --font-mono:   'DM Mono', monospace
 ```
 
-Arquivos CSS em `css/`: base.css → layout.css → components.css → navigation.css → mobile.css.
-Importar nessa ordem em todas as páginas.
+Arquivos CSS em `css/`: base.css → layout.css → components.css → navigation.css → mobile.css → editorial.css.
+Importar nessa ordem em todas as páginas (editorial.css só onde necessário).
 
 ## Padrões de código obrigatórios
 
@@ -92,7 +94,12 @@ const { data: sd } = await supabase.auth.getSession();
 if (!sd.session) navigate('../login.html');
 const user = sd.session.user;
 
-// Funções usadas em onclick="" devem ser expostas:
+// Padrão preferido para eventos em HTML gerado dinamicamente (eventBus.js):
+import { registrarAcao } from './eventBus.js';
+registrarAcao('excluirItem', (el) => { const id = el.dataset.id; ... });
+// No HTML: <button data-action="excluirItem" data-id="${item.id}">
+
+// Fallback legado (onclick=""): expor no window
 window.minhaFuncao = minhaFuncao;
 
 // Toda função com await deve ser async
@@ -122,8 +129,8 @@ Regra: tickers com dígito = BR; só letras = EUA.
 
 ## Áreas de risco
 
-- **ES Modules + onclick:** funções de módulos não ficam no escopo global automaticamente — sempre `window.fn = fn`
-- **Cache:** ao alterar JS ou CSS, incrementar `?v=XXXX` em TODAS as 35 páginas
+- **ES Modules + onclick:** funções de módulos não ficam no escopo global automaticamente — usar `data-action` + `registrarAcao` (preferido) ou `window.fn = fn` (legado)
+- **Cache:** ao alterar JS ou CSS, incrementar apenas `ASSET_VERSION` em `js/version.js` — não editar as 36 páginas manualmente
 - **Edge Functions Vercel:** bloqueiam APIs externas — usar Serverless Node.js (`vercel.json: {}`)
 - **Yahoo Finance:** pode ser instável em IPs Vercel
 - **BCB API:** bloqueia Vercel e CORS — inviável, não usar

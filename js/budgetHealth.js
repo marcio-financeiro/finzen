@@ -18,11 +18,13 @@ if(!sessionData.session){
 
 const user = sessionData.session.user;
 
-function primeiroDiaMesISO(){
+function mesAtualISO(){
   const hoje = new Date();
-  const ano = hoje.getFullYear();
-  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-  return `${ano}-${mes}-01`;
+  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function primeiroDiaMesISO(){
+  return `${mesAtualISO()}-01`;
 }
 
 function ultimoDiaMesISO(){
@@ -69,30 +71,43 @@ async function carregarOrcamentoInteligente(){
   const inicio = primeiroDiaMesISO();
   const fim = ultimoDiaMesISO();
 
-  const [{ data: budgets, error: budgetError }, { data: transactions, error: txError }, { data: categories, error: catError }] =
-    await Promise.all([
-      supabase
-        .from('budgets')
-        .select('*')
-        .eq('user_id', user.id),
+  const ref = mesAtualISO();
 
-      supabase
-        .from('transactions')
-        .select('category_id,amount,type,status,date')
-        .eq('user_id', user.id)
-        .eq('type', 'despesa')
-        .eq('status', 'pago')
-        .gte('date', inicio)
-        .lte('date', fim),
+  const [
+    { data: budgets,      error: budgetError },
+    { data: transactions, error: txError },
+    { data: cardTx,       error: cardTxError },
+    { data: categories,   error: catError }
+  ] = await Promise.all([
+    supabase
+      .from('budgets')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('mes_referencia', ref),
 
-      supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('ativo', true)
-    ]);
+    supabase
+      .from('transactions')
+      .select('category_id,amount')
+      .eq('user_id', user.id)
+      .eq('type', 'despesa')
+      .eq('status', 'pago')
+      .gte('date', inicio)
+      .lte('date', fim),
 
-  if(budgetError || txError || catError){
+    supabase
+      .from('card_transactions')
+      .select('category_id,valor_parcela')
+      .eq('user_id', user.id)
+      .eq('fatura_referencia', ref),
+
+    supabase
+      .from('categories')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('ativo', true)
+  ]);
+
+  if(budgetError || txError || cardTxError || catError){
     budgetHealthTable.innerHTML = '<p class="muted" style="padding:18px">Erro ao carregar saúde do orçamento.</p>';
     budgetHealthAlerts.innerHTML = '<p class="muted">Erro ao carregar alertas.</p>';
     return;
@@ -100,18 +115,24 @@ async function carregarOrcamentoInteligente(){
 
   const listaBudgets = budgets || [];
   const listaTransacoes = transactions || [];
+  const listaCardTx = cardTx || [];
   const listaCategorias = categories || [];
 
   const gastosPorCategoria = {};
 
   listaTransacoes.forEach(item => {
-    const id = item.category_id || 'sem_categoria';
-    gastosPorCategoria[id] = (gastosPorCategoria[id] || 0) + Number(item.amount || 0);
+    const id = item.category_id;
+    if(id) gastosPorCategoria[id] = (gastosPorCategoria[id] || 0) + Number(item.amount || 0);
+  });
+
+  listaCardTx.forEach(item => {
+    const id = item.category_id;
+    if(id) gastosPorCategoria[id] = (gastosPorCategoria[id] || 0) + Number(item.valor_parcela || 0);
   });
 
   const linhas = listaBudgets.map(budget => {
     const categoria = listaCategorias.find(cat => cat.id === budget.category_id);
-    const limite = Number(budget.valor_limite || budget.valor || budget.amount || budget.budget_amount || 0);
+    const limite = Number(budget.valor_planejado || 0);
     const gasto = Number(gastosPorCategoria[budget.category_id] || 0);
     const disponivel = limite - gasto;
     const usado = limite > 0 ? (gasto / limite) * 100 : 0;
