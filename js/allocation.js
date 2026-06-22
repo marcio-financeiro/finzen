@@ -248,7 +248,78 @@ function calcularAlocacao(){
     ? maisDefasada.nome
     : '-';
 
+  renderizarDonuts();
   renderizarTabela();
+}
+
+const CORES_CLASSES = {
+  acao:'#f59e0b', fii:'#22c55e', etf:'#6366f1',
+  renda_fixa:'#06b6d4', cripto:'#ef4444', exterior:'#f97316'
+};
+
+function renderizarDonuts(){
+  const container = document.getElementById('donutsAlocacao');
+  if(!container) return;
+
+  const itens = linhasAlocacao.filter(i => i.percentualAtual > 0 || i.percentualIdeal > 0);
+  if(!itens.length){
+    container.innerHTML = '<p class="muted" style="font-size:13px">Defina a alocação alvo para visualizar o gráfico.</p>';
+    return;
+  }
+
+  const R = 55, cx = 65, cy = 65, sw = 20, circ = 2 * Math.PI * R;
+
+  function buildDonut(valorKey, label){
+    const total = itens.reduce((s, i) => s + i[valorKey], 0);
+    if(!total){
+      return `<div style="text-align:center">
+        <svg width="130" height="130" viewBox="0 0 130 130">
+          <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--border)" stroke-width="${sw}"/>
+          <text x="${cx}" y="${cy+4}" text-anchor="middle" fill="var(--muted)" font-size="10">0%</text>
+        </svg>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">${label}</div>
+      </div>`;
+    }
+    let offset = 0;
+    const segs = itens.filter(i => i[valorKey] > 0).map(i => {
+      const cor = CORES_CLASSES[i.classe] || '#94a3b8';
+      const dash = (i[valorKey] / total) * circ;
+      const seg = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${cor}" stroke-width="${sw}"
+        stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+      offset += dash;
+      return seg;
+    });
+    return `<div style="text-align:center">
+      <svg width="130" height="130" viewBox="0 0 130 130">
+        ${segs.join('')}
+        <text x="${cx}" y="${cy+4}" text-anchor="middle" fill="var(--text)" font-size="9" font-weight="800">${label}</text>
+      </svg>
+    </div>`;
+  }
+
+  const legenda = itens.map(i => {
+    const cor = CORES_CLASSES[i.classe] || '#94a3b8';
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px">
+      <span style="width:10px;height:10px;border-radius:50%;background:${cor};flex-shrink:0"></span>
+      <span style="flex:1">${i.nome}</span>
+      <span style="color:var(--muted);font-size:11px;min-width:36px;text-align:right">${formatarPercentual(i.percentualAtual)}</span>
+      <span style="color:var(--accent);font-size:11px;font-weight:700;min-width:36px;text-align:right">${formatarPercentual(i.percentualIdeal)}</span>
+    </div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap">
+      ${buildDonut('percentualAtual','Real')}
+      ${buildDonut('percentualIdeal','Ideal')}
+      <div style="flex:1;min-width:160px">
+        <div style="display:flex;justify-content:flex-end;gap:16px;margin-bottom:8px;font-size:11px">
+          <span style="color:var(--muted)">Real</span>
+          <span style="color:var(--accent);font-weight:700">Ideal</span>
+        </div>
+        ${legenda}
+      </div>
+    </div>
+  `;
 }
 
 function renderizarTabela(){
