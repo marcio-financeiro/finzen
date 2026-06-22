@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { getCotacoes } from './quoteCache.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -26,6 +27,7 @@ let investimentos = [];
 let alvos = [];
 let linhasAlocacao = [];
 let dolarAtual = 1;
+let cotacoes = {};
 
 const classes = {
   acao:'Ações Brasil',
@@ -77,19 +79,19 @@ btnCalcularAporte.addEventListener('click', calcularSugestaoAporte);
 
 async function iniciar(){
   mostrarMensagem('Carregando alocação...');
-  await Promise.all([carregarInvestimentos(), carregarAlvos(), carregarDolar()]);
+  await Promise.all([carregarInvestimentos(), carregarAlvos()]);
+  await carregarCotacoes();
   calcularAlocacao();
   mostrarMensagem('');
 }
 
-async function carregarDolar(){
-  const { data } = await supabase
-    .from('user_settings')
-    .select('setting_value')
-    .eq('user_id', user.id)
-    .eq('setting_key', 'usd_brl')
-    .single();
-  if(data?.setting_value) dolarAtual = Number(data.setting_value) || 1;
+async function carregarCotacoes(){
+  const tickers = investimentos.map(i => i.ticker).filter(Boolean);
+  if(!tickers.length) return;
+  try {
+    cotacoes = await getCotacoes(tickers, true);
+    dolarAtual = Number(cotacoes['USD-BRL'] || 1);
+  } catch(_) {}
 }
 
 async function carregarInvestimentos(){
@@ -224,7 +226,7 @@ function calcularAlocacao(){
     const classe = tipoToClasse(item.tipo);
     if(!classe) return;
     const quantidade = Number(item.quantidade || 0);
-    const cotacao = Number(item.cotacao_atual || item.preco_medio || 0);
+    const cotacao = Number(cotacoes[item.ticker] || item.cotacao_atual || item.preco_medio || 0);
     const valorBRL = (item.moeda || 'BRL') === 'USD'
       ? quantidade * cotacao * dolarAtual
       : quantidade * cotacao;
