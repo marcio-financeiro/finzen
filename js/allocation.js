@@ -31,21 +31,23 @@ let dolarAtual = 1;
 let cotacoes = {};
 
 const classes = {
-  acao:'Ações Brasil',
-  fii:'FIIs',
-  etf:'ETFs',
-  renda_fixa:'Renda Fixa',
-  cripto:'Cripto',
-  exterior:'Exterior'
+  acao:       'Ações BR',
+  fii:        'FIIs',
+  etf:        'ETFs BR',
+  acao_eua:   'Ações EUA',
+  etf_eua:    'ETFs EUA',
+  renda_fixa: 'Renda Fixa',
+  cripto:     'Cripto',
 };
 
 function tipoToClasse(tipo){
   if(tipo === 'acao_br' || tipo === 'acao') return 'acao';
   if(tipo === 'fii')                        return 'fii';
   if(tipo === 'etf_br' || tipo === 'etf')   return 'etf';
+  if(tipo === 'acao_eua')                   return 'acao_eua';
+  if(tipo === 'etf_eua')                    return 'etf_eua';
   if(tipo === 'renda_fixa')                 return 'renda_fixa';
   if(tipo === 'cripto')                     return 'cripto';
-  if(tipo === 'acao_eua' || tipo === 'etf_eua') return 'exterior';
   return null;
 }
 
@@ -276,8 +278,13 @@ function calcularAlocacao(){
 }
 
 const CORES_CLASSES = {
-  acao:'#f59e0b', fii:'#22c55e', etf:'#6366f1',
-  renda_fixa:'#06b6d4', cripto:'#ef4444', exterior:'#f97316'
+  acao:       '#f59e0b',
+  fii:        '#22c55e',
+  etf:        '#6366f1',
+  acao_eua:   '#f97316',
+  etf_eua:    '#ec4899',
+  renda_fixa: '#06b6d4',
+  cripto:     '#ef4444',
 };
 
 function renderizarDonuts(){
