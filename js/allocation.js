@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { getCotacoes } from './quoteCache.js';
+import { getUsdBrlRate } from './services/financeService.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -87,10 +88,12 @@ async function iniciar(){
 
 async function carregarCotacoes(){
   const tickers = investimentos.map(i => i.ticker).filter(Boolean);
+  try {
+    dolarAtual = (await getUsdBrlRate(user.id)) || 1;
+  } catch(_) {}
   if(!tickers.length) return;
   try {
-    cotacoes = await getCotacoes(tickers, true);
-    dolarAtual = Number(cotacoes['USD-BRL'] || 1);
+    cotacoes = await getCotacoes(tickers, false);
   } catch(_) {}
 }
 
