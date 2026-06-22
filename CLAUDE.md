@@ -18,7 +18,7 @@
 - Checar que toda função que usa `await` é declarada como `async`
 - Ao alterar JS: **não precisa fazer nada** — `vercel.json` serve todos os `/js/*.js` com `Cache-Control: no-store`, browser sempre busca versão fresca
 - Ao alterar CSS: incrementar `ASSET_VERSION` em `js/version.js` (atual: **1118**) — ele re-aplica `?v=` nos `<link>` CSS forçando re-fetch
-- Ao alterar `sw.js`: incrementar `CACHE_NAME` (atual: `finzen-v11.6`) para o SW reinstalar e buscar HTMLs atualizados
+- Ao alterar `sw.js`: incrementar `CACHE_NAME` (atual: `finzen-v11.7`) para o SW reinstalar e buscar HTMLs atualizados
 - Nunca deixar quebrar páginas que não foram pedidas para alterar
 
 ## Contexto do projeto
