@@ -25,9 +25,13 @@ function formatarData(dateStr) {
 }
 
 function emojiTipo(tipo) {
-  if (tipo === 'saude')      return '🏥';
-  if (tipo === 'financeiro') return '💰';
-  if (tipo === 'pessoal')    return '🙋';
+  if (tipo === 'saude')       return '🏥';
+  if (tipo === 'financeiro')  return '💰';
+  if (tipo === 'compromisso') return '🎯';
+  if (tipo === 'tarefa')      return '📋';
+  if (tipo === 'offshore')    return '⚓';
+  if (tipo === 'manutencao')  return '🔧';
+  if (tipo === 'documento')   return '📄';
   return '📅';
 }
 
