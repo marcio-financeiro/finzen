@@ -113,27 +113,22 @@ async function carregarDividendos(){
   const fimAno = `${ano}-12-31`;
 
   let query = supabase
-    .from('investment_transactions')
+    .from('dividends')
     .select(`
       id,
       tipo,
+      ticker,
       valor_total,
-      valor_liquido,
-      imposto_retido,
-      data_movimento,
+      valor_por_cota,
+      quantidade_cotas,
+      data_pagamento,
       observacao,
-      investments:investment_id (
-        id,
-        ticker,
-        nome,
-        moeda
-      )
+      investment_id
     `)
     .eq('user_id', user.id)
-    .in('tipo', ['dividendo', 'jcp', 'rendimento_fii'])
-    .gte('data_movimento', inicioAno)
-    .lte('data_movimento', fimAno)
-    .order('data_movimento', { ascending:false });
+    .gte('data_pagamento', inicioAno)
+    .lte('data_pagamento', fimAno)
+    .order('data_pagamento', { ascending:false });
 
   if(tipoFiltro.value){
     query = query.eq('tipo', tipoFiltro.value);
@@ -162,35 +157,31 @@ function renderizarResumo(proventos){
   const mesAtual = mesAtualISO();
 
   const totalAnoValor = proventos.reduce((soma, item) => {
-    return soma + Number(item.valor_liquido || item.valor_total || 0);
+    return soma + Number(item.valor_total || 0);
   }, 0);
 
   const totalMesValor = proventos
-    .filter(item => item.data_movimento?.startsWith(mesAtual))
-    .reduce((soma, item) => soma + Number(item.valor_liquido || item.valor_total || 0), 0);
+    .filter(item => item.data_pagamento?.startsWith(mesAtual))
+    .reduce((soma, item) => soma + Number(item.valor_total || 0), 0);
 
   const dividendosMesValor = proventos
-    .filter(item => item.tipo === 'dividendo' && item.data_movimento?.startsWith(mesAtual))
-    .reduce((soma, item) => soma + Number(item.valor_liquido || item.valor_total || 0), 0);
+    .filter(item => item.tipo === 'dividendo' && item.data_pagamento?.startsWith(mesAtual))
+    .reduce((soma, item) => soma + Number(item.valor_total || 0), 0);
 
   const jcpMesValor = proventos
-    .filter(item => item.tipo === 'jcp' && item.data_movimento?.startsWith(mesAtual))
-    .reduce((soma, item) => soma + Number(item.valor_liquido || item.valor_total || 0), 0);
+    .filter(item => item.tipo === 'jcp' && item.data_pagamento?.startsWith(mesAtual))
+    .reduce((soma, item) => soma + Number(item.valor_total || 0), 0);
 
   const fiiMesValor = proventos
-    .filter(item => item.tipo === 'rendimento_fii' && item.data_movimento?.startsWith(mesAtual))
-    .reduce((soma, item) => soma + Number(item.valor_liquido || item.valor_total || 0), 0);
-
-  const impostoAnoValor = proventos.reduce((soma, item) => {
-    return soma + Number(item.imposto_retido || 0);
-  }, 0);
+    .filter(item => item.tipo === 'rendimento_fii' && item.data_pagamento?.startsWith(mesAtual))
+    .reduce((soma, item) => soma + Number(item.valor_total || 0), 0);
 
   totalMes.innerText = formatCurrency(totalMesValor, 'BRL');
   totalAno.innerText = formatCurrency(totalAnoValor, 'BRL');
   dividendosMes.innerText = formatCurrency(dividendosMesValor, 'BRL');
   jcpMes.innerText = formatCurrency(jcpMesValor, 'BRL');
   fiiMes.innerText = formatCurrency(fiiMesValor, 'BRL');
-  impostoAno.innerText = formatCurrency(impostoAnoValor, 'BRL');
+  impostoAno.innerText = formatCurrency(0, 'BRL');
 }
 
 function renderizarTabela(proventos){
@@ -206,31 +197,20 @@ function renderizarTabela(proventos){
           <th>Data</th>
           <th>Ativo</th>
           <th>Tipo</th>
-          <th>Valor Bruto</th>
-          <th>Imposto</th>
-          <th>Valor Líquido</th>
+          <th>Valor Total</th>
           <th>Observação</th>
         </tr>
       </thead>
       <tbody>
         ${proventos.map(item => {
-          const moeda = item.investments?.moeda || 'BRL';
-          const bruto = Number(item.valor_total || 0);
-          const imposto = Number(item.imposto_retido || 0);
-          const liquido = Number(item.valor_liquido || (bruto - imposto));
+          const total = Number(item.valor_total || 0);
 
           return `
             <tr>
-              <td>${formatarData(item.data_movimento)}</td>
-              <td>
-                <strong>${item.investments?.ticker || '-'}</strong>
-                <br>
-                <span class="muted">${item.investments?.nome || ''}</span>
-              </td>
+              <td>${formatarData(item.data_pagamento)}</td>
+              <td><strong>${item.ticker || '-'}</strong></td>
               <td><span class="badge ${classeTipo(item.tipo)}">${tipoLabel(item.tipo)}</span></td>
-              <td class="money">${formatCurrency(bruto, moeda)}</td>
-              <td class="money negative">-${formatCurrency(imposto, moeda)}</td>
-              <td class="money positive">${formatCurrency(liquido, moeda)}</td>
+              <td class="money positive">${formatCurrency(total, 'BRL')}</td>
               <td>${item.observacao || '-'}</td>
             </tr>
           `;
@@ -254,8 +234,8 @@ function renderizarPizza(proventos) {
 
   const grupos = {};
   proventos.forEach(item => {
-    const ticker = item.investments?.ticker || item.investments?.nome || 'Desconhecido';
-    const valor = Number(item.valor_liquido || item.valor_total || 0);
+    const ticker = item.ticker || 'Desconhecido';
+    const valor = Number(item.valor_total || 0);
     if (!grupos[ticker]) grupos[ticker] = { ticker, total: 0 };
     grupos[ticker].total += valor;
   });
