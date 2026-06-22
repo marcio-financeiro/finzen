@@ -121,6 +121,7 @@ const NAV_GROUPS = [
     items: [
       { title: 'Carteira',       icon: '📈', href: './investments.html' },
       { title: 'Proventos',      icon: '💰', href: './dividends.html' },
+      { title: 'Alocação',       icon: '🎯', href: './allocation.html' },
       { title: 'Patrimônio',     icon: '💎', href: './patrimony-history.html' },
       { title: 'Metas',          icon: '🏆', href: './goals.html' },
       { title: 'FIRE',           icon: '🔥', href: './fire.html' },
@@ -182,6 +183,7 @@ function isActive(href) {
     'wealth-dashboard.html':'patrimony-history.html',
     'asset-transactions.html': 'investments.html',
     'dividends.html':       'investments.html',
+    'allocation.html':      'investments.html',
     'transfers.html':       'account-statement.html',
   };
   if (aliases[file] === target) return true;
