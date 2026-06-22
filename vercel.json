@@ -1,7 +1,7 @@
 {
   "headers": [
     {
-      "source": "/js/version.js",
+      "source": "/js/(.*).js",
       "headers": [
         { "key": "Cache-Control", "value": "no-store" }
       ]
