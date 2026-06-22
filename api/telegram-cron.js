@@ -1,6 +1,6 @@
 // api/telegram-cron.js — Lembretes de eventos via Telegram
-// Vercel Cron: executa a cada hora (0 * * * *)
-// Toda hora: lembrete de eventos com hora definida em ~1 hora
+// Vercel Cron: executa uma vez por dia às 11h UTC (08h BRT)
+// Envia todos os eventos do dia atual
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const SB_URL    = process.env.SUPABASE_URL;
@@ -11,6 +11,18 @@ const sbHeaders = {
   Authorization: `Bearer ${SB_KEY}`,
   'Content-Type': 'application/json',
 };
+
+function hoje() {
+  const d = new Date();
+  d.setTime(d.getTime() - 3 * 60 * 60 * 1000); // UTC-3 → BRT
+  return d.toISOString().split('T')[0];
+}
+
+function formatarData(dateStr) {
+  const [ano, mes, dia] = dateStr.split('-');
+  const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  return `${dia}/${meses[parseInt(mes) - 1]}/${ano}`;
+}
 
 function emojiTipo(tipo) {
   if (tipo === 'saude')      return '🏥';
@@ -36,51 +48,47 @@ async function enviar(chatId, texto) {
   });
 }
 
-// Lembrete 1 hora antes: eventos com hora definida em 50–70 min
-async function lembreteUmaHora() {
-  const agora = new Date();
-  // Janela BRT: agora+50min até agora+70min
-  const brtMs = agora.getTime() - 3 * 60 * 60 * 1000;
-  const min50 = new Date(brtMs + 50 * 60 * 1000);
-  const min70 = new Date(brtMs + 70 * 60 * 1000);
-
-  const dataHj = new Date(brtMs).toISOString().split('T')[0];
-
-  // Se a janela cruzar meia-noite, ignora (evento de madrugada)
-  if (min50.toISOString().split('T')[0] !== dataHj) return;
-
-  const h50 = `${String(min50.getUTCHours()).padStart(2,'0')}:${String(min50.getUTCMinutes()).padStart(2,'0')}`;
-  const h70 = `${String(min70.getUTCHours()).padStart(2,'0')}:${String(min70.getUTCMinutes()).padStart(2,'0')}`;
-
+async function lembretesDiarios() {
+  const data = hoje();
   const r = await fetch(
-    `${SB_URL}/rest/v1/calendar_events?data_inicio=eq.${dataHj}&status=eq.pendente&hora=gte.${h50}&hora=lte.${h70}&select=user_id,titulo,hora,tipo`,
+    `${SB_URL}/rest/v1/calendar_events?data_inicio=eq.${data}&status=eq.pendente&order=hora.asc&select=user_id,titulo,hora,tipo`,
     { headers: sbHeaders }
   );
   const eventos = await r.json();
   if (!Array.isArray(eventos) || !eventos.length) return;
 
+  // Agrupar por usuário
+  const porUsuario = {};
   for (const e of eventos) {
-    const chatId = await getChatId(e.user_id);
+    (porUsuario[e.user_id] = porUsuario[e.user_id] || []).push(e);
+  }
+
+  for (const [userId, evts] of Object.entries(porUsuario)) {
+    const chatId = await getChatId(userId);
     if (!chatId) continue;
+
+    const lista = evts.map(e => {
+      const hora = e.hora ? ` às ${e.hora}` : '';
+      return `${emojiTipo(e.tipo)} ${e.titulo}${hora}`;
+    }).join('\n');
+
     await enviar(chatId,
-      `⏰ <b>Lembrete — em 1 hora</b>\n\n${emojiTipo(e.tipo)} ${e.titulo}\n🕐 ${e.hora}`
+      `📅 <b>Sua agenda de hoje (${formatarData(data)})</b>\n\n${lista}`
     );
   }
 }
 
 export default async function handler(req, res) {
-  // Vercel Cron envia Authorization header com CRON_SECRET
   const secret = process.env.CRON_SECRET;
   if (secret && req.headers.authorization !== `Bearer ${secret}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
   try {
-    await lembreteUmaHora();
-
+    await lembretesDiarios();
     res.status(200).json({ ok: true });
   } catch (e) {
     console.error('telegram-cron:', e.message);
-    res.status(200).json({ ok: true }); // sempre 200 para o Vercel não retentar
+    res.status(200).json({ ok: true });
   }
 }
