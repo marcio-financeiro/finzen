@@ -154,6 +154,7 @@ async function carregarDividendos(){
   const proventos = data || [];
 
   renderizarResumo(proventos);
+  renderizarPizza(proventos);
   renderizarTabela(proventos);
 }
 
@@ -236,6 +237,72 @@ function renderizarTabela(proventos){
         }).join('')}
       </tbody>
     </table>
+  `;
+}
+
+// ── Distribuição por ativo (donut SVG) ───────────────
+const CORES_PIZZA = ['#f59e0b','#22c55e','#6366f1','#ef4444','#06b6d4','#f97316','#ec4899','#84cc16','#8b5cf6','#94a3b8'];
+
+function renderizarPizza(proventos) {
+  const container = document.getElementById('pizzaProventos');
+  if (!container) return;
+
+  if (!proventos.length) {
+    container.innerHTML = '<p class="muted" style="font-size:13px">Nenhum provento no período.</p>';
+    return;
+  }
+
+  const grupos = {};
+  proventos.forEach(item => {
+    const ticker = item.investments?.ticker || item.investments?.nome || 'Desconhecido';
+    const valor = Number(item.valor_liquido || item.valor_total || 0);
+    if (!grupos[ticker]) grupos[ticker] = { ticker, total: 0 };
+    grupos[ticker].total += valor;
+  });
+
+  const ordenados = Object.values(grupos).sort((a, b) => b.total - a.total);
+  const top8 = ordenados.slice(0, 8);
+  const resto = ordenados.slice(8);
+
+  const items = [...top8];
+  if (resto.length) {
+    const totalOutros = resto.reduce((s, i) => s + i.total, 0);
+    items.push({ ticker: 'Outros', total: totalOutros });
+  }
+
+  const total = items.reduce((s, i) => s + i.total, 0);
+  if (!total) {
+    container.innerHTML = '<p class="muted" style="font-size:13px">Nenhum provento no período.</p>';
+    return;
+  }
+
+  const R = 55, cx = 65, cy = 65, stroke = 20, circ = 2 * Math.PI * R;
+  let offset = 0;
+  const segs = items.map((item, i) => {
+    item._cor = item.ticker === 'Outros' ? CORES_PIZZA[9] : CORES_PIZZA[i];
+    const dash = (item.total / total) * circ;
+    const seg = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${item._cor}" stroke-width="${stroke}"
+      stroke-dasharray="${dash} ${circ - dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    offset += dash;
+    return seg;
+  });
+
+  container.innerHTML = `
+    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+      <svg width="130" height="130" viewBox="0 0 130 130" style="flex-shrink:0">
+        ${segs.join('')}
+        <text x="${cx}" y="${cy + 4}" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="800">${formatCurrency(total, 'BRL')}</text>
+      </svg>
+      <div style="flex:1;min-width:120px">
+        ${items.map(item => `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12px">
+            <span style="width:10px;height:10px;border-radius:50%;background:${item._cor};flex-shrink:0"></span>
+            <span style="flex:1">${item.ticker}</span>
+            <span style="color:var(--muted);font-size:11px;font-weight:700">${(item.total / total * 100).toFixed(1)}%</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
   `;
 }
 
