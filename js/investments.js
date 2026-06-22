@@ -492,6 +492,7 @@ function renderizarCarteira(){
               <button data-editar="${a.id}">✏️ Editar</button>
               <button data-action="abrirCotacaoManual" data-cot-manual="${a.id}" data-ticker="${a.ticker}">💲 Cotação manual</button>
               <button data-action="abrirDiarioTese" data-tese="${a.id}" data-ticker="${a.ticker}">📓 Diário de tese</button>
+              ${isBR(a.tipo)?`<button data-action="abrirFicha" data-ticker="${a.ticker}">📊 Fundamentalistas</button>`:''}
               <button data-excluir="${a.id}" data-ticker="${a.ticker}" style="color:var(--danger)">🗑️ Excluir</button>
             </div>
           </div>
@@ -523,6 +524,7 @@ function renderizarCarteira(){
           <button class="btn btn-secondary compact" data-editar="${a.id}">✏️ Editar</button>
           <button class="btn btn-secondary compact" data-action="abrirCotacaoManual" data-cot-manual="${a.id}" data-ticker="${a.ticker}">💲 Cotação</button>
           <button class="btn btn-secondary compact" data-action="abrirDiarioTese" data-tese="${a.id}" data-ticker="${a.ticker}">📓 Tese</button>
+          ${isBR(a.tipo)?`<button class="btn btn-secondary compact" data-action="abrirFicha" data-ticker="${a.ticker}">📊 Ficha</button>`:''}
           <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">🗑️</button>
         </div>
       </div>`;
@@ -1282,6 +1284,89 @@ registrarAcao('salvarTese', async (el) => {
   if (error) { alert('Erro ao salvar tese.'); return; }
   document.getElementById('modalTese')?.remove();
   msg('mensagemCotacao', `Tese de ${ticker} salva com sucesso.`, 'success');
+});
+
+// ─────────────────────────────────────────────
+// FICHA FUNDAMENTALISTA
+// ─────────────────────────────────────────────
+registrarAcao('abrirFicha', async (el) => {
+  const ticker = el.dataset.ticker?.toUpperCase();
+
+  let modal = document.getElementById('modalFicha');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modalFicha';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:16px';
+    document.body.appendChild(modal);
+  }
+
+  const fechar = `<button onclick="document.getElementById('modalFicha').remove()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;flex-shrink:0">×</button>`;
+  const wrap   = (html) => `<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto">${html}</div>`;
+  const header = (sub='') => `<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div><h2 style="margin:0;font-size:18px;font-weight:800">📊 ${ticker}</h2>${sub}</div>${fechar}</div>`;
+
+  modal.innerHTML = wrap(header() + '<p class="muted" style="font-size:13px">Carregando...</p>');
+
+  try {
+    const res   = await fetch(`/api/quotes?tickers=${ticker}&fundamental=true`);
+    const dados = await res.json();
+    const preco = dados[ticker];
+    const f     = dados[`${ticker}_fund`] || {};
+
+    function kv(label, value) {
+      return `<div style="background:var(--surface-2);border-radius:8px;padding:10px 12px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${label}</div>
+        <div style="font-size:14px;font-weight:700">${value ?? '<span class="muted">—</span>'}</div>
+      </div>`;
+    }
+    function pct(v)  { return v != null ? Number(v).toFixed(2) + '%'  : null; }
+    function mult(v) { return v != null ? Number(v).toFixed(2) + 'x'  : null; }
+    function brl(v)  { return v != null ? formatCurrency(Number(v), 'BRL') : null; }
+    function cap(v)  {
+      if (!v) return null;
+      if (v >= 1e12) return 'R$ ' + (v/1e12).toFixed(2) + 'T';
+      if (v >= 1e9)  return 'R$ ' + (v/1e9).toFixed(2) + 'B';
+      return 'R$ ' + (v/1e6).toFixed(1) + 'M';
+    }
+
+    const varPct    = f.varPct ?? 0;
+    const varClass  = varPct >= 0 ? 'positive' : 'negative';
+    const varSinal  = varPct >= 0 ? '+' : '';
+    const nomeSub   = f.nome ? `<p style="margin:2px 0;font-size:12px;color:var(--muted)">${f.nome}</p>` : '';
+    const setorSub  = f.setor ? `<p style="margin:0;font-size:11px;color:var(--muted)">${f.setor}</p>` : '';
+
+    modal.innerHTML = wrap(`
+      ${header(nomeSub + setorSub)}
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+        <span style="font-size:22px;font-weight:800">${brl(preco) ?? '—'}</span>
+        <span class="${varClass}" style="font-size:14px;font-weight:700">${varSinal}${pct(f.varPct) ?? '—'}</span>
+      </div>
+
+      <p style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin:0 0 10px">AVALIAÇÃO</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">
+        ${kv('P/L',          mult(f.pl))}
+        ${kv('P/VP',         mult(f.pvp))}
+        ${kv('DY',           pct(f.dy))}
+        ${kv('ROE',          pct(f.roe))}
+        ${kv('LPA',          brl(f.lpa))}
+        ${kv('VPA',          brl(f.vpa))}
+        ${kv('Marg. Líq.',   pct(f.margemLiquida))}
+      </div>
+
+      <p style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin:0 0 10px">MERCADO</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">
+        ${kv('Cap. Mercado', cap(f.marketCap))}
+        ${kv('Vol. Médio 3M', f.volumeMedio ? (f.volumeMedio/1e6).toFixed(1)+'M' : null)}
+        ${kv('Máx 52 sem.',  brl(f.maxAnual))}
+        ${kv('Mín 52 sem.',  brl(f.minAnual))}
+      </div>
+
+      <div style="text-align:center">
+        <button onclick="document.getElementById('modalFicha').remove()" class="btn btn-secondary">Fechar</button>
+      </div>
+    `);
+  } catch(e) {
+    modal.innerHTML = wrap(header() + `<p class="muted" style="font-size:13px">Erro ao carregar dados: ${e.message}</p>`);
+  }
 });
 
 // ─────────────────────────────────────────────

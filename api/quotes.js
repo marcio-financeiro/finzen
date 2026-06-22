@@ -62,7 +62,26 @@ export default async function handler(req, res) {
       if (r.status === 'fulfilled' && r.value) {
         const i = r.value;
         if (i.symbol && i.regularMarketPrice) {
-          resultado[i.symbol.toUpperCase()] = parseFloat(i.regularMarketPrice);
+          const key = i.symbol.toUpperCase();
+          resultado[key] = parseFloat(i.regularMarketPrice);
+          if (fundamental === 'true') {
+            resultado[`${key}_fund`] = {
+              nome:          i.longName || i.shortName || '',
+              setor:         i.sector   || '',
+              pl:            i.priceEarnings              ?? null,
+              pvp:           i.priceToBook                ?? null,
+              dy:            i.dividendYield              ?? null,
+              roe:           i.returnOnEquity             ?? null,
+              margemLiquida: i.netMargin                  ?? null,
+              lpa:           i.earningsPerShare           ?? null,
+              vpa:           i.bookValuePerShare          ?? null,
+              varPct:        i.regularMarketChangePercent ?? null,
+              maxAnual:      i.fiftyTwoWeekHigh           ?? null,
+              minAnual:      i.fiftyTwoWeekLow            ?? null,
+              volumeMedio:   i.averageDailyVolume3Month   ?? null,
+              marketCap:     i.marketCap                  ?? null,
+            };
+          }
         }
       }
     });
