@@ -15,6 +15,17 @@
 - Credenciais Supabase no client-side são aceitáveis (uso pessoal)
 
 ## Verificação antes de entregar
+
+**Toda implementação ou modificação deve ser testada antes de reportar como pronta.**
+
+Fluxo obrigatório:
+1. Fazer o commit e push
+2. Aguardar deploy Vercel ficar `READY` (verificar via MCP `list_deployments`)
+3. Abrir a página afetada no Chrome via DevTools MCP (`navigate_page`)
+4. Testar o fluxo principal da feature (screenshot ou `evaluate_script` para confirmar estado)
+5. Só então reportar como pronto — com evidência visual ou resultado do script
+
+Checks adicionais:
 - Checar que toda função que usa `await` é declarada como `async`
 - Ao alterar JS: **não precisa fazer nada** — `vercel.json` serve todos os `/js/*.js` com `Cache-Control: no-store`, browser sempre busca versão fresca
 - Ao alterar CSS: incrementar `ASSET_VERSION` em `js/version.js` (atual: **1118**) — ele re-aplica `?v=` nos `<link>` CSS forçando re-fetch
