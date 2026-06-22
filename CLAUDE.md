@@ -16,8 +16,9 @@
 
 ## Verificação antes de entregar
 - Checar que toda função que usa `await` é declarada como `async`
-- Ao alterar JS ou CSS, incrementar `ASSET_VERSION` em `js/version.js` (atual: **1113**) — ele aplica automaticamente em todas as páginas
-- Ao alterar o SW (`sw.js`), incrementar `CACHE_NAME` (ex: `finzen-v11.3` → `finzen-v11.4`)
+- Ao alterar JS: **não precisa fazer nada** — `vercel.json` serve todos os `/js/*.js` com `Cache-Control: no-store`, browser sempre busca versão fresca
+- Ao alterar CSS: incrementar `ASSET_VERSION` em `js/version.js` (atual: **1118**) — ele re-aplica `?v=` nos `<link>` CSS forçando re-fetch
+- Ao alterar `sw.js`: incrementar `CACHE_NAME` (atual: `finzen-v11.6`) para o SW reinstalar e buscar HTMLs atualizados
 - Nunca deixar quebrar páginas que não foram pedidas para alterar
 
 ## Contexto do projeto
@@ -130,7 +131,10 @@ Regra: tickers com dígito = BR; só letras = EUA.
 ## Áreas de risco
 
 - **ES Modules + onclick:** funções de módulos não ficam no escopo global automaticamente — usar `data-action` + `registrarAcao` (preferido) ou `window.fn = fn` (legado)
-- **Cache:** ao alterar JS ou CSS, incrementar apenas `ASSET_VERSION` em `js/version.js` — não editar as 36 páginas manualmente
+- **Cache JS:** `vercel.json` já garante `no-store` para todos os `.js` — não adicionar `?v=` em `<script>` tags, o browser sempre busca do servidor
+- **Cache CSS:** `version.js` aplica `?v=XXXX` nos `<link>` CSS em runtime — funciona porque mudar `href` de um `<link>` força re-fetch imediato
+- **Cache HTML:** o SW cacheia `login.html` e `dashboard.html` — ao mudar estrutura desses HTMLs, incrementar `CACHE_NAME` em `sw.js`
+- **`version.js` não faz cache-bust de JS:** o speculative preloader do browser busca scripts antes de `version.js` executar; por isso a abordagem `no-store` no servidor
 - **Edge Functions Vercel:** bloqueiam APIs externas — usar Serverless Node.js (`vercel.json: {}`)
 - **Yahoo Finance:** pode ser instável em IPs Vercel
 - **BCB API:** bloqueia Vercel e CORS — inviável, não usar
