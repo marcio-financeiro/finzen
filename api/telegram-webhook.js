@@ -311,6 +311,7 @@ async function interpretarComGroq(texto, contas, cartoes, categorias) {
   const catsReceita   = categorias.filter(c => c.tipo === 'receita').map(c => c.nome).join(', ');
 
   const prompt = `Você é o assistente financeiro do FinZen. Interprete o comando em português e retorne APENAS um JSON válido, sem markdown.
+Hoje é ${hoje()}.
 
 Contas bancárias: ${nomesContas}
 Cartões de crédito: ${nomesCartoes}
