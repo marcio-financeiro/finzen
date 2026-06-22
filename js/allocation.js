@@ -116,17 +116,29 @@ async function carregarInvestimentos(){
 
 async function carregarAlvos(){
   const { data, error } = await supabase
-    .from('allocation_targets')
-    .select('*')
+    .from('user_settings')
+    .select('setting_key, setting_value')
     .eq('user_id', user.id)
-    .order('classe', { ascending:true });
+    .like('setting_key', 'inv_peso_classe_%');
 
   if(error){
     mostrarMensagem('Erro ao carregar alvos: ' + error.message, 'danger');
     return;
   }
 
-  alvos = data || [];
+  // Mapeia setting_key → chave interna da classe
+  const keyToClasse = {};
+  Object.entries(classes).forEach(([key, nome]) => {
+    keyToClasse[`inv_peso_classe_${nome.replace(/\s/g, '_')}`] = key;
+  });
+
+  alvos = [];
+  (data || []).forEach(r => {
+    const classe = keyToClasse[r.setting_key];
+    if(!classe) return;
+    const val = JSON.parse(r.setting_value || '{}');
+    alvos.push({ classe, percentual_alvo: Number(val.ideal || 0) });
+  });
 }
 
 async function salvarAlvo(){
@@ -140,35 +152,21 @@ async function salvarAlvo(){
     return;
   }
 
-  const existente = alvos.find(item => item.classe === classe);
+  const nome = classes[classe];
+  const settingKey = `inv_peso_classe_${nome.replace(/\s/g, '_')}`;
 
-  if(existente){
-    const { error } = await supabase
-      .from('allocation_targets')
-      .update({
-        percentual_alvo:percentual,
-        updated_at:new Date().toISOString()
-      })
-      .eq('id', existente.id)
-      .eq('user_id', user.id);
+  const { error } = await supabase
+    .from('user_settings')
+    .upsert({
+      user_id: user.id,
+      setting_key: settingKey,
+      setting_value: JSON.stringify({ ideal: percentual }),
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,setting_key' });
 
-    if(error){
-      mostrarMensagem('Erro ao atualizar alvo: ' + error.message, 'danger');
-      return;
-    }
-  }else{
-    const { error } = await supabase
-      .from('allocation_targets')
-      .insert({
-        user_id:user.id,
-        classe:classe,
-        percentual_alvo:percentual
-      });
-
-    if(error){
-      mostrarMensagem('Erro ao salvar alvo: ' + error.message, 'danger');
-      return;
-    }
+  if(error){
+    mostrarMensagem('Erro ao salvar alvo: ' + error.message, 'danger');
+    return;
   }
 
   classeAlvo.value = '';
@@ -184,34 +182,25 @@ async function criarPadrao(){
   mostrarMensagem('Criando alocação padrão...');
 
   const padrao = [
-    { classe:'acao', percentual_alvo:30 },
-    { classe:'fii', percentual_alvo:25 },
-    { classe:'exterior', percentual_alvo:25 },
-    { classe:'etf', percentual_alvo:10 },
+    { classe:'acao',       percentual_alvo:30 },
+    { classe:'fii',        percentual_alvo:25 },
+    { classe:'acao_eua',   percentual_alvo:15 },
+    { classe:'etf_eua',    percentual_alvo:10 },
+    { classe:'etf',        percentual_alvo:10 },
     { classe:'renda_fixa', percentual_alvo:10 }
   ];
 
   for(const item of padrao){
-    const existente = alvos.find(alvo => alvo.classe === item.classe);
-
-    if(existente){
-      await supabase
-        .from('allocation_targets')
-        .update({
-          percentual_alvo:item.percentual_alvo,
-          updated_at:new Date().toISOString()
-        })
-        .eq('id', existente.id)
-        .eq('user_id', user.id);
-    }else{
-      await supabase
-        .from('allocation_targets')
-        .insert({
-          user_id:user.id,
-          classe:item.classe,
-          percentual_alvo:item.percentual_alvo
-        });
-    }
+    const nome = classes[item.classe];
+    const settingKey = `inv_peso_classe_${nome.replace(/\s/g, '_')}`;
+    await supabase
+      .from('user_settings')
+      .upsert({
+        user_id: user.id,
+        setting_key: settingKey,
+        setting_value: JSON.stringify({ ideal: item.percentual_alvo }),
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,setting_key' });
   }
 
   mostrarMensagem('Alocação padrão criada.', 'success');
