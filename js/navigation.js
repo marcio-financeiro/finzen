@@ -120,6 +120,7 @@ const NAV_GROUPS = [
     icon: 'ic-trend',
     items: [
       { title: 'Carteira',       icon: '📈', href: './investments.html' },
+      { title: 'Proventos',      icon: '💰', href: './dividends.html' },
       { title: 'Patrimônio',     icon: '💎', href: './patrimony-history.html' },
       { title: 'Metas',          icon: '🏆', href: './goals.html' },
       { title: 'FIRE',           icon: '🔥', href: './fire.html' },
