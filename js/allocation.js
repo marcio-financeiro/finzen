@@ -25,6 +25,7 @@ let user = null;
 let investimentos = [];
 let alvos = [];
 let linhasAlocacao = [];
+let dolarAtual = 1;
 
 const classes = {
   acao:'Ações Brasil',
@@ -34,6 +35,16 @@ const classes = {
   cripto:'Cripto',
   exterior:'Exterior'
 };
+
+function tipoToClasse(tipo){
+  if(tipo === 'acao_br' || tipo === 'acao') return 'acao';
+  if(tipo === 'fii')                        return 'fii';
+  if(tipo === 'etf_br' || tipo === 'etf')   return 'etf';
+  if(tipo === 'renda_fixa')                 return 'renda_fixa';
+  if(tipo === 'cripto')                     return 'cripto';
+  if(tipo === 'acao_eua' || tipo === 'etf_eua') return 'exterior';
+  return null;
+}
 
 function mostrarMensagem(texto, tipo = 'info'){
   mensagemAlocacao.className = `message ${tipo}`;
@@ -66,10 +77,19 @@ btnCalcularAporte.addEventListener('click', calcularSugestaoAporte);
 
 async function iniciar(){
   mostrarMensagem('Carregando alocação...');
-  await carregarInvestimentos();
-  await carregarAlvos();
+  await Promise.all([carregarInvestimentos(), carregarAlvos(), carregarDolar()]);
   calcularAlocacao();
   mostrarMensagem('');
+}
+
+async function carregarDolar(){
+  const { data } = await supabase
+    .from('user_settings')
+    .select('setting_value')
+    .eq('user_id', user.id)
+    .eq('setting_key', 'usd_brl')
+    .single();
+  if(data?.setting_value) dolarAtual = Number(data.setting_value) || 1;
 }
 
 async function carregarInvestimentos(){
@@ -201,16 +221,14 @@ function calcularAlocacao(){
   });
 
   investimentos.forEach(item => {
-    const classe = item.tipo;
+    const classe = tipoToClasse(item.tipo);
+    if(!classe) return;
     const quantidade = Number(item.quantidade || 0);
     const cotacao = Number(item.cotacao_atual || item.preco_medio || 0);
-    const valorAtual = quantidade * cotacao;
-
-    if(!patrimonioPorClasse[classe]){
-      patrimonioPorClasse[classe] = 0;
-    }
-
-    patrimonioPorClasse[classe] += valorAtual;
+    const valorBRL = (item.moeda || 'BRL') === 'USD'
+      ? quantidade * cotacao * dolarAtual
+      : quantidade * cotacao;
+    patrimonioPorClasse[classe] = (patrimonioPorClasse[classe] || 0) + valorBRL;
   });
 
   const totalPatrimonio = Object.values(patrimonioPorClasse).reduce((soma, valor) => soma + valor, 0);
