@@ -208,7 +208,7 @@ async function carregar() {
   ] = await Promise.all([
     supabase.from('accounts').select('id,nome,saldo_atual,currency,icon,tipo,account_kind').eq('user_id',user.id).eq('active',true),
     supabase.from('transactions').select('type,amount,status').eq('user_id',user.id).gte('date',inicio).lte('date',fim).eq('status','pago'),
-    supabase.from('card_transactions').select('valor_parcela,credit_cards:card_id(nome,vencimento_dia)').eq('user_id',user.id).eq('status','aberta').eq('fatura_referencia',anoMes),
+    supabase.from('card_transactions').select('valor_parcela,credit_cards:card_id(nome,vencimento_dia)').eq('user_id',user.id).in('status',['aberta','pendente']).eq('fatura_referencia',anoMes),
     supabase.from('transactions').select('description,amount,date,type').eq('user_id',user.id).eq('status','pendente').gte('date',hojeISO).lte('date',em7).order('date'),
     supabase.from('budgets').select('valor_planejado,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',anoMes),
     supabase.from('transactions').select('type,amount,date,created_at,description,categories:category_id(nome,icon),accounts:account_id(nome)').eq('user_id',user.id).eq('status','pago').order('created_at',{ascending:false}).limit(5),

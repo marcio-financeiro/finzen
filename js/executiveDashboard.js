@@ -75,7 +75,7 @@ async function carregar(){
   ] = await Promise.all([
     supabase.from('accounts').select('*').eq('user_id', user.id).eq('active', true),
     supabase.from('transactions').select('type,amount,date,status').eq('user_id', user.id),
-    supabase.from('card_transactions').select('valor_parcela,status').eq('user_id', user.id).eq('status','aberta'),
+    supabase.from('card_transactions').select('valor_parcela,status').eq('user_id', user.id).in('status',['aberta','pendente']),
     supabase.from('investments').select('*').eq('user_id', user.id).eq('ativo', true),
     supabase.from('investment_transactions').select('tipo,valor_total,valor_liquido,data_movimento').eq('user_id', user.id),
     supabase.from('goals').select('*').eq('user_id', user.id).eq('ativo', true),

@@ -744,7 +744,7 @@ async function sumOpenCardInvoicesThisMonth(){
   const ref = currentMonthRef();
   const { data, error } = await supabase.from('card_transactions')
     .select('valor_parcela,valor_total,status,fatura_referencia')
-    .eq('user_id',user.id).eq('status','aberta').eq('fatura_referencia',ref);
+    .eq('user_id',user.id).in('status',['aberta','pendente']).eq('fatura_referencia',ref);
   if(error) throw new Error('Erro ao calcular faturas abertas: '+error.message);
   return (data||[]).reduce((sum,item) => {
     const parcela = Number(item.valor_parcela??0);
@@ -835,7 +835,7 @@ async function openFlowCardsDetail(){
   const ref = currentMonthRef();
   const { data, error } = await supabase.from('card_transactions')
     .select(`valor_parcela,valor_total,status,fatura_referencia,descricao,credit_cards:card_id(nome)`)
-    .eq('user_id',user.id).eq('status','aberta').eq('fatura_referencia',ref);
+    .eq('user_id',user.id).in('status',['aberta','pendente']).eq('fatura_referencia',ref);
   if(error){ showMessage('Erro ao detalhar faturas: '+error.message,'danger'); return; }
 
   const grouped = {};
