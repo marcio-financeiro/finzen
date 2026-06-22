@@ -1,7 +1,7 @@
 // sw.js — FinZen Service Worker
 // Gerencia cache offline e notificações push
 
-const CACHE_NAME = 'finzen-v11.4';
+const CACHE_NAME = 'finzen-v11.5';
 const CACHE_URLS = [
   './login.html',
   './pages/dashboard.html',
@@ -15,7 +15,6 @@ const CACHE_URLS = [
   './js/supabaseClient.js',
   './js/utils.js',
   './js/router.js',
-  './js/version.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
 ];
