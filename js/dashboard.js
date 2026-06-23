@@ -6,7 +6,7 @@ import { notificarContasVencendo, notificarFaturaVencendo } from './telegram.js'
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
-if(!sessionData.session){ navigate('../login.html'); }
+if(!sessionData.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
 
 // ── Redirecionar mobile para modo simples ─────────────
 const isMobile = window.innerWidth < 768;

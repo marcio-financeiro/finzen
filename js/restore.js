@@ -3,7 +3,7 @@ import { navigate } from './router.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
-if(!sessionData.session){ navigate('../login.html'); }
+if(!sessionData.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
 const user = sessionData.session.user;
 
 const TABELAS_INSERT = [

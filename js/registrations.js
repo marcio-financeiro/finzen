@@ -5,7 +5,7 @@ import { formatCurrency } from './utils.js';
 
 const el = id => document.getElementById(id);
 const { data: sessionData } = await supabase.auth.getSession();
-if(!sessionData.session){ navigate('../login.html'); }
+if(!sessionData.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
 const user = sessionData.session.user;
 el('btnLogout').addEventListener('click', async () => {
   await supabase.auth.signOut(); navigate('../login.html');

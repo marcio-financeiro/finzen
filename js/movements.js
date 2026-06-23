@@ -65,7 +65,7 @@ const exchangePreview   = el('exchangePreview');
 const { data: sessionData } = await supabase.auth.getSession();
 
 if(!sessionData.session){
-  navigate('../login.html');
+  navigate('../login.html'); throw new Error('unauthenticated');
 }
 
 const user = sessionData.session.user;

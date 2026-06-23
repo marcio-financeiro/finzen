@@ -20,7 +20,7 @@ let editandoId = null;
 
 // ─── AUTH ──────────────────────────────────────
 const { data } = await supabase.auth.getSession();
-if (!data.session) { navigate('../login.html'); }
+if (!data.session) { navigate('../login.html'); throw new Error('unauthenticated'); }
 user = data.session.user;
 
 btnLogout.addEventListener('click', async () => {

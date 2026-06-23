@@ -9,7 +9,7 @@ import { navigate } from './router.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
-if (!sd.session) navigate('../login.html');
+if(!sd.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
 const user = sd.session.user;
 
 // Preencher e-mail automaticamente

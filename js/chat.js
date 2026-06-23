@@ -12,7 +12,7 @@ import { coletarContexto, renderMd } from './cashflowAI.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
-if(!sd.session){ navigate('../login.html'); }
+if(!sd.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
 const user = sd.session.user;
 document.getElementById('btnLogout').addEventListener('click', async () => {
   await supabase.auth.signOut(); navigate('../login.html');

@@ -18,7 +18,7 @@ const listaCategorias = document.getElementById('listaCategorias');
 const { data } = await supabase.auth.getSession();
 
 if(!data.session){
-  navigate('../login.html');
+  navigate('../login.html'); throw new Error('unauthenticated');
 }
 
 const user = data.session.user;
@@ -30,7 +30,7 @@ function mostrarMensagem(texto, tipo = 'info'){
 
 btnLogout.addEventListener('click', async () => {
   await supabase.auth.signOut();
-  navigate('../login.html');
+  navigate('../login.html'); throw new Error('unauthenticated');
 });
 
 

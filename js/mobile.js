@@ -12,7 +12,7 @@ import { notificarTransacao } from './telegram.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
-if(!sd.session){ navigate('../login.html'); }
+if(!sd.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
 const user = sd.session.user;
 
 const el  = id => document.getElementById(id);

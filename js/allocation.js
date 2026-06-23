@@ -66,7 +66,7 @@ function formatarPercentual(valor){
 const { data } = await supabase.auth.getSession();
 
 if(!data.session){
-  navigate('../login.html');
+  navigate('../login.html'); throw new Error('unauthenticated');
 }
 
 user = data.session.user;

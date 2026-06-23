@@ -6,9 +6,9 @@ import { registrarAcao }    from './eventBus.js';
 import { notificarMetaAtingida } from './telegram.js';
 
 const { data: sd } = await supabase.auth.getSession();
-if(!sd.session){ navigate('../login.html'); }
+if(!sd.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
 const user = sd.session.user;
-document.getElementById('btnLogout').addEventListener('click', async()=>{ await supabase.auth.signOut(); navigate('../login.html'); });
+document.getElementById('btnLogout').addEventListener('click', async()=>{ await supabase.auth.signOut(); navigate('../login.html'); throw new Error('unauthenticated'); });
 
 const el  = id => document.getElementById(id);
 const fmt = v  => formatCurrency(v, 'BRL');

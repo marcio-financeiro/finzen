@@ -12,7 +12,7 @@ import { FINZEN_SECRET }  from './apiClient.js';
 // AUTH
 // ─────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
-if(!sessionData.session){ navigate('../login.html'); }
+if(!sessionData.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
 const user = sessionData.session.user;
 document.getElementById('btnLogout').addEventListener('click', async () => {
   await supabase.auth.signOut(); navigate('../login.html');
@@ -414,12 +414,12 @@ async function calcCAGR(aplicBRL, patrimBRL){
   if(aplicBRL<=0||patrimBRL<=0) return null;
   const {data}=await supabase
     .from('investment_transactions')
-    .select('data')
+    .select('data_movimento')
     .eq('user_id',user.id)
-    .order('data',{ascending:true})
+    .order('data_movimento',{ascending:true})
     .limit(1);
   if(!data?.length) return null;
-  const primeira=new Date(data[0].data);
+  const primeira=new Date(data[0].data_movimento);
   const anos=(Date.now()-primeira.getTime())/(365.25*24*60*60*1000);
   if(anos<0.08) return null;
   return Math.pow(patrimBRL/aplicBRL,1/anos)-1;
