@@ -26,6 +26,7 @@
 
 /* ── Controles ── */
 .rpt-controls{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.rpt-month-nav{display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .rpt-controls input[type=month]{padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);font-size:14px;}
 
 /* ── KPI grid ── */
@@ -94,9 +95,11 @@
 
     <!-- Controles -->
     <div class="rpt-controls">
-      <button id="btnMesAnterior" class="btn btn-secondary compact" type="button">◀</button>
-      <input type="month" id="filtroMes">
-      <button id="btnMesSeguinte" class="btn btn-secondary compact" type="button">▶</button>
+      <div class="rpt-month-nav">
+        <button id="btnMesAnterior" class="btn btn-secondary compact" type="button">◀</button>
+        <input type="month" id="filtroMes">
+        <button id="btnMesSeguinte" class="btn btn-secondary compact" type="button">▶</button>
+      </div>
       <button id="btnExportarPDF" class="btn btn-secondary" type="button">📄 Exportar PDF</button>
       <p id="periodoLabel" class="muted" style="font-size:13px;margin:0"></p>
     </div>
