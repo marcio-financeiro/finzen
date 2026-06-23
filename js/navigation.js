@@ -387,10 +387,9 @@ function groupHtml(group, forDrawer = false) {
   const active   = isGroupActive(group);
   const storeKey = `nav_collapsed_v3_${group.label}`;
 
-  // Grupos com página ativa ficam sempre abertos
-  // Outros: lê preferência salva; padrão é fechado
+  // Grupos só abrem se o usuário os abriu manualmente; padrão é fechado
   const savedState = localStorage.getItem(storeKey);
-  const collapsed  = active ? false : (savedState !== 'open');
+  const collapsed  = savedState !== 'open';
 
   const itemsHtml = group.items.map(item => `
     <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">
@@ -1078,6 +1077,18 @@ function removeOldBottomNav() {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 function initNavigation() {
+  // Primeiro acesso: redirecionar para o Dashboard
+  const FIRST_VISIT_KEY = 'finzen_visited';
+  if (!localStorage.getItem(FIRST_VISIT_KEY)) {
+    localStorage.setItem(FIRST_VISIT_KEY, '1');
+    const isDashboard = currentFile() === 'dashboard.html';
+    if (!isDashboard) {
+      const base = window.location.pathname.includes('/pages/') ? './' : './pages/';
+      window.location.replace(base + 'dashboard.html');
+      return;
+    }
+  }
+
   // Limpar localStorage de versões antigas do nav
   const oldKeys = Object.keys(localStorage).filter(k =>
     k.startsWith('nav_collapsed_') && !k.startsWith('nav_collapsed_v3_')
