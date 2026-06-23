@@ -545,7 +545,6 @@ async function renderizarTabelaRentabilidade(){
 // GRÁFICO EVOLUÇÃO DO PATRIMÔNIO
 // ─────────────────────────────────────────────
 async function renderizarGraficoEvolucao(){
-  // Dados de patrimônio mensal
   const {data:hist}=await supabase
     .from('patrimony_history')
     .select('reference_month,investments_total')
@@ -554,18 +553,12 @@ async function renderizarGraficoEvolucao(){
 
   if(!hist?.length) return;
 
-  // Todas as transações de investimento
-  const {data:txs}=await supabase
-    .from('investment_transactions')
-    .select('data,operacao,valor_total,moeda')
-    .eq('user_id',user.id);
+  // Custo da carteira atual: quantidade × preco_medio (já em memória)
+  const aplicadoAtual=somaSegura(ativos.map(a=>calcBRL(a,calcAplicado(a))));
 
-  const allTx=txs||[];
-
-  // Valor de mercado ao vivo (da memória, já carregado)
+  // Valor de mercado ao vivo
   const valorMercadoAtual=somaSegura(ativos.map(a=>calcBRL(a,calcAtual(a))));
 
-  // Mês atual no formato 'YYYY-MM'
   const hoje=new Date();
   const mesAtualKey=`${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
 
@@ -580,22 +573,13 @@ async function renderizarGraficoEvolucao(){
       .replace('.','').replace(' ','/');
     labels.push(label);
 
-    // Custo acumulado até o fim do mês
-    const aplicado=allTx
-      .filter(t=>new Date(t.data)<=fim)
-      .reduce((s,t)=>{
-        const brl=(t.moeda==='USD')?toNumber(t.valor_total)*dolarAtual:toNumber(t.valor_total);
-        return s+(t.operacao==='compra'?brl:-brl);
-      },0);
-
-    // Para o mês atual usa valor de mercado ao vivo em vez do snapshot
     const isMesAtual=h.reference_month.substring(0,7)===mesAtualKey;
     const total=isMesAtual&&valorMercadoAtual>0
       ? valorMercadoAtual
       : toNumber(h.investments_total);
 
-    serieAplicado.push(Math.max(0,aplicado));
-    serieGanho.push(Math.max(0,total-Math.max(0,aplicado)));
+    serieAplicado.push(Math.max(0,aplicadoAtual));
+    serieGanho.push(Math.max(0,total-aplicadoAtual));
   });
 
   // Destroy gráfico anterior se existir
