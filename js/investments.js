@@ -585,7 +585,7 @@ async function renderizarGraficoEvolucao(){
 
     const total=toNumber(h.investments_total);
     serieAplicado.push(Math.max(0,aplicado));
-    serieGanho.push(total-Math.max(0,aplicado));
+    serieGanho.push(Math.max(0,total-Math.max(0,aplicado)));
   });
 
   // Destroy gráfico anterior se existir
