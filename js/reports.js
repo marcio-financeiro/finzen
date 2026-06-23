@@ -393,7 +393,94 @@ async function renderInvestimentos() {
     });
   }
 }
-async function renderOrcamento()        { /* Task 7 */ }
+async function renderOrcamento() {
+  const inicio = inicioMes(mesAtual);
+  const fim    = fimMes(mesAtual);
+
+  const [{ data: budgets }, { data: txDesp }, { data: cardTx }] = await Promise.all([
+    supabase.from('budgets')
+      .select('valor_planejado,category_id,categories:category_id(nome,icon)')
+      .eq('user_id', user.id)
+      .eq('mes_referencia', mesAtual),
+
+    supabase.from('transactions')
+      .select('amount,category_id')
+      .eq('user_id', user.id)
+      .gte('date', inicio).lte('date', fim)
+      .eq('status', 'pago')
+      .eq('type', 'despesa'),
+
+    supabase.from('card_transactions')
+      .select('valor_parcela,category_id')
+      .eq('user_id', user.id)
+      .eq('fatura_referencia', mesAtual),
+  ]);
+
+  const wrap = document.getElementById('wrapOrcamento');
+
+  if (!budgets?.length) {
+    wrap.innerHTML = '<p class="muted" style="font-size:13px">Nenhum orçamento cadastrado para este mês.</p>';
+    destroyChart('orc');
+    return;
+  }
+
+  // Gastos reais por categoria
+  const gastos = {};
+  (txDesp || []).forEach(t => { if (t.category_id) gastos[t.category_id] = (gastos[t.category_id] || 0) + Number(t.amount || 0); });
+  (cardTx || []).forEach(t => { if (t.category_id) gastos[t.category_id] = (gastos[t.category_id] || 0) + Number(t.valor_parcela || 0); });
+
+  const itens = budgets.map(b => ({
+    nome:      b.categories?.nome || 'Categoria',
+    icon:      b.categories?.icon || '💰',
+    planejado: Number(b.valor_planejado || 0),
+    realizado: gastos[b.category_id] || 0,
+  })).sort((a, b) => b.realizado - a.realizado);
+
+  const pcts    = itens.map(i => i.planejado > 0 ? (i.realizado / i.planejado) * 100 : 0);
+  const cores   = pcts.map(p => p <= 80 ? '#10b981' : p <= 100 ? '#f59e0b' : '#ef4444');
+  const altura  = Math.max(180, itens.length * 48);
+
+  wrap.style.height = altura + 'px';
+
+  destroyChart('orc');
+  charts['orc'] = new Chart(document.getElementById('chartOrcamento'), {
+    type: 'bar',
+    data: {
+      labels:   itens.map(i => `${i.icon} ${i.nome}`),
+      datasets: [
+        {
+          label: 'Realizado',
+          data:  itens.map(i => i.realizado),
+          backgroundColor: cores,
+          borderWidth: 0,
+          borderRadius: 4,
+        },
+        {
+          label: 'Orçamento',
+          data:  itens.map(i => i.planejado),
+          backgroundColor: 'rgba(59,130,246,.25)',
+          borderColor: '#3b82f6',
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+      ],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#94a3b8', font: { size: 12 }, boxWidth: 12, padding: 14 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${formatCurrency(ctx.raw, 'BRL')}` } },
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,.06)' }, ticks: { color: '#94a3b8', font: { size: 11 }, callback: v => 'R$' + (v >= 1000 ? (v/1000).toFixed(0)+'K' : v.toFixed(0)) } },
+        y: { grid: { color: 'rgba(255,255,255,.06)' }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+      },
+    },
+  });
+}
 function renderInsights()               { /* Task 8 */ }
 
 // ── Orquestrador principal ────────────────────────────────────────────────────
