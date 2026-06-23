@@ -253,7 +253,7 @@ async function carregar() {
           label: 'Saldo do mês',
           data: saldos,
           borderColor: '#f59e0b',
-          backgroundColor: rgba(245,158,11, .12),
+          backgroundColor: rgba('#f59e0b', .12),
           borderWidth: 2.5,
           pointBackgroundColor: saldos.map(v => v >= 0 ? '#22c55e' : '#ef4444'),
           pointRadius: 5,
