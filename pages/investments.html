@@ -214,6 +214,16 @@
 [data-quote-status="cache"] { background:rgba(245,158,11,.12)  !important; color:var(--warning) !important; }
 [data-quote-status="offline"]{ background:rgba(107,106,96,.12) !important; color:var(--muted)   !important; }
 
+/* ── Card Variação + Rentabilidade ── */
+.desemp-card{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);
+  border-radius:12px;overflow:hidden;margin-top:12px;}
+.desemp-lado{padding:16px;}
+.desemp-lado+.desemp-lado{border-left:1px solid var(--border);}
+.desemp-label{color:var(--muted);font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
+.desemp-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.desemp-valor{font-family:var(--font-mono);font-size:1.5rem;font-weight:800;line-height:1.2;}
+.desemp-sub{color:var(--muted);font-size:12px;margin-top:4px;}
 </style>
 </head>
 <body>
@@ -233,6 +243,24 @@
         <div class="inv-kpi"><span>Ganho de Capital</span><strong id="kpiResultado">R$ 0,00</strong><small id="kpiResultadoPct">0,00%</small></div>
         <div class="inv-kpi"><span>Dividendos Recebidos</span><strong id="kpiDividendos">R$ 0,00</strong></div>
         <div class="inv-kpi"><span>Total</span><strong id="kpiPatrimonio">R$ 0,00</strong></div>
+      </div>
+      <!-- Card Variação + Rentabilidade -->
+      <div class="desemp-card">
+        <div class="desemp-lado">
+          <div class="desemp-label">📊 Variação</div>
+          <div id="desempenhoVarPct" class="desemp-valor">—</div>
+          <div id="desempenhoVarBrl" class="desemp-sub">R$ 0,00</div>
+        </div>
+        <div class="desemp-lado">
+          <div class="desemp-label-row">
+            <span class="desemp-label" style="margin:0;">Rentabilidade (CAGR)</span>
+            <select disabled title="Filtro por classe — em breve"
+              style="font-size:11px;padding:2px 6px;opacity:.45;cursor:not-allowed;border-radius:6px;">
+              <option>Todos os tipos</option>
+            </select>
+          </div>
+          <div id="desempenhoCAGR" class="desemp-valor">—</div>
+        </div>
       </div>
       <!-- Barra cotação -->
       <div class="inv-update-bar">

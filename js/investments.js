@@ -407,6 +407,52 @@ async function carregarTotalDividendos(){
 }
 
 // ─────────────────────────────────────────────
+// CAGR
+// ─────────────────────────────────────────────
+async function calcCAGR(aplicBRL, patrimBRL){
+  if(aplicBRL<=0||patrimBRL<=0) return null;
+  const {data}=await supabase
+    .from('investment_transactions')
+    .select('data')
+    .eq('user_id',user.id)
+    .order('data',{ascending:true})
+    .limit(1);
+  if(!data?.length) return null;
+  const primeira=new Date(data[0].data);
+  const anos=(Date.now()-primeira.getTime())/(365.25*24*60*60*1000);
+  if(anos<0.08) return null;
+  return Math.pow(patrimBRL/aplicBRL,1/anos)-1;
+}
+
+// ─────────────────────────────────────────────
+// CARD VARIAÇÃO + RENTABILIDADE
+// ─────────────────────────────────────────────
+async function renderizarDesempenho(){
+  const aplicBRL  = somaSegura(ativos.map(a=>calcBRL(a,calcAplicado(a))));
+  const patrimBRL = somaSegura(ativos.map(a=>calcBRL(a,calcAtual(a))));
+  const resultado = patrimBRL-aplicBRL;
+  const varPct    = aplicBRL>0?resultado/aplicBRL*100:0;
+
+  // Variação
+  const seta = resultado>0?'↑':resultado<0?'↓':'';
+  const cor   = resultado>0?'var(--success)':resultado<0?'var(--danger)':'var(--muted)';
+  el('desempenhoVarPct').innerHTML=
+    `<span style="color:${cor}">${resultado>=0?'+':''}${formatPercent(varPct)} ${seta}</span>`;
+  el('desempenhoVarBrl').innerText=formatCurrency(resultado,'BRL');
+
+  // CAGR
+  const cagr=await calcCAGR(aplicBRL,patrimBRL);
+  if(cagr===null){
+    el('desempenhoCAGR').innerHTML='<span style="color:var(--muted)">—</span>';
+  } else {
+    const cor2=cagr>=0?'var(--success)':'var(--danger)';
+    const seta2=cagr>=0?'↗':'↘';
+    el('desempenhoCAGR').innerHTML=
+      `<span style="color:${cor2}">${cagr>=0?'+':''}${formatPercent(cagr*100)} ${seta2}</span>`;
+  }
+}
+
+// ─────────────────────────────────────────────
 // CARTEIRA (aba 1)
 // ─────────────────────────────────────────────
 function renderizarCarteira(){
@@ -1384,4 +1430,5 @@ await carregarAtivos();
 await carregarPesos();
 renderizarTudo();
 await carregarTotalDividendos();
+await renderizarDesempenho();
 await atualizarCotacoes(true);
