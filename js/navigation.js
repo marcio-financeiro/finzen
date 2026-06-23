@@ -1011,7 +1011,11 @@ function ensureMobilePrivacyBtn() {
   document.body.appendChild(btn);
 }
 
-function openDrawer()  { document.body.classList.add('drawer-open'); }
+function openDrawer() {
+  // Colapsar todos os grupos ao abrir — usuário escolhe o que expandir
+  document.querySelectorAll('.mobile-drawer .nav-group').forEach(g => g.classList.add('collapsed'));
+  document.body.classList.add('drawer-open');
+}
 function closeDrawer() { document.body.classList.remove('drawer-open'); }
 
 // ─── FAB ──────────────────────────────────────────────────────────────────────
