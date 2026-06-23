@@ -76,7 +76,6 @@ async function carregar() {
       { data: cardTx },
       { data: contas },
       { data: investimentos },
-      { data: txPatrimonio },
     ] = await Promise.all([
       supabase.from('transactions')
         .select('type,amount,date,status,categories:category_id(nome,icon)')
@@ -97,13 +96,6 @@ async function carregar() {
         .select('tipo,quantidade,preco_medio,cotacao_atual')
         .eq('user_id', user.id)
         .eq('ativo', true),
-
-      // Patrimônio: calcula dinamicamente por mês
-      supabase.from('transactions')
-        .select('type,amount,date,status')
-        .eq('user_id', user.id)
-        .gte('date', inicio).lte('date', fim)
-        .eq('status','pago'),
     ]);
 
     const tx     = txHistorico || [];
@@ -159,51 +151,11 @@ async function carregar() {
       invClasse[classe] = (invClasse[classe]||0) + valorAtual;
     });
 
-    // ── Patrimônio histórico — calculado dinamicamente ──
-    // Parte do saldo atual e subtrai/soma as transações mês a mês ao contrário
-    const saldoAtualBRL = (contas||[])
-      .filter(c => c.currency === 'BRL')
-      .reduce((s,c) => s + Number(c.saldo_atual||0), 0);
-    const totalInvestAtual = Object.values(invClasse).reduce((s,v)=>s+v,0);
-
-    // Acumula fluxo por mês (receitas - despesas)
-    const fluxoPorMes = {};
-    meses.forEach(m => { fluxoPorMes[m] = 0; });
-    (txPatrimonio||[]).forEach(t => {
-      const m = t.date?.slice(0,7);
-      if(!fluxoPorMes.hasOwnProperty(m)) return;
-      if(t.type==='receita') fluxoPorMes[m] += Number(t.amount||0);
-      if(t.type==='despesa') fluxoPorMes[m] -= Number(t.amount||0);
-    });
-    // Inclui cartão
-    cartao.forEach(t => {
-      const m = t.fatura_referencia;
-      if(!fluxoPorMes.hasOwnProperty(m)) return;
-      fluxoPorMes[m] -= Number(t.valor_parcela||0);
-    });
-
-    // Reconstrói patrimônio retroativamente a partir do saldo atual
-    const patrimonioBase = saldoAtualBRL + totalInvestAtual;
-    const patrimonioMeses = [...meses].reverse().reduce((acc, mes, i) => {
-      if(i === 0) {
-        acc[mes] = patrimonioBase;
-      } else {
-        const anterior = [...meses].reverse()[i-1];
-        acc[mes] = acc[anterior] - fluxoPorMes[anterior];
-      }
-      return acc;
-    }, {});
-
-    const patrimHistorico = meses.map(m => ({
-      mes_referencia: m,
-      patrimonio_liquido: patrimonioMeses[m] || 0,
-    }));
-
     // ── KPIs ──────────────────────────────────────────
     const totalReceitas = receitas.reduce((s,v)=>s+v,0);
     const totalDespesas = despesas.reduce((s,v)=>s+v,0);
     const saldoContas   = (contas||[]).filter(c=>c.currency==='BRL').reduce((s,c)=>s+Number(c.saldo_atual||0),0);
-    const totalInvest   = Object.values(invClasse).reduce((s,v)=>s+v,0);
+    const totalInvest   = Object.values(invClasse).reduce((s,v)=>s+v, 0);
     const mediaPoupanca = poupanca.filter(v=>v>0).reduce((s,v,_,a)=>s+v/a.length,0);
     const maiorGasto    = catOrdenadas[0];
 
@@ -293,45 +245,7 @@ async function carregar() {
       }
     });
 
-    // ── Gráfico 4: Gastos por categoria (donut) ───────
-    destroyChart('chartCategorias');
-    charts['chartCategorias'] = new Chart(el('chartCategorias'), {
-      type: 'doughnut',
-      data: {
-        labels: catOrdenadas.map(([k])=>k),
-        datasets: [{
-          data: catOrdenadas.map(([,v])=>v),
-          backgroundColor: CORES.slice(0, catOrdenadas.length),
-          borderWidth: 2,
-          borderColor: '#181c27',
-          hoverOffset: 8,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'right',
-            labels: { color:'#94a3b8', font:{ size:12 }, padding: 12, boxWidth: 14 }
-          },
-          title: {
-            display: true,
-            text: `Gastos por Categoria — ${nomeMes(mesAtual)}`,
-            color: '#e8eaf0',
-            font: { size: 14, weight: 'bold' },
-            padding: { bottom: 16 }
-          },
-          tooltip: {
-            callbacks: {
-              label: ctx => ` ${ctx.label}: ${fmt(ctx.raw)} (${((ctx.raw/catOrdenadas.reduce((s,[,v])=>s+v,0))*100).toFixed(1)}%)`
-            }
-          }
-        }
-      }
-    });
-
-    // ── Gráfico 5: Investimentos por classe (donut) ───
+    // ── Gráfico 4: Investimentos por classe (donut) ───
     const invEntries = Object.entries(invClasse).sort((a,b)=>b[1]-a[1]);
     destroyChart('chartInvestimentos');
     charts['chartInvestimentos'] = new Chart(el('chartInvestimentos'), {
@@ -369,42 +283,6 @@ async function carregar() {
         }
       }
     });
-
-    // ── Gráfico 6: Patrimônio histórico ───────────────
-    destroyChart('chartPatrimonio');
-    charts['chartPatrimonio'] = new Chart(el('chartPatrimonio'), {
-      type: 'line',
-      data: {
-        labels: patrimHistorico.map(h => nomeMes(h.mes_referencia)),
-        datasets: [
-          {
-            label: 'Patrimônio estimado',
-            data: patrimHistorico.map(h => Number(h.patrimonio_liquido||0)),
-            borderColor: '#22c55e',
-            backgroundColor: rgba('#22c55e', .1),
-            borderWidth: 2.5,
-            pointRadius: 5,
-            tension: .35,
-            fill: true,
-          },
-        ]
-      },
-      options: chartOptions('Evolução Patrimonial Estimada (6 meses)')
-    });
-    el('semPatrimonio').style.display = 'none';
-
-    // ── Tabela top categorias ─────────────────────────
-    el('tabelaCategorias').innerHTML = catOrdenadas.slice(0,8).map(([cat, val], i) => {
-      const pct = catOrdenadas.reduce((s,[,v])=>s+v,0);
-      const p   = pct > 0 ? (val/pct*100).toFixed(1) : 0;
-      return `
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
-          <span style="width:22px;height:22px;border-radius:50%;background:${CORES[i]};display:inline-block;flex-shrink:0"></span>
-          <span style="flex:1;font-size:13px">${cat}</span>
-          <span style="font-size:13px;font-weight:700">${fmt(val)}</span>
-          <span style="font-size:11px;color:var(--muted);width:36px;text-align:right">${p}%</span>
-        </div>`;
-    }).join('');
 
   } catch(err) {
     console.error('Erro ao carregar analytics:', err);
