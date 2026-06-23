@@ -388,9 +388,9 @@ function groupHtml(group, forDrawer = false) {
   const storeKey = `nav_collapsed_v3_${group.label}`;
 
   // Grupos com página ativa ficam sempre abertos
-  // Outros: lê preferência salva; padrão é aberto
+  // Outros: lê preferência salva; padrão é fechado
   const savedState = localStorage.getItem(storeKey);
-  const collapsed  = active ? false : (savedState === 'closed');
+  const collapsed  = active ? false : (savedState !== 'open');
 
   const itemsHtml = group.items.map(item => `
     <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">
