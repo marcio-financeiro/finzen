@@ -283,12 +283,24 @@ async function renderEvolucaoPatrimonio() {
     .order('reference_month', { ascending: true });
 
   const canvas = document.getElementById('chartPatrimonio');
+  const body = canvas.closest('.rpt-block').querySelector('.rpt-block-body');
+  let msgEl = body.querySelector('.rpt-no-data-msg');
 
   if (!hist?.length) {
-    canvas.closest('.rpt-block').querySelector('.rpt-block-body').innerHTML =
-      '<p class="muted" style="font-size:13px">Salve pelo menos 2 snapshots mensais para ver a evolução.</p>';
+    destroyChart('patrim');
+    canvas.style.display = 'none';
+    if (!msgEl) {
+      msgEl = document.createElement('p');
+      msgEl.className = 'muted rpt-no-data-msg';
+      msgEl.style.cssText = 'font-size:13px;padding:0';
+      body.appendChild(msgEl);
+    }
+    msgEl.textContent = 'Salve pelo menos 2 snapshots mensais para ver a evolução.';
+    msgEl.style.display = '';
     return;
   }
+  canvas.style.display = '';
+  if (msgEl) msgEl.style.display = 'none';
 
   const labels = hist.map(h => nomeMes(h.reference_month.substring(0, 7)));
   const dados  = hist.map(h => Number(h.net_worth || 0));
