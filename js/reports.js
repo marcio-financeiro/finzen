@@ -481,7 +481,101 @@ async function renderOrcamento() {
     },
   });
 }
-function renderInsights()               { /* Task 8 */ }
+async function renderInsights() {
+  const inicio    = inicioMes(mesAtual);
+  const fim       = fimMes(mesAtual);
+  const mesAntStr = mesAdicionar(mesAtual, -1);
+  const inicioAnt = inicioMes(mesAntStr);
+  const fimAnt    = fimMes(mesAntStr);
+
+  const [
+    { data: tx },
+    { data: cardTx },
+    { data: txAnt },
+    { data: cardTxAnt },
+    { data: hist },
+    { data: budgets },
+    { data: txDesp },
+    { data: cardTxDesp },
+  ] = await Promise.all([
+    supabase.from('transactions').select('type,amount,categories:category_id(nome)').eq('user_id',user.id).gte('date',inicio).lte('date',fim).eq('status','pago'),
+    supabase.from('card_transactions').select('valor_parcela,categories:category_id(nome)').eq('user_id',user.id).eq('fatura_referencia',mesAtual),
+    supabase.from('transactions').select('type,amount').eq('user_id',user.id).gte('date',inicioAnt).lte('date',fimAnt).eq('status','pago'),
+    supabase.from('card_transactions').select('valor_parcela').eq('user_id',user.id).eq('fatura_referencia',mesAntStr),
+    supabase.from('patrimony_history').select('reference_month,net_worth').eq('user_id',user.id).order('reference_month',{ascending:false}).limit(2),
+    supabase.from('budgets').select('valor_planejado,category_id').eq('user_id',user.id).eq('mes_referencia',mesAtual),
+    supabase.from('transactions').select('amount,category_id').eq('user_id',user.id).gte('date',inicio).lte('date',fim).eq('status','pago').eq('type','despesa'),
+    supabase.from('card_transactions').select('valor_parcela,category_id').eq('user_id',user.id).eq('fatura_referencia',mesAtual),
+  ]);
+
+  const receitas  = (tx||[]).filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
+  const despesas  = (tx||[]).filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0)
+                  + (cardTx||[]).reduce((s,t)=>s+Number(t.valor_parcela||0),0);
+  const resultado = receitas - despesas;
+  const poupPct   = receitas > 0 ? (resultado / receitas) * 100 : 0;
+
+  const recAnt  = (txAnt||[]).filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
+  const despAnt = (txAnt||[]).filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0)
+                + (cardTxAnt||[]).reduce((s,t)=>s+Number(t.valor_parcela||0),0);
+  const resAnt  = recAnt - despAnt;
+
+  // Maior categoria de gasto
+  const mapaDesp = {};
+  (tx||[]).filter(t=>t.type==='despesa').forEach(t=>{const n=t.categories?.nome||'Outros';mapaDesp[n]=(mapaDesp[n]||0)+Number(t.amount||0);});
+  (cardTx||[]).forEach(t=>{const n=t.categories?.nome||'Cartão';mapaDesp[n]=(mapaDesp[n]||0)+Number(t.valor_parcela||0);});
+  const [maiorCat,maiorVal] = Object.entries(mapaDesp).sort((a,b)=>b[1]-a[1])[0] || ['—',0];
+
+  // Patrimônio
+  const patrimonioAtual = hist?.find(h=>h.reference_month?.startsWith(mesAtual))?.net_worth;
+  const patrimonioAnt   = hist?.find(h=>h.reference_month?.startsWith(mesAntStr))?.net_worth;
+  const varPatrim = (patrimonioAtual != null && patrimonioAnt != null && patrimonioAnt !== 0)
+    ? ((patrimonioAtual - patrimonioAnt) / Math.abs(patrimonioAnt)) * 100 : null;
+
+  // Orçamentos estourados
+  const gastosOrc = {};
+  (txDesp||[]).forEach(t=>{if(t.category_id)gastosOrc[t.category_id]=(gastosOrc[t.category_id]||0)+Number(t.amount||0);});
+  (cardTxDesp||[]).forEach(t=>{if(t.category_id)gastosOrc[t.category_id]=(gastosOrc[t.category_id]||0)+Number(t.valor_parcela||0);});
+  const estourados = (budgets||[]).filter(b=>(gastosOrc[b.category_id]||0) > Number(b.valor_planejado||0)).length;
+
+  // Montar insights
+  const insights = [];
+
+  if (maiorCat !== '—') {
+    insights.push({ icon: '💸', text: `Maior gasto do mês: <strong>${maiorCat}</strong> com <strong>${formatCurrency(maiorVal,'BRL')}</strong>` });
+  }
+
+  if (resultado >= 0) {
+    insights.push({ icon: '✅', text: `Resultado positivo: você economizou <strong>${formatCurrency(resultado,'BRL')}</strong> (${poupPct.toFixed(1)}% das receitas)` });
+  } else {
+    insights.push({ icon: '⚠️', text: `Resultado negativo: gastos superaram receitas em <strong>${formatCurrency(Math.abs(resultado),'BRL')}</strong>` });
+  }
+
+  if (recAnt > 0) {
+    const varRec = ((receitas - recAnt) / recAnt) * 100;
+    const seta   = varRec >= 0 ? '↑' : '↓';
+    insights.push({ icon: '📊', text: `Receita vs ${nomeMes(mesAntStr)}: <strong>${seta} ${Math.abs(varRec).toFixed(1)}%</strong> (${formatCurrency(receitas,'BRL')} vs ${formatCurrency(recAnt,'BRL')})` });
+  }
+
+  if (varPatrim !== null) {
+    const seta = varPatrim >= 0 ? '📈' : '📉';
+    insights.push({ icon: seta, text: `Patrimônio ${varPatrim >= 0 ? 'cresceu' : 'caiu'} <strong>${Math.abs(varPatrim).toFixed(2)}%</strong> em relação a ${nomeMes(mesAntStr)}` });
+  }
+
+  if (estourados > 0) {
+    insights.push({ icon: '🔴', text: `<strong>${estourados} categoria${estourados > 1 ? 's' : ''}</strong> acima do orçamento planejado` });
+  } else if ((budgets||[]).length > 0) {
+    insights.push({ icon: '🟢', text: `Todas as categorias <strong>dentro do orçamento</strong> planejado` });
+  }
+
+  const cont = document.getElementById('listaInsights');
+  if (insights.length === 0) {
+    cont.innerHTML = '<p class="muted" style="font-size:13px">Sem dados suficientes para gerar insights neste período.</p>';
+    return;
+  }
+  cont.innerHTML = insights.map(i =>
+    `<div class="rpt-insight"><span class="rpt-insight-icon">${i.icon}</span><span class="rpt-insight-text">${i.text}</span></div>`
+  ).join('');
+}
 
 // ── Orquestrador principal ────────────────────────────────────────────────────
 async function carregarTudo() {
@@ -493,8 +587,8 @@ async function carregarTudo() {
     renderEvolucaoPatrimonio(),
     renderInvestimentos(),
     renderOrcamento(),
+    renderInsights(),
   ]);
-  renderInsights();
 }
 
 // ── Seletor de mês ────────────────────────────────────────────────────────────
