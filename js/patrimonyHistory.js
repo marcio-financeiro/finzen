@@ -98,65 +98,28 @@ async function sumOpenCards(){
 }
 
 async function sumInvestmentsSafe(){
-  /*
-    Cálculo conservador.
-    Como o módulo de investimentos ainda pode estar evoluindo,
-    tentamos estruturas comuns sem quebrar a tela.
-  */
+  const { data, error } = await supabase
+    .from('investments')
+    .select('quantidade,cotacao_atual,preco_medio,moeda')
+    .eq('user_id', user.id);
 
-  const attempts = [
-    {
-      table:'investment_assets',
-      select:'quantity,current_price,average_price,total_value'
-    },
-    {
-      table:'investments',
-      select:'quantity,current_price,average_price,total_value'
-    },
-    {
-      table:'investment_positions',
-      select:'quantity,current_price,average_price,total_value'
-    }
-  ];
+  if(error || !data?.length) return 0;
 
-  for(const attempt of attempts){
-    const { data, error } = await supabase
-      .from(attempt.table)
-      .select(attempt.select)
-      .eq('user_id', user.id);
+  const { data: settings } = await supabase
+    .from('user_settings')
+    .select('setting_value')
+    .eq('user_id', user.id)
+    .eq('setting_key', 'usd_brl_rate')
+    .maybeSingle();
 
-    if(error){
-      continue;
-    }
+  const usdBrl = settings ? Number(settings.setting_value) || 5.15 : 5.15;
 
-    if(!data || !data.length){
-      return 0;
-    }
-
-    return data.reduce((sum, item) => {
-      const total = Number(item.total_value ?? 0);
-
-      if(total){
-        return sum + total;
-      }
-
-      const quantity = Number(item.quantity ?? 0);
-      const current = Number(item.current_price ?? 0);
-      const average = Number(item.average_price ?? 0);
-
-      if(quantity && current){
-        return sum + (quantity * current);
-      }
-
-      if(quantity && average){
-        return sum + (quantity * average);
-      }
-
-      return sum;
-    }, 0);
-  }
-
-  return 0;
+  return data.reduce((sum, a) => {
+    const qty   = Number(a.quantidade  ?? 0);
+    const price = Number(a.cotacao_atual ?? a.preco_medio ?? 0);
+    const brl   = (a.moeda === 'USD') ? qty * price * usdBrl : qty * price;
+    return sum + brl;
+  }, 0);
 }
 
 async function calculateSnapshot(){
