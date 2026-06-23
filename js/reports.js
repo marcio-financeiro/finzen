@@ -275,7 +275,55 @@ async function renderCategorias() {
     </div>
   `).join('');
 }
-async function renderEvolucaoPatrimonio() { /* Task 5 */ }
+async function renderEvolucaoPatrimonio() {
+  const { data: hist } = await supabase
+    .from('patrimony_history')
+    .select('reference_month,net_worth')
+    .eq('user_id', user.id)
+    .order('reference_month', { ascending: true });
+
+  const canvas = document.getElementById('chartPatrimonio');
+
+  if (!hist?.length) {
+    canvas.closest('.rpt-block').querySelector('.rpt-block-body').innerHTML =
+      '<p class="muted" style="font-size:13px">Salve pelo menos 2 snapshots mensais para ver a evolução.</p>';
+    return;
+  }
+
+  const labels = hist.map(h => nomeMes(h.reference_month.substring(0, 7)));
+  const dados  = hist.map(h => Number(h.net_worth || 0));
+
+  destroyChart('patrim');
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 220);
+  grad.addColorStop(0, 'rgba(245,158,11,.35)');
+  grad.addColorStop(1, 'rgba(245,158,11,.02)');
+
+  charts['patrim'] = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Patrimônio Líquido',
+        data: dados,
+        borderColor: '#f59e0b',
+        backgroundColor: grad,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.35,
+        pointRadius: 4,
+        pointBackgroundColor: '#f59e0b',
+      }],
+    },
+    options: {
+      ...chartDefaults,
+      plugins: {
+        ...chartDefaults.plugins,
+        legend: { display: false },
+      },
+    },
+  });
+}
 async function renderInvestimentos()    { /* Task 6 */ }
 async function renderOrcamento()        { /* Task 7 */ }
 function renderInsights()               { /* Task 8 */ }
