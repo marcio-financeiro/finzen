@@ -224,6 +224,18 @@
 .desemp-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .desemp-valor{font-family:var(--font-mono);font-size:1.5rem;font-weight:800;line-height:1.2;}
 .desemp-sub{color:var(--muted);font-size:12px;margin-top:4px;}
+
+/* ── Tabela Rentabilidade Mensal ── */
+.rent-table{font-size:12px;min-width:700px;width:100%;border-collapse:collapse;}
+.rent-table th{font-size:10px;text-align:center;padding:6px 8px;
+  text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+.rent-table td{text-align:center;padding:6px 8px;
+  font-family:var(--font-mono);font-size:12px;border-bottom:1px solid var(--border);}
+.rent-table tbody tr:last-child td{border-bottom:none;}
+.rent-table td:first-child{text-align:left;font-family:var(--font-ui);}
+.rent-table .pct-pos{color:var(--success);}
+.rent-table .pct-neg{color:var(--danger);}
+.rent-table .pct-dash{color:var(--muted);}
 </style>
 </head>
 <body>
@@ -480,6 +492,14 @@
         <div id="comiteResultado"></div>
       </div>
 
+    </section>
+
+    <!-- Rentabilidade Mensal -->
+    <section class="panel" style="padding:18px;">
+      <div style="font-weight:800;font-size:14px;margin-bottom:14px;">Rentabilidade Mensal</div>
+      <div style="overflow-x:auto;">
+        <div id="tabelaRentabilidade"><p class="muted">Carregando...</p></div>
+      </div>
     </section>
   </main>
 </div>

@@ -453,6 +453,94 @@ async function renderizarDesempenho(){
 }
 
 // ─────────────────────────────────────────────
+// TABELA RENTABILIDADE MENSAL
+// ─────────────────────────────────────────────
+async function renderizarTabelaRentabilidade(){
+  const cont=el('tabelaRentabilidade');
+  const {data,error}=await supabase
+    .from('patrimony_history')
+    .select('reference_month,investments_total')
+    .eq('user_id',user.id)
+    .order('reference_month',{ascending:true});
+
+  if(error||!data?.length){
+    cont.innerHTML='<p class="muted">Nenhum histórico disponível. Salve um snapshot mensal para ver a evolução.</p>';
+    return;
+  }
+
+  // Mapa 'YYYY-MM' → valor
+  const map={};
+  data.forEach(r=>{ map[r.reference_month.substring(0,7)]=toNumber(r.investments_total); });
+  const allKeys=Object.keys(map).sort();
+
+  // Retorno mês a mês (compara com mês calendário anterior)
+  const returns={};
+  allKeys.forEach((key,i)=>{
+    if(i===0){ returns[key]=null; return; }
+    const prevKey=allKeys[i-1];
+    const [py,pm]=prevKey.split('-').map(Number);
+    const [cy,cm]=key.split('-').map(Number);
+    const isPriorMonth=(cy*12+cm)===(py*12+pm+1);
+    if(!isPriorMonth||map[prevKey]<=0){ returns[key]=null; return; }
+    returns[key]=(map[key]-map[prevKey])/map[prevKey];
+  });
+
+  // Fator acumulado correndo
+  let runFactor=1;
+  const accumFactors={};
+  allKeys.forEach(key=>{
+    if(returns[key]!==null&&returns[key]!==undefined) runFactor*=(1+returns[key]);
+    accumFactors[key]=runFactor-1;
+  });
+
+  const years=[...new Set(allKeys.map(k=>k.substring(0,4)))].sort();
+  const mLabels=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+  const fmtPct=v=>(v>=0?'+':'')+formatPercent(v*100);
+  const pctCell=(v,bold=false)=>{
+    if(v===null||v===undefined) return `<td class="pct-dash"${bold?' style="font-weight:700"':''}>—</td>`;
+    return `<td class="${v>=0?'pct-pos':'pct-neg'}"${bold?' style="font-weight:700"':''}>${fmtPct(v)}</td>`;
+  };
+
+  let html=`<table class="data-table rent-table">
+  <thead><tr>
+    <th>Ano</th>
+    ${mLabels.map(m=>`<th>${m}</th>`).join('')}
+    <th>Ret. anual</th><th>Acumulado</th>
+  </tr></thead><tbody>`;
+
+  years.forEach(year=>{
+    // Produto encadeado dos meses com retorno no ano
+    let yearFactor=1; let hasYear=false;
+    for(let m=1;m<=12;m++){
+      const k=`${year}-${String(m).padStart(2,'0')}`;
+      if(returns[k]!==null&&returns[k]!==undefined){ yearFactor*=(1+returns[k]); hasYear=true; }
+    }
+    const yearRet=hasYear?yearFactor-1:null;
+
+    // Último mês do ano com dado para acumulado
+    let lastKey=null;
+    for(let m=12;m>=1;m--){
+      const k=`${year}-${String(m).padStart(2,'0')}`;
+      if(map[k]!==undefined){ lastKey=k; break; }
+    }
+    const accum=lastKey?accumFactors[lastKey]:null;
+
+    html+=`<tr><td><strong>${year}</strong></td>`;
+    for(let m=1;m<=12;m++){
+      const k=`${year}-${String(m).padStart(2,'0')}`;
+      html+=pctCell(returns[k]);
+    }
+    html+=pctCell(yearRet,true);
+    html+=pctCell(accum,true);
+    html+=`</tr>`;
+  });
+
+  html+=`</tbody></table>`;
+  cont.innerHTML=html;
+}
+
+// ─────────────────────────────────────────────
 // CARTEIRA (aba 1)
 // ─────────────────────────────────────────────
 function renderizarCarteira(){
@@ -1431,4 +1519,5 @@ await carregarPesos();
 renderizarTudo();
 await carregarTotalDividendos();
 await renderizarDesempenho();
+await renderizarTabelaRentabilidade();
 await atualizarCotacoes(true);
