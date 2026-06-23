@@ -237,6 +237,7 @@
 .rent-table .pct-neg{color:var(--danger);}
 .rent-table .pct-dash{color:var(--muted);}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -289,6 +290,16 @@
           ● ao vivo
         </span>
         <div id="mensagemCotacao" class="message" style="margin:0;min-height:0;"></div>
+      </div>
+    </section>
+
+    <!-- Gráfico Evolução do Patrimônio -->
+    <section class="panel" style="padding:18px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div style="font-weight:800;font-size:14px;">Evolução do Patrimônio</div>
+      </div>
+      <div style="position:relative;height:260px;">
+        <canvas id="chartEvolucao"></canvas>
       </div>
     </section>
 

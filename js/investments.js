@@ -27,6 +27,7 @@ let corretoras  = [];   // broker accounts
 let todasContas = [];   // all active accounts
 let pesos       = {};   // { ticker: { classeIdeal, ativoIdeal } }
 let editandoId  = null;
+let chartEvolucao = null;
 
 const el = id => document.getElementById(id);
 
@@ -538,6 +539,116 @@ async function renderizarTabelaRentabilidade(){
 
   html+=`</tbody></table>`;
   cont.innerHTML=html;
+}
+
+// ─────────────────────────────────────────────
+// GRÁFICO EVOLUÇÃO DO PATRIMÔNIO
+// ─────────────────────────────────────────────
+async function renderizarGraficoEvolucao(){
+  // Dados de patrimônio mensal
+  const {data:hist}=await supabase
+    .from('patrimony_history')
+    .select('reference_month,investments_total')
+    .eq('user_id',user.id)
+    .order('reference_month',{ascending:true});
+
+  if(!hist?.length) return;
+
+  // Todas as transações de investimento
+  const {data:txs}=await supabase
+    .from('investment_transactions')
+    .select('data,operacao,valor_total,moeda')
+    .eq('user_id',user.id);
+
+  const allTx=txs||[];
+
+  // Para cada mês do histórico, calcula valor aplicado acumulado
+  const labels=[];
+  const serieAplicado=[];
+  const serieGanho=[];
+
+  hist.forEach(h=>{
+    const [y,m]=h.reference_month.substring(0,7).split('-').map(Number);
+    // Último dia do mês
+    const fim=new Date(y,m,0,23,59,59);
+    const label=fim.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'})
+      .replace('.','').replace(' ','/');
+    labels.push(label);
+
+    // Custo acumulado até o fim do mês
+    const aplicado=allTx
+      .filter(t=>new Date(t.data)<=fim)
+      .reduce((s,t)=>{
+        const brl=(t.moeda==='USD')?toNumber(t.valor_total)*dolarAtual:toNumber(t.valor_total);
+        return s+(t.operacao==='compra'?brl:-brl);
+      },0);
+
+    const total=toNumber(h.investments_total);
+    serieAplicado.push(Math.max(0,aplicado));
+    serieGanho.push(total-Math.max(0,aplicado));
+  });
+
+  // Destroy gráfico anterior se existir
+  if(chartEvolucao){ chartEvolucao.destroy(); chartEvolucao=null; }
+
+  const ctx=el('chartEvolucao');
+  if(!ctx) return;
+
+  chartEvolucao=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'Valor aplicado',
+          data:serieAplicado,
+          backgroundColor:'rgba(16,185,129,.85)',
+          borderColor:'#10b981',
+          borderWidth:1,
+          stack:'patrimonio',
+        },
+        {
+          label:'Ganho de Capital',
+          data:serieGanho,
+          backgroundColor:'rgba(52,211,153,.7)',
+          borderColor:'#34d399',
+          borderWidth:1,
+          stack:'patrimonio',
+        },
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      scales:{
+        x:{
+          stacked:true,
+          grid:{ color:'rgba(255,255,255,.05)' },
+          ticks:{ color:'#94a3b8', font:{ size:11 } },
+        },
+        y:{
+          stacked:true,
+          grid:{ color:'rgba(255,255,255,.05)' },
+          ticks:{
+            color:'#94a3b8',
+            font:{ size:11 },
+            callback:v=>'R$'+( v>=1000?(v/1000).toFixed(0)+'K':v.toFixed(0) ),
+          },
+        },
+      },
+      plugins:{
+        legend:{
+          labels:{ color:'#94a3b8', font:{ size:12 }, boxWidth:12, padding:16 }
+        },
+        tooltip:{
+          callbacks:{
+            label:ctx=>' '+ctx.dataset.label+': '+formatCurrency(ctx.raw,'BRL'),
+          }
+        }
+      }
+    }
+  });
 }
 
 // ─────────────────────────────────────────────
@@ -1520,4 +1631,5 @@ await carregarPesos();
 renderizarTudo();
 await carregarTotalDividendos();
 await renderizarTabelaRentabilidade();
+await renderizarGraficoEvolucao();
 await atualizarCotacoes(true);
