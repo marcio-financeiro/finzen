@@ -389,15 +389,21 @@ function renderizarKPIs(){
   const patrimBRL = somaSegura(ativos.map(a=>calcBRL(a,calcAtual(a))));
   const resultado = patrimBRL-aplicBRL;
   const pct       = aplicBRL?resultado/aplicBRL*100:0;
-  const usdTotal  = somaSegura(ativos.filter(a=>(a.moeda||'BRL')==='USD').map(a=>calcAtual(a)));
 
-  el('kpiPatrimonio').innerText=formatCurrency(patrimBRL,'BRL');
   el('kpiAplicado').innerText=formatCurrency(aplicBRL,'BRL');
+  el('kpiPatrimonio').innerText=formatCurrency(patrimBRL,'BRL');
   el('kpiResultado').innerText=formatCurrency(resultado,'BRL');
   el('kpiResultado').className=resultado>=0?'positive':'negative';
   el('kpiResultadoPct').innerText=(resultado>=0?'+':'')+formatPercent(pct);
-  el('kpiUsd').innerText=formatUSD(usdTotal);
-  el('kpiUsdBrl').innerText=formatCurrency(usdTotal*dolarAtual,'BRL');
+}
+
+// ─────────────────────────────────────────────
+// KPI DIVIDENDOS (total acumulado)
+// ─────────────────────────────────────────────
+async function carregarTotalDividendos(){
+  const {data}=await supabase.from('dividends').select('valor_total').eq('user_id',user.id);
+  const total=(data||[]).reduce((s,d)=>s+toNumber(d.valor_total),0);
+  el('kpiDividendos').innerText=formatCurrency(total,'BRL');
 }
 
 // ─────────────────────────────────────────────
@@ -1377,4 +1383,5 @@ await carregarCorretoras();
 await carregarAtivos();
 await carregarPesos();
 renderizarTudo();
+await carregarTotalDividendos();
 await atualizarCotacoes(true);
