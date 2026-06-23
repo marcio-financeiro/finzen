@@ -161,7 +161,43 @@ async function renderKPIs() {
 }
 
 // ── Stubs das seções seguintes (preenchidos nas próximas tasks) ───────────────
-async function renderGrafico12Meses()   { /* Task 3 */ }
+async function renderGrafico12Meses() {
+  const meses  = ultimos12Meses(mesAtual);
+  const inicio = inicioMes(meses[0]);
+  const fim    = fimMes(meses[meses.length - 1]);
+
+  const { data: tx } = await supabase
+    .from('transactions')
+    .select('type,amount,date')
+    .eq('user_id', user.id)
+    .gte('date', inicio).lte('date', fim)
+    .eq('status', 'pago');
+
+  const receitas = meses.map(m =>
+    (tx || []).filter(t => t.type === 'receita' && t.date?.startsWith(m))
+              .reduce((s, t) => s + Number(t.amount || 0), 0)
+  );
+  const despesas = meses.map(m =>
+    (tx || []).filter(t => t.type === 'despesa' && t.date?.startsWith(m))
+              .reduce((s, t) => s + Number(t.amount || 0), 0)
+  );
+
+  destroyChart('recdes');
+  charts['recdes'] = new Chart(document.getElementById('chartRecDes'), {
+    type: 'bar',
+    data: {
+      labels: meses.map(nomeMes),
+      datasets: [
+        { label: 'Receitas', data: receitas, backgroundColor: 'rgba(16,185,129,.8)', borderColor: '#10b981', borderWidth: 1 },
+        { label: 'Despesas', data: despesas, backgroundColor: 'rgba(239,68,68,.8)',  borderColor: '#ef4444', borderWidth: 1 },
+      ],
+    },
+    options: {
+      ...chartDefaults,
+      interaction: { mode: 'index', intersect: false },
+    },
+  });
+}
 async function renderCategorias()       { /* Task 4 */ }
 async function renderEvolucaoPatrimonio() { /* Task 5 */ }
 async function renderInvestimentos()    { /* Task 6 */ }
