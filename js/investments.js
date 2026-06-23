@@ -1182,9 +1182,10 @@ function calcularBalanceamento(){
 // ─────────────────────────────────────────────
 // RENDER TUDO
 // ─────────────────────────────────────────────
-function renderizarTudo(){
+async function renderizarTudo(){
   renderizarKPIs();
   renderizarCarteira();
+  await renderizarDesempenho();
 }
 
 // ─────────────────────────────────────────────
@@ -1518,6 +1519,5 @@ await carregarAtivos();
 await carregarPesos();
 renderizarTudo();
 await carregarTotalDividendos();
-await renderizarDesempenho();
 await renderizarTabelaRentabilidade();
 await atualizarCotacoes(true);
