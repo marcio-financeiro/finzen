@@ -562,14 +562,19 @@ async function renderizarGraficoEvolucao(){
 
   const allTx=txs||[];
 
-  // Para cada mês do histórico, calcula valor aplicado acumulado
+  // Valor de mercado ao vivo (da memória, já carregado)
+  const valorMercadoAtual=somaSegura(ativos.map(a=>calcBRL(a,calcAtual(a))));
+
+  // Mês atual no formato 'YYYY-MM'
+  const hoje=new Date();
+  const mesAtualKey=`${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
+
   const labels=[];
   const serieAplicado=[];
   const serieGanho=[];
 
   hist.forEach(h=>{
     const [y,m]=h.reference_month.substring(0,7).split('-').map(Number);
-    // Último dia do mês
     const fim=new Date(y,m,0,23,59,59);
     const label=fim.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'})
       .replace('.','').replace(' ','/');
@@ -583,7 +588,12 @@ async function renderizarGraficoEvolucao(){
         return s+(t.operacao==='compra'?brl:-brl);
       },0);
 
-    const total=toNumber(h.investments_total);
+    // Para o mês atual usa valor de mercado ao vivo em vez do snapshot
+    const isMesAtual=h.reference_month.substring(0,7)===mesAtualKey;
+    const total=isMesAtual&&valorMercadoAtual>0
+      ? valorMercadoAtual
+      : toNumber(h.investments_total);
+
     serieAplicado.push(Math.max(0,aplicado));
     serieGanho.push(Math.max(0,total-Math.max(0,aplicado)));
   });
@@ -610,8 +620,8 @@ async function renderizarGraficoEvolucao(){
         {
           label:'Ganho de Capital',
           data:serieGanho,
-          backgroundColor:'rgba(52,211,153,.7)',
-          borderColor:'#34d399',
+          backgroundColor:'rgba(245,158,11,.85)',
+          borderColor:'#f59e0b',
           borderWidth:1,
           stack:'patrimonio',
         },
