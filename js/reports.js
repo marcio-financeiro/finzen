@@ -198,7 +198,83 @@ async function renderGrafico12Meses() {
     },
   });
 }
-async function renderCategorias()       { /* Task 4 */ }
+async function renderCategorias() {
+  const inicio = inicioMes(mesAtual);
+  const fim    = fimMes(mesAtual);
+
+  const [{ data: tx }, { data: cardTx }] = await Promise.all([
+    supabase.from('transactions')
+      .select('amount,type,categories:category_id(nome,icon)')
+      .eq('user_id', user.id)
+      .gte('date', inicio).lte('date', fim)
+      .eq('status', 'pago')
+      .eq('type', 'despesa'),
+
+    supabase.from('card_transactions')
+      .select('valor_parcela,categories:category_id(nome,icon)')
+      .eq('user_id', user.id)
+      .eq('fatura_referencia', mesAtual),
+  ]);
+
+  // Agregar por categoria
+  const mapa = {};
+  (tx || []).forEach(t => {
+    const nome = t.categories?.nome || 'Outros';
+    const icon = t.categories?.icon || '💸';
+    const key  = nome;
+    if (!mapa[key]) mapa[key] = { nome, icon, valor: 0 };
+    mapa[key].valor += Number(t.amount || 0);
+  });
+  (cardTx || []).forEach(t => {
+    const nome = t.categories?.nome || 'Cartão';
+    const icon = t.categories?.icon || '💳';
+    const key  = nome;
+    if (!mapa[key]) mapa[key] = { nome, icon, valor: 0 };
+    mapa[key].valor += Number(t.valor_parcela || 0);
+  });
+
+  const itens = Object.values(mapa).sort((a, b) => b.valor - a.valor);
+  const top8  = itens.slice(0, 8);
+  const outros = itens.slice(8).reduce((s, i) => s + i.valor, 0);
+  if (outros > 0) top8.push({ nome: 'Outros', icon: '📦', valor: outros });
+
+  const total = top8.reduce((s, i) => s + i.valor, 0);
+
+  if (top8.length === 0) {
+    document.getElementById('rankingCategorias').innerHTML =
+      '<p class="muted" style="padding:16px;font-size:13px">Nenhuma despesa no período.</p>';
+    destroyChart('cat');
+    return;
+  }
+
+  // Doughnut
+  destroyChart('cat');
+  charts['cat'] = new Chart(document.getElementById('chartCategorias'), {
+    type: 'doughnut',
+    data: {
+      labels:   top8.map(i => i.nome),
+      datasets: [{ data: top8.map(i => i.valor), backgroundColor: CORES.slice(0, top8.length), borderWidth: 2, borderColor: 'var(--bg-card)' }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 10, padding: 10 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${formatCurrency(ctx.raw, 'BRL')}` } },
+      },
+    },
+  });
+
+  // Ranking
+  document.getElementById('rankingCategorias').innerHTML = top8.map((item, i) => `
+    <div class="rpt-rank-item">
+      <span class="rpt-rank-icon">${item.icon}</span>
+      <span class="rpt-rank-nome">${item.nome}</span>
+      <span class="rpt-rank-valor">${formatCurrency(item.valor, 'BRL')}</span>
+      <span class="rpt-rank-pct">${total > 0 ? ((item.valor / total) * 100).toFixed(1) + '%' : ''}</span>
+    </div>
+  `).join('');
+}
 async function renderEvolucaoPatrimonio() { /* Task 5 */ }
 async function renderInvestimentos()    { /* Task 6 */ }
 async function renderOrcamento()        { /* Task 7 */ }
