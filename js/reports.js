@@ -324,7 +324,75 @@ async function renderEvolucaoPatrimonio() {
     },
   });
 }
-async function renderInvestimentos()    { /* Task 6 */ }
+async function renderInvestimentos() {
+  const inicio = inicioMes(mesAtual);
+  const fim    = fimMes(mesAtual);
+
+  const [{ data: ativos }, { data: divs }] = await Promise.all([
+    supabase.from('investments')
+      .select('ticker,quantidade,cotacao_atual,preco_medio,moeda')
+      .eq('user_id', user.id)
+      .eq('ativo', true),
+
+    supabase.from('dividends')
+      .select('valor_total,data_pagamento')
+      .eq('user_id', user.id)
+      .gte('data_pagamento', inicio)
+      .lte('data_pagamento', fim),
+  ]);
+
+  const toBRL = (a) => {
+    const qty   = Number(a.quantidade  || 0);
+    const atual = Number(a.cotacao_atual || a.preco_medio || 0);
+    const medio = Number(a.preco_medio  || 0);
+    const brl   = (v) => (a.moeda === 'USD') ? v * dolarAtual : v;
+    return { mercado: brl(qty * atual), custo: brl(qty * medio) };
+  };
+
+  let totalMercado = 0, totalCusto = 0;
+  (ativos || []).forEach(a => {
+    const { mercado, custo } = toBRL(a);
+    totalMercado += mercado;
+    totalCusto   += custo;
+  });
+
+  const ganho      = totalMercado - totalCusto;
+  const dividendos = (divs || []).reduce((s, d) => s + Number(d.valor_total || 0), 0);
+
+  // KPIs
+  document.getElementById('kpisInvest').innerHTML = [
+    kpiCard({ label: 'Valor de Mercado', valor: formatCurrency(totalMercado, 'BRL') }),
+    kpiCard({ label: 'Ganho de Capital',  valor: formatCurrency(ganho, 'BRL'),      cor: ganho >= 0 ? 'verde' : 'vermelho', sub: icone(ganho >= 0 ? 'verde' : 'vermelho') }),
+    kpiCard({ label: 'Dividendos/Mês',   valor: formatCurrency(dividendos, 'BRL') }),
+  ].join('');
+
+  // Doughnut: top 8 ativos por valor de mercado
+  const porAtivo = (ativos || [])
+    .map(a => ({ ticker: a.ticker || '—', valor: toBRL(a).mercado }))
+    .sort((a, b) => b.valor - a.valor);
+  const top8   = porAtivo.slice(0, 8);
+  const outros = porAtivo.slice(8).reduce((s, a) => s + a.valor, 0);
+  if (outros > 0) top8.push({ ticker: 'Outros', valor: outros });
+
+  destroyChart('cart');
+  if (top8.length > 0) {
+    charts['cart'] = new Chart(document.getElementById('chartCarteira'), {
+      type: 'doughnut',
+      data: {
+        labels:   top8.map(a => a.ticker),
+        datasets: [{ data: top8.map(a => a.valor), backgroundColor: CORES.slice(0, top8.length), borderWidth: 2, borderColor: 'var(--bg-card)' }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 10, padding: 10 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${formatCurrency(ctx.raw, 'BRL')} (${totalMercado > 0 ? ((ctx.raw / totalMercado) * 100).toFixed(1) : 0}%)` } },
+        },
+      },
+    });
+  }
+}
 async function renderOrcamento()        { /* Task 7 */ }
 function renderInsights()               { /* Task 8 */ }
 
