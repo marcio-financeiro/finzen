@@ -4,7 +4,7 @@ import { formatCurrency } from './utils.js';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
-if (!sd.session) { navigate('../login.html'); }
+if (!sd.session) { navigate('../login.html'); return; }
 const user = sd.session.user;
 
 const el = id => document.getElementById(id);
@@ -140,8 +140,6 @@ async function renderKPIs() {
   const poupPct   = receitas > 0 ? (resultado / receitas) * 100 : 0;
 
   const hist = histPatrim || [];
-  const mesRef = mesAtual + '-01';
-  const mesAntRef = mesAdicionar(mesAtual, -1) + '-01';
   const patrimonioMes  = hist.find(h => h.reference_month?.startsWith(mesAtual))?.net_worth ?? null;
   const patrimonioAnt  = hist.find(h => h.reference_month?.startsWith(mesAdicionar(mesAtual, -1)))?.net_worth ?? null;
   const varPatrim = (patrimonioMes !== null && patrimonioAnt !== null && patrimonioAnt !== 0)
