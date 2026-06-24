@@ -245,3 +245,68 @@ h3{
 .auth-card{
   animation:fadeInUp .3s ease both;
 }
+
+/* ── Overrides de componentes amber → champagne (modo claro) ── */
+
+/* Página de auth — gradientes de fundo */
+html[data-theme="light"] .auth-page {
+  background:
+    radial-gradient(circle at top left,rgba(122,92,30,.08),transparent 32%),
+    radial-gradient(circle at bottom right,rgba(122,92,30,.05),transparent 34%),
+    var(--app-bg);
+}
+
+/* Brand mark (tela de login) */
+html[data-theme="light"] .brand-mark {
+  border-color: rgba(122,92,30,0.25);
+  box-shadow: 0 16px 36px rgba(122,92,30,.15);
+}
+
+/* Botão primário */
+html[data-theme="light"] .btn-primary {
+  box-shadow: 0 10px 24px rgba(122,92,30,.20);
+}
+
+/* KPI cards do dashboard */
+html[data-theme="light"] .dash-kpi {
+  background: #FFFDF9;
+  border: 1px solid rgba(122,92,30,0.18);
+  box-shadow: 0 4px 16px rgba(122,92,30,.10);
+}
+html[data-theme="light"] .dash-kpi:hover {
+  box-shadow: 0 4px 20px rgba(122,92,30,.18);
+}
+html[data-theme="light"] .kpi-clickable:hover {
+  box-shadow: 0 4px 16px rgba(122,92,30,.15);
+}
+
+/* Badge do chat IA (CFAI) */
+html[data-theme="light"] .cfai-badge {
+  background: rgba(122,92,30,.12);
+  color: #7A5C1E;
+}
+
+/* Botão do chat IA */
+html[data-theme="light"] .cfai-btn {
+  background: linear-gradient(135deg, #7A5C1E, #9A7A3A);
+}
+
+/* Cursor piscante do chat IA */
+html[data-theme="light"] .cfai-cursor {
+  background: #7A5C1E;
+}
+
+/* Botão de anomalia IA (mantém vermelho, troca amber por champagne) */
+html[data-theme="light"] .anai-btn {
+  background: linear-gradient(135deg, #ef4444, #7A5C1E);
+}
+
+/* Painel do assistente */
+html[data-theme="light"] .assistant-panel {
+  border-color: rgba(122,92,30,.22);
+  background: linear-gradient(135deg, rgba(122,92,30,.07), rgba(122,92,30,.02));
+}
+html[data-theme="light"] .assistant-item {
+  border-color: rgba(122,92,30,.10);
+  background: rgba(122,92,30,.04);
+}
