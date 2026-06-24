@@ -245,6 +245,20 @@ html.sidebar-rail .rail-toggle-icon { transform: rotate(180deg); }
   font-size: 8.5px; color: var(--muted); letter-spacing: 1.4px;
   font-weight: 600; text-transform: uppercase; opacity: .7;
 }
+
+/* ── Logo-mark modo claro ── */
+html[data-theme="light"] .sidebar-logo-mark {
+  background: linear-gradient(135deg, #7A5C1E, #9A7A3A);
+  color: #FFFDF9;
+}
+html[data-theme="light"] .sidebar-logo-name {
+  color: #4A3510;
+}
+html[data-theme="light"] .sidebar-logo-sub {
+  color: #7A6545;
+  opacity: 1;
+}
+
 html.sidebar-rail .sidebar .sidebar-logo-text { display: none; }
 html.sidebar-rail .sidebar .sidebar-brand    { justify-content: center; padding: 16px 0; }
 

@@ -103,6 +103,47 @@ html[data-theme="light"] .drawer-overlay{
   background:rgba(0,0,0,.35);
 }
 
+/* ── Sidebar champagne (modo claro) ── */
+html[data-theme="light"] .sidebar {
+  background: linear-gradient(160deg, #F0E4C8 0%, #EDD9AE 100%);
+  border-right: 1px solid #DDD0B8;
+}
+
+html[data-theme="light"] .sidebar-nav a {
+  color: #3D2E12;
+}
+html[data-theme="light"] .sidebar-nav a.active {
+  background: rgba(122,92,30,0.15);
+  color: #5C4416;
+}
+html[data-theme="light"] .sidebar-nav a:hover {
+  background: rgba(122,92,30,0.08);
+}
+
+html[data-theme="light"] .sidebar-profile {
+  background: rgba(255,255,255,0.45);
+  border-color: rgba(122,92,30,0.18);
+}
+
+html[data-theme="light"] .sidebar-footer {
+  border-top-color: rgba(122,92,30,0.15);
+}
+
+/* Drawer mobile */
+html[data-theme="light"] .mobile-drawer {
+  background: #F0E4C8;
+}
+html[data-theme="light"] .drawer-avatar {
+  background: linear-gradient(135deg, #7A5C1E, #9A7A3A);
+  color: #FFFDF9;
+}
+html[data-theme="light"] .drawer-name {
+  color: #3D2E12;
+}
+html[data-theme="light"] .drawer-sub {
+  color: #7A6545;
+}
+
 *{
   box-sizing:border-box;
 }
