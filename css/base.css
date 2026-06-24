@@ -43,31 +43,31 @@
   --hover-overlay:rgba(255,255,255,.04);
 }
 
-/* ── Tema claro (Slate Fintech) ── */
+/* ── Tema claro (Vyn Champagne) ── */
 html[data-theme="light"]{
-  --bg:#F2F5F9;
-  --app-bg:#F2F5F9;
+  --bg:#F4F1EC;
+  --app-bg:#F4F1EC;
 
-  --surface:#FFFFFF;
-  --surface-2:#F7F9FC;
-  --surface-3:#ECEFF4;
+  --surface:#FFFDF9;
+  --surface-2:#F5EFE3;
+  --surface-3:#EDE4D3;
 
-  --border:#DEE3EA;
+  --border:#DDD0B8;
 
-  --accent:#C07408;
-  --warning:#C07408;
-  --accent-dim:rgba(245,158,11,0.15);
-  --success-dim:rgba(16,185,129,0.15);
-  --danger-dim:rgba(239,68,68,0.15);
-  --warning-dim:rgba(245,158,11,0.15);
+  --accent:#7A5C1E;
+  --gold-gradient:linear-gradient(135deg, #7A5C1E, #9A7A3A);
+  --accent-dim:rgba(122,92,30,0.12);
+
+  --warning:#7A5C1E;
+  --warning-dim:rgba(122,92,30,0.12);
 
   --text:#11151C;
-  --muted:#677183;
+  --muted:#6B5E4A;
 
-  --shadow:0 24px 70px rgba(0,0,0,.10);
+  --shadow:0 24px 70px rgba(100,72,20,.12);
 
   --input-color:#11151C;
-  --hover-overlay:rgba(0,0,0,.04);
+  --hover-overlay:rgba(122,92,30,.06);
 }
 
 /* Overrides pontuais para o tema claro */
