@@ -22,12 +22,29 @@ export default async function handler(req, res) {
 
   // ── Dólar ─────────────────────────────────────────────────────────────────
   if (dolar === 'true') {
+    // Primário: brapi.dev
     try {
-      const r = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
-      const j = await r.json();
-      const v = parseFloat(j?.USDBRL?.bid || 0);
-      if (v > 0) resultado['USD-BRL'] = v;
+      const r = await fetch(
+        `https://brapi.dev/api/v2/currency?currency=USD-BRL&token=${BRAPI_TOKEN}`
+      );
+      if (r.ok) {
+        const j = await r.json();
+        const v = parseFloat(j?.currency?.[0]?.bidPrice || 0);
+        if (v > 0) resultado['USD-BRL'] = v;
+      }
     } catch (_) {}
+
+    // Fallback: AwesomeAPI
+    if (!resultado['USD-BRL']) {
+      try {
+        const r = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
+        if (r.ok) {
+          const j = await r.json();
+          const v = parseFloat(j?.USDBRL?.bid || 0);
+          if (v > 0) resultado['USD-BRL'] = v;
+        }
+      } catch (_) {}
+    }
   }
 
   if (!tickers.length) {
