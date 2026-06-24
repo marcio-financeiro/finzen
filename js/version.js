@@ -1,13 +1,13 @@
 /**
- * FinZen — Controle Central de Versão de Assets
+ * Vyn — Controle Central de Versão de Assets
  *
  * Altere apenas o número abaixo quando houver atualização de JS ou CSS.
  * Todos os HTMLs carregam este arquivo primeiro e a versão é aplicada
  * automaticamente em todos os <link> e <script> da página.
  *
- * Como incrementar: 1101 → 1102 → 1103 ...
+ * Como incrementar: 1201 → 1202 → 1203 ...
  */
-const ASSET_VERSION = '1118';
+const ASSET_VERSION = '1200';
 
 (function () {
   // Aplica ?v= em todos os link[rel=stylesheet] e script[src] que apontam

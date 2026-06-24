@@ -10,8 +10,9 @@
 
   --border:#1f2130;
 
-  --accent:#f59e0b;
-  --accent-dim:rgba(245,158,11,0.12);
+  --accent:#C9A968;
+  --gold-gradient:linear-gradient(135deg, #C9A968, #E3CC93);
+  --accent-dim:rgba(201,169,104,0.12);
 
   --success:#10b981;
   --success-dim:rgba(16,185,129,0.12);

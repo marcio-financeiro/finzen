@@ -835,9 +835,9 @@ function ensureDesktopSidebar() {
     sidebar.prepend(brand);
   }
   brand.innerHTML = `
-    <div class="sidebar-logo-mark">FZ</div>
+    <div class="sidebar-logo-mark">VY</div>
     <div class="sidebar-logo-text">
-      <span class="sidebar-logo-name">FinZen</span>
+      <span class="sidebar-logo-name">VYN</span>
       <span class="sidebar-logo-sub">ASSESSOR PESSOAL</span>
     </div>
   `;
@@ -853,7 +853,7 @@ function ensureDesktopSidebar() {
         <div class="sidebar-avatar" id="sidebarAvatarInitial">?</div>
       </div>
       <div class="sidebar-profile-info">
-        <div class="sidebar-profile-name" id="sidebarUserName">FinZen</div>
+        <div class="sidebar-profile-name" id="sidebarUserName">Vyn</div>
         <div class="sidebar-profile-sub">Assessor Pessoal</div>
       </div>
       <div class="sidebar-profile-stats" id="sidebarProfileStats">
@@ -941,9 +941,9 @@ function ensureMobileDrawer() {
   drawer.className = 'mobile-drawer';
   drawer.innerHTML = `
     <div class="drawer-header">
-      <div class="drawer-avatar">FZ</div>
+      <div class="drawer-avatar">VY</div>
       <div class="drawer-user">
-        <div class="drawer-name" id="drawerUserName">FinZen</div>
+        <div class="drawer-name" id="drawerUserName">Vyn</div>
         <div class="drawer-sub" id="drawerUserSub">Assessor Pessoal</div>
       </div>
       <button class="drawer-close" type="button" aria-label="Fechar menu">×</button>

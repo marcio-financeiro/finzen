@@ -230,7 +230,7 @@ html.sidebar-rail .rail-toggle-icon { transform: rotate(180deg); }
 .sidebar-logo-mark {
   width: 34px; height: 34px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  background: linear-gradient(135deg, #C9A968, #E3CC93);
   display: flex; align-items: center; justify-content: center;
   font-weight: 700; color: #1a1203; font-size: 15px;
   flex-shrink: 0;
@@ -239,7 +239,7 @@ html.sidebar-rail .rail-toggle-icon { transform: rotate(180deg); }
   display: flex; flex-direction: column; line-height: 1.2;
 }
 .sidebar-logo-name {
-  font-size: 15px; font-weight: 700; color: #fbbf24; letter-spacing: .2px;
+  font-size: 15px; font-weight: 700; color: #C9A968; letter-spacing: .2px;
 }
 .sidebar-logo-sub {
   font-size: 8.5px; color: var(--muted); letter-spacing: 1.4px;

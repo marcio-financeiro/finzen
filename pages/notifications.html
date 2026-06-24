@@ -4,13 +4,13 @@
 <script>if(localStorage.getItem("finzen_sidebar_rail")==="collapsed")document.documentElement.classList.add("sidebar-rail");</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Notificações - FinZen</title>
-<link rel="stylesheet" href="../css/base.css?v=1118">
-<link rel="stylesheet" href="../css/layout.css?v=1118">
-<link rel="stylesheet" href="../css/components.css?v=1118">
-<link rel="stylesheet" href="../css/mobile.css?v=1118">
-<link rel="stylesheet" href="../css/navigation.css?v=1118">
-<link rel="stylesheet" href="../css/editorial.css?v=1118">
+<title>Notificações - Vyn</title>
+<link rel="stylesheet" href="../css/base.css?v=1200">
+<link rel="stylesheet" href="../css/layout.css?v=1200">
+<link rel="stylesheet" href="../css/components.css?v=1200">
+<link rel="stylesheet" href="../css/mobile.css?v=1200">
+<link rel="stylesheet" href="../css/navigation.css?v=1200">
+<link rel="stylesheet" href="../css/editorial.css?v=1200">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#f59e0b">
 <style>
@@ -74,7 +74,7 @@
 <body>
 <div class="app-shell">
   <aside class="sidebar">
-    <div class="sidebar-brand">FinZen</div>
+    <div class="sidebar-brand">Vyn</div>
     <nav class="sidebar-nav"></nav>
   </aside>
 
@@ -148,9 +148,9 @@
     <div class="notif-card">
       <h2>Como funciona</h2>
       <div style="font-size:13px;color:var(--muted);line-height:1.8">
-        <p>• As notificações funcionam mesmo com o app fechado, desde que o FinZen esteja instalado como PWA no seu celular.</p>
+        <p>• As notificações funcionam mesmo com o app fechado, desde que o Vyn esteja instalado como PWA no seu celular.</p>
         <p>• Os alertas são gerados quando você abre o app e agendados para o horário configurado (8h–9h).</p>
-        <p>• Para receber notificações no celular, adicione o FinZen à tela inicial primeiro.</p>
+        <p>• Para receber notificações no celular, adicione o Vyn à tela inicial primeiro.</p>
         <p style="margin-top:12px"><strong style="color:var(--text)">iPhone:</strong> Safari → Compartilhar → Adicionar à Tela de Início</p>
         <p><strong style="color:var(--text)">Android:</strong> Chrome → ⋮ → Adicionar à tela inicial</p>
       </div>
@@ -184,7 +184,7 @@
     const btnT = el('btnTestar');
 
     const configs = {
-      granted:     { classe:'granted',  icon:'✅', titulo:'Notificações ativas',     desc:'Você receberá alertas do FinZen.' },
+      granted:     { classe:'granted',  icon:'✅', titulo:'Notificações ativas',     desc:'Você receberá alertas do Vyn.' },
       denied:      { classe:'denied',   icon:'🚫', titulo:'Notificações bloqueadas', desc:'Habilite nas configurações do navegador/sistema.' },
       default:     { classe:'default',  icon:'🔔', titulo:'Permissão necessária',    desc:'Clique abaixo para habilitar as notificações.' },
       indisponivel:{ classe:'indisp',   icon:'❌', titulo:'Não suportado',           desc:'Seu navegador não suporta notificações push.' },
@@ -215,7 +215,7 @@
 
   el('btnTestar').addEventListener('click', async () => {
     await notificar(
-      '🔔 FinZen — Teste',
+      '🔔 Vyn — Teste',
       'Notificações funcionando! Você receberá alertas de faturas e pendências.',
       { tag: 'finzen-teste' }
     );
