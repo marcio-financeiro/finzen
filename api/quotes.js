@@ -20,7 +20,7 @@ export default async function handler(req, res) {
 
   const BRAPI_TOKEN = process.env.BRAPI_TOKEN || 'bGZu7dGPyW94PcfXVCiA7t';
 
-  // ── Dólar ─────────────────────────────────────────────────────────────────
+  // ── Dólar — brapi primário + awesomeapi fallback ─────────────────────────
   if (dolar === 'true') {
     // Primário: brapi.dev
     try {
