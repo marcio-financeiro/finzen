@@ -337,25 +337,21 @@ function renderMensal() {
   html += '</div>';
   el('calBody').innerHTML = html;
 
-  // Listeners — clicar em célula abre lista de eventos (se houver) ou novo evento
+  // Delegação única na célula — detecta se clicou em pill ou no fundo
   el('calBody').querySelectorAll('.cal-cell[data-data]').forEach(cell => {
     cell.addEventListener('click', (e) => {
-      if (e.target.closest('[data-id]')) return;
+      const pill = e.target.closest('[data-id]');
+      if (pill) {
+        const ev = eventos.find(x => String(x.id) === pill.dataset.id);
+        if (!ev) return;
+        if (ev._auto) mostrarInfoAuto(ev);
+        else abrirModalEditar(ev);
+        return;
+      }
       const iso = cell.dataset.data;
-      const evsDia = (evPorDia[iso] || []);
+      const evsDia = evPorDia[iso] || [];
       if (evsDia.length) mostrarEventosDia(iso, evsDia);
       else abrirModalNovo(iso);
-    });
-  });
-
-  // Clicar em evento existente
-  el('calBody').querySelectorAll('[data-id]').forEach(pill => {
-    pill.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const ev = eventos.find(x => x.id === pill.dataset.id);
-      if (!ev) return;
-      if (ev._auto) mostrarInfoAuto(ev);
-      else abrirModalEditar(ev);
     });
   });
 }
@@ -447,25 +443,29 @@ function renderSemanal() {
 
   el('calBody').querySelectorAll('.cal-semana-cell').forEach(cell => {
     cell.addEventListener('click', e => {
-      if (e.target.closest('[data-id]')) return;
+      const pill = e.target.closest('[data-id]');
+      if (pill) {
+        const ev = eventos.find(x => String(x.id) === pill.dataset.id);
+        if (!ev) return;
+        if (ev._auto) mostrarInfoAuto(ev);
+        else abrirModalEditar(ev);
+        return;
+      }
       abrirModalNovo(cell.dataset.data, cell.dataset.hora);
     });
   });
 
   el('calBody').querySelectorAll('.cal-semana-diaInteiro-col').forEach(col => {
     col.addEventListener('click', e => {
-      if (e.target.closest('[data-id]')) return;
+      const pill = e.target.closest('[data-id]');
+      if (pill) {
+        const ev = eventos.find(x => String(x.id) === pill.dataset.id);
+        if (!ev) return;
+        if (ev._auto) mostrarInfoAuto(ev);
+        else abrirModalEditar(ev);
+        return;
+      }
       abrirModalNovo(col.dataset.data);
-    });
-  });
-
-  el('calBody').querySelectorAll('[data-id]').forEach(pill => {
-    pill.addEventListener('click', e => {
-      e.stopPropagation();
-      const ev = eventos.find(x => x.id === pill.dataset.id);
-      if (!ev) return;
-      if (ev._auto) mostrarInfoAuto(ev);
-      else abrirModalEditar(ev);
     });
   });
 }
