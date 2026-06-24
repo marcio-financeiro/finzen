@@ -9,7 +9,7 @@
  * automaticamente a cada chamada.
  */
 
-const TTL_MS       = 24 * 60 * 60 * 1000; // 24 horas — atualização diária
+const TTL_MS       = 15 * 60 * 1000; // 15 minutos
 const CACHE_KEY    = 'finzen_quote_cache_v1';
 const _emFlight    = new Map(); // deduplicação: chave → Promise em andamento
 
