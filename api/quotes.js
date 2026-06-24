@@ -20,19 +20,26 @@ export default async function handler(req, res) {
 
   const BRAPI_TOKEN = process.env.BRAPI_TOKEN || 'bGZu7dGPyW94PcfXVCiA7t';
 
-  // ── Dólar — brapi primário + awesomeapi fallback ─────────────────────────
+  // ── Dólar — Yahoo Finance (BRL=X) primário + awesomeapi fallback ─────────
   if (dolar === 'true') {
-    // Primário: brapi.dev
-    try {
-      const r = await fetch(
-        `https://brapi.dev/api/v2/currency?currency=USD-BRL&token=${BRAPI_TOKEN}`
-      );
-      if (r.ok) {
-        const j = await r.json();
-        const v = parseFloat(j?.currency?.[0]?.bidPrice || 0);
-        if (v > 0) resultado['USD-BRL'] = v;
-      }
-    } catch (_) {}
+    // Primário: Yahoo Finance BRL=X (funciona no Vercel serverless, sem CORS)
+    for (const base of ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com']) {
+      if (resultado['USD-BRL']) break;
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 5000);
+        const r = await fetch(`${base}/v8/finance/chart/BRL=X?interval=1d&range=1d`, {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          signal: ctrl.signal,
+        });
+        clearTimeout(t);
+        if (r.ok) {
+          const j = await r.json();
+          const p = parseFloat(j?.chart?.result?.[0]?.meta?.regularMarketPrice || 0);
+          if (p > 0) resultado['USD-BRL'] = p;
+        }
+      } catch (_) {}
+    }
 
     // Fallback: AwesomeAPI
     if (!resultado['USD-BRL']) {
