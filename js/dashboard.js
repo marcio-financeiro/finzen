@@ -155,6 +155,9 @@ async function carregarDashboard(){
       Math.min(despesas / Math.max(receitas, 1) * 100, 100),
       despesas, despAnt);
 
+    // ── Saldo das contas ──────────────────────────────
+    renderContas(contas||[]);
+
     // ── Alertas + Próximas faturas (Stage 2) ─────────
     renderAlertas(transacoesPendentes||[]);
     renderFaturas(cartoes||[], parcelasMes||[]);
@@ -230,6 +233,46 @@ function atualizarRing(ringId, pctId, deltaId, pct, valorAtual, valorAnt) {
     delEl.className = 'delta neu';
     delEl.textContent = '—';
   }
+}
+
+// ── Saldo das contas ──────────────────────────────────
+function renderContas(contas) {
+  const wrap = document.getElementById('blocoContasWrap');
+  const body = document.getElementById('blocoContas');
+  if (!wrap || !body || !contas.length) return;
+
+  const EMOJI = (c) => {
+    const t = (c.tipo||'').toLowerCase();
+    if (t.includes('poupan'))  return '🏦';
+    if (t.includes('invest'))  return '💰';
+    if (t.includes('digital')) return '💜';
+    if (t.includes('corret') || t.includes('broker')) return '📈';
+    if (t.includes('carteira')) return '👛';
+    return '🏦';
+  };
+
+  const contasBRL = contas.filter(c => (c.currency||'BRL') === 'BRL');
+  const contasUSD = contas.filter(c => c.currency === 'USD');
+
+  const renderGrupo = (lista, moeda) => lista.map(c => {
+    const saldo = Number(c.saldo_atual || 0);
+    const cor   = saldo < 0 ? 'var(--color-expense)' : saldo === 0 ? 'var(--muted)' : 'var(--text)';
+    const icon  = c.color ? `<span style="width:10px;height:10px;border-radius:50%;background:${c.color};display:inline-block;margin-right:6px;flex-shrink:0"></span>` : `<span style="margin-right:6px">${EMOJI(c)}</span>`;
+    const val   = moeda === 'USD'
+      ? `US$ ${Math.abs(saldo).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`
+      : fmt(saldo);
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;
+        padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer"
+        onclick="location.href='./account-statement.html'">
+        <span style="display:flex;align-items:center;font-size:13px;font-weight:600">${icon}${c.nome}</span>
+        <span style="font-size:13px;font-weight:800;color:${cor}">${val}</span>
+      </div>`;
+  }).join('');
+
+  body.innerHTML = renderGrupo(contasBRL, 'BRL') + renderGrupo(contasUSD, 'USD');
+  body.lastElementChild?.style.setProperty('border-bottom','none');
+  wrap.style.display = 'block';
 }
 
 // ── Alertas (Stage 2 — somente transações pendentes) ─

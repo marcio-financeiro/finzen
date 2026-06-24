@@ -216,7 +216,9 @@ async function carregarEventosFinanceiros(dataInicio, dataFim) {
 el('btnAnterior').addEventListener('click', () => { navegar(-1); });
 el('btnProximo' ).addEventListener('click', () => { navegar(+1); });
 el('btnHoje'    ).addEventListener('click', () => {
-  refData = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  refData = viewAtual === 'semanal'
+    ? new Date(hoje)
+    : new Date(hoje.getFullYear(), hoje.getMonth(), 1);
   renderizar();
 });
 
@@ -235,6 +237,7 @@ document.querySelectorAll('.cal-view-btn').forEach(btn => {
     document.querySelectorAll('.cal-view-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     viewAtual = btn.dataset.view;
+    if (viewAtual === 'semanal') refData = new Date(hoje);
     renderizar();
   });
 });
@@ -334,22 +337,21 @@ function renderMensal() {
   html += '</div>';
   el('calBody').innerHTML = html;
 
-  // Listeners — clicar em célula abre novo evento
+  // Delegação única na célula — detecta se clicou em pill ou no fundo
   el('calBody').querySelectorAll('.cal-cell[data-data]').forEach(cell => {
     cell.addEventListener('click', (e) => {
-      if (e.target.closest('[data-id]')) return; // clicou em evento
-      abrirModalNovo(cell.dataset.data);
-    });
-  });
-
-  // Clicar em evento existente
-  el('calBody').querySelectorAll('[data-id]').forEach(pill => {
-    pill.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const ev = eventos.find(x => x.id === pill.dataset.id);
-      if (!ev) return;
-      if (ev._auto) mostrarInfoAuto(ev);
-      else abrirModalEditar(ev);
+      const pill = e.target.closest('[data-id]');
+      if (pill) {
+        const ev = eventos.find(x => String(x.id) === pill.dataset.id);
+        if (!ev) return;
+        if (ev._auto) mostrarInfoAuto(ev);
+        else abrirModalEditar(ev);
+        return;
+      }
+      const iso = cell.dataset.data;
+      const evsDia = evPorDia[iso] || [];
+      if (evsDia.length) mostrarEventosDia(iso, evsDia);
+      else abrirModalNovo(iso);
     });
   });
 }
@@ -371,6 +373,29 @@ function renderSemanal() {
     evPorDia[ev.data_inicio].push(ev);
   });
 
+  // Faixa "dia inteiro": eventos sem hora definida
+  const diaInteiroHtml = `
+  <div class="cal-semana-diaInteiro">
+    <div class="cal-semana-diaInteiro-label">dia inteiro</div>
+    ${dias.map(d => {
+      const iso = toISO(d);
+      const semHora = (evPorDia[iso] || []).filter(ev => !ev.hora);
+      return `<div class="cal-semana-diaInteiro-col" data-data="${iso}">
+        ${semHora.map(ev => {
+          const cfg = tipoCfg(ev.tipo);
+          const autoStyle = ev._auto ? `border-left:2px dashed ${cfg.cor};opacity:.85;` : '';
+          return `<div data-id="${ev.id}"
+            style="background:${cfg.cor}22;color:${cfg.cor};font-size:10px;
+            padding:1px 5px;border-radius:3px;border-left:2px solid ${cfg.cor};${autoStyle}
+            cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px;"
+            title="${ev.titulo}${ev._auto?' (automático)':''}">
+            ${cfg.icon} ${ev.titulo}
+          </div>`;
+        }).join('')}
+      </div>`;
+    }).join('')}
+  </div>`;
+
   let html = `<div class="cal-semana-header">
     <div style="border-right:1px solid var(--border);"></div>
     ${dias.map(d => {
@@ -382,7 +407,8 @@ function renderSemanal() {
       </div>`;
     }).join('')}
   </div>
-  <div style="overflow-y:auto;max-height:calc(100vh - 280px);">
+  ${diaInteiroHtml}
+  <div style="overflow-y:auto;max-height:calc(100vh - 340px);">
     <div class="cal-semana-grid">
       <div class="cal-hora-col">
         ${Array.from({length:24}, (_,h) => `
@@ -417,18 +443,29 @@ function renderSemanal() {
 
   el('calBody').querySelectorAll('.cal-semana-cell').forEach(cell => {
     cell.addEventListener('click', e => {
-      if (e.target.closest('[data-id]')) return;
+      const pill = e.target.closest('[data-id]');
+      if (pill) {
+        const ev = eventos.find(x => String(x.id) === pill.dataset.id);
+        if (!ev) return;
+        if (ev._auto) mostrarInfoAuto(ev);
+        else abrirModalEditar(ev);
+        return;
+      }
       abrirModalNovo(cell.dataset.data, cell.dataset.hora);
     });
   });
 
-  el('calBody').querySelectorAll('[data-id]').forEach(pill => {
-    pill.addEventListener('click', e => {
-      e.stopPropagation();
-      const ev = eventos.find(x => x.id === pill.dataset.id);
-      if (!ev) return;
-      if (ev._auto) mostrarInfoAuto(ev);
-      else abrirModalEditar(ev);
+  el('calBody').querySelectorAll('.cal-semana-diaInteiro-col').forEach(col => {
+    col.addEventListener('click', e => {
+      const pill = e.target.closest('[data-id]');
+      if (pill) {
+        const ev = eventos.find(x => String(x.id) === pill.dataset.id);
+        if (!ev) return;
+        if (ev._auto) mostrarInfoAuto(ev);
+        else abrirModalEditar(ev);
+        return;
+      }
+      abrirModalNovo(col.dataset.data);
     });
   });
 }
@@ -484,6 +521,62 @@ function renderLista() {
     item.addEventListener('click', () => {
       const ev = eventos.find(x => x.id === item.dataset.id);
       if (!ev) return;
+      if (ev._auto) mostrarInfoAuto(ev);
+      else abrirModalEditar(ev);
+    });
+  });
+}
+
+// ── Popup: listar eventos do dia (visão mensal) ───────────
+function mostrarEventosDia(iso, evs) {
+  const popup = document.createElement('div');
+  popup.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9990;" id="diaPopBackdrop"></div>
+    <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+      z-index:9991;background:var(--surface);border:1px solid var(--border);
+      border-radius:14px;padding:20px;width:90%;max-width:400px;max-height:80vh;
+      overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.5);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="font-size:14px;font-weight:800;">📅 ${fmtData(iso)}</div>
+        <button id="diaPopFechar" style="background:none;border:none;color:var(--muted);
+          font-size:18px;cursor:pointer;line-height:1;">✕</button>
+      </div>
+      <div id="diaPopLista">
+        ${evs.map(ev => {
+          const cfg = tipoCfg(ev.tipo);
+          return `<div data-id="${ev.id}" style="display:flex;align-items:flex-start;gap:10px;
+            padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);
+            border-radius:10px;margin-bottom:6px;cursor:pointer;
+            border-left:3px solid ${cfg.cor};">
+            <span style="font-size:18px;flex-shrink:0;">${cfg.icon}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ev.titulo}</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px;">
+                ${ev.hora ? fmtHora(ev.hora) + ' · ' : ''}${cfg.label}${ev._auto ? ' · automático' : ''}
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <button id="diaPopNovo" style="width:100%;margin-top:10px;padding:10px;border-radius:8px;
+        background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:700;font-size:13px;">
+        + Novo evento neste dia
+      </button>
+    </div>`;
+  document.body.appendChild(popup);
+
+  const fechar = () => popup.remove();
+  document.getElementById('diaPopBackdrop').addEventListener('click', fechar);
+  document.getElementById('diaPopFechar').addEventListener('click', fechar);
+  document.getElementById('diaPopNovo').addEventListener('click', () => {
+    fechar();
+    abrirModalNovo(iso);
+  });
+  popup.querySelectorAll('[data-id]').forEach(item => {
+    item.addEventListener('click', () => {
+      const ev = eventos.find(x => x.id === item.dataset.id);
+      if (!ev) return;
+      fechar();
       if (ev._auto) mostrarInfoAuto(ev);
       else abrirModalEditar(ev);
     });

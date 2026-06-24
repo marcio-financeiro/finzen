@@ -1,7 +1,7 @@
 // sw.js — Vyn Service Worker
 // Gerencia cache offline e notificações push
 
-const CACHE_NAME = 'vyn-v12.0';
+const CACHE_NAME = 'vyn-v12.1';
 const CACHE_URLS = [
   './login.html',
   './pages/dashboard.html',
@@ -37,18 +37,35 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// ── Fetch (cache first para assets estáticos) ─────────
+// ── Fetch ─────────────────────────────────────────────
 self.addEventListener('fetch', e => {
-  // Não interceptar APIs ou Supabase
+  // Não interceptar APIs externas
   if(e.request.url.includes('supabase.co') ||
      e.request.url.includes('api.anthropic') ||
      e.request.url.includes('brapi.dev') ||
      e.request.url.includes('awesomeapi') ||
      e.request.method !== 'GET') return;
 
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
-  );
+  const url = new URL(e.request.url);
+  const isHTML = url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname === '';
+
+  if (isHTML) {
+    // Network-first para HTML: sempre busca versão nova, cai no cache se offline
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+  } else {
+    // Cache-first para assets estáticos (CSS, ícones)
+    e.respondWith(
+      caches.match(e.request).then(cached => cached || fetch(e.request))
+    );
+  }
 });
 
 // ── Notificações Push (via postMessage do app) ────────
