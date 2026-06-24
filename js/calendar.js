@@ -216,7 +216,9 @@ async function carregarEventosFinanceiros(dataInicio, dataFim) {
 el('btnAnterior').addEventListener('click', () => { navegar(-1); });
 el('btnProximo' ).addEventListener('click', () => { navegar(+1); });
 el('btnHoje'    ).addEventListener('click', () => {
-  refData = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  refData = viewAtual === 'semanal'
+    ? new Date(hoje)
+    : new Date(hoje.getFullYear(), hoje.getMonth(), 1);
   renderizar();
 });
 
@@ -235,6 +237,7 @@ document.querySelectorAll('.cal-view-btn').forEach(btn => {
     document.querySelectorAll('.cal-view-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     viewAtual = btn.dataset.view;
+    if (viewAtual === 'semanal') refData = new Date(hoje);
     renderizar();
   });
 });
