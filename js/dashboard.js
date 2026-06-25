@@ -2,7 +2,6 @@ import { supabase } from './supabaseClient.js';
 import { initAssistantBar } from './assistantBar.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
-import { notificarContasVencendo, notificarFaturaVencendo } from './telegram.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
@@ -296,9 +295,6 @@ function renderAlertas(pendentes){
   // Ordenar por urgência
   alertas.sort((a, b) => a.dias - b.dias);
 
-  // Notificações Telegram (fire-and-forget)
-  if(alertas.length) notificarContasVencendo(alertas).catch(()=>{});
-
   if(!alertas.length){
     el('blocoAlertas').innerHTML = `
       <div class="alert-row success">
@@ -342,12 +338,6 @@ function renderFaturas(cartoes, parcelasMes){
     const total  = parcelasMes.filter(p=>p.card_id===cartao.id && p.fatura_referencia===targetRef).reduce((s,p)=>s+Number(p.valor_parcela||0),0);
 
     faturas.push({ nome: cartao.nome, diaVenc: diaV, dataVenc, total, dias });
-  });
-
-  // Notificações Telegram
-  faturas.forEach(f => {
-    if(f.dias <= 7 && f.total > 0)
-      notificarFaturaVencendo({ cartao: f.nome, valor: f.total, dias: f.dias }).catch(()=>{});
   });
 
   if(!faturas.length){
