@@ -135,7 +135,12 @@ export default async function handler(req, res) {
           const j = await r.json();
           const meta = j?.chart?.result?.[0]?.meta;
           const p = meta?.regularMarketPrice;
-          if (p) return { ticker, price: parseFloat(p), changePct: meta?.regularMarketChangePercent ?? null };
+          if (p) {
+            const prevClose = meta?.chartPreviousClose || meta?.previousClose || meta?.regularMarketPreviousClose;
+            const changePct = meta?.regularMarketChangePercent
+              ?? (prevClose ? parseFloat(((p - prevClose) / prevClose * 100).toFixed(4)) : null);
+            return { ticker, price: parseFloat(p), changePct };
+          }
         } catch (_) {}
       }
       return null;
