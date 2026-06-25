@@ -6,7 +6,6 @@ import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
 import { DEFAULT_USD_BRL, formatPercent, formatUSD, getUsdBrlRate, saveUsdBrlRate, toNumber } from './services/financeService.js';
-import { FINZEN_SECRET }  from './apiClient.js';
 
 // ─────────────────────────────────────────────
 // AUTH
@@ -199,7 +198,7 @@ async function gerarAnaliseComite() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-finzen-secret': FINZEN_SECRET,
+        'Authorization': `Bearer ${sessionData.session?.access_token}`,
       },
       body: JSON.stringify({ carteira }),
     });

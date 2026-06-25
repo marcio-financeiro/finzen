@@ -9,8 +9,7 @@
  * Cache: 6 horas em localStorage.
  */
 
-import { supabase }       from './supabaseClient.js';
-import { FINZEN_SECRET }  from './apiClient.js';
+import { supabase } from './supabaseClient.js';
 
 const CACHE_KEY = 'finzen_assistant_panel_v1';
 const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 horas
@@ -103,9 +102,13 @@ async function buscarInsights(userId) {
   try {
     const contexto = await coletarContexto(userId);
 
+    const { data: sd } = await supabase.auth.getSession();
+    const token = sd.session?.access_token;
+    if (!token) throw new Error('Não autenticado');
+
     const res = await fetch('/api/assistant', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-finzen-secret': FINZEN_SECRET },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ contexto }),
     });
 

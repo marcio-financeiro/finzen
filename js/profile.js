@@ -6,7 +6,6 @@
 
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
-import { FINZEN_SECRET } from './apiClient.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -200,7 +199,7 @@ el('btnAlterarSenha').addEventListener('click', async () => {
 async function verificarTelegram() {
   try {
     const r = await fetch(`/api/telegram-link?user_id=${user.id}`, {
-      headers: { 'x-finzen-secret': FINZEN_SECRET },
+      headers: { 'Authorization': `Bearer ${sd.session?.access_token}` },
     });
     const d = await r.json();
     const dot   = el('telegramDot');
@@ -229,7 +228,7 @@ el('btnGerarCodigo').addEventListener('click', async () => {
   try {
     const r = await fetch('/api/telegram-link', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-finzen-secret': FINZEN_SECRET },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sd.session?.access_token}` },
       body: JSON.stringify({ action: 'generate', user_id: user.id }),
     });
     const d = await r.json();
@@ -248,7 +247,7 @@ el('btnDesvincular').addEventListener('click', async () => {
   if (!confirm('Desvincular seu Telegram desta conta?')) return;
   await fetch('/api/telegram-link', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-finzen-secret': FINZEN_SECRET },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sd.session?.access_token}` },
     body: JSON.stringify({ action: 'unlink', user_id: user.id }),
   });
   el('telegramCodigo').style.display = 'none';

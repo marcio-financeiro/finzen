@@ -4,15 +4,18 @@
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', 'https://finzen-rho.vercel.app');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-finzen-secret');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const secret = req.headers['x-finzen-secret'];
-  if (!secret || secret !== process.env.FINZEN_SECRET) {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
+  const auth = req.headers['authorization'];
+  if (!auth?.startsWith('Bearer ')) return res.status(403).json({ error: 'Forbidden' });
+  const token = auth.slice(7);
+  const authRes = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
+    headers: { Authorization: `Bearer ${token}`, apikey: process.env.SUPABASE_SERVICE_KEY },
+  });
+  if (!authRes.ok) return res.status(403).json({ error: 'Forbidden' });
 
   try {
     const { carteira } = req.body;
@@ -116,6 +119,7 @@ Eventos que invalidariam a tese:`;
     return res.status(200).json({ analise });
 
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.error(err);
+    return res.status(500).json({ error: 'Erro interno' });
   }
 }
