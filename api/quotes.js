@@ -14,7 +14,8 @@ export default async function handler(req, res) {
     return res.status(204).end();
   }
 
-  const { tickers: tickersRaw, dolar, fundamental } = req.query;
+  const { tickers: tickersRaw, dolar, fundamental, change } = req.query;
+  const withChange = change === 'true';
   const tickers = (tickersRaw || '').split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
   const resultado = {};
 
@@ -88,6 +89,7 @@ export default async function handler(req, res) {
         if (i.symbol && i.regularMarketPrice) {
           const key = i.symbol.toUpperCase();
           resultado[key] = parseFloat(i.regularMarketPrice);
+          if (withChange) resultado[`${key}_chg`] = i.regularMarketChangePercent ?? null;
           if (fundamental === 'true') {
             resultado[`${key}_fund`] = {
               nome:          i.longName || i.shortName || '',
@@ -131,8 +133,9 @@ export default async function handler(req, res) {
           clearTimeout(timer);
           if (!r.ok) continue;
           const j = await r.json();
-          const p = j?.chart?.result?.[0]?.meta?.regularMarketPrice;
-          if (p) return { ticker, price: parseFloat(p) };
+          const meta = j?.chart?.result?.[0]?.meta;
+          const p = meta?.regularMarketPrice;
+          if (p) return { ticker, price: parseFloat(p), changePct: meta?.regularMarketChangePercent ?? null };
         } catch (_) {}
       }
       return null;
@@ -144,6 +147,7 @@ export default async function handler(req, res) {
     resultados.forEach(r => {
       if (r.status === 'fulfilled' && r.value) {
         resultado[r.value.ticker] = r.value.price;
+        if (withChange && r.value.changePct !== null) resultado[`${r.value.ticker}_chg`] = r.value.changePct;
       }
     });
   }
@@ -160,8 +164,10 @@ export default async function handler(req, res) {
       if (r.ok) {
         const j = await r.json();
         (j.results || []).forEach(i => {
-          if (i.symbol && i.regularMarketPrice && !resultado[i.symbol.toUpperCase()]) {
-            resultado[i.symbol.toUpperCase()] = parseFloat(i.regularMarketPrice);
+          const sym = i.symbol?.toUpperCase();
+          if (sym && i.regularMarketPrice && !resultado[sym]) {
+            resultado[sym] = parseFloat(i.regularMarketPrice);
+            if (withChange) resultado[`${sym}_chg`] = i.regularMarketChangePercent ?? null;
           }
         });
       }

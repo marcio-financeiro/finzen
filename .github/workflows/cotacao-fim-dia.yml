@@ -1,0 +1,24 @@
+name: Cotação de Fechamento Diário
+
+on:
+  schedule:
+    - cron: '0 22 * * 1-5'  # 22h UTC = 19h BRT, segunda a sexta
+  workflow_dispatch:          # disparo manual pelo botão "Run workflow" no GitHub
+
+jobs:
+  cotacao:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Buscar cotações e atualizar carteira
+        run: node scripts/cotacao-fim-dia.js
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
