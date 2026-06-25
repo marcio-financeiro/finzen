@@ -6,8 +6,7 @@
 // Credenciais públicas — mesmas de js/config.js
 const SUPABASE_URL = 'https://qgamphwnlrriwalcbhbl.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnYW1waHdubHJyaXdhbGNiaGJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNTkzMzUsImV4cCI6MjA5NjYzNTMzNX0.AV0mCZqYlNyqz9XVWeHImMljnpt4klxpUjBa1HHlYkM';
-const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
-const CHAT_ID      = process.env.TELEGRAM_CHAT_ID;
+// Telegram token fica no Vercel (env var) — script chama /api/telegram em vez de Telegram direto
 const VERCEL_URL   = 'https://finzen-rho.vercel.app';
 
 // Mesma classificação de investments.js
@@ -62,15 +61,15 @@ function varEmoji(pct) {
   return '➡️';
 }
 
-// ── Telegram ──────────────────────────────────────────────────────────────────
+// ── Telegram via proxy Vercel (token fica no env var da Vercel) ───────────────
 
 async function enviarTelegram(mensagem) {
-  const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+  const r = await fetch(`${VERCEL_URL}/api/telegram`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: CHAT_ID, text: mensagem, parse_mode: 'HTML' }),
+    headers: { 'Content-Type': 'application/json', 'User-Agent': 'FinZen-GH-Actions/1.0' },
+    body: JSON.stringify({ message: mensagem }),
   });
-  if (!r.ok) throw new Error(`Telegram ${r.status}: ${await r.text()}`);
+  if (!r.ok) throw new Error(`Telegram proxy ${r.status}: ${await r.text()}`);
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
