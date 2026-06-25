@@ -1,11 +1,11 @@
 // scripts/cotacao-fim-dia.js — Cotações de fechamento + atualização do banco
 // Roda no GitHub Actions (Node 20, fetch nativo). Sem dependências externas.
 // Chama o proxy Vercel (já tem BRAPI_TOKEN) — sem novos secrets necessários.
-// Usa SUPABASE_SERVICE_KEY para contornar RLS.
+// Usa anon key + funções RPC SECURITY DEFINER (sem service key necessária).
 
-// URL pública (mesma de js/config.js) — evita erros se o secret SUPABASE_URL tiver formato errado
+// Credenciais públicas — mesmas de js/config.js
 const SUPABASE_URL = 'https://qgamphwnlrriwalcbhbl.supabase.co';
-const SUPABASE_KEY = (process.env.SUPABASE_SERVICE_KEY || '').trim();
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnYW1waHdubHJyaXdhbGNiaGJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNTkzMzUsImV4cCI6MjA5NjYzNTMzNX0.AV0mCZqYlNyqz9XVWeHImMljnpt4klxpUjBa1HHlYkM';
 const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID      = process.env.TELEGRAM_CHAT_ID;
 const VERCEL_URL   = 'https://finzen-rho.vercel.app';
@@ -19,26 +19,18 @@ function isRF(tipo)  { return tipo === 'renda_fixa'; }
 
 // ── Supabase helpers ──────────────────────────────────────────────────────────
 
-async function sbGet(path) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-  });
-  if (!r.ok) throw new Error(`Supabase GET ${r.status}: ${await r.text()}`);
-  return r.json();
-}
-
-async function sbPatch(table, filter, body) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${filter}`, {
-    method: 'PATCH',
+async function sbRpc(fn, params) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
     headers: {
       apikey: SUPABASE_KEY,
       Authorization: `Bearer ${SUPABASE_KEY}`,
       'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(params),
   });
-  if (!r.ok) throw new Error(`Supabase PATCH ${r.status}: ${await r.text()}`);
+  if (!r.ok) throw new Error(`Supabase RPC ${fn} ${r.status}: ${await r.text()}`);
+  return r.json();
 }
 
 // ── Cotações via proxy Vercel (já tem BRAPI_TOKEN) ────────────────────────────
@@ -88,10 +80,8 @@ async function main() {
   });
   console.log(`Cotações de fechamento — ${dataFmt}`);
 
-  // 1. Busca ativos negociáveis
-  const todos = await sbGet(
-    'investments?ativo=eq.true&select=id,ticker,tipo,moeda,quantidade,cotacao_atual,corretora,exchange_rate'
-  );
+  // 1. Busca ativos via RPC (SECURITY DEFINER bypassa RLS sem precisar de service key)
+  const todos = await sbRpc('cotacao_get_ativos', {});
   const ativos = todos.filter(a => !isRF(a.tipo));
   if (!ativos.length) { console.log('Nenhum ativo negociável. Encerrando.'); return; }
 
@@ -108,7 +98,7 @@ async function main() {
 
   // 4. Atualiza banco e agrupa dados para a mensagem
   const agora = new Date().toISOString();
-  const grupos = {};   // { corretora: [{ ticker, cotacao, moeda, changePct, deltaBRL }] }
+  const grupos = {};   // { corretora: [{ ticker, cotacao, moeda, changePct }] }
   let deltaTotal = 0;
   let deltaValido = true; // false se algum ativo não tinha cotacao_atual prévia
 
@@ -129,15 +119,14 @@ async function main() {
       deltaValido = false; // ao menos um ativo sem variação — não exibe total
     }
 
-    // Grava no banco: cotacao_atual, atualizado_em, valor_atual_brl, exchange_rate (USD)
-    const patch = {
-      cotacao_atual:   novaCotacao,
-      atualizado_em:   agora,
-      valor_atual_brl: novaCotacao * qtd * fx,
-    };
-    if (moeda === 'USD' && dolar > 0) patch.exchange_rate = dolar;
-
-    await sbPatch('investments', `id=eq.${a.id}`, patch);
+    // Grava no banco via RPC SECURITY DEFINER
+    await sbRpc('cotacao_patch_ativo', {
+      p_id:            a.id,
+      p_cotacao:       novaCotacao,
+      p_valor_brl:     novaCotacao * qtd * fx,
+      p_exchange_rate: moeda === 'USD' && dolar > 0 ? dolar : 0,
+      p_atualizado_em: agora,
+    });
 
     // Acumula para mensagem
     const corretora = a.corretora || 'Outros';
