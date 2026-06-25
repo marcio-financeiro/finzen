@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const { data: sessionData } = await supabase.auth.getSession();
 if(!sessionData.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
@@ -26,7 +27,7 @@ async function carregarContas(){
 
   const contas = data || [];
   el('filtroConta').innerHTML = '<option value="">Todas as contas</option>' +
-    contas.map(c => `<option value="${c.id}" data-saldo="${c.saldo_atual||0}" data-currency="${c.currency||'BRL'}">${c.nome}</option>`).join('');
+    contas.map(c => `<option value="${c.id}" data-saldo="${c.saldo_atual||0}" data-currency="${c.currency||'BRL'}">${escapeHtml(c.nome)}</option>`).join('');
 }
 
 function formatDate(iso){
@@ -82,7 +83,7 @@ async function carregarExtrato(){
   const { data, error } = await query;
 
   if(error){
-    el('stmtLista').innerHTML = `<p class="muted" style="padding:24px">Erro ao carregar: ${error.message}</p>`;
+    el('stmtLista').innerHTML = '<p class="muted" style="padding:24px">Erro ao carregar extratos.</p>';
     return;
   }
 
@@ -122,9 +123,9 @@ async function carregarExtrato(){
           return `
             <tr>
               <td style="white-space:nowrap">${formatDate(l.date)}</td>
-              <td>${l.description || '-'}</td>
-              <td>${l.accounts?.nome || '-'}</td>
-              <td>${l.categories?.icon||''} ${l.categories?.nome || '-'}</td>
+              <td>${escapeHtml(l.description) || '-'}</td>
+              <td>${escapeHtml(l.accounts?.nome) || '-'}</td>
+              <td>${l.categories?.icon||''} ${escapeHtml(l.categories?.nome) || '-'}</td>
               <td><span class="badge ${l.status==='pago'?'success':'warning'}">${l.status||'-'}</span></td>
               <td class="money ${l.type==='receita'?'positive':'negative'}" style="text-align:right">
                 ${l.type==='receita'?'+':'-'}${formatCurrency(valor, currency)}

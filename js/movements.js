@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { notificarTransacao } from './telegram.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 // ─────────────────────────────────────────────
 // ELEMENTOS DO DOM
@@ -901,7 +902,7 @@ async function renderCashFlowMonth(){
       });
     });
   }catch(error){
-    cashFlowMonthList.innerHTML = `<p class="muted" style="padding:18px">${error.message}</p>`;
+    cashFlowMonthList.innerHTML = '<p class="muted" style="padding:18px">Erro ao carregar movimentações.</p>';
   }
 }
 
@@ -968,9 +969,9 @@ async function loadUpcomingRecurring(){
           ${previews.slice(0, filtroMes ? 999 : 12).map(item => `
             <tr>
               <td>${shortDateBR(item.date)}</td>
-              <td>${item.description}</td>
-              <td>${item.account}</td>
-              <td>${item.category||'-'}</td>
+              <td>${escapeHtml(item.description)}</td>
+              <td>${escapeHtml(item.account)}</td>
+              <td>${escapeHtml(item.category)||'-'}</td>
               <td><span class="badge neutral">${item.frequency}</span></td>
               <td class="money ${item.type==='receita'?'positive':'negative'}">
                 ${item.type==='receita'?'+':'-'}${formatCurrency(item.amount,item.currency)}
@@ -984,15 +985,15 @@ async function loadUpcomingRecurring(){
       ${previews.slice(0, filtroMes ? 999 : 12).map(item => `
         <article class="ff-mobile-card">
           <div class="ff-mobile-card-title">
-            <strong>${item.description}</strong>
+            <strong>${escapeHtml(item.description)}</strong>
             <strong class="${item.type==='receita'?'positive':'negative'}">
               ${item.type==='receita'?'+':'-'}${formatCurrency(item.amount,item.currency)}
             </strong>
           </div>
           <div class="ff-mobile-card-meta">
             <div><span>Data</span><br>${shortDateBR(item.date)}</div>
-            <div><span>Conta</span><br>${item.account}</div>
-            <div><span>Categoria</span><br>${item.category||'-'}</div>
+            <div><span>Conta</span><br>${escapeHtml(item.account)}</div>
+            <div><span>Categoria</span><br>${escapeHtml(item.category)||'-'}</div>
             <div><span>Frequência</span><br><span class="badge neutral">${item.frequency}</span></div>
           </div>
         </article>
@@ -1105,9 +1106,9 @@ async function loadMovements(){
             <tr class="${r.status==='pendente'?'row-pendente':''}">
               <td>${formatDate(r.date)}</td>
               <td><span class="badge neutral">${r.kind}</span></td>
-              <td>${r.desc}</td>
-              <td>${r.account}</td>
-              <td>${r.category}</td>
+              <td>${escapeHtml(r.desc)}</td>
+              <td>${escapeHtml(r.account)}</td>
+              <td>${escapeHtml(r.category)}</td>
               <td>${badgeStatus(r)}</td>
               <td class="money ${r.sign==='+'?'positive':r.sign==='-'?'negative':''}">
                 ${r.sign}${formatCurrency(r.value,'BRL')}
@@ -1138,7 +1139,7 @@ async function loadMovements(){
         <article class="ff-mobile-card ${r.status==='pendente'?'pendente':''}">
           <div class="ff-mobile-card-title">
             <div>
-              <strong>${r.desc}</strong><br>
+              <strong>${escapeHtml(r.desc)}</strong><br>
               <span>${formatDate(r.date)} · ${r.kind}</span>
             </div>
             <strong class="${r.sign==='+'?'positive':r.sign==='-'?'negative':''}">
@@ -1146,8 +1147,8 @@ async function loadMovements(){
             </strong>
           </div>
           <div class="ff-mobile-card-meta">
-            <div><span>Conta/Cartão</span><br>${r.account}</div>
-            <div><span>Categoria</span><br>${r.category}</div>
+            <div><span>Conta/Cartão</span><br>${escapeHtml(r.account)}</div>
+            <div><span>Categoria</span><br>${escapeHtml(r.category)}</div>
             <div><span>Status</span><br>${badgeStatus(r)}</div>
             <div><span>Tipo</span><br><span class="badge neutral">${r.kind}</span></div>
           </div>

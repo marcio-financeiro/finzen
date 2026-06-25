@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const { data: sessionData } = await supabase.auth.getSession();
 if(!sessionData.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
@@ -108,8 +109,8 @@ async function buscar(){
         <td style="white-space:nowrap">${formatDate(t.date)}</td>
         <td>${badge(t.type, t.type==='receita'?'success':'danger')}</td>
         <td>${highlight(t.description, termo)}</td>
-        <td>${t.accounts?.nome||'-'}</td>
-        <td>${t.categories?.icon||''} ${t.categories?.nome||'-'}</td>
+        <td>${escapeHtml(t.accounts?.nome)||'-'}</td>
+        <td>${t.categories?.icon||''} ${escapeHtml(t.categories?.nome)||'-'}</td>
         <td>${badge(t.status||'-', t.status==='pago'?'success':'warning')}</td>
         <td class="money ${t.type==='receita'?'positive':'negative'}" style="text-align:right">
           ${t.type==='receita'?'+':'-'}${formatCurrency(t.amount||0, currency)}
@@ -130,8 +131,8 @@ async function buscar(){
     cardTx.forEach(c => {
       html += `<tr>
         <td>${highlight(c.descricao||'-', termo)}</td>
-        <td>${c.credit_cards?.nome||'-'}</td>
-        <td>${c.categories?.icon||''} ${c.categories?.nome||'-'}</td>
+        <td>${escapeHtml(c.credit_cards?.nome)||'-'}</td>
+        <td>${c.categories?.icon||''} ${escapeHtml(c.categories?.nome)||'-'}</td>
         <td>${c.fatura_referencia||'-'}</td>
         <td>${c.parcela_atual||1}/${c.parcelas||1}</td>
         <td class="money negative" style="text-align:right">-${formatCurrency(c.valor_parcela||0,'BRL')}</td>
@@ -152,8 +153,8 @@ async function buscar(){
       html += `<tr>
         <td style="white-space:nowrap">${formatDate(t.transfer_date)}</td>
         <td>${highlight(t.description||'-', termo)}</td>
-        <td>${t.accounts_from?.nome||'-'}</td>
-        <td>${t.accounts_to?.nome||'-'}</td>
+        <td>${escapeHtml(t.accounts_from?.nome)||'-'}</td>
+        <td>${escapeHtml(t.accounts_to?.nome)||'-'}</td>
         <td class="money" style="text-align:right">${formatCurrency(t.amount||0,'BRL')}</td>
       </tr>`;
     });
@@ -171,7 +172,7 @@ async function buscar(){
     dividends.forEach(d => {
       html += `<tr>
         <td style="white-space:nowrap">${formatDate(d.data_movimento)}</td>
-        <td><strong>${d.investments?.ticker||'-'}</strong></td>
+        <td><strong>${escapeHtml(d.investments?.ticker)||'-'}</strong></td>
         <td>${badge(d.tipo,'success')}</td>
         <td>${highlight(d.observacao||'-', termo)}</td>
         <td class="money positive" style="text-align:right">+${formatCurrency(d.valor_total||0,'BRL')}</td>
@@ -238,18 +239,19 @@ async function buscar(){
 
   if(!total){
     results.innerHTML = `<p class="muted" style="padding:24px;text-align:center">
-      Nenhum resultado para "<strong>${termo}</strong>".
+      Nenhum resultado para "<strong>${escapeHtml(termo)}</strong>".
     </p>`;
     return;
   }
 
   results.innerHTML = `<p class="muted" style="padding:0 0 12px;font-size:13px">
-    ${total} resultado(s) para "<strong>${termo}</strong>"
+    ${total} resultado(s) para "<strong>${escapeHtml(termo)}</strong>"
   </p>` + html;
 }
 
 function highlight(texto, termo){
-  if(!texto || !termo) return texto || '';
-  const re = new RegExp(`(${termo.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
-  return String(texto).replace(re, '<mark style="background:rgba(245,158,11,.3);border-radius:3px;padding:0 2px">$1</mark>');
+  if(!texto || !termo) return escapeHtml(texto) || '';
+  const safe = escapeHtml(String(texto));
+  const re = new RegExp(`(${escapeHtml(termo).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  return safe.replace(re, '<mark style="background:rgba(245,158,11,.3);border-radius:3px;padding:0 2px">$1</mark>');
 }

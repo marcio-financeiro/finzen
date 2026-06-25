@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -286,11 +287,11 @@ async function carregarTransacoes(){
                 ${transacao.type}
               </span>
             </td>
-            <td>${transacao.description}</td>
-            <td>${transacao.accounts?.nome || '-'}</td>
+            <td>${escapeHtml(transacao.description)}</td>
+            <td>${escapeHtml(transacao.accounts?.nome) || '-'}</td>
             <td>
               ${transacao.categories?.icon || ''}
-              ${transacao.categories?.nome || '-'}
+              ${escapeHtml(transacao.categories?.nome) || '-'}
             </td>
             <td>
               <span class="badge ${transacao.status === 'pago' ? 'success' : 'neutral'}">

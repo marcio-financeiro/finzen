@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -121,8 +122,8 @@ async function carregarContas(){
         ${contas.map(conta => `
           <tr>
             <td><span class="color-dot" style="background:${conta.color || '#4f8ef7'}"></span></td>
-            <td>${conta.nome || ''}</td>
-            <td>${conta.bank || '-'}</td>
+            <td>${escapeHtml(conta.nome) || ''}</td>
+            <td>${escapeHtml(conta.bank) || '-'}</td>
             <td><span class="badge ${conta.account_kind === 'broker' ? 'info' : 'neutral'}">${conta.account_kind === 'broker' ? 'corretora' : 'banco'}</span></td>
             <td>${conta.tipo || '-'}</td>
             <td>${conta.currency || 'BRL'}</td>

@@ -266,8 +266,16 @@ Seja objetivo, use valores em R$, e não repita dados óbvios. Tom: direto e út
 }
 
 // ── Renderiza markdown simples ────────────────────────────────────────────
+function escapeHtmlBasico(s) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 export function renderMd(text) {
-  return text
+  return escapeHtmlBasico(text)
     .replace(/^---+$/gm, '')
     .replace(/^# (.+)$/gm, '<h4 class="cfai-h4">$1</h4>')
     .replace(/^## (.+)$/gm, '<h4 class="cfai-h4">$1</h4>')
