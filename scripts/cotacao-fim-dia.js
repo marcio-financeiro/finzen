@@ -30,7 +30,8 @@ async function sbRpc(fn, params) {
     body: JSON.stringify(params),
   });
   if (!r.ok) throw new Error(`Supabase RPC ${fn} ${r.status}: ${await r.text()}`);
-  return r.json();
+  const text = await r.text();
+  return text ? JSON.parse(text) : null;
 }
 
 // ── Cotações via proxy Vercel (já tem BRAPI_TOKEN) ────────────────────────────
