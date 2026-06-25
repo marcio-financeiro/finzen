@@ -22,7 +22,8 @@ let hoje    = new Date();
 let refData = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 let viewAtual   = window.innerWidth <= 820 ? 'lista' : 'mensal';
 let eventos     = [];
-let editandoId  = null;
+let editandoId    = null;
+let googleEventId = null;   // google_event_id do evento sendo editado
 
 // ── Cores e ícones por tipo ───────────────────────────
 const TIPO_CONFIG = {
@@ -630,7 +631,8 @@ function mostrarInfoAuto(ev) {
 
 // ── Modal: Novo Evento ────────────────────────────────
 function abrirModalNovo(data = '', hora = '') {
-  editandoId = null;
+  editandoId    = null;
+  googleEventId = null;
   el('calModalTitulo').textContent = 'Novo Evento';
   el('evTitulo').value      = '';
   el('evTipo').value        = 'compromisso';
@@ -652,7 +654,8 @@ function abrirModalNovo(data = '', hora = '') {
 
 // ── Modal: Editar Evento ──────────────────────────────
 function abrirModalEditar(ev) {
-  editandoId = ev.id;
+  editandoId    = ev.id;
+  googleEventId = ev.google_event_id || null;
   el('calModalTitulo').textContent = 'Editar Evento';
   el('evTitulo').value      = ev.titulo || '';
   el('evTipo').value        = ev.tipo   || 'compromisso';
@@ -684,6 +687,26 @@ function fecharModal() {
 el('btnCancelarEvento').addEventListener('click', fecharModal);
 el('calModalBackdrop').addEventListener('click', fecharModal);
 
+// ── Sync Google Calendar (fire-and-forget) ────────────
+async function syncGoogle(action, evento, gEventId) {
+  try {
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) return null;
+    const r = await fetch('/api/calendar-sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action, evento, google_event_id: gEventId || undefined }),
+    });
+    if (!r.ok) { console.error('[FinZen] calendar-sync:', r.status); return null; }
+    const d = await r.json();
+    return d.google_event_id || null;
+  } catch (e) {
+    console.error('[FinZen] calendar-sync falhou:', e.message);
+    return null;
+  }
+}
+
 // ── Salvar Evento ─────────────────────────────────────
 el('btnSalvarEvento').addEventListener('click', async () => {
   const titulo = el('evTitulo').value.trim();
@@ -708,17 +731,40 @@ el('btnSalvarEvento').addEventListener('click', async () => {
     atualizado_em : new Date().toISOString(),
   };
 
-  let error;
+  let error, newId;
   if (editandoId) {
     ({ error } = await supabase.from('calendar_events').update(payload).eq('id', editandoId).eq('user_id', user.id));
   } else {
-    ({ error } = await supabase.from('calendar_events').insert(payload));
+    let newData;
+    ({ data: newData, error } = await supabase.from('calendar_events').insert(payload).select('id').single());
+    newId = newData?.id || null;
   }
 
   if (error) {
     el('evMsg').className = 'message danger';
     el('evMsg').textContent = 'Erro ao salvar: ' + error.message;
     return;
+  }
+
+  // Sync Google Calendar — falhas não bloqueiam o salvamento local
+  const eventoSync = {
+    titulo: payload.titulo, data_inicio: payload.data_inicio, data_fim: payload.data_fim,
+    hora: payload.hora, local: payload.local, descricao: payload.descricao,
+  };
+  if (editandoId) {
+    if (googleEventId) {
+      syncGoogle('update', eventoSync, googleEventId).catch(() => {});
+    } else {
+      syncGoogle('create', eventoSync, null).then(gId => {
+        if (gId) supabase.from('calendar_events').update({ google_event_id: gId })
+          .eq('id', editandoId).eq('user_id', user.id).catch(() => {});
+      }).catch(() => {});
+    }
+  } else {
+    syncGoogle('create', eventoSync, null).then(gId => {
+      if (gId && newId) supabase.from('calendar_events').update({ google_event_id: gId })
+        .eq('id', newId).eq('user_id', user.id).catch(() => {});
+    }).catch(() => {});
   }
 
   // Exportar para iPhone (.ics)
@@ -735,6 +781,7 @@ el('btnExcluirEvento').addEventListener('click', async () => {
   if (!editandoId) return;
   if (!confirm('Excluir este evento?')) return;
   await supabase.from('calendar_events').delete().eq('id', editandoId).eq('user_id', user.id);
+  if (googleEventId) syncGoogle('delete', {}, googleEventId).catch(() => {});
   fecharModal();
   renderizar();
 });
