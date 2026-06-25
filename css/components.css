@@ -76,6 +76,7 @@ textarea{
   caret-color:var(--input-color);
   font-size:14px;
   outline:none;
+  touch-action:manipulation;
   transition:border-color .15s ease,box-shadow .15s ease,background .15s ease;
 }
 
