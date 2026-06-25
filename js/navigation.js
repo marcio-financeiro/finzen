@@ -1121,6 +1121,14 @@ function initNavigation() {
   // Aplicar estado de privacidade imediatamente
   applyPrivacy(getPrivacy());
 
+  // Labels sem `for` → foca o input/select/textarea irmão ao clicar
+  document.addEventListener('click', e => {
+    const lbl = e.target.closest('label:not([for])');
+    if (!lbl) return;
+    const ctrl = lbl.parentElement?.querySelector('input, select, textarea');
+    if (ctrl) ctrl.focus();
+  });
+
   // Fechar flyout ao clicar fora (capture para pegar antes dos outros handlers)
   document.addEventListener('click', e => {
     if (!_flyoutPinned) return;
