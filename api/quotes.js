@@ -5,7 +5,7 @@
 export default async function handler(req, res) {
 
   // ── CORS ──────────────────────────────────────────────────────────────────
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', 'https://finzen-rho.vercel.app');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Cache-Control', 'public, max-age=300'); // cache 5 min no browser
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   const tickers = (tickersRaw || '').split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
   const resultado = {};
 
-  const BRAPI_TOKEN = process.env.BRAPI_TOKEN || 'bGZu7dGPyW94PcfXVCiA7t';
+  const BRAPI_TOKEN = process.env.BRAPI_TOKEN;
 
   // ── Dólar — Yahoo Finance (BRL=X) primário + awesomeapi fallback ─────────
   if (dolar === 'true') {
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
   const tickersEUA = tickers.filter(t => /^[A-Z]{1,5}$/.test(t));
 
   // ── Cotações BR — brapi.dev (1 ativo por req no plano free → paralelo) ────
-  if (tickersBR.length) {
+  if (tickersBR.length && BRAPI_TOKEN) {
     const fundParams = fundamental === 'true' ? '&fundamental=true' : '';
     const fetchBR = async (ticker) => {
       try {
@@ -150,7 +150,7 @@ export default async function handler(req, res) {
 
   // ── Fallback brapi para tickers EUA que não vieram do Yahoo ──────────────
   const faltando = tickers.filter(t => !resultado[t] && t !== 'USD-BRL');
-  if (faltando.length) {
+  if (faltando.length && BRAPI_TOKEN) {
     try {
       const lista = [...new Set(faltando)].join(',');
       const r = await fetch(
