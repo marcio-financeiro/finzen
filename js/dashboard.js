@@ -3,6 +3,7 @@ import { initAssistantBar } from './assistantBar.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { notificarContasVencendo, notificarFaturaVencendo } from './telegram.js';
+import { emailService } from './emailService.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
@@ -930,6 +931,7 @@ atualizarNavPrevisao(previsaoOffset, false);
 
 carregarDashboard();
 initAssistantBar(user.id).catch(() => {});
+emailService.agendarLembretes(user.id, supabase).catch(() => {});
 
 document.addEventListener('visibilitychange', () => {
   if(document.visibilityState === 'visible') carregarDashboard();
