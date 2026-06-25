@@ -3,7 +3,8 @@
 // Chama o proxy Vercel (já tem BRAPI_TOKEN) — sem novos secrets necessários.
 // Usa SUPABASE_SERVICE_KEY para contornar RLS.
 
-const SUPABASE_URL = (process.env.SUPABASE_URL || '').trim() || 'https://qgamphwnlrriwalcbhbl.supabase.co';
+function _validUrl(s) { try { return new URL(s).origin; } catch { return ''; } }
+const SUPABASE_URL = _validUrl((process.env.SUPABASE_URL || '').trim()) || 'https://qgamphwnlrriwalcbhbl.supabase.co';
 const SUPABASE_KEY = (process.env.SUPABASE_SERVICE_KEY || '').trim();
 const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID      = process.env.TELEGRAM_CHAT_ID;
