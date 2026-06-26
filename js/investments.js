@@ -1014,7 +1014,7 @@ async function carregarDividendos(){
   }
 
   lista.innerHTML=`<table class="data-table">
-    <thead><tr><th>Data</th><th>Ativo</th><th>Tipo</th><th>Valor/cota</th><th>Qtd cotas</th><th>Total</th><th>Conta</th></tr></thead>
+    <thead><tr><th>Data</th><th>Ativo</th><th>Tipo</th><th>Valor/cota</th><th>Qtd cotas</th><th>Total</th><th>Conta</th><th></th></tr></thead>
     <tbody>${data.map(d=>{
       const a=ativos.find(x=>x.id===d.investment_id);
       const c=todasContas.find(x=>x.id===d.account_id);
@@ -1026,10 +1026,19 @@ async function carregarDividendos(){
         <td class="money">${toNumber(d.quantidade_cotas).toLocaleString('pt-BR',{maximumFractionDigits:4})}</td>
         <td class="money positive">+${formatCurrency(toNumber(d.valor_total),'BRL')}</td>
         <td>${c?.nome||'-'}</td>
+        <td><button class="btn compact" data-action="excluirDividendo" data-id="${d.id}" style="padding:4px 8px;font-size:12px;color:var(--danger);background:transparent;border:1px solid var(--danger);margin:0" title="Excluir registro">🗑️</button></td>
       </tr>`;
     }).join('')}</tbody>
   </table>`;
 }
+
+registrarAcao('excluirDividendo', async (btn) => {
+  const id = btn.dataset.id;
+  if(!confirm('Excluir este registro de provento?\n\nIsso remove apenas o lançamento na aba Dividendos. Se a transação em Movimentações já foi excluída, o saldo já foi estornado.')) return;
+  const {error} = await supabase.from('dividends').delete().eq('id', id).eq('user_id', user.id);
+  if(error){ alert('Erro ao excluir: ' + error.message); return; }
+  carregarDividendos();
+});
 
 async function salvarDividendo(){
   const ativoId  = el('divAtivo').value;
@@ -1058,29 +1067,37 @@ async function salvarDividendo(){
   const qtd = qtdCotas || toNumber(ativo.quantidade);
   const valCotaBRL = qtd > 0 ? totalBRL / qtd : 0;
 
+  const btnSalvar = el('btnSalvarDiv');
+  btnSalvar.disabled = true;
   msg('mensagemDiv','Registrando...','info');
   try{
-    // Inserir dividendo
-    const {error:e1}=await supabase.from('dividends').insert({
+    // Inserir dividendo e capturar o id gerado
+    const {data:divRow, error:e1}=await supabase.from('dividends').insert({
       user_id:user.id, investment_id:ativoId, ticker:ativo.ticker,
       tipo, valor_por_cota:valCotaBRL, quantidade_cotas:qtd,
       valor_total:totalBRL, account_id:contaId, data_pagamento:dataPag,
       observacao:obs || (moedaDiv==='USD' ? `USD ${totalMoedaOriginal.toFixed(2)} × ${dolarAtual.toFixed(4)}` : ''),
-    });
+    }).select('id').single();
     if(e1) throw e1;
 
     // Creditar na conta (sempre em BRL)
     const novoSaldo=toNumber(conta.saldo_atual)+totalBRL;
     await supabase.from('accounts').update({saldo_atual:novoSaldo}).eq('id',contaId).eq('user_id',user.id);
 
-    // Registrar como receita nas transações
-    await supabase.from('transactions').insert({
+    // Registrar como receita nas transações e capturar o id
+    const {data:txRow, error:e2}=await supabase.from('transactions').insert({
       user_id:user.id, account_id:contaId,
       type:'receita', amount:totalBRL,
       description:`Dividendo ${ativo.ticker} (${tipo})`,
       date:dataPag, status:'pago',
       notes:obs||`Provento de ${ativo.ticker}${moedaDiv==='USD'?` • USD ${totalMoedaOriginal.toFixed(2)} × ${dolarAtual.toFixed(4)}`:''}`,
-    });
+    }).select('id').single();
+    if(e2) throw e2;
+
+    // Linkar dividendo à transação para permitir exclusão em cascata
+    if(divRow?.id && txRow?.id){
+      await supabase.from('dividends').update({transaction_id:txRow.id}).eq('id',divRow.id);
+    }
 
     const msgFinal = moedaDiv === 'USD'
       ? `Dividendo de USD ${totalMoedaOriginal.toFixed(2)} → ${formatCurrency(totalBRL,'BRL')} registrado.`
@@ -1098,6 +1115,8 @@ async function salvarDividendo(){
     carregarDividendos();
   }catch(e){
     msg('mensagemDiv','Erro: '+e.message,'danger');
+  }finally{
+    btnSalvar.disabled = false;
   }
 }
 
