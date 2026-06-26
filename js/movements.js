@@ -711,6 +711,9 @@ async function deleteTransaction(id){
   const del = await supabase.from('transactions').delete().eq('user_id',user.id).in('id',ids);
   if(del.error){ showMessage('Erro ao excluir: '+del.error.message,'danger'); return; }
 
+  // Remove registros de dividendos vinculados às transações excluídas
+  await supabase.from('dividends').delete().eq('user_id',user.id).in('transaction_id',ids);
+
   showMessage(
     scope === 'only'   ? 'Ocorrência excluída.' :
     scope === 'future' ? 'Esta e futuras ocorrências foram excluídas.' :
