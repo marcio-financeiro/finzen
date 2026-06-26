@@ -110,6 +110,9 @@ textarea:focus{
   padding:11px 15px;
   font-weight:800;
   cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
   transition:opacity .15s ease,transform .15s ease,box-shadow .15s ease;
   margin-right:8px;
   margin-bottom:8px;
