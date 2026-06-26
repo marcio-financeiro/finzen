@@ -289,9 +289,51 @@ function renderizarPizza(proventos) {
 }
 
 window.excluirProvento = async function(id) {
-  if(!confirm('Excluir este registro de provento?\n\nIsso remove apenas o lançamento na aba Dividendos. Se a transação em Movimentações ainda existir, exclua lá também para estornar o saldo.')) return;
+  if(!confirm('Excluir este provento?\n\nIsso vai excluir o registro de dividendo, a movimentação correspondente e estornar o saldo da conta.')) return;
+
+  // Buscar dividendo para obter transaction_id e demais dados
+  const { data: div } = await supabase.from('dividends')
+    .select('id, transaction_id, account_id, ticker, data_pagamento, tipo')
+    .eq('id', id).eq('user_id', user.id).single();
+
+  if (!div) { alert('Registro não encontrado.'); return; }
+
+  let txId = div.transaction_id;
+
+  // Para registros antigos sem transaction_id: busca pela descrição + data + conta
+  if (!txId && div.account_id) {
+    const { data: txs } = await supabase.from('transactions')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('account_id', div.account_id)
+      .eq('date', div.data_pagamento)
+      .ilike('description', `Dividendo ${div.ticker}%`);
+    if (txs && txs.length === 1) txId = txs[0].id;
+  }
+
+  // Estornar saldo e excluir a transação
+  if (txId) {
+    const { data: tx } = await supabase.from('transactions')
+      .select('id, amount, account_id, status')
+      .eq('id', txId).eq('user_id', user.id).single();
+
+    if (tx && tx.status === 'pago' && tx.account_id) {
+      const { data: acc } = await supabase.from('accounts')
+        .select('saldo_atual').eq('id', tx.account_id).single();
+      if (acc) {
+        await supabase.from('accounts')
+          .update({ saldo_atual: Number(acc.saldo_atual) - Number(tx.amount) })
+          .eq('id', tx.account_id).eq('user_id', user.id);
+      }
+    }
+
+    await supabase.from('transactions').delete().eq('id', txId).eq('user_id', user.id);
+  }
+
+  // Excluir o dividendo
   const { error } = await supabase.from('dividends').delete().eq('id', id).eq('user_id', user.id);
-  if(error){ alert('Erro ao excluir: ' + error.message); return; }
+  if (error) { alert('Erro ao excluir: ' + error.message); return; }
+
   await carregarDividendos();
 };
 
