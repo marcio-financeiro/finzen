@@ -1362,7 +1362,8 @@ el('divAtivo').addEventListener('change',()=>{
 el('divValorCota').addEventListener('input',()=>{
   const v=toNumber(el('divValorCota').value);
   const q=toNumber(el('divQtdCotas').value);
-  if(v&&q) el('divValorTotal').value=(v*q).toFixed(6);
+  const moeda = el('divMoeda')?.value || 'BRL';
+  if(v&&q&&moeda!=='USD') el('divValorTotal').value=(v*q).toFixed(6);
   atualizarConversaoDiv();
 });
 el('divValorTotal').addEventListener('input', atualizarConversaoDiv);
