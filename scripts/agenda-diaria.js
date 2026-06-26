@@ -6,8 +6,7 @@ const crypto = require('crypto');
 
 const SERVICE_ACCOUNT = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
 const CALENDAR_ID     = process.env.GOOGLE_CALENDAR_ID;
-const BOT_TOKEN       = process.env.TELEGRAM_BOT_TOKEN;
-const CHAT_ID         = process.env.TELEGRAM_CHAT_ID;
+const VERCEL_URL      = 'https://finzen-rho.vercel.app';
 
 // ── JWT RS256 para Google Service Account ─────────────────────────────────────
 
@@ -105,15 +104,15 @@ function formatDiaLabel(dateStr) {
     }).replace('.', ''); // remove ponto do "qua."
 }
 
-// ── Telegram ──────────────────────────────────────────────────────────────────
+// ── Telegram via proxy Vercel ─────────────────────────────────────────────────
 
 async function enviarTelegram(mensagem) {
-  const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+  const r = await fetch(`${VERCEL_URL}/api/telegram`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: CHAT_ID, text: mensagem, parse_mode: 'HTML' }),
+    headers: { 'Content-Type': 'application/json', 'User-Agent': 'FinZen-GH-Actions/1.0' },
+    body: JSON.stringify({ message: mensagem }),
   });
-  if (!r.ok) throw new Error(`Telegram ${r.status}: ${await r.text()}`);
+  if (!r.ok) throw new Error(`Telegram proxy ${r.status}: ${await r.text()}`);
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────

@@ -20,5 +20,3 @@ jobs:
         env:
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
           GOOGLE_CALENDAR_ID:         ${{ secrets.GOOGLE_CALENDAR_ID }}
-          TELEGRAM_BOT_TOKEN:         ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID:           ${{ secrets.TELEGRAM_CHAT_ID }}
