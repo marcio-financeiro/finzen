@@ -1,7 +1,6 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
-import { registrarAcao } from './eventBus.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -214,7 +213,7 @@ function renderizarTabela(proventos){
               <td><span class="badge ${classeTipo(item.tipo)}">${tipoLabel(item.tipo)}</span></td>
               <td class="money positive">${formatCurrency(total, 'BRL')}</td>
               <td>${item.observacao || '-'}</td>
-              <td><button class="btn compact" data-action="excluirProvento" data-id="${item.id}" style="padding:4px 8px;font-size:12px;color:var(--danger);background:transparent;border:1px solid var(--danger);margin:0" title="Excluir">🗑️</button></td>
+              <td><button class="btn compact" onclick="window.excluirProvento('${item.id}')" style="padding:4px 8px;font-size:12px;color:var(--danger);background:transparent;border:1px solid var(--danger);margin:0" title="Excluir">🗑️</button></td>
             </tr>
           `;
         }).join('')}
@@ -289,12 +288,11 @@ function renderizarPizza(proventos) {
   `;
 }
 
-registrarAcao('excluirProvento', async (btn) => {
-  const id = btn.dataset.id;
+window.excluirProvento = async function(id) {
   if(!confirm('Excluir este registro de provento?\n\nIsso remove apenas o lançamento na aba Dividendos. Se a transação em Movimentações ainda existir, exclua lá também para estornar o saldo.')) return;
   const { error } = await supabase.from('dividends').delete().eq('id', id).eq('user_id', user.id);
   if(error){ alert('Erro ao excluir: ' + error.message); return; }
   await carregarDividendos();
-});
+};
 
 iniciar();
