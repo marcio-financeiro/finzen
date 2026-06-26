@@ -1080,7 +1080,7 @@ async function salvarDividendo(){
   const valCotaBRL = qtd > 0 ? totalBRL / qtd : 0;
 
   // Valor na moeda da conta de destino (para crédito e transação)
-  const contaMoeda = conta.moeda || 'BRL';
+  const contaMoeda = conta.currency || 'BRL';
   const valorConta = contaMoeda === 'USD' ? totalUSD : totalBRL;
 
   const btnSalvar = el('btnSalvarDiv');
