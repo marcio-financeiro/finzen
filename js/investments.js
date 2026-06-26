@@ -1046,10 +1046,22 @@ async function salvarDividendo(){
   const valCota  = toNumber(el('divValorCota').value);
   const qtdCotas = toNumber(el('divQtdCotas').value);
   const moedaDiv = el('divMoeda')?.value || 'BRL';
-  const valTotalMoeda = toNumber(el('divValorTotal').value)||(valCota*qtdCotas);
   const contaId  = el('divConta').value;
   const dataPag  = el('divData').value||hojeISO();
   const obs      = el('divObs').value.trim();
+
+  // Para USD: o total informado em divValorTotal é OBRIGATÓRIO (nunca multiplicar por cotas)
+  // Para BRL: aceita total direto ou calcula de valCota × qtdCotas
+  const totalDigitado = toNumber(el('divValorTotal').value);
+  let valTotalMoeda;
+  if(moedaDiv === 'USD'){
+    valTotalMoeda = totalDigitado;
+    if(!valTotalMoeda){
+      msg('mensagemDiv','Informe o valor total recebido em USD.','warning'); return;
+    }
+  } else {
+    valTotalMoeda = totalDigitado || (valCota * qtdCotas);
+  }
 
   if(!ativoId||!tipo||(!valCota&&!valTotalMoeda)||!contaId){
     msg('mensagemDiv','Preencha ativo, tipo, valor e conta.','warning'); return;
@@ -1059,8 +1071,8 @@ async function salvarDividendo(){
   const conta=todasContas.find(c=>c.id===contaId);
   if(!ativo||!conta){ msg('mensagemDiv','Ativo ou conta não encontrados.','danger'); return; }
 
-  // Calcular valor total em moeda original e em BRL
-  const totalMoedaOriginal = valTotalMoeda||(valCota*toNumber(ativo.quantidade));
+  // Calcular valor total em BRL
+  const totalMoedaOriginal = valTotalMoeda;
   const totalBRL = moedaDiv === 'USD' ? totalMoedaOriginal * dolarAtual : totalMoedaOriginal;
 
   // Valor por cota em BRL (para salvar no banco)
@@ -1386,7 +1398,12 @@ el('divValorCota').addEventListener('input',()=>{
   atualizarConversaoDiv();
 });
 el('divValorTotal').addEventListener('input', atualizarConversaoDiv);
-if(el('divMoeda')) el('divMoeda').addEventListener('change', atualizarConversaoDiv);
+if(el('divMoeda')) el('divMoeda').addEventListener('change', () => {
+  // Ao trocar para USD, limpar divValorTotal para evitar que valor BRL auto-calculado
+  // seja confundido com o total em dólar
+  if(el('divMoeda').value === 'USD') el('divValorTotal').value = '';
+  atualizarConversaoDiv();
+});
 
 function atualizarConversaoDiv(){
   const moeda   = el('divMoeda')?.value || 'BRL';
