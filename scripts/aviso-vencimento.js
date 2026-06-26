@@ -1,11 +1,11 @@
 // scripts/aviso-vencimento.js — Aviso diário de vencimentos via Telegram
 // Roda no GitHub Actions (Node 20, fetch nativo). Sem dependências externas.
 // Usa SUPABASE_SERVICE_KEY para contornar RLS (script server-side, sem sessão de usuário).
+// Telegram via proxy Vercel (token fica no env var do Vercel, não no GitHub).
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_URL = 'https://qgamphwnlrriwalcbhbl.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
-const CHAT_ID      = process.env.TELEGRAM_CHAT_ID;
+const VERCEL_URL   = 'https://finzen-rho.vercel.app';
 
 // ── Utilitários ────────────────────────────────────────────────────────────────
 
@@ -69,15 +69,15 @@ async function buscarFaturas(dia, ref) {
     .map(c => ({ nome: c.nome, total: totais[c.id] }));
 }
 
-// ── Telegram ──────────────────────────────────────────────────────────────────
+// ── Telegram via proxy Vercel ─────────────────────────────────────────────────
 
 async function enviarTelegram(mensagem) {
-  const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+  const r = await fetch(`${VERCEL_URL}/api/telegram`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: CHAT_ID, text: mensagem, parse_mode: 'HTML' }),
+    headers: { 'Content-Type': 'application/json', 'User-Agent': 'FinZen-GH-Actions/1.0' },
+    body: JSON.stringify({ message: mensagem }),
   });
-  if (!r.ok) throw new Error(`Telegram ${r.status}: ${await r.text()}`);
+  if (!r.ok) throw new Error(`Telegram proxy ${r.status}: ${await r.text()}`);
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
