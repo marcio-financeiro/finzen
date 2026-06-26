@@ -1071,38 +1071,42 @@ async function salvarDividendo(){
   const conta=todasContas.find(c=>c.id===contaId);
   if(!ativo||!conta){ msg('mensagemDiv','Ativo ou conta não encontrados.','danger'); return; }
 
-  // Calcular valor total em BRL
-  const totalMoedaOriginal = valTotalMoeda;
-  const totalBRL = moedaDiv === 'USD' ? totalMoedaOriginal * dolarAtual : totalMoedaOriginal;
+  // Calcular valores em ambas as moedas
+  const totalUSD = moedaDiv === 'USD' ? valTotalMoeda : 0;
+  const totalBRL = moedaDiv === 'USD' ? valTotalMoeda * dolarAtual : valTotalMoeda;
 
-  // Valor por cota em BRL (para salvar no banco)
+  // Valor por cota em BRL (para relatórios de proventos — sempre BRL)
   const qtd = qtdCotas || toNumber(ativo.quantidade);
   const valCotaBRL = qtd > 0 ? totalBRL / qtd : 0;
+
+  // Valor na moeda da conta de destino (para crédito e transação)
+  const contaMoeda = conta.moeda || 'BRL';
+  const valorConta = contaMoeda === 'USD' ? totalUSD : totalBRL;
 
   const btnSalvar = el('btnSalvarDiv');
   btnSalvar.disabled = true;
   msg('mensagemDiv','Registrando...','info');
   try{
-    // Inserir dividendo e capturar o id gerado
+    // Inserir dividendo (valor_total sempre em BRL para relatórios)
     const {data:divRow, error:e1}=await supabase.from('dividends').insert({
       user_id:user.id, investment_id:ativoId, ticker:ativo.ticker,
       tipo, valor_por_cota:valCotaBRL, quantidade_cotas:qtd,
       valor_total:totalBRL, account_id:contaId, data_pagamento:dataPag,
-      observacao:obs || (moedaDiv==='USD' ? `USD ${totalMoedaOriginal.toFixed(2)} × ${dolarAtual.toFixed(4)}` : ''),
+      observacao:obs || (moedaDiv==='USD' ? `USD ${totalUSD.toFixed(2)} × ${dolarAtual.toFixed(4)}` : ''),
     }).select('id').single();
     if(e1) throw e1;
 
-    // Creditar na conta (sempre em BRL)
-    const novoSaldo=toNumber(conta.saldo_atual)+totalBRL;
+    // Creditar na conta usando a moeda da conta
+    const novoSaldo=toNumber(conta.saldo_atual)+valorConta;
     await supabase.from('accounts').update({saldo_atual:novoSaldo}).eq('id',contaId).eq('user_id',user.id);
 
-    // Registrar como receita nas transações e capturar o id
+    // Registrar transação com o valor na moeda da conta
     const {data:txRow, error:e2}=await supabase.from('transactions').insert({
       user_id:user.id, account_id:contaId,
-      type:'receita', amount:totalBRL,
+      type:'receita', amount:valorConta,
       description:`Dividendo ${ativo.ticker} (${tipo})`,
       date:dataPag, status:'pago',
-      notes:obs||`Provento de ${ativo.ticker}${moedaDiv==='USD'?` • USD ${totalMoedaOriginal.toFixed(2)} × ${dolarAtual.toFixed(4)}`:''}`,
+      notes:obs||`Provento de ${ativo.ticker}${moedaDiv==='USD'?` • USD ${totalUSD.toFixed(2)} × ${dolarAtual.toFixed(4)}`:''}`,
     }).select('id').single();
     if(e2) throw e2;
 
@@ -1112,7 +1116,7 @@ async function salvarDividendo(){
     }
 
     const msgFinal = moedaDiv === 'USD'
-      ? `Dividendo de USD ${totalMoedaOriginal.toFixed(2)} → ${formatCurrency(totalBRL,'BRL')} registrado.`
+      ? `Dividendo de USD ${totalUSD.toFixed(2)} → ${formatCurrency(totalBRL,'BRL')} registrado.`
       : `Dividendo de ${formatCurrency(totalBRL,'BRL')} registrado e creditado na conta.`;
 
     msg('mensagemDiv', msgFinal, 'success');
