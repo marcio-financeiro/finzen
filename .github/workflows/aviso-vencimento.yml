@@ -17,5 +17,3 @@ jobs:
 
       - name: Verificar e enviar vencimentos
         run: node scripts/aviso-vencimento.js
-        env:
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

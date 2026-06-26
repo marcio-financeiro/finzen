@@ -1,16 +1,15 @@
 // scripts/aviso-vencimento.js — Aviso diário de vencimentos via Telegram
 // Roda no GitHub Actions (Node 20, fetch nativo). Sem dependências externas.
-// Usa SUPABASE_SERVICE_KEY para contornar RLS (script server-side, sem sessão de usuário).
+// Usa anon key + funções RPC SECURITY DEFINER (sem service key necessária).
 // Telegram via proxy Vercel (token fica no env var do Vercel, não no GitHub).
 
 const SUPABASE_URL = 'https://qgamphwnlrriwalcbhbl.supabase.co';
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnYW1waHdubHJyaXdhbGNiaGJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNTkzMzUsImV4cCI6MjA5NjYzNTMzNX0.AV0mCZqYlNyqz9XVWeHImMljnpt4klxpUjBa1HHlYkM';
 const VERCEL_URL   = 'https://finzen-rho.vercel.app';
 
 // ── Utilitários ────────────────────────────────────────────────────────────────
 
 function hojePartes() {
-  // Garante data em São Paulo (UTC-3), formato YYYY-MM-DD
   const dataStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
   const [ano, mes, dia] = dataStr.split('-');
   return { dataStr, dia: Number(dia), ref: `${ano}-${mes}` };
@@ -20,45 +19,38 @@ function fmt(valor) {
   return Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// ── Supabase REST helper ───────────────────────────────────────────────────────
+// ── Supabase RPC helper ───────────────────────────────────────────────────────
 
-async function sbGet(path) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+async function sbRpc(fn, params) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
     headers: {
       apikey: SUPABASE_KEY,
       Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify(params),
   });
-  if (!r.ok) throw new Error(`Supabase ${r.status}: ${await r.text()}`);
-  return r.json();
+  if (!r.ok) throw new Error(`Supabase RPC ${fn} ${r.status}: ${await r.text()}`);
+  const text = await r.text();
+  return text ? JSON.parse(text) : [];
 }
 
 // ── Seção 1: Despesas pendentes com date = hoje ────────────────────────────────
 
 async function buscarDespesas(dataStr) {
-  return sbGet(
-    `transactions?status=eq.pendente&type=eq.despesa&date=eq.${dataStr}&select=description,amount`
-  );
+  return sbRpc('aviso_get_despesas', { p_data: dataStr });
 }
 
 // ── Seção 2: Faturas de cartão com vencimento_dia = hoje ──────────────────────
-// Lógica: cartões com vencimento_dia = diaHoje → fatura_referencia = mês atual
-// (mesma regra do dashboard.js renderFaturas — vencimento_dia === diaHoje nunca avança mês)
 
 async function buscarFaturas(dia, ref) {
-  // 1. Cartões ativos com vencimento hoje
-  const cartoes = await sbGet(
-    `credit_cards?vencimento_dia=eq.${dia}&ativo=eq.true&select=id,nome`
-  );
+  const cartoes = await sbRpc('aviso_get_cartoes_hoje', { p_dia: dia });
   if (!cartoes.length) return [];
 
-  // 2. Transações abertas/pendentes da fatura deste mês para esses cartões
-  const ids = cartoes.map(c => c.id).join(',');
-  const txs = await sbGet(
-    `card_transactions?card_id=in.(${ids})&fatura_referencia=eq.${ref}&status=in.(aberta,pendente)&select=card_id,valor_parcela`
-  );
+  const ids = cartoes.map(c => c.id);
+  const txs = await sbRpc('aviso_get_faturas_cartao', { p_ids: ids, p_ref: ref });
 
-  // 3. Agrupa por cartão e filtra cartões com saldo > 0
   const totais = {};
   txs.forEach(t => {
     totais[t.card_id] = (totais[t.card_id] || 0) + Number(t.valor_parcela);
