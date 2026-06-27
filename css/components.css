@@ -147,9 +147,26 @@ textarea:focus{
   color:white;
 }
 
+#btnLogout{
+  background:transparent;
+  color:var(--muted);
+  border:1px solid var(--border);
+  font-size:11px;
+  padding:6px 10px;
+  min-height:32px;
+}
+#btnLogout:hover{
+  color:var(--danger);
+  border-color:var(--danger);
+  background:rgba(239,68,68,.08);
+  transform:none;
+  opacity:1;
+}
+
 .btn.compact{
   width:auto;
-  padding:8px 12px;
+  padding:10px 14px;
+  min-height:40px;
 }
 
 .message{

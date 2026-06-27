@@ -342,7 +342,12 @@ function renderFaturas(cartoes, parcelasMes){
   });
 
   if(!faturas.length){
-    el('blocoFaturas').innerHTML = '<p class="muted" style="font-size:13px">Nenhum cartão ativo cadastrado.</p>';
+    el('blocoFaturas').innerHTML = `
+      <div style="text-align:center;padding:24px 16px">
+        <div style="font-size:36px;margin-bottom:8px">💳</div>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhum cartão cadastrado.</p>
+        <a href="./cards.html" class="btn btn-secondary compact" style="font-size:12px">Adicionar cartão</a>
+      </div>`;
     return;
   }
 
@@ -368,7 +373,12 @@ function renderFaturas(cartoes, parcelasMes){
 // ── Pizza ─────────────────────────────────────────────
 function renderPizza(despesasMes){
   if(!despesasMes.length){
-    el('blocoPizza').innerHTML = '<p class="muted" style="font-size:13px">Nenhuma despesa registrada este mês.</p>';
+    el('blocoPizza').innerHTML = `
+      <div style="text-align:center;padding:24px 16px">
+        <div style="font-size:36px;margin-bottom:8px">🍕</div>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhuma despesa registrada este mês.</p>
+        <a href="./movements.html?tipo=despesa" class="btn btn-secondary compact" style="font-size:12px">Lançar despesa</a>
+      </div>`;
     return;
   }
 
@@ -423,10 +433,12 @@ function renderPizza(despesasMes){
 // ── Orçamento ─────────────────────────────────────────
 function renderOrcamento(orcamentos, despesasMes, parcelasMes){
   if(!orcamentos.length){
-    el('blocoOrcamento').innerHTML = `<p class="muted" style="font-size:13px">
-      Nenhum orçamento configurado para este mês.
-      <a href="./budgets.html" style="color:var(--accent);margin-left:4px">Configurar →</a>
-    </p>`;
+    el('blocoOrcamento').innerHTML = `
+      <div style="text-align:center;padding:24px 16px">
+        <div style="font-size:36px;margin-bottom:8px">📊</div>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhum orçamento configurado para este mês.</p>
+        <a href="./budgets.html" class="btn btn-secondary compact" style="font-size:12px">Configurar orçamento</a>
+      </div>`;
     return;
   }
 
@@ -466,10 +478,12 @@ function renderOrcamento(orcamentos, despesasMes, parcelasMes){
 // ── Metas ─────────────────────────────────────────────
 function renderMetas(metas){
   if(!metas.length){
-    el('blocoMetas').innerHTML = `<p class="muted" style="font-size:13px">
-      Nenhuma meta ativa.
-      <a href="./goals.html" style="color:var(--accent);margin-left:4px">Criar →</a>
-    </p>`;
+    el('blocoMetas').innerHTML = `
+      <div style="text-align:center;padding:24px 16px">
+        <div style="font-size:36px;margin-bottom:8px">🎯</div>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhuma meta ativa.</p>
+        <a href="./goals.html" class="btn btn-secondary compact" style="font-size:12px">Criar primeira meta</a>
+      </div>`;
     return;
   }
 
@@ -509,7 +523,12 @@ function renderReceitaLiquida(recorrentes){
   const pctDespesas = receitasRec>0 ? (despesasRec/receitasRec*100).toFixed(0) : 0;
 
   if(!recorrentes.length){
-    el('blocoReceitaLiquida').innerHTML = '<p class="muted" style="font-size:13px">Nenhuma receita ou despesa recorrente cadastrada.</p>';
+    el('blocoReceitaLiquida').innerHTML = `
+      <div style="text-align:center;padding:24px 16px">
+        <div style="font-size:36px;margin-bottom:8px">💼</div>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhuma transação recorrente cadastrada.</p>
+        <a href="./movements.html" class="btn btn-secondary compact" style="font-size:12px">Adicionar recorrência</a>
+      </div>`;
     return;
   }
 
@@ -769,7 +788,12 @@ function renderUltimos(lancamentos, cartaoLanc){
     .slice(0, 8);
 
   if(!todos.length){
-    el('ultimosLancamentos').innerHTML = '<p class="muted" style="padding:16px;font-size:13px">Nenhum lançamento cadastrado.</p>';
+    el('ultimosLancamentos').innerHTML = `
+      <div style="text-align:center;padding:28px 16px">
+        <div style="font-size:36px;margin-bottom:8px">💸</div>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhum lançamento cadastrado ainda.</p>
+        <a href="./movements.html" class="btn btn-primary compact" style="font-size:12px">Registrar primeiro lançamento</a>
+      </div>`;
     return;
   }
 
@@ -803,8 +827,9 @@ function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investiment
   // ── Critérios e pontuação (total = 100) ───────────
   const itens = [];
 
-  // 1. Taxa de poupança (25 pts)
-  const taxaPoupanca = receitas > 0 ? ((receitas - despesas) / receitas * 100) : 0;
+  // 1. Taxa de poupança (25 pts) — inclui faturas de cartão como despesa real
+  const despesasTotal = despesas + totalFaturas;
+  const taxaPoupanca = receitas > 0 ? ((receitas - despesasTotal) / receitas * 100) : 0;
   const ptsPoupanca = taxaPoupanca >= 20 ? 25
     : taxaPoupanca >= 10 ? 18
     : taxaPoupanca >= 5  ? 10
@@ -819,9 +844,9 @@ function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investiment
   });
 
   // 2. Reserva de emergência (25 pts)
-  // Meta: 6x as despesas mensais
+  // Meta: 6x as despesas mensais (inclui faturas de cartão)
   const despesasMensaisRec = recorrentes.filter(r=>r.type==='despesa').reduce((s,r)=>s+Number(r.amount||0),0);
-  const despesasRef = despesasMensaisRec > 0 ? despesasMensaisRec : despesas;
+  const despesasRef = despesasMensaisRec > 0 ? despesasMensaisRec : (despesasTotal > 0 ? despesasTotal : 0);
   const reservaIdeal = despesasRef * 6;
   const pctReserva   = reservaIdeal > 0 ? Math.min(totalSaldo / reservaIdeal * 100, 100) : 0;
   const ptsReserva   = pctReserva >= 100 ? 25 : pctReserva >= 50 ? 15 : pctReserva >= 25 ? 8 : pctReserva > 0 ? 3 : 0;
@@ -836,12 +861,13 @@ function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investiment
   // 3. Uso do limite do cartão (20 pts)
   const limiteTotal  = cartaoLimites.reduce((s,c) => s + Number(c.limite||0), 0);
   const pctCartao    = limiteTotal > 0 ? (totalFaturas / limiteTotal * 100) : 0;
-  const ptsCartao    = pctCartao <= 20 ? 20 : pctCartao <= 40 ? 14 : pctCartao <= 70 ? 7 : pctCartao <= 90 ? 3 : 0;
+  // sem limite cadastrado → 0 pts (não penalizar mas também não bonificar)
+  const ptsCartao    = limiteTotal === 0 ? 0 : pctCartao <= 20 ? 20 : pctCartao <= 40 ? 14 : pctCartao <= 70 ? 7 : pctCartao <= 90 ? 3 : 0;
   itens.push({
     label: 'Uso do cartão de crédito',
     pts: ptsCartao,
     max: 20,
-    icon: pctCartao <= 20 ? '✅' : pctCartao <= 40 ? '🟡' : '🔴',
+    icon: limiteTotal === 0 ? '⚪' : pctCartao <= 20 ? '✅' : pctCartao <= 40 ? '🟡' : '🔴',
     detalhe: limiteTotal > 0 ? `${pctCartao.toFixed(0)}% do limite usado` : 'Sem limite cadastrado',
   });
 

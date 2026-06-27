@@ -112,7 +112,7 @@
     <div class="dash-full" id="blocoContasWrap" style="display:none">
       <div class="dash-block">
         <div class="dash-block-header">
-          <h2>🏦 Saldo das Contas</h2>
+          <h2>Saldo das Contas</h2>
           <a href="./accounts.html" class="btn btn-secondary compact" style="font-size:11px">Gerenciar</a>
         </div>
         <div class="dash-block-body" id="blocoContas" style="padding:0"></div>
@@ -123,7 +123,7 @@
     <div class="dash-full">
       <div class="dash-block">
         <div class="dash-block-header">
-          <h2>📈 Previsão de Saldo do Mês</h2>
+          <h2>Previsão de Saldo do Mês</h2>
           <div class="previsao-nav">
             <button type="button" id="btnPrevisaoAnterior" title="Mês anterior" aria-label="Mês anterior">‹</button>
             <span id="previsaoMesLabel">—</span>
@@ -166,71 +166,88 @@
           <a href="./movements.html" class="btn btn-secondary compact" style="font-size:11px">Ver pendentes</a>
         </div>
         <div class="dash-block-body" id="blocoAlertas">
-          <p class="block-loading">Carregando...</p>
+          <div class="skeleton-list">
+            <div class="skeleton-row"></div>
+            <div class="skeleton-row"></div>
+            <div class="skeleton-row"></div>
+          </div>
         </div>
       </div>
       <div class="dash-block">
         <div class="dash-block-header">
-          <h2>💳 Próximas faturas</h2>
+          <h2>Próximas faturas</h2>
           <a href="./card-bills.html" class="btn btn-secondary compact" style="font-size:11px">Ver todas</a>
         </div>
         <div class="dash-block-body" id="blocoFaturas">
-          <p class="block-loading">Carregando...</p>
+          <div class="skeleton-list">
+            <div class="skeleton-row"></div>
+            <div class="skeleton-row"></div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Grid 2 colunas: pizza + orçamento -->
-    <div class="dash-grid">
+    <!-- Seção colapsável: Análise do Mês -->
+    <div class="dash-block" style="margin-bottom:16px">
+      <div class="dash-block-header" style="cursor:pointer" onclick="window.toggleBloco('analiseBody','analiseToggle')">
+        <h2>Análise do Mês</h2>
+        <span id="analiseToggle" style="color:var(--muted);font-size:16px;transition:transform .2s">▾</span>
+      </div>
+      <div id="analiseBody">
 
-      <!-- Despesas por categoria -->
-      <div class="dash-block">
-        <div class="dash-block-header">
-          <h2>🍕 Despesas por Categoria</h2>
-          <a href="./movements.html?tipo=despesa" class="btn btn-secondary compact" style="font-size:11px">Ver todas</a>
+        <!-- Grid 2 colunas: pizza + orçamento -->
+        <div class="dash-grid" style="padding:0 0 0 0">
+
+          <!-- Despesas por categoria -->
+          <div class="dash-block" style="border:none;background:transparent">
+            <div class="dash-block-header">
+              <h2>Despesas por Categoria</h2>
+              <a href="./movements.html?tipo=despesa" class="btn btn-secondary compact" style="font-size:11px">Ver todas</a>
+            </div>
+            <div class="dash-block-body" id="blocoPizza">
+              <div class="skeleton-list"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+            </div>
+          </div>
+
+          <!-- Saúde do orçamento -->
+          <div class="dash-block" style="border:none;background:transparent">
+            <div class="dash-block-header">
+              <h2>Orçamento</h2>
+              <a href="./budgets.html" class="btn btn-secondary compact" style="font-size:11px">Gerenciar</a>
+            </div>
+            <div class="dash-block-body" id="blocoOrcamento">
+              <div class="skeleton-list"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+            </div>
+          </div>
+
         </div>
-        <div class="dash-block-body" id="blocoPizza">
-          <p class="block-loading">Carregando...</p>
+
+        <!-- Grid 2 colunas: metas + receita líquida -->
+        <div class="dash-grid">
+
+          <!-- Progresso de metas -->
+          <div class="dash-block" style="border:none;background:transparent">
+            <div class="dash-block-header">
+              <h2>🎯 Metas</h2>
+              <a href="./goals.html" class="btn btn-secondary compact" style="font-size:11px">Gerenciar</a>
+            </div>
+            <div class="dash-block-body" id="blocoMetas">
+              <div class="skeleton-list"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+            </div>
+          </div>
+
+          <!-- Receita líquida recorrente -->
+          <div class="dash-block" style="border:none;background:transparent">
+            <div class="dash-block-header">
+              <h2>Receita Recorrente</h2>
+            </div>
+            <div class="dash-block-body" id="blocoReceitaLiquida">
+              <div class="skeleton-list"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+            </div>
+          </div>
+
         </div>
       </div>
-
-      <!-- Saúde do orçamento -->
-      <div class="dash-block">
-        <div class="dash-block-header">
-          <h2>📊 Saúde do Orçamento</h2>
-          <a href="./budgets.html" class="btn btn-secondary compact" style="font-size:11px">Gerenciar</a>
-        </div>
-        <div class="dash-block-body" id="blocoOrcamento">
-          <p class="block-loading">Carregando...</p>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Grid 2 colunas: metas + receita líquida -->
-    <div class="dash-grid">
-
-      <!-- Progresso de metas -->
-      <div class="dash-block">
-        <div class="dash-block-header">
-          <h2>🎯 Metas</h2>
-          <a href="./goals.html" class="btn btn-secondary compact" style="font-size:11px">Gerenciar</a>
-        </div>
-        <div class="dash-block-body" id="blocoMetas">
-          <p class="block-loading">Carregando...</p>
-        </div>
-      </div>
-
-      <!-- Receita líquida recorrente -->
-      <div class="dash-block">
-        <div class="dash-block-header">
-          <h2>💼 Receita Líquida Recorrente</h2>
-        </div>
-        <div class="dash-block-body" id="blocoReceitaLiquida">
-          <p class="block-loading">Carregando...</p>
-        </div>
-      </div>
-
     </div>
 
     <!-- Previsão IA de Fluxo de Caixa -->
@@ -271,7 +288,7 @@
     <div class="dash-full">
       <div class="dash-block">
         <div class="dash-block-header">
-          <h2>💸 Últimos Lançamentos</h2>
+          <h2>Últimos Lançamentos</h2>
           <a href="./movements.html" class="btn btn-secondary compact" style="font-size:11px">Ver todos</a>
         </div>
         <div class="dash-block-body" id="ultimosLancamentos" style="padding:0">
@@ -304,6 +321,21 @@
     icon.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
     localStorage.setItem('finzen_ia_' + bodyId, collapsed ? 'closed' : 'open');
   };
+
+  // Iniciar bloco Análise do Mês: aberto por padrão (estado salvo no localStorage)
+  (['analiseBody'].concat(['cfaiBody', 'anaiBody'])).forEach(bodyId => {
+    const iconId = bodyId === 'analiseBody' ? 'analiseToggle' : bodyId === 'cfaiBody' ? 'cfaiToggle' : 'anaiToggle';
+    const body = document.getElementById(bodyId);
+    const icon = document.getElementById(iconId);
+    if(!body || !icon) return;
+    const estado = localStorage.getItem('finzen_ia_' + bodyId);
+    if(bodyId === 'analiseBody'){
+      if(estado === 'closed'){
+        body.classList.add('ia-body-collapsed');
+        icon.style.transform = 'rotate(-90deg)';
+      }
+    }
+  });
 
   // Iniciar blocos de IA sempre fechados por padrão
   ['cfaiBody', 'anaiBody'].forEach(bodyId => {

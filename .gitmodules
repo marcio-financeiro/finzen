@@ -1,0 +1,3 @@
+[submodule ".claude/skills/_laws-of-ux"]
+	path = .claude/skills/_laws-of-ux
+	url = https://github.com/keysjoao/laws-of-ux-skills.git

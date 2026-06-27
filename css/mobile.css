@@ -115,7 +115,8 @@
     gap:3px;
     color:var(--muted);
     font-size:10px;
-    padding:4px 2px;
+    padding:8px 2px 6px;
+    min-height:44px;
     border-radius:0;
   }
 

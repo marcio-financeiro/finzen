@@ -304,6 +304,18 @@ function updateFormVisibility(){
   fillInvoices();
   updatePreview();
   updateExchangePreview();
+
+  const hint = el('formStepHint');
+  if(hint){
+    const hints = {
+      '':             'Selecione o tipo para ver os campos',
+      'receita':      'Informe conta, categoria e valor',
+      'despesa':      method === 'cartao' ? 'Informe cartão, parcelas e categoria' : 'Informe conta, categoria e valor',
+      'transferencia':'Selecione conta origem e destino',
+      'cambio':       'Informe contas e taxa de câmbio',
+    };
+    hint.textContent = hints[type] ?? '';
+  }
 }
 
 function calculateCardValues(){
