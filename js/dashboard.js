@@ -623,13 +623,22 @@ function renderTendencia(dados){
   const barAreaHeight = barAreaBottom - barAreaTop;
   const colW = W / dados.length;
   const barW = colW * 0.46;
-  const maxTotal = Math.max(...dados.map(d => d.total), previsaoReceitasRec, 1);
-  const escalaY = v => barAreaBottom - (v / maxTotal) * barAreaHeight;
+
+  // Detecta mês fora de escala (ex: mês de importação inicial de dados) e evita
+  // que ele esmague a visualização dos demais — escala pelo 2º maior valor e
+  // corta visualmente a barra do outlier, mantendo o rótulo com o valor real.
+  const totaisDesc = dados.map(d => d.total).sort((a,b) => b-a);
+  const [maior, segundoMaior] = totaisDesc;
+  const outlier  = segundoMaior > 0 && maior > segundoMaior * 1.8;
+  const maxTotal = Math.max(outlier ? segundoMaior : maior, previsaoReceitasRec, 1);
+  const escalaY  = v => barAreaBottom - (Math.min(v, maxTotal) / maxTotal) * barAreaHeight;
 
   const barras = dados.map((d,i) => {
     const x             = i*colW + (colW-barW)/2;
-    const hComprometido = (d.comprometido/maxTotal)*barAreaHeight;
-    const hVariavel     = (d.variavel/maxTotal)*barAreaHeight;
+    const estourou      = d.total > maxTotal;
+    const fatorCorte    = estourou ? maxTotal / d.total : 1;
+    const hComprometido = (d.comprometido/maxTotal)*barAreaHeight*fatorCorte;
+    const hVariavel     = (d.variavel/maxTotal)*barAreaHeight*fatorCorte;
     const hLivre        = ((d.livre||0)/maxTotal)*barAreaHeight;
     const yComprometido = barAreaBottom - hComprometido;
     const yVariavel     = yComprometido - hVariavel;
@@ -644,6 +653,7 @@ function renderTendencia(dados){
       <rect x="${x}" y="${yComprometido}" width="${barW}" height="${hComprometido}" fill="${fillComprometido}" rx="3"/>
       ${!d.projetado && hVariavel>0 ? `<rect x="${x}" y="${yVariavel}" width="${barW}" height="${hVariavel}" fill="var(--danger)" rx="3"/>` : ''}
       ${hLivre>0 ? `<rect x="${x}" y="${yLivre}" width="${barW}" height="${hLivre}" fill="var(--success)" opacity=".5" rx="3"/>` : ''}
+      ${estourou ? `<line x1="${x}" y1="${barAreaTop}" x2="${x+barW}" y2="${barAreaTop}" stroke="var(--bg-root)" stroke-width="2.5" stroke-dasharray="3 2"/>` : ''}
       ${destaque ? `<rect x="${x-2.5}" y="${yTopo-2.5}" width="${barW+5}" height="${barAreaBottom-yTopo+5}" fill="none" stroke="var(--accent)" stroke-width="1.5" rx="5"/>` : ''}
       <text x="${x+barW/2}" y="${yGasto-8}" text-anchor="middle" font-size="10" font-weight="700" fill="${destaque?'var(--accent)':'var(--muted)'}">${d.projetado?'~':''}${fmtBarra(d.total)}</text>
       <text x="${x+barW/2}" y="${barAreaBottom+16}" text-anchor="middle" font-size="10" font-weight="${destaque?800:600}" fill="${destaque?'var(--accent)':'var(--muted)'}">${mesAbrev}${destaque?' •':''}</text>
