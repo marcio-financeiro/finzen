@@ -60,14 +60,14 @@ function aplicarClasse(el, valor){
 // Paleta de cores para pizza
 const CORES = ['#f59e0b','#22c55e','#f59e0b','#ef4444','#7c5cfc','#06b6d4','#f97316','#ec4899','#84cc16','#8b5cf6'];
 
-// ── Navegação de mês — card "Previsão de Saldo do Mês" ─
-const MESES_NOMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const PREVISAO_MIN_OFFSET = -12; // até 12 meses no passado
-const PREVISAO_MAX_OFFSET = 6;   // até 6 meses no futuro
-let previsaoOffset = 0;
+// ── Navegação de janela — card "Tendência de Gastos" ──
+const MESES_NOMES  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MESES_ABREV  = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const TENDENCIA_MESES    = 5;   // meses exibidos na janela (barras)
+const TENDENCIA_MIN_BASE = -12; // início da janela não pode passar de 12 meses atrás
+const TENDENCIA_MAX_BASE = 6 - (TENDENCIA_MESES - 1); // fim da janela não pode passar de 6 meses à frente
+let previsaoBaseOffset = -1;    // início da janela: 1 mês atrás até 3 meses à frente
 let previsaoCarregando = false;
-let previsaoBase = null;        // dados do mês atual, calculados em carregarDashboard()
-let previsaoSaldoFimAtual = 0;  // saldo previsto fim do mês atual (ponto de partida p/ meses futuros)
 let previsaoReceitasRec = 0;    // receitas fixas/mês (igual ao card Receita Líquida Recorrente)
 let previsaoDespesasRec = 0;    // despesas fixas/mês
 
@@ -174,9 +174,8 @@ async function carregarDashboard(){
     // ── Receita líquida recorrente ───────────────────
     renderReceitaLiquida(recorrentes||[]);
 
-    // ── Previsão de saldo do mês ────────────────────
-    previsaoBase = { saldoAtual: totalSaldo, receitasPagas: receitas, despesasPagas: despesas, txPendentes: pendentesRestantesMes||[], faturasCartao: totalFaturas };
-    renderPrevisao(totalSaldo, receitas, despesas, pendentesRestantesMes||[], totalFaturas);
+    // ── Tendência de gastos (comprometido x variável x projetado) ──
+    carregarTendencia(previsaoBaseOffset);
 
     // ── Últimos lançamentos ──────────────────────────
     renderUltimos(ultimosLanc||[], ultimosCartao||[]);
@@ -552,221 +551,147 @@ function renderReceitaLiquida(recorrentes){
   `;
 }
 
-// ── Previsão saldo do mês ─────────────────────────────
-function renderPrevisao(saldoAtual, receitasPagas, despesasPagas, txPendentes, faturasCartao){
-  // Saldo inicial = saldo atual - resultado já registrado no mês
-  const resultadoAtual = receitasPagas - despesasPagas;
-  const saldoInicial   = saldoAtual - resultadoAtual;
+// ── Tendência de gastos (5 meses: passado/atual reais + futuro projetado) ──
+function fmtBarra(v){ return 'R$ ' + Math.round(v).toLocaleString('pt-BR'); }
 
-  // Pendentes restantes no mês (receitas e despesas) + faturas de cartão abertas
-  const receitasPend  = txPendentes.filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
-  const despesasPend  = txPendentes.filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0);
-  const faturas       = Number(faturasCartao||0);
-  const saldoPrevisto = saldoAtual + receitasPend - despesasPend - faturas;
-  previsaoSaldoFimAtual = saldoPrevisto;
-
-  const diff = saldoPrevisto - saldoInicial;
-
-  // Linha do tempo: inicial → atual → previsto
-  const pontos3 = [saldoInicial, saldoAtual, saldoPrevisto];
-  const minV = Math.min(...pontos3);
-  const maxV = Math.max(...pontos3);
-  const range = maxV - minV || 1;
-  const W=500, H=56, pad=6;
-
-  const xs = [pad, W/2, W-pad];
-  const pts = pontos3.map((v,i) => {
-    const x = xs[i];
-    const y = H - pad - ((v-minV)/range)*(H-pad*2);
-    return `${x},${y}`;
-  }).join(' ');
-
-  const corLinha = saldoPrevisto >= saldoInicial ? '#22c55e' : '#ef4444';
-  const corAtual = saldoAtual >= 0 ? '#f59e0b' : '#ef4444';
-
-  // Posição Y do ponto atual para o círculo
-  const yAtual = H - pad - ((saldoAtual-minV)/range)*(H-pad*2);
-
-  const svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:56px;display:block;margin:12px 0;">
-    <polyline points="${pts}" fill="none" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="4 3"/>
-    <line x1="${pad}" y1="${H-pad-((saldoInicial-minV)/range)*(H-pad*2)}" x2="${W/2}" y2="${yAtual}"
-      stroke="${corLinha}" stroke-width="2.5" stroke-linecap="round"/>
-    <circle cx="${xs[0]}" cy="${H-pad-((saldoInicial-minV)/range)*(H-pad*2)}" r="5" fill="var(--surface)" stroke="#f59e0b" stroke-width="2"/>
-    <circle cx="${xs[1]}" cy="${yAtual}" r="6" fill="${corAtual}" stroke="var(--surface)" stroke-width="2"/>
-    <circle cx="${xs[2]}" cy="${H-pad-((saldoPrevisto-minV)/range)*(H-pad*2)}" r="5" fill="var(--surface)" stroke="${corLinha}" stroke-width="2" stroke-dasharray="3 2"/>
-  </svg>`;
-
-  el('blocoPrevisao').innerHTML = `
-    <div class="previsao-grid">
-      <div class="previsao-kpi">
-        <span>Início do mês</span>
-        <strong class="${saldoInicial>=0?'positive':'negative'}">${fmt(saldoInicial)}</strong>
-      </div>
-      <div class="previsao-kpi">
-        <span>Saldo atual</span>
-        <strong class="${saldoAtual>=0?'positive':'negative'}" style="font-size:17px">${fmt(saldoAtual)}</strong>
-      </div>
-      <div class="previsao-kpi">
-        <span>Previsto fim do mês</span>
-        <strong class="${saldoPrevisto>=saldoInicial?'positive':'negative'}">${fmt(saldoPrevisto)}</strong>
-      </div>
-    </div>
-    ${svg}
-    <p class="muted" style="font-size:11px;text-align:center">
-      ${receitasPend>0?`+${fmt(receitasPend)} a receber `:''}${despesasPend>0?`−${fmt(despesasPend)} a pagar `:''}${faturas>0?`−${fmt(faturas)} faturas cartão`:''}
-    </p>
-  `;
+function atualizarNavTendencia(baseOffset, carregando){
+  const primeiro = mesComOffset(baseOffset);
+  const ultimo   = mesComOffset(baseOffset + TENDENCIA_MESES - 1);
+  const mPrimeiro = Number(primeiro.ref.split('-')[1]) - 1;
+  const [anoUltimo, mUltimoStr] = ultimo.ref.split('-');
+  el('previsaoMesLabel').textContent = `${MESES_ABREV[mPrimeiro]}–${MESES_ABREV[Number(mUltimoStr)-1]}/${anoUltimo.slice(2)}`;
+  el('btnPrevisaoAnterior').classList.toggle('is-disabled', carregando || baseOffset <= TENDENCIA_MIN_BASE);
+  el('btnPrevisaoProximo').classList.toggle('is-disabled', carregando || baseOffset >= TENDENCIA_MAX_BASE);
 }
 
-// ── Navegação do card "Previsão de Saldo do Mês" ──────
-function atualizarNavPrevisao(offset, carregando){
-  el('previsaoMesLabel').textContent = mesComOffset(offset).label;
-  el('btnPrevisaoAnterior').classList.toggle('is-disabled', carregando || offset <= PREVISAO_MIN_OFFSET);
-  el('btnPrevisaoProximo').classList.toggle('is-disabled', carregando || offset >= PREVISAO_MAX_OFFSET);
-}
-
-async function carregarPrevisaoMes(offset){
+async function carregarTendencia(baseOffset){
   if(previsaoCarregando) return;
-  if(offset === 0 && !previsaoBase) return; // mês atual ainda não carregou
-
   previsaoCarregando = true;
-  atualizarNavPrevisao(offset, true);
+  atualizarNavTendencia(baseOffset, true);
 
-  if(offset === 0){
-    renderPrevisao(previsaoBase.saldoAtual, previsaoBase.receitasPagas, previsaoBase.despesasPagas, previsaoBase.txPendentes, previsaoBase.faturasCartao);
-  } else {
-    el('blocoPrevisao').innerHTML = '<p class="muted" style="font-size:13px;text-align:center;padding:20px 0">Carregando...</p>';
-    if(offset < 0){
-      await carregarPrevisaoPassado(offset);
-    } else {
-      await carregarPrevisaoFuturo(offset);
-    }
+  try {
+    const meses    = Array.from({length:TENDENCIA_MESES}, (_,i) => ({ offset: baseOffset+i, ...mesComOffset(baseOffset+i) }));
+    const passados = meses.filter(m => m.offset <= 0);
+    const refs     = meses.map(m => m.ref);
+
+    const [{ data: parcelas }, { data: despesasReais }] = await Promise.all([
+      supabase.from('card_transactions').select('valor_parcela,fatura_referencia').eq('user_id',user.id).in('fatura_referencia', refs),
+      passados.length
+        ? supabase.from('transactions').select('amount,date').eq('user_id',user.id).eq('status','pago').eq('type','despesa').gte('date',passados[0].inicio).lte('date',passados[passados.length-1].fim)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const parcelasPorMes = {};
+    (parcelas||[]).forEach(p => { parcelasPorMes[p.fatura_referencia] = (parcelasPorMes[p.fatura_referencia]||0) + Number(p.valor_parcela||0); });
+
+    const despesasPorMes = {};
+    (despesasReais||[]).forEach(t => {
+      const ref = String(t.date).slice(0,7);
+      despesasPorMes[ref] = (despesasPorMes[ref]||0) + Number(t.amount||0);
+    });
+
+    // Comprometido = despesas fixas/mês (recorrentes) + parcelas de cartão do mês.
+    // Passado/atual: limitado ao total real gasto no mês; o restante é "Variável".
+    // Futuro: só existe a projeção do comprometido (não há como saber o variável ainda).
+    const dados = meses.map(m => {
+      const parcelasMes = parcelasPorMes[m.ref] || 0;
+      const fixoAprox    = previsaoDespesasRec + parcelasMes;
+      if(m.offset <= 0){
+        const total       = (despesasPorMes[m.ref]||0) + parcelasMes;
+        const comprometido = Math.min(fixoAprox, total);
+        const variavel      = Math.max(total - comprometido, 0);
+        return { ...m, comprometido, variavel, total, projetado:false };
+      }
+      return { ...m, comprometido: fixoAprox, variavel: 0, total: fixoAprox, projetado:true };
+    });
+
+    renderTendencia(dados);
+  } catch(err) {
+    console.error('[Dashboard:Tendencia]', err);
+    el('blocoPrevisao').innerHTML = '<p class="block-loading">Erro ao carregar tendência de gastos.</p>';
   }
 
   previsaoCarregando = false;
-  atualizarNavPrevisao(offset, false);
+  atualizarNavTendencia(baseOffset, false);
 }
 
-// Mês passado: dados reais (já fechados) — sem projeção
-async function carregarPrevisaoPassado(offset){
-  try {
-    const { inicio, fim, ref } = mesComOffset(offset);
-    const [
-      { data: txMes },
-      { data: parcelasMes },
-    ] = await Promise.all([
-      supabase.from('transactions').select('type,amount,status').eq('user_id',user.id).eq('status','pago').gte('date',inicio).lte('date',fim),
-      supabase.from('card_transactions').select('valor_parcela').eq('user_id',user.id).eq('fatura_referencia',ref),
-    ]);
-    const receitas   = (txMes||[]).filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
-    const despesasTx = (txMes||[]).filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0);
-    const faturas    = (parcelasMes||[]).reduce((s,p)=>s+Number(p.valor_parcela||0),0);
-    const despesas   = despesasTx + faturas;
-    renderPrevisaoPassado(receitas, despesas);
-  } catch(err) {
-    console.error('[Dashboard:Passado]', err);
-    el('blocoPrevisao').innerHTML = '<p class="block-loading">Erro ao carregar dados do mês.</p>';
-  }
-}
+function renderTendencia(dados){
+  const W = 500, H = 150;
+  const barAreaTop = 16, barAreaBottom = 118;
+  const barAreaHeight = barAreaBottom - barAreaTop;
+  const colW = W / dados.length;
+  const barW = colW * 0.46;
+  const maxTotal = Math.max(...dados.map(d => d.total), 1);
+  const escalaY = v => barAreaBottom - (v / maxTotal) * barAreaHeight;
 
-function renderPrevisaoPassado(receitas, despesas){
-  const resultado = receitas - despesas;
-  el('blocoPrevisao').innerHTML = `
-    <div class="previsao-grid">
-      <div class="previsao-kpi">
-        <span>Receitas do mês</span>
-        <strong class="positive">${fmt(receitas)}</strong>
-      </div>
-      <div class="previsao-kpi">
-        <span>Despesas do mês</span>
-        <strong class="negative">${fmt(despesas)}</strong>
-      </div>
-      <div class="previsao-kpi">
-        <span>Resultado do mês</span>
-        <strong class="${resultado>=0?'positive':'negative'}" style="font-size:17px">${fmt(resultado)}</strong>
-      </div>
-    </div>
-    <p class="muted" style="font-size:11px;text-align:center;margin-top:10px">
-      📅 Mês encerrado — valores já realizados (receitas, despesas e faturas de cartão pagas).
-    </p>
-  `;
-}
+  const barras = dados.map((d,i) => {
+    const x             = i*colW + (colW-barW)/2;
+    const hComprometido = (d.comprometido/maxTotal)*barAreaHeight;
+    const hVariavel     = (d.variavel/maxTotal)*barAreaHeight;
+    const yComprometido = barAreaBottom - hComprometido;
+    const yVariavel     = yComprometido - hVariavel;
+    const yTopo         = hVariavel > 0 ? yVariavel : yComprometido;
+    const destaque      = d.offset === 0;
+    const fillComprometido = d.projetado ? 'url(#tendHatch)' : 'var(--accent)';
+    const mesAbrev      = MESES_ABREV[Number(d.ref.split('-')[1])-1];
 
-// Mês futuro: previsão encadeada a partir do saldo previsto do mês atual
-async function carregarPrevisaoFuturo(offset){
-  try {
-    const inicioRange = mesComOffset(1).inicio;
-    const refInicial  = mesComOffset(1).ref;
-    const { fim: fimRange, ref: refAlvo } = mesComOffset(offset);
+    return `
+      <rect x="${x}" y="${yComprometido}" width="${barW}" height="${hComprometido}" fill="${fillComprometido}" rx="3"/>
+      ${!d.projetado && hVariavel>0 ? `<rect x="${x}" y="${yVariavel}" width="${barW}" height="${hVariavel}" fill="var(--color-expense)" rx="3"/>` : ''}
+      ${destaque ? `<rect x="${x-2.5}" y="${yTopo-2.5}" width="${barW+5}" height="${barAreaBottom-yTopo+5}" fill="none" stroke="var(--accent)" stroke-width="1.5" rx="5"/>` : ''}
+      <text x="${x+barW/2}" y="${escalaY(d.total)-8}" text-anchor="middle" font-size="10" font-weight="700" fill="${destaque?'var(--accent)':'var(--muted)'}">${d.projetado?'~':''}${fmtBarra(d.total)}</text>
+      <text x="${x+barW/2}" y="${barAreaBottom+16}" text-anchor="middle" font-size="10" font-weight="${destaque?800:600}" fill="${destaque?'var(--accent)':'var(--muted)'}">${mesAbrev}${destaque?' •':''}</text>
+    `;
+  }).join('');
 
-    const [
-      { data: parcelasFuturas },
-      { data: pendentesFuturos },
-    ] = await Promise.all([
-      supabase.from('card_transactions').select('valor_parcela,fatura_referencia').eq('user_id',user.id).in('status',['aberta','pendente']).gte('fatura_referencia',refInicial).lte('fatura_referencia',refAlvo),
-      supabase.from('transactions').select('type,amount,date').eq('user_id',user.id).eq('status','pendente').gte('date',inicioRange).lte('date',fimRange),
-    ]);
+  const pontosLinha = dados.map((d,i) => `${i*colW+colW/2},${escalaY(d.total)}`);
+  const idxAtual  = dados.findIndex(d => d.offset===0);
+  const linhaReal = pontosLinha.slice(0, idxAtual+1).join(' ');
+  const linhaProj = pontosLinha.slice(idxAtual).join(' ');
 
-    const faturasPorMes = {};
-    (parcelasFuturas||[]).forEach(p => {
-      faturasPorMes[p.fatura_referencia] = (faturasPorMes[p.fatura_referencia]||0) + Number(p.valor_parcela||0);
-    });
+  const marcadores = dados.map((d,i) => {
+    const cx = i*colW+colW/2, cy = escalaY(d.total);
+    if(d.offset===0) return `<circle cx="${cx}" cy="${cy}" r="4.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>`;
+    if(d.projetado)  return `<circle cx="${cx}" cy="${cy}" r="3" fill="var(--surface)" stroke="var(--muted)" stroke-width="1.5"/>`;
+    return `<circle cx="${cx}" cy="${cy}" r="3" fill="var(--muted)"/>`;
+  }).join('');
 
-    const pendentesPorMes = {};
-    (pendentesFuturos||[]).forEach(t => {
-      const refMes = String(t.date).slice(0,7);
-      if(!pendentesPorMes[refMes]) pendentesPorMes[refMes] = { receita:0, despesa:0 };
-      pendentesPorMes[refMes][t.type] = (pendentesPorMes[refMes][t.type]||0) + Number(t.amount||0);
-    });
-
-    let saldoFim = previsaoSaldoFimAtual;
-    let saldoInicio = saldoFim;
-    for(let i=1; i<=offset; i++){
-      const { ref } = mesComOffset(i);
-      const receitasPrev = previsaoReceitasRec + (pendentesPorMes[ref]?.receita||0);
-      const despesasPrev = previsaoDespesasRec + (pendentesPorMes[ref]?.despesa||0) + (faturasPorMes[ref]||0);
-      saldoInicio = saldoFim;
-      saldoFim    = saldoInicio + receitasPrev - despesasPrev;
-    }
-
-    renderPrevisaoFuturo(saldoInicio, saldoFim);
-  } catch(err) {
-    console.error('[Dashboard:Futuro]', err);
-    el('blocoPrevisao').innerHTML = '<p class="block-loading">Erro ao calcular previsão.</p>';
-  }
-}
-
-function renderPrevisaoFuturo(saldoInicio, saldoFim){
-  const pontos = [saldoInicio, saldoFim];
-  const minV = Math.min(...pontos);
-  const maxV = Math.max(...pontos);
-  const range = maxV - minV || 1;
-  const W=500, H=56, pad=6;
-  const xs = [pad, W-pad];
-  const corLinha = saldoFim >= saldoInicio ? '#22c55e' : '#ef4444';
-  const yInicio = H - pad - ((saldoInicio-minV)/range)*(H-pad*2);
-  const yFim    = H - pad - ((saldoFim-minV)/range)*(H-pad*2);
-
-  const svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:56px;display:block;margin:12px 0;">
-    <line x1="${xs[0]}" y1="${yInicio}" x2="${xs[1]}" y2="${yFim}"
-      stroke="${corLinha}" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="6 5"/>
-    <circle cx="${xs[0]}" cy="${yInicio}" r="5" fill="var(--surface)" stroke="${corLinha}" stroke-width="2" stroke-dasharray="3 2"/>
-    <circle cx="${xs[1]}" cy="${yFim}" r="5" fill="var(--surface)" stroke="${corLinha}" stroke-width="2" stroke-dasharray="3 2"/>
+  const svg = `<svg viewBox="0 0 ${W} ${H}" class="tendencia-svg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="tendHatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+        <rect width="6" height="6" fill="var(--accent)" opacity=".22"/>
+        <line x1="0" y1="0" x2="0" y2="6" stroke="var(--accent)" stroke-width="2" opacity=".45"/>
+      </pattern>
+    </defs>
+    <polyline points="${linhaReal}" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+    <polyline points="${linhaProj}" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 3"/>
+    ${barras}
+    ${marcadores}
   </svg>`;
 
+  const atual = dados.find(d => d.offset===0);
+  const pctComprometido = atual && atual.total>0 ? Math.round(atual.comprometido/atual.total*100) : 0;
+  const corPct = pctComprometido>80 ? 'var(--color-expense)' : pctComprometido>60 ? '#f59e0b' : '#22c55e';
+
+  const primeiro = dados[0], ultimo = dados[dados.length-1];
+  const subiu = ultimo.total >= primeiro.total;
+  const mesInicial = MESES_ABREV[Number(primeiro.ref.split('-')[1])-1];
+  const mesFinal    = MESES_ABREV[Number(ultimo.ref.split('-')[1])-1];
+  const tendenciaTxt = primeiro.total>0
+    ? `Projeção ${subiu?'sobe':'cai'} de ${fmt(primeiro.total)} (${mesInicial}) para ${fmt(ultimo.total)} (${mesFinal}).`
+    : '';
+
   el('blocoPrevisao').innerHTML = `
-    <div class="previsao-grid" style="grid-template-columns:1fr 1fr">
-      <div class="previsao-kpi">
-        <span>Início previsto</span>
-        <strong class="${saldoInicio>=0?'positive':'negative'}">${fmt(saldoInicio)}</strong>
-      </div>
-      <div class="previsao-kpi">
-        <span>Previsto fim do mês</span>
-        <strong class="${saldoFim>=saldoInicio?'positive':'negative'}">${fmt(saldoFim)}</strong>
-      </div>
-    </div>
     ${svg}
-    <p class="previsao-disclaimer">📊 Previsão — baseada em receitas/despesas fixas e parcelas de cartão já agendadas. Os valores reais podem variar.</p>
+    <div class="tendencia-legend">
+      <span><i style="background:var(--accent)"></i> Comprometido</span>
+      <span><i style="background:var(--color-expense)"></i> Variável</span>
+      <span><i class="hatch"></i> Projetado</span>
+    </div>
+    <div class="tendencia-insight">
+      <p>Já são <strong style="color:${corPct}">${pctComprometido}%</strong> comprometidos este mês.</p>
+      ${tendenciaTxt ? `<p class="muted">${tendenciaTxt}</p>` : ''}
+    </div>
   `;
 }
 
@@ -932,18 +857,17 @@ function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investiment
   el('blocoScore').style.display = 'flex';
 }
 
-// ── Listeners de navegação — Previsão de Saldo do Mês ─
+// ── Listeners de navegação — Tendência de Gastos ──────
 el('btnPrevisaoAnterior').addEventListener('click', () => {
-  if(previsaoOffset <= PREVISAO_MIN_OFFSET) return;
-  previsaoOffset -= 1;
-  carregarPrevisaoMes(previsaoOffset);
+  if(previsaoBaseOffset <= TENDENCIA_MIN_BASE) return;
+  previsaoBaseOffset -= 1;
+  carregarTendencia(previsaoBaseOffset);
 });
 el('btnPrevisaoProximo').addEventListener('click', () => {
-  if(previsaoOffset >= PREVISAO_MAX_OFFSET) return;
-  previsaoOffset += 1;
-  carregarPrevisaoMes(previsaoOffset);
+  if(previsaoBaseOffset >= TENDENCIA_MAX_BASE) return;
+  previsaoBaseOffset += 1;
+  carregarTendencia(previsaoBaseOffset);
 });
-atualizarNavPrevisao(previsaoOffset, false);
 
 carregarDashboard();
 initAssistantBar(user.id).catch(() => {});

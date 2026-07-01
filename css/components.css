@@ -513,6 +513,27 @@ input:-webkit-autofill:active{
 }
 .previsao-svg{ width:100%;height:40px; }
 
+/* ── Tendência de gastos (barras Comprometido/Variável/Projetado) ── */
+.tendencia-svg{ width:100%;height:150px;display:block; }
+.tendencia-legend{
+  display:flex;gap:14px;justify-content:center;flex-wrap:wrap;
+  margin-top:2px;font-size:11px;color:var(--muted);
+}
+.tendencia-legend i{
+  display:inline-block;width:9px;height:9px;border-radius:2px;
+  margin-right:4px;vertical-align:middle;
+}
+.tendencia-legend i.hatch{
+  background:repeating-linear-gradient(45deg,var(--accent) 0 2px,transparent 2px 4px);
+  opacity:.7;
+}
+.tendencia-insight{
+  margin-top:12px;padding:10px 12px;border-radius:10px;
+  background:var(--surface);border:1px solid var(--border);
+}
+.tendencia-insight p{ margin:0;font-size:12px;line-height:1.5; }
+.tendencia-insight p:first-child{ font-weight:700;margin-bottom:2px; }
+
 /* ── Alertas ── */
 .alerta-item{
   display:flex;align-items:center;gap:10px;
