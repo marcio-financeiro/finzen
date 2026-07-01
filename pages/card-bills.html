@@ -56,6 +56,17 @@
     background:var(--accent);
     color:#fff;
   }
+  .bill-badge-paga{
+    padding:4px 10px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:800;
+    background:rgba(34,197,94,.15);
+    color:var(--success,#22c55e);
+  }
+  .bill-card.paga{
+    border-color:rgba(34,197,94,.35);
+  }
   .bill-card-name{ font-weight:800; font-size:.95rem; }
   .bill-card-count{ color:var(--muted); font-size:.83rem; margin-top:2px; }
 
@@ -114,6 +125,7 @@
     font-size:13px;
   }
   .bill-pay-bar .btn{ flex-shrink:0; margin:0; }
+  .bill-pay-bar.paga{ background:rgba(34,197,94,.06); }
 
   /* ── Seção futuros ── */
   .bills-section-title{
@@ -171,6 +183,12 @@
         <select id="filtroCartao">
           <option value="">Todos os cartões</option>
         </select>
+      </div>
+      <div class="bills-filter" style="padding-top:0">
+        <label style="margin:0;color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap">Pesquisar fatura de um mês</label>
+        <input type="month" id="filtroMesPesquisa">
+        <button type="button" class="btn btn-secondary compact" id="btnPesquisarMes">Pesquisar</button>
+        <button type="button" class="btn compact" id="btnLimparPesquisa" style="display:none">Voltar</button>
       </div>
       <div id="mensagemFatura" class="message" style="padding:0 18px 14px"></div>
     </section>
