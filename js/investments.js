@@ -6,6 +6,7 @@ import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
 import { DEFAULT_USD_BRL, formatPercent, formatUSD, getUsdBrlRate, saveUsdBrlRate, toNumber } from './services/financeService.js';
+import { ensureDailySnapshot } from './services/patrimonySnapshot.js';
 
 // ─────────────────────────────────────────────
 // AUTH
@@ -1672,6 +1673,7 @@ await carregarAtivos();
 await carregarPesos();
 renderizarTudo();
 await carregarTotalDividendos();
+await ensureDailySnapshot(supabase, user);
 await renderizarTabelaRentabilidade();
 await renderizarGraficoEvolucao();
 await atualizarCotacoes(true);
