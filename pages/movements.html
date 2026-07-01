@@ -77,6 +77,11 @@
     padding:8px 12px;
     font-size:13px;
   }
+  .ff-month-filter select{
+    width:auto;
+    padding:8px 12px;
+    font-size:13px;
+  }
 
   /* ── Lista desktop / mobile ── */
   .ff-desktop-table{ display:block; }
@@ -409,10 +414,14 @@
       <div class="panel-header">
         <h2>Movimentações</h2>
         <div class="ff-month-filter">
+          <select id="filterCategory">
+            <option value="">Todas categorias</option>
+          </select>
           <input type="month" id="filterMonth">
           <button type="button" class="btn btn-secondary compact" id="btnClearFilter">Tudo</button>
         </div>
       </div>
+      <p id="filterCategoryTotal" class="muted" style="padding:0 18px;font-size:13px;display:none"></p>
       <div id="movementList" class="table-wrap">
         <p class="muted" style="padding:18px">Carregando...</p>
       </div>

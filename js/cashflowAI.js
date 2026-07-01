@@ -70,10 +70,11 @@ export async function coletarContexto(userId) {
       .eq('mes_referencia', anoMes),
 
     supabase.from('card_transactions')
-      .select('descricao,valor_parcela,valor_total,parcela_atual,total_parcelas,fatura_referencia,credit_cards:card_id(nome),categories:category_id(nome,icon)')
+      .select('descricao,valor_parcela,valor_total,parcela_atual,parcelas,fatura_referencia,credit_cards:card_id(nome),categories:category_id(nome,icon)')
       .eq('user_id', userId)
       .eq('status', 'aberta')
-      .order('fatura_referencia', { ascending: false })
+      .gte('fatura_referencia', anoMes)
+      .order('fatura_referencia', { ascending: true })
       .limit(50),
   ]);
 
@@ -149,11 +150,11 @@ export async function coletarContexto(userId) {
           descricao: c.descricao,
           valor: Number(c.valor_parcela||0),
           categoria: c.categories?.nome || 'Sem categoria',
-          parcela: c.total_parcelas > 1 ? `${c.parcela_atual}/${c.total_parcelas}` : null,
+          parcela: c.parcelas > 1 ? `${c.parcela_atual}/${c.parcelas}` : null,
         });
         grupos[ref].total += Number(c.valor_parcela||0);
       });
-      return Object.values(grupos).sort((a,b) => b.fatura.localeCompare(a.fatura)).slice(0,3);
+      return Object.values(grupos).sort((a,b) => a.fatura.localeCompare(b.fatura)).slice(0,3);
     })(),
     gastosPorCategoria: (() => {
       const grupos = {};

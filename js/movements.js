@@ -38,6 +38,8 @@ const cashFlowMonthList = el('cashFlowMonthListFinZen');
 const upcomingRecurringList = el('upcomingRecurringListFinZen');
 const filterMonth      = el('filterMonth');
 const btnClearFilter   = el('btnClearFilter');
+const filterCategory      = el('filterCategory');
+const filterCategoryTotal = el('filterCategoryTotal');
 
 const groups = {
   paymentMethod:    el('paymentMethodGroup'),
@@ -409,6 +411,10 @@ async function loadData(){
   accounts   = acc.data  || [];
   cards      = card.data || [];
   categories = cat.data  || [];
+
+  const categoriasOrdenadas = [...categories].sort((a,b) => a.nome.localeCompare(b.nome));
+  filterCategory.innerHTML = '<option value="">Todas categorias</option>' +
+    categoriasOrdenadas.map(c => `<option value="${c.id}">${c.icon || ''} ${c.nome}</option>`).join('');
 
   fillSelect(movementAccount, accounts, a => `${a.nome} (${formatCurrency(a.saldo_atual||0,a.currency||'BRL')})`);
   fillSelect(fromAccount,     accounts, a => `${a.nome} (${formatCurrency(a.saldo_atual||0,a.currency||'BRL')})`);
@@ -1021,8 +1027,9 @@ async function loadUpcomingRecurring(){
 // LISTA DE MOVIMENTAÇÕES (com filtro de mês)
 // ─────────────────────────────────────────────
 async function loadMovements(){
-  const monthFilter = filterMonth.value; // "2026-06" ou vazio
-  const limit = monthFilter ? 200 : 25;
+  const monthFilter    = filterMonth.value; // "2026-06" ou vazio
+  const categoryFilter = filterCategory.value; // id da categoria ou vazio
+  const limit = (monthFilter || categoryFilter) ? 200 : 25;
 
   // Build date range when filter is active
   let dateGte = null, dateLte = null;
@@ -1058,7 +1065,15 @@ async function loadMovements(){
     cardQuery = cardQuery.gte('data_compra',dateGte).lte('data_compra',dateLte);
   }
 
-  const [transactions, transfers, cardTx] = await Promise.all([txQuery, trQuery, cardQuery]);
+  if(categoryFilter){
+    txQuery   = txQuery.eq('category_id',categoryFilter);
+    cardQuery = cardQuery.eq('category_id',categoryFilter);
+  }
+
+  // Transferências não têm categoria — não entram em resultados filtrados por categoria
+  const [transactions, transfers, cardTx] = await Promise.all([
+    txQuery, categoryFilter ? Promise.resolve({data:[]}) : trQuery, cardQuery,
+  ]);
 
   const rows = [];
 
@@ -1096,6 +1111,15 @@ async function loadMovements(){
   });
 
   rows.sort((a,b) => String(b.date).localeCompare(String(a.date)));
+
+  if(categoryFilter){
+    const total = rows.reduce((s,r) => s + Number(r.value||0), 0);
+    const nomeCategoria = filterCategory.options[filterCategory.selectedIndex]?.textContent || '';
+    filterCategoryTotal.style.display = '';
+    filterCategoryTotal.textContent = `${nomeCategoria}: ${rows.length} lançamento${rows.length===1?'':'s'} · total ${formatCurrency(total,'BRL')}`;
+  } else {
+    filterCategoryTotal.style.display = 'none';
+  }
 
   if(!rows.length){
     movementList.innerHTML = '<p class="muted" style="padding:18px">Nenhuma movimentação encontrada.</p>';
@@ -1296,8 +1320,10 @@ btnSaveMovement.addEventListener('click', saveMovement);
 btnCancelEdit.addEventListener('click', cancelEdit);
 
 filterMonth.addEventListener('change', loadMovements);
+filterCategory.addEventListener('change', loadMovements);
 btnClearFilter.addEventListener('click', () => {
   filterMonth.value = '';
+  filterCategory.value = '';
   loadMovements();
 });
 
