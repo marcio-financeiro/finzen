@@ -458,11 +458,17 @@ async function renderizarDesempenho(){
 // ─────────────────────────────────────────────
 async function renderizarTabelaRentabilidade(){
   const cont=el('tabelaRentabilidade');
-  const {data,error}=await supabase
-    .from('patrimony_history')
-    .select('reference_month,investments_total')
-    .eq('user_id',user.id)
-    .order('reference_month',{ascending:true});
+  const [{data,error},{data:movs}]=await Promise.all([
+    supabase
+      .from('patrimony_history')
+      .select('reference_month,investments_total')
+      .eq('user_id',user.id)
+      .order('reference_month',{ascending:true}),
+    supabase
+      .from('investment_transactions')
+      .select('data_movimento,tipo_movimento,valor_total,moeda')
+      .eq('user_id',user.id)
+  ]);
 
   if(error||!data?.length){
     cont.innerHTML='<p class="muted">Nenhum histórico disponível. Salve um snapshot mensal para ver a evolução.</p>';
@@ -474,7 +480,16 @@ async function renderizarTabelaRentabilidade(){
   data.forEach(r=>{ map[r.reference_month.substring(0,7)]=toNumber(r.investments_total); });
   const allKeys=Object.keys(map).sort();
 
-  // Retorno mês a mês (compara com mês calendário anterior)
+  // Aportes líquidos (compra - venda) por mês, convertidos para BRL
+  const netFlow={};
+  (movs||[]).forEach(m=>{
+    const key=m.data_movimento.substring(0,7);
+    const valorBRL=(m.moeda||'BRL')==='USD'?toNumber(m.valor_total)*dolarAtual:toNumber(m.valor_total);
+    const sinal=m.tipo_movimento==='venda'?-1:1;
+    netFlow[key]=(netFlow[key]||0)+sinal*valorBRL;
+  });
+
+  // Retorno mês a mês (compara com mês calendário anterior, descontando aportes/retiradas do mês)
   const returns={};
   allKeys.forEach((key,i)=>{
     if(i===0){ returns[key]=null; return; }
@@ -483,7 +498,8 @@ async function renderizarTabelaRentabilidade(){
     const [cy,cm]=key.split('-').map(Number);
     const isPriorMonth=(cy*12+cm)===(py*12+pm+1);
     if(!isPriorMonth||map[prevKey]<=0){ returns[key]=null; return; }
-    returns[key]=(map[key]-map[prevKey])/map[prevKey];
+    const aporte=netFlow[key]||0;
+    returns[key]=(map[key]-map[prevKey]-aporte)/map[prevKey];
   });
 
   // Fator acumulado correndo
