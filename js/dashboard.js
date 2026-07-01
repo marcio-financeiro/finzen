@@ -3,6 +3,7 @@ import { initAssistantBar } from './assistantBar.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { emailService } from './emailService.js';
+import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
@@ -70,6 +71,10 @@ let previsaoBaseOffset = -1;    // início da janela: 1 mês atrás até 3 meses
 let previsaoCarregando = false;
 let previsaoReceitasRec = 0;    // receitas fixas/mês (igual ao card Receita Líquida Recorrente)
 let previsaoDespesasRec = 0;    // despesas fixas/mês
+let dolarAtual = 5.15;          // cotação USD/BRL — contas em dólar (ex: Nomad) convertem por este valor
+
+// Soma o valor de uma transação já convertido pra BRL, conforme a moeda da conta
+function valorBRL(t){ return convertToBRL(t.amount, t.accounts?.currency || 'BRL', dolarAtual); }
 
 function mesComOffset(offset){
   const d = hoje();
@@ -92,6 +97,8 @@ async function carregarDashboard(){
     const nextD  = new Date(hoje().getFullYear(), hoje().getMonth()+1, 1);
     const refProximo = `${nextD.getFullYear()}-${String(nextD.getMonth()+1).padStart(2,'0')}`;
 
+    try { dolarAtual = await getUsdBrlRate(user.id); } catch(_) {}
+
     const [
       { data: contas },
       { data: transacoesMes },
@@ -109,23 +116,29 @@ async function carregarDashboard(){
       { data: parcelasMesAll },
     ] = await Promise.all([
       supabase.from('accounts').select('id,nome,currency,saldo_atual,color').eq('user_id',user.id).eq('active',true),                                                                                                          // contas
-      supabase.from('transactions').select('type,amount,status,date,category_id,categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),                                              // transacoesMes
+      supabase.from('transactions').select('type,amount,status,date,category_id,accounts:account_id(currency),categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),                  // transacoesMes
       supabase.from('card_transactions').select('valor_parcela,fatura_referencia,status,card_id,category_id').eq('user_id',user.id).in('status',['aberta','pendente']).in('fatura_referencia',[ref,refProximo]),               // parcelasMes (atual+próximo, abertas)
       supabase.from('transactions').select('id,description,amount,date,type,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date', (() => { const d=new Date(hoje()); d.setDate(d.getDate()+7); return d.toISOString().split('T')[0]; })()).order('date',{ascending:true}).limit(5), // transacoesPendentes
       supabase.from('budgets').select('*,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',ref),                                                                                                   // orcamentos
       supabase.from('goals').select('*').eq('user_id',user.id).eq('ativo',true).order('data_alvo',{ascending:true}).limit(5),                                                                                                  // metas
-      supabase.from('transactions').select('type,amount,recurrence_frequency').eq('user_id',user.id).eq('is_recurring',true).eq('recurrence_active',true),                                                                     // recorrentes
+      supabase.from('transactions').select('type,amount,recurrence_frequency,accounts:account_id(currency)').eq('user_id',user.id).eq('is_recurring',true).eq('recurrence_active',true),                                        // recorrentes
       supabase.from('transactions').select('id,type,amount,description,date,status,created_at,accounts:account_id(nome,currency),categories:category_id(nome,icon)').eq('user_id',user.id).order('created_at',{ascending:false}).limit(8), // ultimosLanc
       supabase.from('categories').select('id,nome,icon,cor').eq('user_id',user.id),                                                                                                                                            // categorias
       supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date',ultimoDiaMes()),                                 // pendentesRestantesMes
       supabase.from('credit_cards').select('id,nome,vencimento_dia').eq('user_id',user.id).eq('ativo',true),                                                                                                                   // cartoes
       supabase.from('card_transactions').select('id,descricao,valor_total,data_compra,status,created_at,credit_cards:card_id(nome),categories:category_id(nome,icon)').eq('user_id',user.id).eq('parcela_atual',1).order('created_at',{ascending:false}).limit(8), // ultimosCartao
-      supabase.from('transactions').select('type,amount,status').eq('user_id',user.id).eq('status','pago').gte('date',primeiroDiaMesAnterior()).lte('date',ultimoDiaMesAnterior()),                                             // txMesAnterior
+      supabase.from('transactions').select('type,amount,status,accounts:account_id(currency)').eq('user_id',user.id).eq('status','pago').gte('date',primeiroDiaMesAnterior()).lte('date',ultimoDiaMesAnterior()),                // txMesAnterior
       supabase.from('card_transactions').select('valor_parcela,category_id').eq('user_id',user.id).eq('fatura_referencia',ref),                                                                                                // parcelasMesAll (todos status, para orçamento)
     ]);
 
     // ── KPIs ─────────────────────────────────────────
-    const totalSaldo = (contas||[]).filter(c=>(c.currency||'BRL')==='BRL').reduce((s,c)=>s+Number(c.saldo_atual||0),0);
+    // Converte para BRL na origem — contas em dólar (ex: Nomad) não ficam de fora
+    // nem entram misturadas sem conversão nos totais abaixo.
+    (transacoesMes||[]).forEach(t => { t.amount = valorBRL(t); });
+    (txMesAnterior||[]).forEach(t => { t.amount = valorBRL(t); });
+    (recorrentes||[]).forEach(t => { t.amount = valorBRL(t); });
+
+    const totalSaldo = (contas||[]).reduce((s,c)=>s+convertToBRL(c.saldo_atual, c.currency||'BRL', dolarAtual),0);
     const tx = transacoesMes||[];
     const pagas = tx.filter(t=>t.status==='pago');
     const receitas = pagas.filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
@@ -593,7 +606,7 @@ async function carregarTendencia(baseOffset){
     const [{ data: parcelas }, { data: despesasReais }] = await Promise.all([
       supabase.from('card_transactions').select('valor_parcela,fatura_referencia').eq('user_id',user.id).in('fatura_referencia', refs),
       passados.length
-        ? supabase.from('transactions').select('amount,date').eq('user_id',user.id).eq('status','pago').eq('type','despesa').gte('date',passados[0].inicio).lte('date',passados[passados.length-1].fim)
+        ? supabase.from('transactions').select('amount,date,accounts:account_id(currency)').eq('user_id',user.id).eq('status','pago').eq('type','despesa').gte('date',passados[0].inicio).lte('date',passados[passados.length-1].fim)
         : Promise.resolve({ data: [] }),
     ]);
 
@@ -603,7 +616,7 @@ async function carregarTendencia(baseOffset){
     const despesasPorMes = {};
     (despesasReais||[]).forEach(t => {
       const ref = String(t.date).slice(0,7);
-      despesasPorMes[ref] = (despesasPorMes[ref]||0) + Number(t.amount||0);
+      despesasPorMes[ref] = (despesasPorMes[ref]||0) + valorBRL(t);
     });
 
     // Comprometido = despesas fixas/mês (recorrentes) + parcelas de cartão do mês.
