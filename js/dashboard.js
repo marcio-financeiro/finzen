@@ -637,7 +637,7 @@ function renderTendencia(dados){
 
     return `
       <rect x="${x}" y="${yComprometido}" width="${barW}" height="${hComprometido}" fill="${fillComprometido}" rx="3"/>
-      ${!d.projetado && hVariavel>0 ? `<rect x="${x}" y="${yVariavel}" width="${barW}" height="${hVariavel}" fill="var(--color-expense)" rx="3"/>` : ''}
+      ${!d.projetado && hVariavel>0 ? `<rect x="${x}" y="${yVariavel}" width="${barW}" height="${hVariavel}" fill="var(--danger)" rx="3"/>` : ''}
       ${destaque ? `<rect x="${x-2.5}" y="${yTopo-2.5}" width="${barW+5}" height="${barAreaBottom-yTopo+5}" fill="none" stroke="var(--accent)" stroke-width="1.5" rx="5"/>` : ''}
       <text x="${x+barW/2}" y="${escalaY(d.total)-8}" text-anchor="middle" font-size="10" font-weight="700" fill="${destaque?'var(--accent)':'var(--muted)'}">${d.projetado?'~':''}${fmtBarra(d.total)}</text>
       <text x="${x+barW/2}" y="${barAreaBottom+16}" text-anchor="middle" font-size="10" font-weight="${destaque?800:600}" fill="${destaque?'var(--accent)':'var(--muted)'}">${mesAbrev}${destaque?' •':''}</text>
@@ -671,7 +671,7 @@ function renderTendencia(dados){
 
   const atual = dados.find(d => d.offset===0);
   const pctComprometido = atual && atual.total>0 ? Math.round(atual.comprometido/atual.total*100) : 0;
-  const corPct = pctComprometido>80 ? 'var(--color-expense)' : pctComprometido>60 ? '#f59e0b' : '#22c55e';
+  const corPct = pctComprometido>80 ? 'var(--danger)' : pctComprometido>60 ? '#f59e0b' : '#22c55e';
 
   const primeiro = dados[0], ultimo = dados[dados.length-1];
   const subiu = ultimo.total >= primeiro.total;
@@ -685,7 +685,7 @@ function renderTendencia(dados){
     ${svg}
     <div class="tendencia-legend">
       <span><i style="background:var(--accent)"></i> Comprometido</span>
-      <span><i style="background:var(--color-expense)"></i> Variável</span>
+      <span><i style="background:var(--danger)"></i> Variável</span>
       <span><i class="hatch"></i> Projetado</span>
     </div>
     <div class="tendencia-insight">
