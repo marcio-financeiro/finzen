@@ -848,19 +848,11 @@ async function salvarAtivo(){
       msg('mensagemAtivo','Ativo atualizado.','success');
       limparFormAtivo();
     }else{
-      // Registrar transação
-      await supabase.from('investment_transactions').insert({
-        user_id:user.id, ticker, tipo_ativo:tipo,
-        tipo_movimento:operacao, quantidade:qtd,
-        preco_unitario:preco, valor_total:valorTotal,
-        moeda, account_id:contaId,
-        exchange_rate:moeda==='USD'?dolarAtual:null,
-        data_movimento:data, observacao:obs,
-      });
-
-      // Atualizar/criar posição
+      // Atualizar/criar posição primeiro (precisamos do investment_id pra registrar a transação)
       const {data:existing}=await supabase.from('investments').select('*')
         .eq('user_id',user.id).eq('ativo',true).eq('ticker',ticker).eq('moeda',moeda).maybeSingle();
+
+      let investmentId;
 
       if(operacao==='compra'){
         if(existing){
@@ -869,24 +861,40 @@ async function salvarAtivo(){
           await supabase.from('investments').update({
             nome:nome||existing.nome, tipo, quantidade:novaQtd, preco_medio:novoPM,
           }).eq('id',existing.id).eq('user_id',user.id);
+          investmentId = existing.id;
         }else{
-          await supabase.from('investments').insert({
+          const {data:novo,error:erroNovo}=await supabase.from('investments').insert({
             user_id:user.id,ticker,nome,tipo,moeda,
             quantidade:qtd,preco_medio:preco,cotacao_atual:preco,
             corretora:conta.nome,exchange_rate:moeda==='USD'?dolarAtual:null,ativo:true,
-          });
+          }).select('id').single();
+          if(erroNovo) throw erroNovo;
+          investmentId = novo.id;
         }
       }else{
         // Venda — reduz posição
-        if(existing){
-          const novaQtd=toNumber(existing.quantidade)-qtd;
-          if(novaQtd<=0){
-            await supabase.from('investments').update({ativo:false}).eq('id',existing.id).eq('user_id',user.id);
-          }else{
-            await supabase.from('investments').update({quantidade:novaQtd}).eq('id',existing.id).eq('user_id',user.id);
-          }
+        if(!existing){
+          msg('mensagemAtivo',`Você não possui ${ticker} para vender.`,'warning'); return;
         }
+        const novaQtd=toNumber(existing.quantidade)-qtd;
+        if(novaQtd<=0){
+          await supabase.from('investments').update({ativo:false}).eq('id',existing.id).eq('user_id',user.id);
+        }else{
+          await supabase.from('investments').update({quantidade:novaQtd}).eq('id',existing.id).eq('user_id',user.id);
+        }
+        investmentId = existing.id;
       }
+
+      // Registrar transação
+      const {error:erroTx}=await supabase.from('investment_transactions').insert({
+        user_id:user.id, investment_id:investmentId, ticker, tipo, tipo_ativo:tipo,
+        tipo_movimento:operacao, quantidade:qtd,
+        preco_unitario:preco, preco, valor_total:valorTotal,
+        moeda, account_id:contaId,
+        exchange_rate:moeda==='USD'?dolarAtual:null,
+        data_movimento:data, observacao:obs,
+      });
+      if(erroTx) throw erroTx;
 
       // Debitar/creditar conta
       const novoSaldo = operacao==='compra'
