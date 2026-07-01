@@ -1057,12 +1057,20 @@ async function loadMovements(){
       data_compra,fatura_referencia,status,
       credit_cards:card_id(nome),
       categories:category_id(nome,icon)`)
-    .eq('user_id',user.id).order('created_at',{ascending:false}).limit(monthFilter ? 200 : 25);
+    .eq('user_id',user.id);
+
+  if(monthFilter){
+    // Filtra pela fatura que vence neste mês (não pela data da compra) —
+    // cada parcela em aberto conta como uma conta a pagar no mês.
+    cardQuery = cardQuery.eq('fatura_referencia',monthFilter)
+      .order('fatura_referencia',{ascending:false}).limit(200);
+  } else {
+    cardQuery = cardQuery.order('created_at',{ascending:false}).limit(categoryFilter ? 200 : 25);
+  }
 
   if(dateGte){
-    txQuery   = txQuery.gte('date',dateGte).lte('date',dateLte);
-    trQuery   = trQuery.gte('date',dateGte).lte('date',dateLte);
-    cardQuery = cardQuery.gte('data_compra',dateGte).lte('data_compra',dateLte);
+    txQuery = txQuery.gte('date',dateGte).lte('date',dateLte);
+    trQuery = trQuery.gte('date',dateGte).lte('date',dateLte);
   }
 
   if(categoryFilter){
@@ -1098,16 +1106,28 @@ async function loadMovements(){
   }));
 
   (cardTx.data||[]).forEach(c => {
-    if(c.parcela_atual !== 1) return;
     const isRefund = Number(c.valor_total||0) < 0;
-    rows.push({
-      source:'card', id:c.id, date:c.data_compra, kind:'cartão',
-      desc:c.descricao, account:c.credit_cards?.nome||'-',
-      category:isRefund?'↩️ Estorno':`${c.categories?.icon||''} ${c.categories?.nome||'-'}`,
-      value:Math.abs(c.valor_total||0), sign:isRefund?'+':'-',
-      status:`${c.parcelas}x · ${refName(c.fatura_referencia)}`,
-      isRecurring:false,
-    });
+    if(monthFilter){
+      // Uma linha por parcela que vence neste mês (não só a 1ª parcela da compra)
+      rows.push({
+        source:'card', id:c.id, date:`${c.fatura_referencia}-01`, kind:'cartão',
+        desc:c.descricao, account:c.credit_cards?.nome||'-',
+        category:isRefund?'↩️ Estorno':`${c.categories?.icon||''} ${c.categories?.nome||'-'}`,
+        value:Math.abs(c.valor_parcela||0), sign:isRefund?'+':'-',
+        status:c.parcelas>1?`parcela ${c.parcela_atual}/${c.parcelas}`:'à vista',
+        isRecurring:false,
+      });
+    } else {
+      if(c.parcela_atual !== 1) return;
+      rows.push({
+        source:'card', id:c.id, date:c.data_compra, kind:'cartão',
+        desc:c.descricao, account:c.credit_cards?.nome||'-',
+        category:isRefund?'↩️ Estorno':`${c.categories?.icon||''} ${c.categories?.nome||'-'}`,
+        value:Math.abs(c.valor_total||0), sign:isRefund?'+':'-',
+        status:`${c.parcelas}x · ${refName(c.fatura_referencia)}`,
+        isRecurring:false,
+      });
+    }
   });
 
   rows.sort((a,b) => String(b.date).localeCompare(String(a.date)));
