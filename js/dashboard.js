@@ -600,9 +600,11 @@ async function carregarTendencia(baseOffset){
         const total       = (despesasPorMes[m.ref]||0) + parcelasMes;
         const comprometido = Math.min(fixoAprox, total);
         const variavel      = Math.max(total - comprometido, 0);
-        return { ...m, comprometido, variavel, total, projetado:false };
+        const livre         = Math.max(previsaoReceitasRec - total, 0);
+        return { ...m, comprometido, variavel, livre, total, projetado:false };
       }
-      return { ...m, comprometido: fixoAprox, variavel: 0, total: fixoAprox, projetado:true };
+      const livre = Math.max(previsaoReceitasRec - fixoAprox, 0);
+      return { ...m, comprometido: fixoAprox, variavel: 0, livre, total: fixoAprox, projetado:true };
     });
 
     renderTendencia(dados);
@@ -621,16 +623,19 @@ function renderTendencia(dados){
   const barAreaHeight = barAreaBottom - barAreaTop;
   const colW = W / dados.length;
   const barW = colW * 0.46;
-  const maxTotal = Math.max(...dados.map(d => d.total), 1);
+  const maxTotal = Math.max(...dados.map(d => d.total), previsaoReceitasRec, 1);
   const escalaY = v => barAreaBottom - (v / maxTotal) * barAreaHeight;
 
   const barras = dados.map((d,i) => {
     const x             = i*colW + (colW-barW)/2;
     const hComprometido = (d.comprometido/maxTotal)*barAreaHeight;
     const hVariavel     = (d.variavel/maxTotal)*barAreaHeight;
+    const hLivre        = ((d.livre||0)/maxTotal)*barAreaHeight;
     const yComprometido = barAreaBottom - hComprometido;
     const yVariavel     = yComprometido - hVariavel;
-    const yTopo         = hVariavel > 0 ? yVariavel : yComprometido;
+    const yGasto        = hVariavel > 0 ? yVariavel : yComprometido;
+    const yLivre        = yGasto - hLivre;
+    const yTopo         = hLivre > 0 ? yLivre : yGasto;
     const destaque      = d.offset === 0;
     const fillComprometido = d.projetado ? 'url(#tendHatch)' : 'var(--accent)';
     const mesAbrev      = MESES_ABREV[Number(d.ref.split('-')[1])-1];
@@ -638,8 +643,9 @@ function renderTendencia(dados){
     return `
       <rect x="${x}" y="${yComprometido}" width="${barW}" height="${hComprometido}" fill="${fillComprometido}" rx="3"/>
       ${!d.projetado && hVariavel>0 ? `<rect x="${x}" y="${yVariavel}" width="${barW}" height="${hVariavel}" fill="var(--danger)" rx="3"/>` : ''}
+      ${hLivre>0 ? `<rect x="${x}" y="${yLivre}" width="${barW}" height="${hLivre}" fill="var(--success)" opacity=".5" rx="3"/>` : ''}
       ${destaque ? `<rect x="${x-2.5}" y="${yTopo-2.5}" width="${barW+5}" height="${barAreaBottom-yTopo+5}" fill="none" stroke="var(--accent)" stroke-width="1.5" rx="5"/>` : ''}
-      <text x="${x+barW/2}" y="${escalaY(d.total)-8}" text-anchor="middle" font-size="10" font-weight="700" fill="${destaque?'var(--accent)':'var(--muted)'}">${d.projetado?'~':''}${fmtBarra(d.total)}</text>
+      <text x="${x+barW/2}" y="${yGasto-8}" text-anchor="middle" font-size="10" font-weight="700" fill="${destaque?'var(--accent)':'var(--muted)'}">${d.projetado?'~':''}${fmtBarra(d.total)}</text>
       <text x="${x+barW/2}" y="${barAreaBottom+16}" text-anchor="middle" font-size="10" font-weight="${destaque?800:600}" fill="${destaque?'var(--accent)':'var(--muted)'}">${mesAbrev}${destaque?' •':''}</text>
     `;
   }).join('');
@@ -670,8 +676,13 @@ function renderTendencia(dados){
   </svg>`;
 
   const atual = dados.find(d => d.offset===0);
-  const pctComprometido = atual && atual.total>0 ? Math.round(atual.comprometido/atual.total*100) : 0;
+  const pctComprometido = previsaoReceitasRec>0
+    ? Math.round((atual?.comprometido||0)/previsaoReceitasRec*100)
+    : (atual && atual.total>0 ? Math.round(atual.comprometido/atual.total*100) : 0);
   const corPct = pctComprometido>80 ? 'var(--danger)' : pctComprometido>60 ? '#f59e0b' : '#22c55e';
+  const insightTxt = previsaoReceitasRec>0
+    ? `Já são <strong style="color:${corPct}">${pctComprometido}%</strong> da receita provisionada (${fmt(previsaoReceitasRec)}) comprometidos este mês.`
+    : `Já são <strong style="color:${corPct}">${pctComprometido}%</strong> comprometidos este mês.`;
 
   const primeiro = dados[0], ultimo = dados[dados.length-1];
   const subiu = ultimo.total >= primeiro.total;
@@ -686,10 +697,11 @@ function renderTendencia(dados){
     <div class="tendencia-legend">
       <span><i style="background:var(--accent)"></i> Comprometido</span>
       <span><i style="background:var(--danger)"></i> Variável</span>
+      ${previsaoReceitasRec>0 ? `<span><i style="background:var(--success);opacity:.5"></i> Livre</span>` : ''}
       <span><i class="hatch"></i> Projetado</span>
     </div>
     <div class="tendencia-insight">
-      <p>Já são <strong style="color:${corPct}">${pctComprometido}%</strong> comprometidos este mês.</p>
+      <p>${insightTxt}</p>
       ${tendenciaTxt ? `<p class="muted">${tendenciaTxt}</p>` : ''}
     </div>
   `;
