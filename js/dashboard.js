@@ -165,8 +165,20 @@ async function carregarDashboard(){
     // ── Pizza de despesas ─────────────────────────────
     renderPizza(pagas.filter(t=>t.type==='despesa'));
 
-    // ── Saúde do orçamento ───────────────────────────
-    renderOrcamento(orcamentos||[], pagas.filter(t=>t.type==='despesa'), parcelasMesAll||[]);
+    // ── Saúde do orçamento (herda do mês anterior se este mês ainda não tem nada configurado) ──
+    let orcamentosEfetivos = orcamentos||[];
+    let orcamentoMesHerdado = null;
+    if(!orcamentosEfetivos.length){
+      const { data: orcAnteriores } = await supabase.from('budgets')
+        .select('*,categories:category_id(nome,icon),mes_referencia')
+        .eq('user_id',user.id).lt('mes_referencia',ref)
+        .order('mes_referencia',{ascending:false}).limit(50);
+      if(orcAnteriores?.length){
+        orcamentoMesHerdado = orcAnteriores[0].mes_referencia;
+        orcamentosEfetivos  = orcAnteriores.filter(o=>o.mes_referencia===orcamentoMesHerdado);
+      }
+    }
+    renderOrcamento(orcamentosEfetivos, pagas.filter(t=>t.type==='despesa'), parcelasMesAll||[], orcamentoMesHerdado);
 
     // ── Metas ────────────────────────────────────────
     renderMetas(metas||[]);
@@ -430,12 +442,12 @@ function renderPizza(despesasMes){
 }
 
 // ── Orçamento ─────────────────────────────────────────
-function renderOrcamento(orcamentos, despesasMes, parcelasMes){
+function renderOrcamento(orcamentos, despesasMes, parcelasMes, mesHerdado){
   if(!orcamentos.length){
     el('blocoOrcamento').innerHTML = `
       <div style="text-align:center;padding:24px 16px">
         <div style="font-size:36px;margin-bottom:8px">📊</div>
-        <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhum orçamento configurado para este mês.</p>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhum orçamento configurado ainda.</p>
         <a href="./budgets.html" class="btn btn-secondary compact" style="font-size:12px">Configurar orçamento</a>
       </div>`;
     return;
@@ -451,6 +463,10 @@ function renderOrcamento(orcamentos, despesasMes, parcelasMes){
   });
 
   let html = '';
+  if(mesHerdado){
+    const [ay,am] = mesHerdado.split('-');
+    html += `<p class="muted" style="font-size:11px;margin:0 0 10px">↻ Herdado de ${MESES_ABREV[Number(am)-1]}/${ay.slice(2)} — <a href="./budgets.html">configure este mês</a> para personalizar.</p>`;
+  }
   orcamentos.forEach(orc => {
     const planejado = Number(orc.valor_planejado||0);
     const gasto = gastos[orc.category_id]||0;
