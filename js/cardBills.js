@@ -424,6 +424,20 @@ modalEl.addEventListener('click', (e) => {
   if (e.target === modalEl) window.fecharModalItem();
 });
 
+// ─── CATEGORIA PADRÃO PARA PAGAMENTO DE FATURA ─
+async function getCategoriaFaturaId() {
+  const existente = categorias.find(c => c.tipo === 'despesa' && c.nome.trim().toLowerCase() === 'fatura de cartão');
+  if (existente) return existente.id;
+
+  const { data, error } = await supabase.from('categories')
+    .insert({ user_id: user.id, nome: 'Fatura de Cartão', tipo: 'despesa', icon: '💳', ativo: true })
+    .select('id, nome, tipo').single();
+
+  if (error) { return null; }
+  categorias.push(data);
+  return data.id;
+}
+
 // ─── PAGAR FATURA ──────────────────────────────
 async function pagarFatura(key, contaId) {
   if (!contaId) { msg('Selecione uma conta para pagar.', 'warning'); return; }
@@ -437,10 +451,11 @@ async function pagarFatura(key, contaId) {
   msg('Registrando pagamento...');
 
   const descricao = `Fatura ${fatura.cartao} ${formatRef(fatura.referencia)}`;
+  const categoryId = await getCategoriaFaturaId();
   const { error: erroTx } = await supabase.from('transactions').insert({
     user_id:     user.id,
     account_id:  contaId,
-    category_id: null,
+    category_id: categoryId,
     type:        'despesa',
     amount:      Number(fatura.total.toFixed(2)),
     description: descricao,
