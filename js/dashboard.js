@@ -58,8 +58,16 @@ function aplicarClasse(el, valor){
   el.classList.add(valor>=0?'positive':'negative');
 }
 
-// Paleta de cores para pizza
-const CORES = ['#f59e0b','#22c55e','#f59e0b','#ef4444','#7c5cfc','#06b6d4','#f97316','#ec4899','#84cc16','#8b5cf6'];
+// Paleta categórica validada (8 tons distintos sob visão de cor e no fundo escuro do app)
+const CORES = ['#3987e5','#199e70','#c98500','#008300','#9085e9','#e66767','#d55181','#d95926'];
+
+// Cor fixa por categoria (hash do nome) quando ela não tem cor própria cadastrada —
+// evita que a cor mude de mês a mês só porque o ranking de gastos mudou
+function corParaCategoria(nome){
+  let hash = 0;
+  for(let i=0;i<nome.length;i++){ hash = (hash*31 + nome.charCodeAt(i)) >>> 0; }
+  return CORES[hash % CORES.length];
+}
 
 // ── Navegação de janela — card "Tendência de Gastos" ──
 const MESES_NOMES  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -402,7 +410,7 @@ function renderPizza(despesasMes, parcelasCartaoMes){
   if(!despesasMes.length && !(parcelasCartaoMes||[]).length){
     el('blocoPizza').innerHTML = `
       <div style="text-align:center;padding:24px 16px">
-        <div style="font-size:36px;margin-bottom:8px">🍕</div>
+        <div style="font-size:36px;margin-bottom:8px">📊</div>
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhuma despesa registrada este mês.</p>
         <a href="./movements.html?tipo=despesa" class="btn btn-secondary compact" style="font-size:12px">Lançar despesa</a>
       </div>`;
@@ -429,39 +437,25 @@ function renderPizza(despesasMes, parcelasCartaoMes){
   const items = Object.values(grupos).sort((a,b)=>b.total-a.total).slice(0,8);
   const total = items.reduce((s,i)=>s+i.total,0);
 
-  // SVG donut
-  const R=60, cx=70, cy=70, stroke=22;
-  const circ = 2*Math.PI*R;
-  let offset = 0;
-  const segmentos = items.map((item,i) => {
-    const pct = item.total/total;
-    const dash = pct*circ;
-    const seg = `<circle cx="${cx}" cy="${cy}" r="${R}"
-      fill="none" stroke="${item.cor||CORES[i%CORES.length]}" stroke-width="${stroke}"
-      stroke-dasharray="${dash} ${circ-dash}"
-      stroke-dashoffset="${-offset}"
-      transform="rotate(-90 ${cx} ${cy})"/>`;
-    offset += dash;
-    item._cor = item.cor||CORES[i%CORES.length];
-    return seg;
-  });
-
-  const svg = `<svg class="pizza-svg" width="140" height="140" viewBox="0 0 140 140">
-    ${segmentos.join('')}
-    <text x="${cx}" y="${cy-6}" text-anchor="middle" fill="var(--muted)" font-size="10" font-weight="700">TOTAL</text>
-    <text x="${cx}" y="${cy+10}" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="800">${fmt(total)}</text>
-  </svg>`;
-
-  const legenda = items.map(item => {
-    const pct = (item.total/total*100).toFixed(1);
-    return `<div class="pizza-item">
-      <span class="pizza-dot" style="background:${item._cor}"></span>
-      <span class="pizza-label">${item.icon} ${item.nome}</span>
-      <span class="pizza-pct">${pct}%</span>
+  // Barra por categoria — cor customizada da categoria ou, na falta dela,
+  // cor fixa derivada do nome (não muda de mês a mês conforme o ranking)
+  const linhas = items.map(item => {
+    const pct = total>0 ? (item.total/total*100) : 0;
+    const cor = item.cor || corParaCategoria(item.nome);
+    return `<div class="categoria-item">
+      <div class="categoria-row">
+        <span class="categoria-label">${item.icon} ${item.nome}</span>
+        <span class="categoria-valor">${fmt(item.total)} <span class="categoria-pct">(${pct.toFixed(1)}%)</span></span>
+      </div>
+      <div class="categoria-bar-wrap">
+        <div class="categoria-bar" style="width:${pct}%;background:${cor}"></div>
+      </div>
     </div>`;
   }).join('');
 
-  el('blocoPizza').innerHTML = `<div class="pizza-wrap">${svg}<div class="pizza-legend">${legenda}</div></div>`;
+  el('blocoPizza').innerHTML = `
+    <div class="categoria-total"><span>TOTAL</span><strong>${fmt(total)}</strong></div>
+    ${linhas}`;
 }
 
 // ── Orçamento ─────────────────────────────────────────
