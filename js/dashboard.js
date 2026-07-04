@@ -128,7 +128,7 @@ async function carregarDashboard(){
       supabase.from('credit_cards').select('id,nome,vencimento_dia').eq('user_id',user.id).eq('ativo',true),                                                                                                                   // cartoes
       supabase.from('card_transactions').select('id,descricao,valor_total,data_compra,status,created_at,credit_cards:card_id(nome),categories:category_id(nome,icon)').eq('user_id',user.id).eq('parcela_atual',1).order('created_at',{ascending:false}).limit(8), // ultimosCartao
       supabase.from('transactions').select('type,amount,status,accounts:account_id(currency)').eq('user_id',user.id).eq('status','pago').gte('date',primeiroDiaMesAnterior()).lte('date',ultimoDiaMesAnterior()),                // txMesAnterior
-      supabase.from('card_transactions').select('valor_parcela,category_id').eq('user_id',user.id).eq('fatura_referencia',ref),                                                                                                // parcelasMesAll (todos status, para orçamento)
+      supabase.from('card_transactions').select('valor_parcela,category_id,categories:category_id(nome,icon,cor)').eq('user_id',user.id).eq('fatura_referencia',ref),                                                            // parcelasMesAll (todos status, para orçamento + pizza)
     ]);
 
     // ── KPIs ─────────────────────────────────────────
@@ -176,7 +176,10 @@ async function carregarDashboard(){
     renderFaturas(cartoes||[], parcelasMes||[]);
 
     // ── Pizza de despesas ─────────────────────────────
-    renderPizza(pagas.filter(t=>t.type==='despesa'));
+    // Desmembra "Fatura de Cartão" nas categorias reais dos itens do cartão (mesmo critério do Orçamento: fatura_referencia do mês)
+    const catFatura = (categorias||[]).find(c => c.nome.trim().toLowerCase() === 'fatura de cartão');
+    const despesasSemFatura = pagas.filter(t => t.type==='despesa' && t.category_id !== catFatura?.id);
+    renderPizza(despesasSemFatura, parcelasMesAll||[]);
 
     // ── Saúde do orçamento (herda do mês anterior se este mês ainda não tem nada configurado) ──
     let orcamentosEfetivos = orcamentos||[];
@@ -395,8 +398,8 @@ function renderFaturas(cartoes, parcelasMes){
 }
 
 // ── Pizza ─────────────────────────────────────────────
-function renderPizza(despesasMes){
-  if(!despesasMes.length){
+function renderPizza(despesasMes, parcelasCartaoMes){
+  if(!despesasMes.length && !(parcelasCartaoMes||[]).length){
     el('blocoPizza').innerHTML = `
       <div style="text-align:center;padding:24px 16px">
         <div style="font-size:36px;margin-bottom:8px">🍕</div>
@@ -406,7 +409,7 @@ function renderPizza(despesasMes){
     return;
   }
 
-  // Agrupar por categoria
+  // Agrupar por categoria (transações normais + itens de fatura de cartão, desmembrados por categoria real)
   const grupos = {};
   despesasMes.forEach(t => {
     const nome = t.categories?.nome || 'Sem categoria';
@@ -414,6 +417,13 @@ function renderPizza(despesasMes){
     const cor  = t.categories?.cor;
     if(!grupos[nome]) grupos[nome] = { nome, icon, cor, total: 0 };
     grupos[nome].total += Number(t.amount||0);
+  });
+  (parcelasCartaoMes||[]).forEach(p => {
+    const nome = p.categories?.nome || 'Sem categoria';
+    const icon = p.categories?.icon || '';
+    const cor  = p.categories?.cor;
+    if(!grupos[nome]) grupos[nome] = { nome, icon, cor, total: 0 };
+    grupos[nome].total += Number(p.valor_parcela||0);
   });
 
   const items = Object.values(grupos).sort((a,b)=>b.total-a.total).slice(0,8);
