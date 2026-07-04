@@ -1386,3 +1386,12 @@ if(tipoParam){
   // Limpa o param da URL sem recarregar
   window.history.replaceState({}, '', window.location.pathname);
 }
+
+// Pré-filtrar por categoria via URL (clique no dashboard)
+const categoriaParam = urlParams.get('categoria');
+if(categoriaParam){
+  filterCategory.value = categoriaParam;
+  await loadMovements();
+  window.history.replaceState({}, '', window.location.pathname);
+  filterCategory.closest('section')?.scrollIntoView({behavior:'smooth', block:'start'});
+}

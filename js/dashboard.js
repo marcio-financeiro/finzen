@@ -423,14 +423,14 @@ function renderPizza(despesasMes, parcelasCartaoMes){
     const nome = t.categories?.nome || 'Sem categoria';
     const icon = t.categories?.icon || '';
     const cor  = t.categories?.cor;
-    if(!grupos[nome]) grupos[nome] = { nome, icon, cor, total: 0 };
+    if(!grupos[nome]) grupos[nome] = { nome, icon, cor, categoryId: t.category_id, total: 0 };
     grupos[nome].total += Number(t.amount||0);
   });
   (parcelasCartaoMes||[]).forEach(p => {
     const nome = p.categories?.nome || 'Sem categoria';
     const icon = p.categories?.icon || '';
     const cor  = p.categories?.cor;
-    if(!grupos[nome]) grupos[nome] = { nome, icon, cor, total: 0 };
+    if(!grupos[nome]) grupos[nome] = { nome, icon, cor, categoryId: p.category_id, total: 0 };
     grupos[nome].total += Number(p.valor_parcela||0);
   });
 
@@ -442,15 +442,17 @@ function renderPizza(despesasMes, parcelasCartaoMes){
   const linhas = items.map(item => {
     const pct = total>0 ? (item.total/total*100) : 0;
     const cor = item.cor || corParaCategoria(item.nome);
-    return `<div class="categoria-item">
+    const conteudo = `
       <div class="categoria-row">
         <span class="categoria-label">${item.icon} ${item.nome}</span>
         <span class="categoria-valor">${fmt(item.total)} <span class="categoria-pct">(${pct.toFixed(1)}%)</span></span>
       </div>
       <div class="categoria-bar-wrap">
         <div class="categoria-bar" style="width:${pct}%;background:${cor}"></div>
-      </div>
-    </div>`;
+      </div>`;
+    return item.categoryId
+      ? `<a class="categoria-item categoria-item-link" href="./movements.html?categoria=${item.categoryId}">${conteudo}</a>`
+      : `<div class="categoria-item">${conteudo}</div>`;
   }).join('');
 
   el('blocoPizza').innerHTML = `
