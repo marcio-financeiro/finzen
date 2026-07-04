@@ -299,7 +299,7 @@ function renderContas(contas) {
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;
         padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer"
-        onclick="location.href='./account-statement.html'">
+        onclick="location.href='./account-statement.html?conta=${c.id}'">
         <span style="display:flex;align-items:center;font-size:13px;font-weight:600">${icon}${c.nome}</span>
         <span style="font-size:13px;font-weight:800;color:${cor}">${val}</span>
       </div>`;
@@ -373,7 +373,7 @@ function renderFaturas(cartoes, parcelasMes){
     const targetRef = `${anoV}-${String(mesV).padStart(2,'0')}`;
     const total  = parcelasMes.filter(p=>p.card_id===cartao.id && p.fatura_referencia===targetRef).reduce((s,p)=>s+Number(p.valor_parcela||0),0);
 
-    faturas.push({ nome: cartao.nome, diaVenc: diaV, dataVenc, total, dias });
+    faturas.push({ id: cartao.id, nome: cartao.nome, diaVenc: diaV, dataVenc, total, dias });
   });
 
   if(!faturas.length){
@@ -389,7 +389,7 @@ function renderFaturas(cartoes, parcelasMes){
   el('blocoFaturas').innerHTML = faturas.sort((a,b)=>a.dias-b.dias).map(f => {
     const pillClass = f.dias === 0 ? 'urgente' : f.total === 0 ? 'pago' : 'pendente';
     const pillLabel = f.dias === 0 ? 'Vence hoje' : f.total === 0 ? 'Sem lançamentos' : 'Pendente';
-    return `<div class="invoice-row">
+    return `<div class="invoice-row" style="cursor:pointer" onclick="location.href='./card-bills.html?cartao=${f.id}'">
       <div class="invoice-icon">
         <svg><use href="#db-credit-card"/></svg>
       </div>

@@ -529,4 +529,13 @@ btnLimparPesquisa.addEventListener('click', () => { carregarFaturas(); });
 await carregarCartoes();
 await carregarContas();
 await carregarCategorias();
+
+// Pré-filtrar por cartão via URL (clique no dashboard)
+const urlParams = new URLSearchParams(window.location.search);
+const cartaoParam = urlParams.get('cartao');
+if(cartaoParam){
+  filtroCartao.value = cartaoParam;
+  window.history.replaceState({}, '', window.location.pathname);
+}
+
 await carregarFaturas();
