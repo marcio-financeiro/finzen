@@ -247,6 +247,13 @@ h3{
   50%{ opacity:.45 }
 }
 
+.kpi-loading{
+  color:transparent !important;
+  background:var(--surface-2,#1a1d2e);
+  border-radius:6px;
+  animation:loading-pulse 1.8s ease-in-out infinite;
+}
+
 .skeleton-list{ display:grid; gap:10px; }
 .skeleton-row{
   height:48px;

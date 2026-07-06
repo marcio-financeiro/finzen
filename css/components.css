@@ -124,6 +124,12 @@ textarea:focus{
   transform:translateY(-1px);
 }
 
+.btn:active{
+  opacity:.85;
+  transform:scale(.97);
+  transition:opacity .1s ease,transform .1s ease;
+}
+
 .btn.full{
   width:100%;
   margin-right:0;
@@ -410,6 +416,7 @@ input:-webkit-autofill:active{
   animation:fadeInUp .3s ease both;
 }
 .dash-kpi:hover{ transform:translateY(-2px);box-shadow:0 4px 16px rgba(245,158,11,.18); }
+.dash-kpi:active{ transform:scale(.97); transition:transform .1s ease; }
 .dash-kpi span{ font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px; }
 .dash-kpi strong{ font-size:20px;font-family:var(--font-mono);display:block;letter-spacing:-.03em; }
 
