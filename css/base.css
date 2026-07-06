@@ -1,5 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=DM+Mono:wght@400;500&display=swap');
 
+/* ── Transições nativas entre páginas (Chrome/Edge 126+, no-op nos demais) ── */
+@view-transition {
+  navigation: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
 :root{
   --bg:#07080f;
   --app-bg:#07080f;
