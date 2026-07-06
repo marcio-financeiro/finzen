@@ -159,6 +159,7 @@ async function carregarDashboard(){
     el('kpiDespesas').innerText  = fmt(despesas);
     el('kpiResultado').innerText = fmt(resultado);
     el('kpiFaturas').innerText   = fmt(totalFaturas);
+    ['kpiSaldo','kpiReceitas','kpiDespesas','kpiResultado','kpiFaturas'].forEach(id => el(id).classList.remove('kpi-loading'));
     aplicarClasse(el('kpiResultado'), resultado);
 
     // ── Ring cards (Stage 2) ─────────────────────────
@@ -240,6 +241,7 @@ async function carregarDashboard(){
     });
   } catch(err) {
     console.error('[Dashboard]', err);
+    ['kpiSaldo','kpiReceitas','kpiDespesas','kpiResultado','kpiFaturas'].forEach(id => el(id)?.classList.remove('kpi-loading'));
   }
 }
 

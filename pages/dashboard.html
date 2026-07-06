@@ -74,7 +74,7 @@
         <div class="kpi-ring" id="ringSaldo" style="--pct:0"><span id="ringSaldoPct">0%</span></div>
         <div class="ring-info">
           <span class="ring-lbl">Saldo total</span>
-          <span class="ring-val" id="kpiSaldo">R$ 0,00</span>
+          <span class="ring-val kpi-loading" id="kpiSaldo">R$ 0,00</span>
           <span class="delta neu" id="deltaSaldo">—</span>
         </div>
       </div>
@@ -82,7 +82,7 @@
         <div class="kpi-ring" id="ringReceitas" style="--pct:0"><span id="ringReceitasPct">0%</span></div>
         <div class="ring-info">
           <span class="ring-lbl">Receitas do mês</span>
-          <span class="ring-val" id="kpiReceitas">R$ 0,00</span>
+          <span class="ring-val kpi-loading" id="kpiReceitas">R$ 0,00</span>
           <span class="delta neu" id="deltaReceitas">—</span>
         </div>
       </div>
@@ -90,7 +90,7 @@
         <div class="kpi-ring" id="ringDespesas" style="--pct:0"><span id="ringDespesasPct">0%</span></div>
         <div class="ring-info">
           <span class="ring-lbl">Despesas do mês</span>
-          <span class="ring-val" id="kpiDespesas">R$ 0,00</span>
+          <span class="ring-val kpi-loading" id="kpiDespesas">R$ 0,00</span>
           <span class="delta neu" id="deltaDespesas">—</span>
         </div>
       </div>
@@ -100,11 +100,11 @@
     <div class="dash-kpi-grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px;">
       <div class="dash-kpi" onclick="location.href='./movements.html'">
         <span>Resultado do mês</span>
-        <strong id="kpiResultado">R$ 0,00</strong>
+        <strong class="kpi-loading" id="kpiResultado">R$ 0,00</strong>
       </div>
       <div class="dash-kpi" onclick="location.href='./card-bills.html'">
         <span>Faturas (mês atual)</span>
-        <strong id="kpiFaturas" class="negative">R$ 0,00</strong>
+        <strong id="kpiFaturas" class="negative kpi-loading">R$ 0,00</strong>
       </div>
     </div>
 
@@ -131,7 +131,7 @@
           </div>
         </div>
         <div class="dash-block-body" id="blocoPrevisao">
-          <p class="block-loading">Carregando...</p>
+          <div class="skeleton-list"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
         </div>
       </div>
     </div>
@@ -292,7 +292,7 @@
           <a href="./movements.html" class="btn btn-secondary compact" style="font-size:11px">Ver todos</a>
         </div>
         <div class="dash-block-body" id="ultimosLancamentos" style="padding:0">
-          <p class="block-loading" style="padding:16px">Carregando...</p>
+          <div class="skeleton-list" style="padding:16px"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
         </div>
       </div>
     </div>
