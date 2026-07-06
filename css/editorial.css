@@ -182,7 +182,7 @@ h1 {
   transition: background .15s ease;
 }
 .ring-card:hover { background: var(--surface-3); }
-.ring-card:active { background: var(--surface-3); transform: scale(.98); transition: transform .1s ease; }
+.ring-card:active { background: var(--surface-3); transform: scale(.95); transition: transform .12s ease, background .12s ease; }
 
 .kpi-ring {
   width: 64px; height: 64px;
