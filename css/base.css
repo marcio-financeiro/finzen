@@ -54,6 +54,37 @@
 
   --input-color:#ffffff;
   --hover-overlay:rgba(255,255,255,.04);
+
+  /* ── Escala de espaçamento (Fase 2 — Design System) ──
+     Base 4px. Estilos existentes não foram migrados ainda —
+     tokens ficam disponíveis para uso gradual nas próximas sub-fases. */
+  --space-1:4px;
+  --space-2:8px;
+  --space-3:12px;
+  --space-4:16px;
+  --space-5:24px;
+  --space-6:32px;
+  --space-7:48px;
+  --space-8:64px;
+
+  /* ── Escala tipográfica ── */
+  --text-xs:  11px;
+  --text-sm:  12px;
+  --text-base:13px;
+  --text-md:  14px;
+  --text-lg:  15px;
+  --text-xl:  18px;
+  --text-2xl: 22px;
+  --text-3xl: 28px;
+
+  --font-weight-normal:  400;
+  --font-weight-medium:  500;
+  --font-weight-semibold:600;
+  --font-weight-bold:    800;
+
+  --leading-tight:  1.1;
+  --leading-normal: 1.4;
+  --leading-relaxed:1.6;
 }
 
 /* ── Tema claro (Vyn Champagne) ── */
