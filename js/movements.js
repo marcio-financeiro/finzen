@@ -30,6 +30,7 @@ const movementInvoice  = el('movementInvoice');
 const movementStatus   = el('movementStatus');
 const movementRecurrence = el('movementRecurrence');
 const movementRecurrenceUntil = el('movementRecurrenceUntil');
+const movementRecurrenceNoEnd = el('movementRecurrenceNoEnd');
 const movementNotes    = el('movementNotes');
 const btnSaveMovement  = el('btnSaveMovement');
 const btnCancelEdit    = el('btnCancelEdit');
@@ -235,6 +236,11 @@ async function chooseRecurringDeleteScope(){
 // ─────────────────────────────────────────────
 function setDisplay(node, visible){
   if(node) node.style.display = visible ? '' : 'none';
+}
+
+function updateRecurrenceUntilState(){
+  movementRecurrenceUntil.disabled = movementRecurrenceNoEnd.checked;
+  if(movementRecurrenceNoEnd.checked) movementRecurrenceUntil.value = '';
 }
 
 function updateFormVisibility(){
@@ -443,7 +449,7 @@ async function saveAccountTransaction(description, amount, date, notes){
   const categoryId  = movementCategory.value || null;
   const status      = movementStatus.value;
   const recurrence  = movementRecurrence.value || 'nao';
-  const until       = movementRecurrenceUntil.value || null;
+  const until       = movementRecurrenceNoEnd.checked ? null : (movementRecurrenceUntil.value || null);
   const isRecurring = recurrence !== 'nao';
   const groupId     = isRecurring ? uuid() : null;
 
@@ -484,7 +490,7 @@ async function saveTransactionEdit(){
   const status      = movementStatus.value;
   const notes       = movementNotes.value.trim();
   const recurrence  = movementRecurrence.value || 'nao';
-  const until       = movementRecurrenceUntil.value || null;
+  const until       = movementRecurrenceNoEnd.checked ? null : (movementRecurrenceUntil.value || null);
   const isRecurring = recurrence !== 'nao';
 
   let scope = 'only';
@@ -644,6 +650,8 @@ async function editTransaction(id){
   movementStatus.value = data.status || 'pendente';
   movementRecurrence.value = data.is_recurring ? (data.recurrence_frequency || 'mensal') : 'nao';
   movementRecurrenceUntil.value = data.recurrence_until || '';
+  movementRecurrenceNoEnd.checked = Boolean(data.is_recurring && !data.recurrence_until);
+  updateRecurrenceUntilState();
   movementNotes.value = data.notes || '';
   updateFormVisibility();
 
@@ -1183,6 +1191,8 @@ function clearForm(){
   movementStatus.value = 'pago';
   movementRecurrence.value = 'nao';
   movementRecurrenceUntil.value = '';
+  movementRecurrenceNoEnd.checked = false;
+  updateRecurrenceUntilState();
   movementNotes.value = '';
   updateFormVisibility();
 }
@@ -1270,6 +1280,7 @@ movementInstallments.addEventListener('input', updatePreview);
 movementAmount.addEventListener('input', updatePreview);
 movementValueType.addEventListener('change', updatePreview);
 movementRecurrence.addEventListener('change', updateFormVisibility);
+movementRecurrenceNoEnd.addEventListener('change', updateRecurrenceUntilState);
 btnSaveMovement.addEventListener('click', saveMovement);
 btnCancelEdit.addEventListener('click', cancelEdit);
 
