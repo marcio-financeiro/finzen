@@ -20,7 +20,7 @@
 .off-tab{padding:10px 18px;border:none;background:transparent;color:var(--muted);
   font-weight:800;font-size:13px;cursor:pointer;border-bottom:3px solid transparent;
   transition:color .15s,border-color .15s;margin-bottom:-1px;}
-.off-tab.active{color:#f5a623;border-bottom-color:#f5a623;}
+.off-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
 .off-tab-content{display:none;padding:20px;}
 .off-tab-content.active{display:block;}
 
@@ -36,7 +36,7 @@
   padding:16px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start;
   transition:border-color .15s;cursor:pointer;
 }
-.off-ciclo-card:hover{border-color:#f5a623;}
+.off-ciclo-card:hover{border-color:var(--accent);}
 .off-ciclo-status{
   width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px;
 }
@@ -79,7 +79,7 @@
       <!-- Header -->
       <div style="padding:20px 20px 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
         <div>
-          <h1 style="margin:0;font-size:22px;">⚓ Offshore</h1>
+          <h1 style="margin:0;font-size:22px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><circle cx="12" cy="5" r="2"/><line x1="12" y1="7" x2="12" y2="21"/><path d="M5 13a7 7 0 0 0 14 0"/><line x1="5" y1="13" x2="3" y2="13"/><line x1="19" y1="13" x2="21" y2="13"/></svg>Offshore</h1>
           <p id="userEmail" class="muted" style="margin:2px 0 0;font-size:12px;"></p>
         </div>
         <button type="button" class="btn btn-secondary compact" id="btnVoltar">← Dashboard</button>
@@ -99,10 +99,10 @@
 
       <!-- Abas -->
       <div class="off-tabs">
-        <button class="off-tab active" data-tab="escala">📅 Escala</button>
-        <button class="off-tab" data-tab="certificacoes">📜 Certificações</button>
-        <button class="off-tab" data-tab="horas">⏱️ Horas Extras</button>
-        <button class="off-tab" data-tab="historico">🏭 Histórico</button>
+        <button class="off-tab active" data-tab="escala"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>Escala</button>
+        <button class="off-tab" data-tab="certificacoes"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 21l5-3 5 3-1.5-8.5"/></svg>Certificações</button>
+        <button class="off-tab" data-tab="horas"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15,14"/></svg>Horas Extras</button>
+        <button class="off-tab" data-tab="historico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M4 21V10l6-4 6 4v11"/><path d="M14 21v-7l6 3v4"/><line x1="9" y1="14" x2="9" y2="14"/><line x1="9" y1="17" x2="9" y2="17"/></svg>Histórico</button>
       </div>
 
       <!-- TAB: Escala -->
@@ -182,7 +182,7 @@
     <div class="form-group"><label>Observações</label><textarea id="cObs" rows="2"></textarea></div>
     <div id="msgCiclo" class="message" style="min-height:0;"></div>
     <div style="display:flex;gap:8px;margin-top:16px;">
-      <button class="btn btn-primary" id="btnSalvarCiclo">💾 Salvar</button>
+      <button class="btn btn-primary" id="btnSalvarCiclo"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>Salvar</button>
       <button class="btn btn-secondary" id="btnCancelarCiclo">Cancelar</button>
       <button class="btn btn-danger" id="btnExcluirCiclo" style="display:none;margin-left:auto;">Excluir</button>
     </div>
@@ -236,13 +236,13 @@
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
       <input type="checkbox" id="certNotifEmail" checked style="width:16px;height:16px;">
       <label for="certNotifEmail" style="margin:0;font-size:13px;font-weight:700;cursor:pointer;">
-        📧 Receber alerta por e-mail
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Receber alerta por e-mail
       </label>
     </div>
     <div class="form-group"><label>Observações</label><textarea id="certObs" rows="2"></textarea></div>
     <div id="msgCert" class="message" style="min-height:0;"></div>
     <div style="display:flex;gap:8px;margin-top:16px;">
-      <button class="btn btn-primary" id="btnSalvarCert">💾 Salvar</button>
+      <button class="btn btn-primary" id="btnSalvarCert"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>Salvar</button>
       <button class="btn btn-secondary" id="btnCancelarCert">Cancelar</button>
       <button class="btn btn-danger" id="btnExcluirCert" style="display:none;margin-left:auto;">Excluir</button>
     </div>
@@ -272,7 +272,7 @@
     <div class="form-group"><label>Descrição</label><input type="text" id="heDesc" placeholder="Ex: Trabalho noturno, emergência..."></div>
     <div id="msgHE" class="message" style="min-height:0;"></div>
     <div style="display:flex;gap:8px;margin-top:16px;">
-      <button class="btn btn-primary" id="btnSalvarHE">💾 Salvar</button>
+      <button class="btn btn-primary" id="btnSalvarHE"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>Salvar</button>
       <button class="btn btn-secondary" id="btnCancelarHE">Cancelar</button>
     </div>
   </div>

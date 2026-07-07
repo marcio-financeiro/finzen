@@ -141,10 +141,10 @@ function renderCiclos() {
       <div class="off-ciclo-info">
         <div class="off-ciclo-plat">${c.plataforma || 'Sem plataforma'}</div>
         <div class="off-ciclo-datas">
-          📅 ${fmtData(c.data_embarque)} → ${c.data_desembarque ? fmtData(c.data_desembarque) : 'Em andamento'}
+          ${fmtData(c.data_embarque)} → ${c.data_desembarque ? fmtData(c.data_desembarque) : 'Em andamento'}
           · ${dias} dias · ${c.regime || '—'}
         </div>
-        ${c.empresa ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">🏢 ${c.empresa}${c.contrato?' · OS: '+c.contrato:''}</div>` : ''}
+        ${c.empresa ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${c.empresa}${c.contrato?' · OS: '+c.contrato:''}</div>` : ''}
         <div class="off-ciclo-badges">
           <span class="badge" style="background:${cor}22;color:${cor};font-size:10px;">${c.status}</span>
         </div>
@@ -175,9 +175,9 @@ function renderCerts() {
     const avencer   = dias !== null && dias >= 0 && dias <= 90;
     const cor = vencida ? '#f04e4e' : avencer ? '#f5a623' : '#1ec86a';
     const label = vencida
-      ? `⛔ Vencida há ${Math.abs(dias)}d`
-      : dias === 0 ? '⚠️ Vence hoje!'
-      : dias !== null ? `✅ Vence em ${dias}d`
+      ? `Vencida há ${Math.abs(dias)}d`
+      : dias === 0 ? 'Vence hoje!'
+      : dias !== null ? `Vence em ${dias}d`
       : '—';
 
     return `<div class="cert-card" data-id="${c.id}">
@@ -231,7 +231,7 @@ function renderHE() {
         ${horas.map(h => `<tr>
           <td>${fmtData(h.data)}</td>
           <td><strong>${Number(h.horas_extras||0).toFixed(1)}h</strong></td>
-          <td>${h.sobreaviso ? '✅ Sim' : '—'}</td>
+          <td>${h.sobreaviso ? 'Sim' : '—'}</td>
           <td>${h.valor_hora ? fmt(h.valor_hora) : '—'}</td>
           <td>${h.valor_hora ? fmt(Number(h.horas_extras||0)*Number(h.valor_hora)) : '—'}</td>
           <td>${h.descricao || '—'}</td>
@@ -328,7 +328,7 @@ el('btnSalvarCiclo').addEventListener('click', async () => {
   const plat = el('cPlataforma').value.trim() || 'Offshore';
   const calPayload = {
     user_id     : user.id,
-    titulo      : `⚓ Embarque — ${plat}`,
+    titulo      : `Embarque — ${plat}`,
     tipo        : 'offshore',
     status      : payload.status === 'concluido' ? 'concluido' : 'pendente',
     data_inicio : payload.data_embarque,

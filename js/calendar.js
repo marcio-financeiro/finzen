@@ -26,18 +26,20 @@ let editandoId    = null;
 let googleEventId = null;   // google_event_id do evento sendo editado
 
 // ── Cores e ícones por tipo ───────────────────────────
+const svgIcon = path => `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0">${path}</svg>`;
+
 const TIPO_CONFIG = {
-  financeiro  : { icon:'💰', cor:'#4b84f3', label:'Financeiro'  },
-  tarefa      : { icon:'📋', cor:'#1ec86a', label:'Tarefa'      },
-  saude       : { icon:'🏥', cor:'#f04e4e', label:'Saúde'       },
-  offshore    : { icon:'⚓', cor:'#f5a623', label:'Offshore'    },
-  manutencao  : { icon:'🔧', cor:'#6ab04c', label:'Manutenção'  },
-  documento   : { icon:'📄', cor:'#7b5ce5', label:'Documento'   },
-  compromisso : { icon:'🎯', cor:'#22d3ee', label:'Compromisso' },
+  financeiro  : { icon:svgIcon('<circle cx="12" cy="12" r="9"/><path d="M9 15.5c.5 1 1.7 1.5 3 1.5 2 0 3.2-1 3.2-2.3 0-3-6-1.4-6-4.2 0-1.3 1.2-2.3 3-2.3 1.3 0 2.4.5 3 1.4"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/>'), cor:'#4b84f3', label:'Financeiro'  },
+  tarefa      : { icon:svgIcon('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 3h6v3H9z"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="16" y2="15"/>'), cor:'#1ec86a', label:'Tarefa'      },
+  saude       : { icon:svgIcon('<path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/>'), cor:'#f04e4e', label:'Saúde'       },
+  offshore    : { icon:svgIcon('<circle cx="12" cy="5" r="2"/><line x1="12" y1="7" x2="12" y2="21"/><path d="M5 13a7 7 0 0 0 14 0"/><line x1="5" y1="13" x2="3" y2="13"/><line x1="19" y1="13" x2="21" y2="13"/>'), cor:'#f5a623', label:'Offshore'    },
+  manutencao  : { icon:svgIcon('<path d="M21 7.5a4.5 4.5 0 0 1-5.9 4.28L9 18l-3-3 6.22-6.1A4.5 4.5 0 1 1 21 7.5z"/>'), cor:'#6ab04c', label:'Manutenção'  },
+  documento   : { icon:svgIcon('<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/>'), cor:'#7b5ce5', label:'Documento'   },
+  compromisso : { icon:svgIcon('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>'), cor:'#22d3ee', label:'Compromisso' },
 };
 
 function tipoCfg(tipo) {
-  return TIPO_CONFIG[tipo] || { icon:'📌', cor:'#6b7094', label: tipo };
+  return TIPO_CONFIG[tipo] || { icon:svgIcon('<circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/>'), cor:'#6b7094', label: tipo };
 }
 
 // ── Utilitários de data ───────────────────────────────
@@ -163,7 +165,7 @@ async function carregarEventosFinanceiros(dataInicio, dataFim) {
             const refFatura = `${ano}-${String(mes).padStart(2,'0')}`;
             evFinanc.push({
               id          : `fin-fat-${cartao.id}-${refFatura}`,
-              titulo      : `💳 Fatura ${cartao.nome}`,
+              titulo      : `Fatura ${cartao.nome}`,
               tipo        : 'financeiro',
               status      : 'pendente',
               data_inicio : dataVenc,
@@ -182,7 +184,7 @@ async function carregarEventosFinanceiros(dataInicio, dataFim) {
       const pct = m.valor_alvo > 0 ? Math.round(m.valor_atual / m.valor_alvo * 100) : 0;
       evFinanc.push({
         id          : `fin-meta-${m.id}`,
-        titulo      : `🏆 Meta: ${m.nome}`,
+        titulo      : `Meta: ${m.nome}`,
         tipo        : 'financeiro',
         status      : pct >= 100 ? 'concluido' : 'pendente',
         data_inicio : m.data_alvo,
@@ -196,7 +198,7 @@ async function carregarEventosFinanceiros(dataInicio, dataFim) {
     (certs || []).forEach(c => {
       evFinanc.push({
         id          : `fin-cert-${c.id}`,
-        titulo      : `📄 Vence: ${c.nome}`,
+        titulo      : `Vence: ${c.nome}`,
         tipo        : 'documento',
         status      : 'pendente',
         data_inicio : c.data_vencimento,
@@ -490,7 +492,7 @@ function renderLista() {
     const isHoje = data === hojeISO();
     html += `<div class="cal-lista-grupo">
       <div class="cal-lista-data" style="${isHoje?'color:var(--accent);':''}"
-        >${isHoje ? '📍 HOJE — ' : ''}${fmtData(data)}</div>`;
+        >${isHoje ? 'HOJE — ' : ''}${fmtData(data)}</div>`;
 
     evs.forEach(ev => {
       const cfg = tipoCfg(ev.tipo);
@@ -502,7 +504,7 @@ function renderLista() {
           <div class="cal-lista-sub">
             ${ev.hora ? fmtHora(ev.hora) + ' · ' : ''}
             ${cfg.label}
-            ${ev.local ? ' · 📍 ' + ev.local : ''}
+            ${ev.local ? ' · <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:2px"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>' + ev.local : ''}
             ${ev.descricao ? '<br>' + ev.descricao.slice(0,80) + (ev.descricao.length>80?'...':'') : ''}
           </div>
         </div>
@@ -538,7 +540,7 @@ function mostrarEventosDia(iso, evs) {
       border-radius:14px;padding:20px;width:90%;max-width:400px;max-height:80vh;
       overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.5);">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div style="font-size:14px;font-weight:800;">📅 ${fmtData(iso)}</div>
+        <div style="font-size:14px;font-weight:800;">${fmtData(iso)}</div>
         <button id="diaPopFechar" style="background:none;border:none;color:var(--muted);
           font-size:18px;cursor:pointer;line-height:1;">✕</button>
       </div>
@@ -588,11 +590,11 @@ function mostrarEventosDia(iso, evs) {
 function mostrarInfoAuto(ev) {
   const cfg = tipoCfg(ev.tipo);
   const origemLabel = {
-    transacao    : '💸 Lançamento pendente',
-    fatura       : '💳 Vencimento de fatura',
-    meta         : '🏆 Prazo de meta',
-    certificacao : '📄 Vencimento de certificação',
-  }[ev._origem] || '🔄 Automático';
+    transacao    : 'Lançamento pendente',
+    fatura       : 'Vencimento de fatura',
+    meta         : 'Prazo de meta',
+    certificacao : 'Vencimento de certificação',
+  }[ev._origem] || 'Automático';
 
   const popup = document.createElement('div');
   popup.innerHTML = `
@@ -614,8 +616,8 @@ function mostrarInfoAuto(ev) {
       </div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:16px;
         padding:10px 12px;background:var(--surface-2);border-radius:8px;">
-        📅 ${fmtData(ev.data_inicio)}
-        ${ev.descricao ? `<br>📝 ${ev.descricao}` : ''}
+        ${fmtData(ev.data_inicio)}
+        ${ev.descricao ? `<br>${ev.descricao}` : ''}
       </div>
       <p style="font-size:11px;color:var(--muted);margin:0 0 14px;">
         Este evento é gerado automaticamente pelo FinZen. Para editá-lo, acesse a origem.
