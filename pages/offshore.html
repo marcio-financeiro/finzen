@@ -110,7 +110,7 @@
       <div class="off-tab-content active" id="tab-escala">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
           <h2 style="margin:0;font-size:15px;">Ciclos de Embarque</h2>
-          <button class="btn btn-primary compact" id="btnNovoCiclo">+ Novo ciclo</button>
+          <button type="button" class="btn btn-primary compact" id="btnNovoCiclo" data-action="abrirNovoCiclo">+ Novo ciclo</button>
         </div>
         <div id="listaCiclos"><p class="muted">Carregando...</p></div>
       </div>
@@ -145,7 +145,7 @@
 
 <!-- Modal Ciclo -->
 <div id="modalCiclo" style="display:none;position:fixed;inset:0;z-index:9990;">
-  <div style="position:absolute;inset:0;background:rgba(0,0,0,.6);" id="modalCicloBackdrop"></div>
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.6);" id="modalCicloBackdrop" data-action="fecharModalCiclo"></div>
   <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     background:var(--surface);border:1px solid var(--border);border-radius:16px;
     padding:24px;width:90%;max-width:480px;max-height:90vh;overflow-y:auto;
@@ -183,9 +183,9 @@
     <div class="form-group"><label>Observações</label><textarea id="cObs" rows="2"></textarea></div>
     <div id="msgCiclo" class="message" style="min-height:0;"></div>
     <div style="display:flex;gap:8px;margin-top:16px;">
-      <button class="btn btn-primary" id="btnSalvarCiclo"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>Salvar</button>
-      <button class="btn btn-secondary" id="btnCancelarCiclo">Cancelar</button>
-      <button class="btn btn-danger" id="btnExcluirCiclo" style="display:none;margin-left:auto;">Excluir</button>
+      <button type="button" class="btn btn-primary" id="btnSalvarCiclo" data-action="salvarCiclo"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>Salvar</button>
+      <button type="button" class="btn btn-secondary" id="btnCancelarCiclo" data-action="fecharModalCiclo">Cancelar</button>
+      <button type="button" class="btn btn-danger" id="btnExcluirCiclo" data-action="excluirCiclo" style="display:none;margin-left:auto;">Excluir</button>
     </div>
   </div>
 </div>

@@ -6,6 +6,7 @@
 import { supabase }   from './supabaseClient.js';
 import { navigate }   from './router.js';
 import { emailService } from './emailService.js';
+import { registrarAcao } from './eventBus.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -295,11 +296,10 @@ function abrirModalCiclo(ciclo = null) {
   el('modalCiclo').style.display = 'block';
 }
 
-el('btnNovoCiclo').addEventListener('click', () => abrirModalCiclo());
-el('btnCancelarCiclo').addEventListener('click', () => el('modalCiclo').style.display = 'none');
-el('modalCicloBackdrop').addEventListener('click', () => el('modalCiclo').style.display = 'none');
+registrarAcao('abrirNovoCiclo', () => abrirModalCiclo());
+registrarAcao('fecharModalCiclo', () => { el('modalCiclo').style.display = 'none'; });
 
-el('btnSalvarCiclo').addEventListener('click', async () => {
+registrarAcao('salvarCiclo', async () => {
   const embarque = el('cEmbarque').value;
   if (!embarque) { el('msgCiclo').className='message warning'; el('msgCiclo').textContent='Informe a data de embarque.'; return; }
 
@@ -355,7 +355,7 @@ el('btnSalvarCiclo').addEventListener('click', async () => {
   await carregarTudo();
 });
 
-el('btnExcluirCiclo').addEventListener('click', async () => {
+registrarAcao('excluirCiclo', async () => {
   if (!editandoCicloId || !confirm('Excluir este ciclo?')) return;
   await supabase.from('offshore_cycles').delete().eq('id', editandoCicloId).eq('user_id', user.id);
   el('modalCiclo').style.display = 'none';
