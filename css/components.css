@@ -826,3 +826,85 @@ input:-webkit-autofill:active{
   padding: 4px 0;
   animation:loading-pulse 1.8s ease-in-out infinite;
 }
+
+/* ═══════════════════════════════════════════════
+   Modal padrão do app (Fase 2 sub-fase 4) — promovido de
+   .ff-detail-* (antes embutido só em pages/movements.html) para uso
+   compartilhado por js/modal.js. Vira bottom sheet em telas estreitas.
+   ═══════════════════════════════════════════════ */
+.fz-modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.62);
+  z-index:99999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
+.fz-modal-box{
+  width:min(620px,96vw);
+  max-height:82vh;
+  overflow:auto;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:20px;
+  box-shadow:0 24px 80px rgba(0,0,0,.45);
+}
+.fz-modal-box.fz-modal-narrow{ width:min(440px,94vw); }
+.fz-modal-header{
+  padding:18px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+.fz-modal-header h2{ margin:0; font-size:1.1rem; }
+.fz-modal-header p{ margin:6px 0 0; color:var(--muted); font-size:.9rem; }
+.fz-modal-close{
+  border:0;
+  background:transparent;
+  color:var(--text);
+  font-size:28px;
+  line-height:1;
+  cursor:pointer;
+}
+.fz-modal-body{ padding:14px; display:grid; gap:10px; }
+.fz-modal-actions{ padding:16px; display:flex; flex-direction:column; gap:10px; }
+.fz-modal-item{
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px;
+  background:rgba(255,255,255,.025);
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+}
+.fz-modal-item strong{ display:block; margin-bottom:4px; }
+.fz-modal-item span{ color:var(--muted); font-size:.86rem; }
+.fz-modal-total{
+  margin:4px 14px 16px;
+  padding:14px;
+  border-radius:14px;
+  background:var(--accent-dim);
+  border:1px solid rgba(192,138,62,.25);
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  font-weight:800;
+}
+
+@media(max-width:720px){
+  .fz-modal-overlay{ align-items:flex-end; padding:0; }
+  .fz-modal-box{
+    width:100%;
+    max-height:88vh;
+    border-radius:22px 22px 0 0;
+    border-left:0;
+    border-right:0;
+    border-bottom:0;
+  }
+  .fz-modal-item{ flex-direction:column; }
+  .fz-modal-total{ position:sticky; bottom:0; margin:0; border-radius:0; }
+}

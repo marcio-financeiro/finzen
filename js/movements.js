@@ -3,6 +3,7 @@ import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { notificarTransacao } from './telegram.js';
 import { escapeHtml } from './utils/escapeHtml.js';
+import { showChoice, showDetail } from './modal.js';
 
 // ─────────────────────────────────────────────
 // ELEMENTOS DO DOM
@@ -203,39 +204,7 @@ function showMessage(text, type='info'){
 }
 
 function showChoiceModal({ title, message, options }){
-  return new Promise(resolve => {
-    const existing = document.getElementById('finzenChoiceModal');
-    if(existing) existing.remove();
-
-    const overlay = document.createElement('div');
-    overlay.id = 'finzenChoiceModal';
-    overlay.className = 'ff-detail-overlay';
-    overlay.innerHTML = `
-      <div class="ff-detail-modal" style="width:min(440px,94vw)">
-        <div class="ff-detail-header">
-          <div><h2>${title}</h2><p>${message}</p></div>
-        </div>
-        <div class="ff-detail-actions">
-          ${options.map(o => `
-            <button type="button" class="btn ${o.danger ? 'btn-danger' : o.primary ? 'btn-primary' : 'btn-secondary'}"
-              data-choice="${o.value}">${o.label}</button>
-          `).join('')}
-          <button type="button" class="btn btn-secondary" data-choice="cancel">Cancelar</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    overlay.querySelectorAll('[data-choice]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const v = btn.getAttribute('data-choice');
-        overlay.remove();
-        resolve(v === 'cancel' ? null : v);
-      });
-    });
-    overlay.addEventListener('click', e => {
-      if(e.target === overlay){ overlay.remove(); resolve(null); }
-    });
-  });
+  return showChoice({ title, message, options });
 }
 
 async function chooseRecurringEditScope(){
@@ -769,41 +738,7 @@ async function sumOpenCardInvoicesThisMonth(){
 }
 
 function showFlowDetailModal(title, subtitle, items, total, totalClass=''){
-  const existing = document.getElementById('flowDetailModalFinZen');
-  if(existing) existing.remove();
-
-  const overlay = document.createElement('div');
-  overlay.id = 'flowDetailModalFinZen';
-  overlay.className = 'ff-detail-overlay';
-  const empty = !items || !items.length;
-
-  overlay.innerHTML = `
-    <div class="ff-detail-modal">
-      <div class="ff-detail-header">
-        <div><h2>${title}</h2><p>${subtitle}</p></div>
-        <button type="button" class="ff-detail-close" aria-label="Fechar">×</button>
-      </div>
-      <div class="ff-detail-body">
-        ${empty ? '<p class="muted" style="padding:10px">Nenhum item encontrado.</p>'
-          : items.map(item => `
-            <div class="ff-detail-item">
-              <div>
-                <strong>${item.title}</strong>
-                <span>${item.subtitle||''}</span>
-              </div>
-              <strong class="money ${item.valueClass||''}">${item.valueText}</strong>
-            </div>
-          `).join('')}
-      </div>
-      <div class="ff-detail-total">
-        <span>Total</span>
-        <span class="money ${totalClass}">${formatCurrency(total||0,'BRL')}</span>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  overlay.querySelector('.ff-detail-close').addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
+  showDetail({ title, subtitle, items, total: total||0, totalClass, formatTotal: v => formatCurrency(v,'BRL') });
 }
 
 async function openFlowAccountsDetail(){
