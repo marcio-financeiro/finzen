@@ -13,7 +13,7 @@ export function confirmarExclusao(mensagem, subtexto = ''){
     modal.innerHTML = `
       <div class="fcm-backdrop"></div>
       <div class="fcm-box" role="dialog" aria-modal="true">
-        <div class="fcm-icon">🗑️</div>
+        <div class="fcm-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></div>
         <p class="fcm-msg">${mensagem}</p>
         ${subtexto ? `<p class="fcm-sub">${subtexto}</p>` : ''}
         <div class="fcm-actions">
@@ -37,7 +37,7 @@ export function confirmarExclusao(mensagem, subtexto = ''){
         animation:fcmSlideIn .18s ease;
         text-align:center;
       }
-      #finzen-confirm-modal .fcm-icon{ font-size:36px;margin-bottom:12px; }
+      #finzen-confirm-modal .fcm-icon{ margin-bottom:12px;display:flex;justify-content:center; }
       #finzen-confirm-modal .fcm-msg{
         font-weight:700;font-size:15px;margin:0 0 6px;color:var(--text,#e2e4f0);
       }

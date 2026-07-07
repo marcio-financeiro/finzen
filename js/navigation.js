@@ -27,6 +27,7 @@ function injectSvgSprite() {
     <symbol id="ic-eye-off"      viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></symbol>
     <symbol id="ic-chevron-left" viewBox="0 0 24 24"><polyline points="15,4 9,12 15,20"/></symbol>
     <symbol id="ic-chevron-down" viewBox="0 0 24 24"><polyline points="6,9 12,15 18,9"/></symbol>
+    <symbol id="ic-menu"          viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></symbol>
     <symbol id="ic-arrows-updown" viewBox="0 0 24 24"><path d="M7 3v14M7 17l-3-3M7 17l3-3"/><path d="M17 21V7M17 7l3 3M17 7l-3 3"/></symbol>
     <symbol id="ic-receipt"       viewBox="0 0 24 24"><path d="M5 3h14v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5V3z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></symbol>
     <symbol id="ic-card"          viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="13" rx="2.5"/><path d="M2.5 10.5h19"/><rect x="5.5" y="13.7" width="4" height="2" rx=".5" fill="currentColor" stroke="none"/></symbol>
@@ -1011,7 +1012,7 @@ function ensureMenuButton() {
   btn.type = 'button';
   btn.className = 'mobile-menu-button';
   btn.setAttribute('aria-label', 'Abrir menu');
-  btn.innerHTML = '☰';
+  btn.innerHTML = navIcon('ic-menu');
   btn.addEventListener('click', openDrawer);
   document.body.appendChild(btn);
 }
@@ -1025,7 +1026,7 @@ function ensureMobilePrivacyBtn() {
   btn.setAttribute('aria-label', 'Ocultar valores');
   btn.setAttribute('aria-pressed', getPrivacy() ? 'true' : 'false');
   btn.title = getPrivacy() ? 'Mostrar valores' : 'Ocultar valores';
-  btn.textContent = getPrivacy() ? '🙈' : '👁️';
+  btn.innerHTML = navIcon(getPrivacy() ? 'ic-eye-off' : 'ic-eye');
   btn.addEventListener('click', togglePrivacy);
   document.body.appendChild(btn);
 }
@@ -1057,7 +1058,7 @@ function ensureFAB() {
         <span>Despesa</span>
       </a>
       <a class="finzen-fab-option" href="${base}?tipo=cartao">
-        <span class="finzen-fab-icon" style="background:var(--accent)">💳</span>
+        <span class="finzen-fab-icon" style="background:var(--accent)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="13" rx="2.5"/><path d="M2.5 10.5h19"/></svg></span>
         <span>Cartão</span>
       </a>
       <a class="finzen-fab-option" href="${base}?tipo=transferencia">
@@ -1065,7 +1066,7 @@ function ensureFAB() {
         <span>Transferência</span>
       </a>
       <a class="finzen-fab-option" href="${base}?tipo=cambio">
-        <span class="finzen-fab-icon" style="background:#e67e22">💱</span>
+        <span class="finzen-fab-icon" style="background:#e67e22"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v14M7 17l-3-3M7 17l3-3"/><path d="M17 21V7M17 7l3 3M17 7l-3 3"/></svg></span>
         <span>Câmbio</span>
       </a>
     </div>

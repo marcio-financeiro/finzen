@@ -127,7 +127,7 @@ async function buscarInsights(userId) {
     return await insightsFallback(userId);
   } catch (err) {
     console.error('[assistantBar] fallback também falhou:', err);
-    return ['✅ Tudo em ordem por hoje'];
+    return ['Tudo em ordem por hoje'];
   }
 }
 
@@ -145,16 +145,16 @@ async function insightsFallback(userId) {
 
   const insights = [];
   const totalFat = (faturas || []).reduce((s, f) => s + Number(f.valor_parcela || 0), 0);
-  if (totalFat > 0) insights.push(`💳 Fatura do mês: R$ ${totalFat.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+  if (totalFat > 0) insights.push(`Fatura do mês: R$ ${totalFat.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
 
   const prox = ciclos?.[0];
   if (prox) {
     const dias = Math.ceil((new Date(prox.data_embarque) - hoje) / 864e5);
-    insights.push(`🛢️ Embarque em ${dias} dia${dias !== 1 ? 's' : ''} — ${prox.data_embarque}`);
+    insights.push(`Embarque em ${dias} dia${dias !== 1 ? 's' : ''} — ${prox.data_embarque}`);
   }
 
-  if ((pendentes || []).length > 0) insights.push(`📄 ${pendentes.length} lançamento(s) pendente(s) esta semana`);
-  if (!insights.length) insights.push('✅ Tudo em ordem por hoje');
+  if ((pendentes || []).length > 0) insights.push(`${pendentes.length} lançamento(s) pendente(s) esta semana`);
+  if (!insights.length) insights.push('Tudo em ordem por hoje');
 
   return insights;
 }
@@ -164,7 +164,7 @@ function renderPanel(insights) {
   const grid = document.getElementById('assistantGrid');
   if (!grid) return;
 
-  const textos = insights.length ? insights : ['✅ Tudo em ordem por hoje'];
+  const textos = insights.length ? insights : ['Tudo em ordem por hoje'];
   grid.innerHTML = textos.map(t => `<div class="assistant-item">${t}</div>`).join('');
 }
 
@@ -181,6 +181,6 @@ export async function initAssistantBar(userId) {
     renderPanel(insights);
   } catch (err) {
     console.error('[assistantBar] erro fatal:', err);
-    grid.innerHTML = '<div class="assistant-item">✅ Tudo em ordem por hoje</div>';
+    grid.innerHTML = '<div class="assistant-item">Tudo em ordem por hoje</div>';
   }
 }

@@ -119,8 +119,8 @@ function renderLista(){
         <div style="height:8px;background:var(--border);border-radius:99px;overflow:hidden">
           <div style="height:8px;border-radius:99px;background:${pct>=100?'var(--danger)':pct>=80?'var(--warning,#f59e0b)':'var(--accent)'};width:${pct}%;transition:width .4s"></div>
         </div>
-        ${pct>=100?`<p style="font-size:11px;color:var(--danger);margin-top:4px">⚠️ Limite ultrapassado em ${formatCurrency(Math.abs(restante),'BRL')}</p>`:''}
-        ${pct>=80&&pct<100?`<p style="font-size:11px;color:var(--warning,#f59e0b);margin-top:4px">⚠️ Atenção: ${(100-pct).toFixed(0)}% do limite restante</p>`:''}
+        ${pct>=100?`<p style="font-size:11px;color:var(--danger);margin-top:4px">Limite ultrapassado em ${formatCurrency(Math.abs(restante),'BRL')}</p>`:''}
+        ${pct>=80&&pct<100?`<p style="font-size:11px;color:var(--warning,#f59e0b);margin-top:4px">Atenção: ${(100-pct).toFixed(0)}% do limite restante</p>`:''}
       </div>
     `;
   }).join('');
