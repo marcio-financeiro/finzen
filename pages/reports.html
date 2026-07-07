@@ -32,9 +32,9 @@
 /* ── KPI grid ── */
 .rpt-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;}
 .rpt-kpi{border:2px solid var(--border);border-radius:12px;background:var(--bg-card);padding:14px 16px;display:flex;flex-direction:column;gap:4px;transition:border-color .2s;}
-.rpt-kpi.verde{border-color:#10b981;}
-.rpt-kpi.amarelo{border-color:#f59e0b;}
-.rpt-kpi.vermelho{border-color:#ef4444;}
+.rpt-kpi.verde{border-color:var(--success);}
+.rpt-kpi.amarelo{border-color:var(--warning);}
+.rpt-kpi.vermelho{border-color:var(--danger);}
 .rpt-kpi-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;}
 .rpt-kpi-valor{font-size:20px;font-weight:800;font-family:var(--font-mono);}
 .rpt-kpi-semaforo{font-size:11px;margin-top:2px;}
@@ -100,7 +100,7 @@
         <input type="month" id="filtroMes">
         <button id="btnMesSeguinte" class="btn btn-secondary compact" type="button">▶</button>
       </div>
-      <button id="btnExportarPDF" class="btn btn-secondary" type="button">📄 Exportar PDF</button>
+      <button id="btnExportarPDF" class="btn btn-secondary" type="button"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M6 3h9l5 5v13H6z"/><path d="M15 3v5h5"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg>Exportar PDF</button>
       <p id="periodoLabel" class="muted" style="font-size:13px;margin:0"></p>
     </div>
 
@@ -109,7 +109,7 @@
 
     <!-- Receita vs Despesa 12 meses -->
     <div class="rpt-block">
-      <div class="rpt-block-header"><h2>📊 Receita vs Despesa — últimos 12 meses</h2></div>
+      <div class="rpt-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><line x1="3" y1="20" x2="21" y2="20"/><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="4"/></svg>Receita vs Despesa — últimos 12 meses</h2></div>
       <div class="rpt-block-body" style="height:260px">
         <canvas id="chartRecDes"></canvas>
       </div>
@@ -118,13 +118,13 @@
     <!-- Categorias -->
     <div class="rpt-grid-2">
       <div class="rpt-block" style="margin-bottom:0">
-        <div class="rpt-block-header"><h2>🍕 Despesas por Categoria</h2></div>
+        <div class="rpt-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>Despesas por Categoria</h2></div>
         <div class="rpt-block-body" style="height:260px">
           <canvas id="chartCategorias"></canvas>
         </div>
       </div>
       <div class="rpt-block" style="margin-bottom:0">
-        <div class="rpt-block-header"><h2>📋 Ranking de Categorias</h2></div>
+        <div class="rpt-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M6 3h9l5 5v13H6z"/><path d="M15 3v5h5"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg>Ranking de Categorias</h2></div>
         <div class="rpt-no-pad" id="rankingCategorias"></div>
       </div>
     </div>
@@ -132,7 +132,7 @@
 
     <!-- Evolução do Patrimônio -->
     <div class="rpt-block">
-      <div class="rpt-block-header"><h2>💎 Evolução do Patrimônio</h2></div>
+      <div class="rpt-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M2 9h20M9 3l-3 6 6 12 6-12-3-6z"/></svg>Evolução do Patrimônio</h2></div>
       <div class="rpt-block-body" style="height:220px">
         <canvas id="chartPatrimonio"></canvas>
       </div>
@@ -140,7 +140,7 @@
 
     <!-- Investimentos -->
     <div class="rpt-block">
-      <div class="rpt-block-header"><h2>📈 Investimentos</h2></div>
+      <div class="rpt-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><polyline points="3,17 9,11 13,15 21,6"/><polyline points="15,6 21,6 21,12"/></svg>Investimentos</h2></div>
       <div class="rpt-block-body">
         <div class="rpt-kpi-sub" id="kpisInvest"></div>
         <div style="height:220px;margin-top:16px">
@@ -151,7 +151,7 @@
 
     <!-- Orçamento vs Realizado -->
     <div class="rpt-block">
-      <div class="rpt-block-header"><h2>🎯 Orçamento vs Realizado</h2></div>
+      <div class="rpt-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>Orçamento vs Realizado</h2></div>
       <div class="rpt-block-body" id="wrapOrcamento">
         <canvas id="chartOrcamento"></canvas>
       </div>
@@ -159,7 +159,7 @@
 
     <!-- Insights -->
     <div class="rpt-block">
-      <div class="rpt-block-header"><h2>💡 Insights do Mês</h2></div>
+      <div class="rpt-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.05V17h6v-2.25c0-.85.4-1.55 1-2.05A7 7 0 0 0 12 2z"/></svg>Insights do Mês</h2></div>
       <div class="rpt-block-body" id="listaInsights"></div>
     </div>
 

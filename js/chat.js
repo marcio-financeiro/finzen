@@ -27,17 +27,17 @@ const el = id => document.getElementById(id);
 
 // ── Carregar contexto financeiro ──────────────────────
 async function inicializar() {
-  el('statusContexto').textContent = '⏳ Carregando seus dados financeiros...';
+  el('statusContexto').textContent = 'Carregando seus dados financeiros...';
   try {
     contexto = await coletarContexto(user.id);
-    el('statusContexto').textContent = '✅ Dados carregados — pode perguntar!';
-    el('statusContexto').style.color = 'var(--success, #22c55e)';
+    el('statusContexto').textContent = 'Dados carregados — pode perguntar!';
+    el('statusContexto').style.color = 'var(--success)';
     el('inputMsg').disabled    = false;
     el('btnEnviar').disabled   = false;
     el('inputMsg').placeholder = 'Pergunte sobre seus gastos, investimentos, metas...';
   } catch(err) {
-    el('statusContexto').textContent = '⚠️ Erro ao carregar dados: ' + err.message;
-    el('statusContexto').style.color = 'var(--danger, #ef4444)';
+    el('statusContexto').textContent = 'Erro ao carregar dados: ' + err.message;
+    el('statusContexto').style.color = 'var(--danger)';
   }
 }
 
@@ -118,7 +118,9 @@ function addMsg(role, conteudo = '', animado = false) {
 
   const avatar = document.createElement('div');
   avatar.className = 'chat-avatar';
-  avatar.textContent = role === 'ai' ? '🤖' : '👤';
+  avatar.innerHTML = role === 'ai'
+    ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg>'
+    : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>';
 
   const bubble = document.createElement('div');
   bubble.className = 'chat-bubble';
@@ -145,7 +147,7 @@ function addTyping() {
 
   const avatar = document.createElement('div');
   avatar.className = 'chat-avatar';
-  avatar.textContent = '🤖';
+  avatar.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg>';
 
   const bubble = document.createElement('div');
   bubble.className = 'chat-bubble';
@@ -237,7 +239,7 @@ async function enviar() {
 
   } catch(err) {
     typing?.remove();
-    addMsg('ai', `⚠️ Erro ao processar sua mensagem: ${err.message}`);
+    addMsg('ai', `Erro ao processar sua mensagem: ${err.message}`);
   } finally {
     carregando = false;
     el('btnEnviar').disabled = false;
@@ -257,7 +259,7 @@ window.limparChat = function() {
   const wrap = el('mensagens');
   wrap.innerHTML = `
     <div id="emptyState" class="chat-empty">
-      <div class="chat-empty-icon">🤖</div>
+      <div class="chat-empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg></div>
       <h3>Olá! Sou o FinZen AI</h3>
       <p>Tenho acesso aos seus dados financeiros. Pergunte o que quiser sobre seus gastos, receitas, investimentos e metas.</p>
     </div>`;

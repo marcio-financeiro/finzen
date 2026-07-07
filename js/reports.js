@@ -96,7 +96,8 @@ function semaforo(tipo, valor) {
 }
 
 function icone(cor) {
-  return cor === 'verde' ? '🟢' : cor === 'amarelo' ? '🟡' : cor === 'vermelho' ? '🔴' : '';
+  const c = cor === 'verde' ? 'var(--success)' : cor === 'amarelo' ? 'var(--warning)' : cor === 'vermelho' ? 'var(--danger)' : '';
+  return c ? `<span class="color-dot" style="background:${c};border-color:${c}"></span>` : '';
 }
 
 // ── KPI card helper ───────────────────────────────────────────────────────────
@@ -568,31 +569,37 @@ async function renderInsights() {
   // Montar insights
   const insights = [];
 
+  const icoMoeda = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 15.5c.5 1 1.7 1.5 3 1.5 2 0 3.2-1 3.2-2.3 0-3-6-1.4-6-4.2 0-1.3 1.2-2.3 3-2.3 1.3 0 2.4.5 3 1.4"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>';
+  const icoCheck  = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 11,15.5 16,9"/></svg>';
+  const icoAlerta = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 19h18z"/><line x1="12" y1="10" x2="12" y2="14.5"/><circle cx="12" cy="17" r=".7" fill="var(--danger)" stroke="none"/></svg>';
+  const icoBar    = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="20" x2="21" y2="20"/><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="4"/></svg>';
+  const icoTrendUp   = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,17 9,11 13,15 21,6"/><polyline points="15,6 21,6 21,12"/></svg>';
+  const icoTrendDown = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,7 9,13 13,9 21,18"/><polyline points="15,18 21,18 21,12"/></svg>';
+
   if (maiorCat !== '—') {
-    insights.push({ icon: '💸', text: `Maior gasto do mês: <strong>${maiorCat}</strong> com <strong>${formatCurrency(maiorVal,'BRL')}</strong>` });
+    insights.push({ icon: icoMoeda, text: `Maior gasto do mês: <strong>${maiorCat}</strong> com <strong>${formatCurrency(maiorVal,'BRL')}</strong>` });
   }
 
   if (resultado >= 0) {
-    insights.push({ icon: '✅', text: `Resultado positivo: você economizou <strong>${formatCurrency(resultado,'BRL')}</strong> (${poupPct.toFixed(1)}% das receitas)` });
+    insights.push({ icon: icoCheck, text: `Resultado positivo: você economizou <strong>${formatCurrency(resultado,'BRL')}</strong> (${poupPct.toFixed(1)}% das receitas)` });
   } else {
-    insights.push({ icon: '⚠️', text: `Resultado negativo: gastos superaram receitas em <strong>${formatCurrency(Math.abs(resultado),'BRL')}</strong>` });
+    insights.push({ icon: icoAlerta, text: `Resultado negativo: gastos superaram receitas em <strong>${formatCurrency(Math.abs(resultado),'BRL')}</strong>` });
   }
 
   if (recAnt > 0) {
     const varRec = ((receitas - recAnt) / recAnt) * 100;
     const seta   = varRec >= 0 ? '↑' : '↓';
-    insights.push({ icon: '📊', text: `Receita vs ${nomeMes(mesAntStr)}: <strong>${seta} ${Math.abs(varRec).toFixed(1)}%</strong> (${formatCurrency(receitas,'BRL')} vs ${formatCurrency(recAnt,'BRL')})` });
+    insights.push({ icon: icoBar, text: `Receita vs ${nomeMes(mesAntStr)}: <strong>${seta} ${Math.abs(varRec).toFixed(1)}%</strong> (${formatCurrency(receitas,'BRL')} vs ${formatCurrency(recAnt,'BRL')})` });
   }
 
   if (varPatrim !== null) {
-    const seta = varPatrim >= 0 ? '📈' : '📉';
-    insights.push({ icon: seta, text: `Patrimônio ${varPatrim >= 0 ? 'cresceu' : 'caiu'} <strong>${Math.abs(varPatrim).toFixed(2)}%</strong> em relação a ${nomeMes(mesAntStr)}` });
+    insights.push({ icon: varPatrim >= 0 ? icoTrendUp : icoTrendDown, text: `Patrimônio ${varPatrim >= 0 ? 'cresceu' : 'caiu'} <strong>${Math.abs(varPatrim).toFixed(2)}%</strong> em relação a ${nomeMes(mesAntStr)}` });
   }
 
   if (estourados > 0) {
-    insights.push({ icon: '🔴', text: `<strong>${estourados} categoria${estourados > 1 ? 's' : ''}</strong> acima do orçamento planejado` });
+    insights.push({ icon: icone('vermelho'), text: `<strong>${estourados} categoria${estourados > 1 ? 's' : ''}</strong> acima do orçamento planejado` });
   } else if ((budgets||[]).length > 0) {
-    insights.push({ icon: '🟢', text: `Todas as categorias <strong>dentro do orçamento</strong> planejado` });
+    insights.push({ icon: icone('verde'), text: `Todas as categorias <strong>dentro do orçamento</strong> planejado` });
   }
 
   const cont = document.getElementById('listaInsights');
