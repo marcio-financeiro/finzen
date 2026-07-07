@@ -12,6 +12,26 @@ function closeModal(overlay, resolve, value){
 }
 
 /**
+ * Modal genérico: dá a casca padrão (.fz-modal-overlay/.fz-modal-box) e deixa
+ * o chamador injetar o corpo (bodyHtml) e ligar seus próprios listeners.
+ * Fecha ao clicar fora. Retorna { overlay, close }.
+ */
+export function openModal({ bodyHtml, narrow = false, closeOnBackdrop = true }){
+  const id = `fz-modal-${++seq}`;
+  const overlay = document.createElement('div');
+  overlay.id = id;
+  overlay.className = 'fz-modal-overlay';
+  overlay.innerHTML = `<div class="fz-modal-box${narrow ? ' fz-modal-narrow' : ''}">${bodyHtml}</div>`;
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.remove();
+  if(closeOnBackdrop){
+    overlay.addEventListener('click', e => { if(e.target === overlay) close(); });
+  }
+  return { overlay, close };
+}
+
+/**
  * Modal de escolha (título + mensagem + botões de ação).
  * Retorna Promise<string|null> com o value da opção escolhida, ou null se cancelado/fechado.
  */

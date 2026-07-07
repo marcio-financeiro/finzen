@@ -9,6 +9,7 @@ import { supabase }     from './supabaseClient.js';
 import { navigate }     from './router.js';
 import { formatCurrency } from './utils.js';
 import { emailService } from './emailService.js';
+import { openModal }    from './modal.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -532,25 +533,17 @@ function renderLista() {
 
 // ── Popup: listar eventos do dia (visão mensal) ───────────
 function mostrarEventosDia(iso, evs) {
-  const popup = document.createElement('div');
-  popup.innerHTML = `
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9990;" id="diaPopBackdrop"></div>
-    <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-      z-index:9991;background:var(--surface);border:1px solid var(--border);
-      border-radius:14px;padding:20px;width:90%;max-width:400px;max-height:80vh;
-      overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.5);">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div style="font-size:14px;font-weight:800;">${fmtData(iso)}</div>
-        <button id="diaPopFechar" style="background:none;border:none;color:var(--muted);
-          font-size:18px;cursor:pointer;line-height:1;">✕</button>
+  const { overlay, close } = openModal({
+    narrow: true,
+    bodyHtml: `
+      <div class="fz-modal-header">
+        <div><h2>${fmtData(iso)}</h2></div>
+        <button type="button" class="fz-modal-close" aria-label="Fechar">×</button>
       </div>
-      <div id="diaPopLista">
+      <div class="fz-modal-body">
         ${evs.map(ev => {
           const cfg = tipoCfg(ev.tipo);
-          return `<div data-id="${ev.id}" style="display:flex;align-items:flex-start;gap:10px;
-            padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);
-            border-radius:10px;margin-bottom:6px;cursor:pointer;
-            border-left:3px solid ${cfg.cor};">
+          return `<div class="fz-modal-item" data-id="${ev.id}" style="cursor:pointer;border-left:3px solid ${cfg.cor};align-items:flex-start;">
             <span style="font-size:18px;flex-shrink:0;">${cfg.icon}</span>
             <div style="flex:1;min-width:0;">
               <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ev.titulo}</div>
@@ -561,25 +554,22 @@ function mostrarEventosDia(iso, evs) {
           </div>`;
         }).join('')}
       </div>
-      <button id="diaPopNovo" style="width:100%;margin-top:10px;padding:10px;border-radius:8px;
-        background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:700;font-size:13px;">
-        + Novo evento neste dia
-      </button>
-    </div>`;
-  document.body.appendChild(popup);
+      <div class="fz-modal-actions">
+        <button type="button" class="btn btn-primary full" id="diaPopNovo">+ Novo evento neste dia</button>
+      </div>
+    `,
+  });
 
-  const fechar = () => popup.remove();
-  document.getElementById('diaPopBackdrop').addEventListener('click', fechar);
-  document.getElementById('diaPopFechar').addEventListener('click', fechar);
-  document.getElementById('diaPopNovo').addEventListener('click', () => {
-    fechar();
+  overlay.querySelector('.fz-modal-close').addEventListener('click', close);
+  overlay.querySelector('#diaPopNovo').addEventListener('click', () => {
+    close();
     abrirModalNovo(iso);
   });
-  popup.querySelectorAll('[data-id]').forEach(item => {
+  overlay.querySelectorAll('[data-id]').forEach(item => {
     item.addEventListener('click', () => {
       const ev = eventos.find(x => x.id === item.dataset.id);
       if (!ev) return;
-      fechar();
+      close();
       if (ev._auto) mostrarInfoAuto(ev);
       else abrirModalEditar(ev);
     });
@@ -596,39 +586,35 @@ function mostrarInfoAuto(ev) {
     certificacao : 'Vencimento de certificação',
   }[ev._origem] || 'Automático';
 
-  const popup = document.createElement('div');
-  popup.innerHTML = `
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9990;" id="autoInfoBackdrop"></div>
-    <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-      z-index:9991;background:var(--surface);border:1px solid var(--border);
-      border-radius:14px;padding:20px;width:90%;max-width:380px;
-      box-shadow:0 20px 60px rgba(0,0,0,.5);">
-      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;">
-        <span style="font-size:24px;">${cfg.icon}</span>
-        <div style="flex:1;">
-          <div style="font-size:14px;font-weight:800;">${ev.titulo}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${origemLabel}</div>
+  const { overlay, close } = openModal({
+    narrow: true,
+    bodyHtml: `
+      <div class="fz-modal-header">
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <span style="font-size:24px;">${cfg.icon}</span>
+          <div>
+            <h2 style="font-size:14px;">${ev.titulo}</h2>
+            <p>${origemLabel}</p>
+          </div>
         </div>
-        <span style="font-size:11px;padding:3px 8px;border-radius:99px;
-          background:rgba(107,112,148,.15);color:var(--muted);font-weight:700;">
-          automático
-        </span>
+        <span class="badge neutral">automático</span>
       </div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;
-        padding:10px 12px;background:var(--surface-2);border-radius:8px;">
-        ${fmtData(ev.data_inicio)}
-        ${ev.descricao ? `<br>${ev.descricao}` : ''}
+      <div class="fz-modal-body">
+        <div style="font-size:13px;color:var(--muted);padding:10px 12px;background:var(--surface-2);border-radius:8px;">
+          ${fmtData(ev.data_inicio)}
+          ${ev.descricao ? `<br>${ev.descricao}` : ''}
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin:0;">
+          Este evento é gerado automaticamente pelo FinZen. Para editá-lo, acesse a origem.
+        </p>
       </div>
-      <p style="font-size:11px;color:var(--muted);margin:0 0 14px;">
-        Este evento é gerado automaticamente pelo FinZen. Para editá-lo, acesse a origem.
-      </p>
-      <button style="width:100%;padding:10px;border-radius:8px;background:var(--accent);
-        color:#fff;border:none;cursor:pointer;font-weight:700;font-size:13px;"
-        id="autoInfoFechar">Fechar</button>
-    </div>`;
-  document.body.appendChild(popup);
-  document.getElementById('autoInfoBackdrop').addEventListener('click', () => popup.remove());
-  document.getElementById('autoInfoFechar').addEventListener('click', () => popup.remove());
+      <div class="fz-modal-actions">
+        <button type="button" class="btn btn-primary full" id="autoInfoFechar">Fechar</button>
+      </div>
+    `,
+  });
+
+  overlay.querySelector('#autoInfoFechar').addEventListener('click', close);
 }
 
 // ── Modal: Novo Evento ────────────────────────────────

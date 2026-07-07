@@ -4,6 +4,7 @@ import { formatCurrency }   from './utils.js';
 import { confirmarExclusao} from './confirmModal.js';
 import { registrarAcao }    from './eventBus.js';
 import { notificarMetaAtingida } from './telegram.js';
+import { openModal }        from './modal.js';
 
 const { data: sd } = await supabase.auth.getSession();
 if(!sd.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
@@ -133,15 +134,14 @@ registrarAcao('abrirModalAporte', (el) => {
   // Remove modal anterior
   document.getElementById('modalAporte')?.remove();
 
-  const modal = document.createElement('div');
-  modal.id = 'modalAporte';
-  modal.innerHTML = `
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9997;display:flex;align-items:center;justify-content:center;padding:16px">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;padding:24px">
-        <h3 style="font-size:15px;margin-bottom:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><path d="M9 15.5c.5 1 1.7 1.5 3 1.5 2 0 3.2-1 3.2-2.3 0-3-6-1.4-6-4.2 0-1.3 1.2-2.3 3-2.3 1.3 0 2.4.5 3 1.4"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>Aportar para meta</h3>
-        <p style="color:var(--muted);font-size:13px;margin-bottom:20px">${nome}</p>
-
-        <div style="background:var(--surface-2,rgba(255,255,255,.04));border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px">
+  const { overlay } = openModal({
+    narrow: true,
+    bodyHtml: `
+      <div class="fz-modal-header">
+        <div><h2 style="font-size:15px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><path d="M9 15.5c.5 1 1.7 1.5 3 1.5 2 0 3.2-1 3.2-2.3 0-3-6-1.4-6-4.2 0-1.3 1.2-2.3 3-2.3 1.3 0 2.4.5 3 1.4"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>Aportar para meta</h2><p>${nome}</p></div>
+      </div>
+      <div class="fz-modal-body">
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px">
           <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
             <span class="muted">Falta para a meta</span>
             <strong class="negative">${fmt(falta)}</strong>
@@ -153,30 +153,26 @@ registrarAcao('abrirModalAporte', (el) => {
           ${sugestao ? `
           <div style="display:flex;justify-content:space-between;font-size:12px">
             <span class="muted">Aporte sugerido/mês</span>
-            <strong style="color:#f59e0b">${fmt(sugestao)}</strong>
+            <strong style="color:var(--accent)">${fmt(sugestao)}</strong>
           </div>` : ''}
         </div>
 
         <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">Valor a aportar (R$)</label>
         <input type="number" id="inputAporte" placeholder="0,00" step="0.01" min="0"
-          value="${sugestao ? sugestao.toFixed(2) : ''}" inputmode="decimal"
-          style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:14px;margin-bottom:16px">
-
-        <div style="display:flex;gap:8px">
-          <button onclick="document.getElementById('modalAporte').remove()"
-            style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer">
-            Cancelar
-          </button>
-          <button data-action="confirmarAporte" data-meta-id="${id}" data-meta-nome="${nome.replace(/"/g,'&quot;')}"
-            style="flex:2;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-weight:700;cursor:pointer;font-size:13px">
-            ✓ Confirmar aporte
-          </button>
-        </div>
+          value="${sugestao ? sugestao.toFixed(2) : ''}" inputmode="decimal">
       </div>
-    </div>`;
-  document.body.appendChild(modal);
-  document.getElementById('inputAporte').focus();
-  document.getElementById('inputAporte').select();
+      <div class="fz-modal-actions" style="flex-direction:row">
+        <button type="button" class="btn btn-secondary" id="cancelarAporte" style="flex:1">Cancelar</button>
+        <button class="btn btn-primary" data-action="confirmarAporte" data-meta-id="${id}" data-meta-nome="${nome.replace(/"/g,'&quot;')}" style="flex:2">
+          ✓ Confirmar aporte
+        </button>
+      </div>
+    `,
+  });
+  overlay.id = 'modalAporte';
+  overlay.querySelector('#cancelarAporte').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#inputAporte').focus();
+  overlay.querySelector('#inputAporte').select();
 });
 
 registrarAcao('confirmarAporte', async (el) => {
