@@ -246,8 +246,12 @@ function billCardHtml(fatura, key, isAtual) {
         <td style="text-align:center">${item.parcela_atual}/${item.parcelas}</td>
         <td class="money negative" style="text-align:right">-${formatCurrency(item.valor_parcela, 'BRL')}</td>
         <td style="text-align:right;white-space:nowrap">
-          <button onclick="abrirEditarItem('${item.id}')" style="background:none;border:none;cursor:pointer;padding:4px 6px;font-size:14px" title="Editar">✏️</button>
-          <button onclick="excluirItemFatura('${item.id}')" style="background:none;border:none;cursor:pointer;padding:4px 6px;font-size:14px" title="Excluir">🗑️</button>
+          <button onclick="abrirEditarItem('${item.id}')" style="background:none;border:none;cursor:pointer;padding:4px 6px;color:var(--muted)" title="Editar">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          </button>
+          <button onclick="excluirItemFatura('${item.id}')" style="background:none;border:none;cursor:pointer;padding:4px 6px;color:var(--danger)" title="Excluir">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>
+          </button>
         </td>
       </tr>
     `;
@@ -259,7 +263,7 @@ function billCardHtml(fatura, key, isAtual) {
   if (pago) {
     payBarHtml = `
       <div class="bill-pay-bar paga">
-        <span style="color:var(--success,#22c55e);font-weight:700;font-size:13px">✅ Fatura paga</span>
+        <span style="color:var(--success);font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 11,15.5 16,9"/></svg>Fatura paga</span>
       </div>`;
   } else if (isAtual) {
     payBarHtml = `
