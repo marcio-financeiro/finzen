@@ -1,10 +1,11 @@
 // sw.js — Vyn Service Worker
 // Gerencia cache offline e notificações push
 
-const CACHE_NAME = 'vyn-v12.4';
+const CACHE_NAME = 'vyn-v12.5';
 const CACHE_URLS = [
   './login.html',
   './pages/dashboard.html',
+  './css/variables.css',
   './css/base.css',
   './css/layout.css',
   './css/components.css',

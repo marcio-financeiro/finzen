@@ -4,8 +4,8 @@
   "description": "Controle financeiro pessoal",
   "start_url": "./login.html",
   "display": "standalone",
-  "background_color": "#07080f",
-  "theme_color": "#C9A968",
+  "background_color": "#0a0c10",
+  "theme_color": "#c08a3e",
   "orientation": "portrait-primary",
   "permissions": ["notifications"],
   "icons": [
