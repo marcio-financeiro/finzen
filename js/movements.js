@@ -209,20 +209,13 @@ function showChoiceModal({ title, message, options }){
 
     const overlay = document.createElement('div');
     overlay.id = 'finzenChoiceModal';
-    overlay.style.cssText = `
-      position:fixed;inset:0;background:rgba(0,0,0,.62);
-      z-index:99999;display:flex;align-items:center;
-      justify-content:center;padding:20px;
-    `;
+    overlay.className = 'ff-detail-overlay';
     overlay.innerHTML = `
-      <div style="width:min(440px,94vw);background:var(--surface,#111827);
-        border:1px solid var(--border,#2b3148);border-radius:18px;
-        box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden;">
-        <div style="padding:18px 20px;border-bottom:1px solid var(--border,#2b3148);">
-          <h2 style="margin:0;font-size:1.12rem;">${title}</h2>
-          <p style="margin:8px 0 0;color:var(--muted,#8b90a8);line-height:1.4;">${message}</p>
+      <div class="ff-detail-modal" style="width:min(440px,94vw)">
+        <div class="ff-detail-header">
+          <div><h2>${title}</h2><p>${message}</p></div>
         </div>
-        <div style="padding:16px;display:flex;flex-direction:column;gap:10px;">
+        <div class="ff-detail-actions">
           ${options.map(o => `
             <button type="button" class="btn ${o.danger ? 'btn-danger' : o.primary ? 'btn-primary' : 'btn-secondary'}"
               data-choice="${o.value}">${o.label}</button>
@@ -1179,14 +1172,18 @@ async function loadMovements(){
                   ${r.status==='pendente' ? `
                   <button type="button" class="btn btn-primary compact"
                     onclick="window.pagarMovimentoFinZen('${r.id}')"
-                    style="background:#22c55e;border-color:#22c55e;padding:6px 8px" title="Marcar como pago">✓</button>
+                    style="background:var(--success);border-color:var(--success);padding:6px 8px" title="Marcar como pago">✓</button>
                   ` : ''}
                   <button type="button" class="btn btn-secondary compact"
                     onclick="window.editMovementFinZen('${r.id}')"
-                    style="padding:6px 8px" title="Editar">✏️</button>
+                    style="padding:6px 8px" title="Editar">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                  </button>
                   <button type="button" class="btn btn-danger compact"
                     onclick="window.deleteMovementFinZen('${r.id}')"
-                    style="padding:6px 8px" title="Excluir">🗑️</button>
+                    style="padding:6px 8px" title="Excluir">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>
+                  </button>
                 ` : '<span class="muted">-</span>'}
               </td>
             </tr>
@@ -1218,7 +1215,7 @@ async function loadMovements(){
               ${r.status==='pendente' ? `
               <button type="button" class="btn compact"
                 onclick="window.pagarMovimentoFinZen('${r.id}')"
-                style="background:#22c55e;border-color:#22c55e;color:#fff;flex:2">✓ Pagar</button>
+                style="background:var(--success);border-color:var(--success);color:#fff;flex:2">✓ Pagar</button>
               ` : ''}
               <button type="button" class="btn btn-secondary compact"
                 onclick="window.editMovementFinZen('${r.id}')">Editar</button>
