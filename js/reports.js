@@ -1,6 +1,10 @@
 import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
+import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
+
+// Soma o valor de uma transação já convertido pra BRL, conforme a moeda da conta
+function valorBRL(t){ return convertToBRL(t.amount, t.accounts?.currency || 'BRL', dolarAtual); }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -115,7 +119,7 @@ async function renderKPIs() {
     { data: histPatrim },
   ] = await Promise.all([
     supabase.from('transactions')
-      .select('type,amount')
+      .select('type,amount,accounts:account_id(currency)')
       .eq('user_id', user.id)
       .gte('date', inicio).lte('date', fim)
       .eq('status', 'pago'),
@@ -131,6 +135,8 @@ async function renderKPIs() {
       .order('reference_month', { ascending: false })
       .limit(2),
   ]);
+
+  (tx || []).forEach(t => { t.amount = valorBRL(t); });
 
   const receitas  = (tx || []).filter(t => t.type === 'receita').reduce((s, t) => s + Number(t.amount || 0), 0);
   const despTx    = (tx || []).filter(t => t.type === 'despesa').reduce((s, t) => s + Number(t.amount || 0), 0);
@@ -168,10 +174,12 @@ async function renderGrafico12Meses() {
 
   const { data: tx } = await supabase
     .from('transactions')
-    .select('type,amount,date')
+    .select('type,amount,date,accounts:account_id(currency)')
     .eq('user_id', user.id)
     .gte('date', inicio).lte('date', fim)
     .eq('status', 'pago');
+
+  (tx || []).forEach(t => { t.amount = valorBRL(t); });
 
   const receitas = meses.map(m =>
     (tx || []).filter(t => t.type === 'receita' && t.date?.startsWith(m))
@@ -204,7 +212,7 @@ async function renderCategorias() {
 
   const [{ data: tx }, { data: cardTx }] = await Promise.all([
     supabase.from('transactions')
-      .select('amount,type,categories:category_id(nome,icon)')
+      .select('amount,type,accounts:account_id(currency),categories:category_id(nome,icon)')
       .eq('user_id', user.id)
       .gte('date', inicio).lte('date', fim)
       .eq('status', 'pago')
@@ -215,6 +223,8 @@ async function renderCategorias() {
       .eq('user_id', user.id)
       .eq('fatura_referencia', mesAtual),
   ]);
+
+  (tx || []).forEach(t => { t.amount = valorBRL(t); });
 
   // Agregar por categoria
   const mapa = {};
@@ -416,7 +426,7 @@ async function renderOrcamento() {
       .eq('mes_referencia', mesAtual),
 
     supabase.from('transactions')
-      .select('amount,category_id')
+      .select('amount,category_id,accounts:account_id(currency)')
       .eq('user_id', user.id)
       .gte('date', inicio).lte('date', fim)
       .eq('status', 'pago')
@@ -427,6 +437,8 @@ async function renderOrcamento() {
       .eq('user_id', user.id)
       .eq('fatura_referencia', mesAtual),
   ]);
+
+  (txDesp || []).forEach(t => { t.amount = valorBRL(t); });
 
   const wrap = document.getElementById('wrapOrcamento');
 
@@ -510,15 +522,19 @@ async function renderInsights() {
     { data: txDesp },
     { data: cardTxDesp },
   ] = await Promise.all([
-    supabase.from('transactions').select('type,amount,categories:category_id(nome)').eq('user_id',user.id).gte('date',inicio).lte('date',fim).eq('status','pago'),
+    supabase.from('transactions').select('type,amount,accounts:account_id(currency),categories:category_id(nome)').eq('user_id',user.id).gte('date',inicio).lte('date',fim).eq('status','pago'),
     supabase.from('card_transactions').select('valor_parcela,categories:category_id(nome)').eq('user_id',user.id).eq('fatura_referencia',mesAtual),
-    supabase.from('transactions').select('type,amount').eq('user_id',user.id).gte('date',inicioAnt).lte('date',fimAnt).eq('status','pago'),
+    supabase.from('transactions').select('type,amount,accounts:account_id(currency)').eq('user_id',user.id).gte('date',inicioAnt).lte('date',fimAnt).eq('status','pago'),
     supabase.from('card_transactions').select('valor_parcela').eq('user_id',user.id).eq('fatura_referencia',mesAntStr),
     supabase.from('patrimony_history').select('reference_month,net_worth').eq('user_id',user.id).order('reference_month',{ascending:false}).limit(2),
     supabase.from('budgets').select('valor_planejado,category_id').eq('user_id',user.id).eq('mes_referencia',mesAtual),
-    supabase.from('transactions').select('amount,category_id').eq('user_id',user.id).gte('date',inicio).lte('date',fim).eq('status','pago').eq('type','despesa'),
+    supabase.from('transactions').select('amount,category_id,accounts:account_id(currency)').eq('user_id',user.id).gte('date',inicio).lte('date',fim).eq('status','pago').eq('type','despesa'),
     supabase.from('card_transactions').select('valor_parcela,category_id').eq('user_id',user.id).eq('fatura_referencia',mesAtual),
   ]);
+
+  (tx||[]).forEach(t => { t.amount = valorBRL(t); });
+  (txAnt||[]).forEach(t => { t.amount = valorBRL(t); });
+  (txDesp||[]).forEach(t => { t.amount = valorBRL(t); });
 
   const receitas  = (tx||[]).filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
   const despesas  = (tx||[]).filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0)
@@ -631,13 +647,7 @@ function inicializarSeletor() {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
-  const { data: setting } = await supabase
-    .from('user_settings')
-    .select('setting_value')
-    .eq('user_id', user.id)
-    .eq('setting_key', 'usd_brl_rate')
-    .maybeSingle();
-  if (setting) dolarAtual = Number(setting.setting_value) || 5.15;
+  try { dolarAtual = await getUsdBrlRate(user.id); } catch(_) {}
 
   inicializarSeletor();
   await carregarTudo();

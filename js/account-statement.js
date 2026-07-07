@@ -139,6 +139,15 @@ async function carregarExtrato(){
 }
 
 await carregarContas();
+
+// Pré-filtrar por conta via URL (clique no dashboard)
+const urlParams = new URLSearchParams(window.location.search);
+const contaParam = urlParams.get('conta');
+if(contaParam){
+  el('filtroConta').value = contaParam;
+  window.history.replaceState({}, '', window.location.pathname);
+}
+
 await carregarExtrato();
 
 el('btnFiltrar').addEventListener('click', carregarExtrato);

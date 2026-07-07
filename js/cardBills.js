@@ -5,18 +5,22 @@ import { formatCurrency } from './utils.js';
 // ─── DOM ───────────────────────────────────────
 const userEmail    = document.getElementById('userEmail');
 const btnLogout    = document.getElementById('btnLogout');
-const filtroCartao = document.getElementById('filtroCartao');
+const filtroCartao      = document.getElementById('filtroCartao');
+const filtroMesPesquisa = document.getElementById('filtroMesPesquisa');
+const btnPesquisarMes   = document.getElementById('btnPesquisarMes');
+const btnLimparPesquisa = document.getElementById('btnLimparPesquisa');
 const mensagem     = document.getElementById('mensagemFatura');
 const listaFaturas = document.getElementById('listaFaturas');
 const modalEl      = document.getElementById('modalEditarItem');
 
 // ─── ESTADO ────────────────────────────────────
-let user       = null;
-let contas     = [];
-let categorias = [];
-let faturas    = [];
-let itensPorId = {};   // id → item (para edição)
-let editandoId = null;
+let user          = null;
+let contas        = [];
+let categorias    = [];
+let faturas       = [];
+let faturasPorKey = {};  // key (ex: "atual_0") → grupo de fatura, usado por pagarFatura
+let itensPorId    = {};   // id → item (para edição)
+let editandoId    = null;
 
 // ─── AUTH ──────────────────────────────────────
 const { data } = await supabase.auth.getSession();
@@ -82,36 +86,66 @@ async function carregarCategorias() {
   categorias = data || [];
 }
 
+const SELECT_FATURA = `
+  id, card_id, category_id, valor_parcela, valor_total, fatura_referencia,
+  status, descricao, parcela_atual, parcelas, data_compra,
+  credit_cards:card_id(id, nome, banco, vencimento_dia),
+  categories:category_id(nome, icon)
+`;
+
+// Agrupa linhas de card_transactions por cartão + mês de referência
+function agruparFaturas(linhas) {
+  const grupos = {};
+  linhas.forEach(parcela => {
+    const chave = `${parcela.card_id}|${parcela.fatura_referencia}`;
+    if (!grupos[chave]) {
+      grupos[chave] = {
+        card_id:        parcela.card_id,
+        cartao:         parcela.credit_cards?.nome || 'Cartão',
+        banco:          parcela.credit_cards?.banco || '',
+        referencia:     parcela.fatura_referencia,
+        vencimento_dia: parcela.credit_cards?.vencimento_dia ?? 99,
+        total:          0,
+        itens:          [],
+      };
+    }
+    grupos[chave].total += Number(parcela.valor_parcela || 0);
+    grupos[chave].itens.push(parcela);
+  });
+  return Object.values(grupos);
+}
+
 // ─── CARREGAR E AGRUPAR FATURAS ────────────────
 async function carregarFaturas() {
   msg('Carregando faturas...');
+  btnLimparPesquisa.style.display = 'none';
+  filtroMesPesquisa.value = '';
 
-  let query = supabase
-    .from('card_transactions')
-    .select(`
-      id, card_id, category_id, valor_parcela, valor_total, fatura_referencia,
-      status, descricao, parcela_atual, parcelas, data_compra,
-      credit_cards:card_id(id, nome, banco),
-      categories:category_id(nome, icon)
-    `)
-    .eq('user_id', user.id)
-    // ── FIX: inclui 'pendente' (status salvo pelo bot Telegram) e 'aberta'
-    .in('status', ['aberta', 'pendente'])
-    .order('fatura_referencia', { ascending: true });
+  const atualRef = mesAtualRef();
+
+  // Faturas em aberto (qualquer mês) + faturas já pagas do mês atual (ficam visíveis até o mês trocar)
+  let queryAbertas = supabase.from('card_transactions').select(SELECT_FATURA)
+    .eq('user_id', user.id).in('status', ['aberta', 'pendente']);
+  let queryPagasMes = supabase.from('card_transactions').select(SELECT_FATURA)
+    .eq('user_id', user.id).eq('status', 'paga').eq('fatura_referencia', atualRef);
 
   if (filtroCartao.value) {
-    query = query.eq('card_id', filtroCartao.value);
+    queryAbertas  = queryAbertas.eq('card_id', filtroCartao.value);
+    queryPagasMes = queryPagasMes.eq('card_id', filtroCartao.value);
   }
 
-  const { data, error } = await query;
+  const [{ data: abertas, error: erroAbertas }, { data: pagasMes, error: erroPagas }] =
+    await Promise.all([queryAbertas, queryPagasMes]);
 
-  if (error) {
-    msg('Erro ao listar faturas: ' + error.message, 'danger');
+  if (erroAbertas || erroPagas) {
+    msg('Erro ao listar faturas: ' + (erroAbertas || erroPagas).message, 'danger');
     listaFaturas.innerHTML = '';
     return;
   }
 
-  if (!data || data.length === 0) {
+  const data = [...(abertas || []), ...(pagasMes || [])];
+
+  if (!data.length) {
     msg('');
     listaFaturas.innerHTML = '<p class="muted" style="padding:18px">Nenhuma fatura em aberto.</p>';
     return;
@@ -121,25 +155,10 @@ async function carregarFaturas() {
   itensPorId = {};
   data.forEach(item => { itensPorId[item.id] = item; });
 
-  // Agrupar por cartão + referência
-  const grupos = {};
-  data.forEach(parcela => {
-    const chave = `${parcela.card_id}|${parcela.fatura_referencia}`;
-    if (!grupos[chave]) {
-      grupos[chave] = {
-        card_id:    parcela.card_id,
-        cartao:     parcela.credit_cards?.nome || 'Cartão',
-        banco:      parcela.credit_cards?.banco || '',
-        referencia: parcela.fatura_referencia,
-        total:      0,
-        itens:      [],
-      };
-    }
-    grupos[chave].total += Number(parcela.valor_parcela || 0);
-    grupos[chave].itens.push(parcela);
-  });
-
-  faturas = Object.values(grupos).sort((a, b) => a.referencia.localeCompare(b.referencia));
+  // Agrupar por cartão + referência, ordenado por mês e depois por dia de vencimento
+  faturas = agruparFaturas(data).sort((a, b) =>
+    a.referencia.localeCompare(b.referencia) || (a.vencimento_dia - b.vencimento_dia)
+  );
 
   msg('');
   renderFaturas();
@@ -153,18 +172,19 @@ function renderFaturas() {
   const futuras   = faturas.filter(f => f.referencia >  atual);
 
   let html = '';
+  faturasPorKey = {};
 
   const icoAlerta = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M12 4 3 19h18z"/><line x1="12" y1="10" x2="12" y2="14.5"/><circle cx="12" cy="17" r=".7" fill="currentColor" stroke="none"/></svg>`;
   const icoCalendario = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>`;
 
   if (passadas.length) {
     html += `<p class="bills-section-title" style="color:var(--danger,#ef4444)">${icoAlerta}Faturas anteriores</p>`;
-    passadas.forEach((f, i) => { html += billCardHtml(f, `passada_${i}`, false); });
+    passadas.forEach((f, i) => { const key = `passada_${i}`; faturasPorKey[key] = f; html += billCardHtml(f, key, false); });
   }
 
   if (doMes.length) {
     html += `<p class="bills-section-title">${icoCalendario}Fatura do mês atual — ${formatRef(atual)}</p>`;
-    doMes.forEach((f, i) => { html += billCardHtml(f, `atual_${i}`, true); });
+    doMes.forEach((f, i) => { const key = `atual_${i}`; faturasPorKey[key] = f; html += billCardHtml(f, key, true); });
   } else {
     html += `<p class="bills-section-title">${icoCalendario}Mês atual — ${formatRef(atual)}</p>
       <p class="muted" style="padding:4px 0 16px">Nenhuma fatura no mês atual.</p>`;
@@ -172,11 +192,15 @@ function renderFaturas() {
 
   if (futuras.length) {
     html += `<p class="bills-section-title">${icoCalendario}Faturas futuras</p>`;
-    futuras.forEach((f, i) => { html += billCardHtml(f, `futura_${i}`, false); });
+    futuras.forEach((f, i) => { const key = `futura_${i}`; faturasPorKey[key] = f; html += billCardHtml(f, key, false); });
   }
 
   listaFaturas.innerHTML = html;
+  ativarInteracoesFatura();
+}
 
+// Reaplica os comportamentos de UI após (re)gerar o HTML da lista (usado por renderFaturas e pela pesquisa)
+function ativarInteracoesFatura() {
   // Abre automaticamente o mês atual
   listaFaturas.querySelectorAll('.bill-card.mes-atual').forEach(card => {
     card.classList.add('open');
@@ -229,11 +253,38 @@ function billCardHtml(fatura, key, isAtual) {
     `;
   }).join('');
 
+  const pago = fatura.itens.every(it => it.status === 'paga');
+
+  let payBarHtml;
+  if (pago) {
+    payBarHtml = `
+      <div class="bill-pay-bar paga">
+        <span style="color:var(--success,#22c55e);font-weight:700;font-size:13px">✅ Fatura paga</span>
+      </div>`;
+  } else if (isAtual) {
+    payBarHtml = `
+      <div class="bill-pay-bar">
+        <select id="conta_${key}">
+          <option value="">Selecione a conta para pagar</option>
+          ${contasOptions}
+        </select>
+        <button type="button" class="btn btn-primary btn-pagar" data-key="${key}">
+          Pagar fatura — ${formatCurrency(fatura.total, 'BRL')}
+        </button>
+      </div>`;
+  } else {
+    payBarHtml = `
+      <div class="bill-pay-bar">
+        <span class="muted" style="font-size:13px">Fatura futura — disponível para pagamento em ${formatRef(fatura.referencia)}</span>
+      </div>`;
+  }
+
   return `
-    <div class="bill-card${isAtual ? ' mes-atual' : ''}" data-key="${key}">
+    <div class="bill-card${isAtual ? ' mes-atual' : ''}${pago ? ' paga' : ''}" data-key="${key}">
       <div class="bill-card-header">
         <div class="bill-card-left">
           <span class="bill-badge-mes${isAtual ? ' atual' : ''}">${formatRef(fatura.referencia)}</span>
+          ${pago ? '<span class="bill-badge-paga">✓ Paga</span>' : ''}
           <div>
             <div class="bill-card-name">${fatura.cartao}${fatura.banco ? ' · ' + fatura.banco : ''}</div>
             <div class="bill-card-count">${fatura.itens.length} item${fatura.itens.length > 1 ? 's' : ''}</div>
@@ -260,21 +311,7 @@ function billCardHtml(fatura, key, isAtual) {
           <tbody>${itensHtml}</tbody>
         </table>
 
-        ${isAtual ? `
-          <div class="bill-pay-bar">
-            <select id="conta_${key}">
-              <option value="">Selecione a conta para pagar</option>
-              ${contasOptions}
-            </select>
-            <button type="button" class="btn btn-primary btn-pagar" data-key="${key}">
-              Pagar fatura — ${formatCurrency(fatura.total, 'BRL')}
-            </button>
-          </div>
-        ` : `
-          <div class="bill-pay-bar">
-            <span class="muted" style="font-size:13px">Fatura futura — disponível para pagamento em ${formatRef(fatura.referencia)}</span>
-          </div>
-        `}
+        ${payBarHtml}
       </div>
     </div>
   `;
@@ -390,11 +427,25 @@ modalEl.addEventListener('click', (e) => {
   if (e.target === modalEl) window.fecharModalItem();
 });
 
+// ─── CATEGORIA PADRÃO PARA PAGAMENTO DE FATURA ─
+async function getCategoriaFaturaId() {
+  const existente = categorias.find(c => c.tipo === 'despesa' && c.nome.trim().toLowerCase() === 'fatura de cartão');
+  if (existente) return existente.id;
+
+  const { data, error } = await supabase.from('categories')
+    .insert({ user_id: user.id, nome: 'Fatura de Cartão', tipo: 'despesa', icon: '💳', ativo: true })
+    .select('id, nome, tipo').single();
+
+  if (error) { return null; }
+  categorias.push(data);
+  return data.id;
+}
+
 // ─── PAGAR FATURA ──────────────────────────────
 async function pagarFatura(key, contaId) {
   if (!contaId) { msg('Selecione uma conta para pagar.', 'warning'); return; }
 
-  const fatura = faturas.find((_, i) => `atual_${i}` === key);
+  const fatura = faturasPorKey[key];
   if (!fatura) { msg('Fatura não encontrada.', 'danger'); return; }
 
   const conta = contas.find(c => c.id === contaId);
@@ -403,10 +454,11 @@ async function pagarFatura(key, contaId) {
   msg('Registrando pagamento...');
 
   const descricao = `Fatura ${fatura.cartao} ${formatRef(fatura.referencia)}`;
+  const categoryId = await getCategoriaFaturaId();
   const { error: erroTx } = await supabase.from('transactions').insert({
     user_id:     user.id,
     account_id:  contaId,
-    category_id: null,
+    category_id: categoryId,
     type:        'despesa',
     amount:      Number(fatura.total.toFixed(2)),
     description: descricao,
@@ -436,10 +488,59 @@ async function pagarFatura(key, contaId) {
   await carregarFaturas();
 }
 
+// ─── PESQUISAR FATURA DE UM MÊS ESPECÍFICO ─────
+async function pesquisarMes() {
+  const ref = filtroMesPesquisa.value;
+  if (!ref) { msg('Escolha um mês para pesquisar.', 'warning'); return; }
+
+  msg('Pesquisando...');
+
+  let query = supabase.from('card_transactions').select(SELECT_FATURA)
+    .eq('user_id', user.id).eq('fatura_referencia', ref);
+  if (filtroCartao.value) query = query.eq('card_id', filtroCartao.value);
+
+  const { data, error } = await query;
+  if (error) { msg('Erro na pesquisa: ' + error.message, 'danger'); return; }
+
+  (data || []).forEach(item => { itensPorId[item.id] = item; });
+
+  const resultado = agruparFaturas(data || [])
+    .sort((a, b) => a.vencimento_dia - b.vencimento_dia);
+
+  msg('');
+  btnLimparPesquisa.style.display = '';
+  faturasPorKey = {};
+
+  const icoBusca = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>`;
+
+  if (!resultado.length) {
+    listaFaturas.innerHTML = `
+      <p class="bills-section-title">${icoBusca}Resultado da pesquisa — ${formatRef(ref)}</p>
+      <p class="muted" style="padding:4px 0 16px">Nenhuma fatura encontrada para este mês.</p>`;
+    return;
+  }
+
+  let html = `<p class="bills-section-title">${icoBusca}Resultado da pesquisa — ${formatRef(ref)}</p>`;
+  resultado.forEach((f, i) => { html += billCardHtml(f, `pesquisa_${i}`, false); });
+  listaFaturas.innerHTML = html;
+  ativarInteracoesFatura();
+}
+
 // ─── EVENTOS E INÍCIO ──────────────────────────
 filtroCartao.addEventListener('change', carregarFaturas);
+btnPesquisarMes.addEventListener('click', pesquisarMes);
+btnLimparPesquisa.addEventListener('click', () => { carregarFaturas(); });
 
 await carregarCartoes();
 await carregarContas();
 await carregarCategorias();
+
+// Pré-filtrar por cartão via URL (clique no dashboard)
+const urlParams = new URLSearchParams(window.location.search);
+const cartaoParam = urlParams.get('cartao');
+if(cartaoParam){
+  filtroCartao.value = cartaoParam;
+  window.history.replaceState({}, '', window.location.pathname);
+}
+
 await carregarFaturas();

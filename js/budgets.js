@@ -10,7 +10,8 @@ const user = sd.session.user;
 document.getElementById('btnLogout').addEventListener('click', async()=>{ await supabase.auth.signOut(); navigate('../login.html'); throw new Error('unauthenticated'); });
 
 const el = id => document.getElementById(id);
-let categorias = [], orcamentos = [], gastos = {};
+const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+let categorias = [], orcamentos = [], gastos = {}, mesHerdado = null;
 
 function mesAtual(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
 function inicioMes(ref){ return `${ref}-01`; }
@@ -30,6 +31,19 @@ async function carregar(){
 
   categorias = cats || [];
   orcamentos = orcs || [];
+  mesHerdado = null;
+
+  // Sem orçamento configurado para este mês → herda o do mês anterior mais recente (somente leitura)
+  if(!orcamentos.length){
+    const { data: anteriores } = await supabase.from('budgets')
+      .select('*,categories:category_id(nome,icon),mes_referencia')
+      .eq('user_id',user.id).lt('mes_referencia',ref)
+      .order('mes_referencia',{ascending:false}).limit(50);
+    if(anteriores?.length){
+      mesHerdado  = anteriores[0].mes_referencia;
+      orcamentos  = anteriores.filter(o=>o.mes_referencia===mesHerdado);
+    }
+  }
 
   // Gastos reais por categoria (transações + compras no cartão)
   gastos = {};
@@ -43,7 +57,8 @@ async function carregar(){
   renderKpis();
   renderLista();
 
-  // Notificações Telegram para orçamentos estourados
+  // Notificações Telegram para orçamentos estourados (não notifica sobre orçamento herdado, ainda não é real para este mês)
+  if(mesHerdado) return;
   orcamentos.forEach(o => {
     const planejado = Number(o.valor_planejado||0);
     const gasto     = gastos[o.category_id]||0;
@@ -72,7 +87,14 @@ function renderLista(){
     return;
   }
 
-  el('listaOrcamentos').innerHTML = orcamentos.map(o => {
+  const banner = mesHerdado
+    ? `<div style="padding:10px 12px;margin-bottom:10px;border-radius:10px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--muted)">↻ Mostrando orçamento herdado de ${MESES_ABREV[Number(mesHerdado.split('-')[1])-1]}/${mesHerdado.split('-')[0].slice(2)}. Nada foi salvo pra este mês ainda.</span>
+        <button class="btn btn-primary compact" style="font-size:12px" onclick="copiarParaEsteMes()">Copiar para este mês</button>
+      </div>`
+    : '';
+
+  el('listaOrcamentos').innerHTML = banner + orcamentos.map(o => {
     const planejado = Number(o.valor_planejado||0);
     const gasto     = gastos[o.category_id]||0;
     const restante  = planejado - gasto;
@@ -91,7 +113,7 @@ function renderLista(){
               <span class="${pct>=100?'negative':pct>=80?'':'positive'}" style="margin-left:4px;font-weight:700">${pct.toFixed(0)}%</span>
             </span>
             <span class="${restante>=0?'positive':'negative'}" style="font-family:var(--font-mono);font-size:13px">${restante>=0?'+':''}${formatCurrency(restante,'BRL')}</span>
-            <button class="btn btn-danger compact" onclick="excluir('${o.id}','${nome}')">✕</button>
+            ${mesHerdado ? '' : `<button class="btn btn-danger compact" onclick="excluir('${o.id}','${nome}')">✕</button>`}
           </div>
         </div>
         <div style="height:8px;background:var(--border);border-radius:99px;overflow:hidden">
@@ -111,8 +133,8 @@ async function salvar(){
 
   if(!ref || !catId || !valor){ msg('Preencha mês, categoria e valor.','warning'); return; }
 
-  // Verificar duplicata
-  const jaExiste = orcamentos.find(o=>o.category_id===catId);
+  // Verificar duplicata (ignora itens herdados — eles não pertencem a este mês ainda)
+  const jaExiste = !mesHerdado && orcamentos.find(o=>o.category_id===catId);
   if(jaExiste){ msg('Já existe orçamento para esta categoria neste mês. Exclua e recadastre.','warning'); return; }
 
   const { error } = await supabase.from('budgets').insert({
@@ -129,6 +151,17 @@ async function salvar(){
 window.excluir = async function(id, nome){
   if(!await confirmarExclusao(`Excluir orçamento de <strong>${nome}</strong>?`)) return;
   await supabase.from('budgets').delete().eq('id',id).eq('user_id',user.id);
+  await carregar();
+};
+
+window.copiarParaEsteMes = async function(){
+  if(!mesHerdado) return;
+  const ref = el('mesReferencia').value || mesAtual();
+  const { error } = await supabase.from('budgets').insert(
+    orcamentos.map(o => ({ user_id:user.id, mes_referencia:ref, category_id:o.category_id, valor_planejado:o.valor_planejado }))
+  );
+  if(error){ msg('Erro ao copiar: '+error.message,'danger'); return; }
+  msg('Orçamento copiado para este mês!','success');
   await carregar();
 };
 

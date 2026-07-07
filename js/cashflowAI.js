@@ -7,11 +7,16 @@ import { analyzeRequest } from './apiClient.js';
 
 import { supabase } from './supabaseClient.js';
 import { formatCurrency } from './utils.js';
+import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
 
 const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
 
 // ── Coleta contexto financeiro do usuário ─────────────────────────────────
 export async function coletarContexto(userId) {
+  let dolarAtual = 5.15;
+  try { dolarAtual = await getUsdBrlRate(userId); } catch(_) {}
+  const valorBRL = t => convertToBRL(t.amount, t.accounts?.currency || 'BRL', dolarAtual);
+
   const hoje = new Date();
   const anoMes = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
   const primeiroDia = `${anoMes}-01`;
@@ -36,12 +41,12 @@ export async function coletarContexto(userId) {
       .eq('user_id', userId).eq('active', true),
 
     supabase.from('transactions')
-      .select('type,amount,status,date,categories:category_id(nome,icon)')
+      .select('type,amount,status,date,accounts:account_id(currency),categories:category_id(nome,icon)')
       .eq('user_id', userId)
       .gte('date', primeiroDia).lte('date', ultimoDia),
 
     supabase.from('transactions')
-      .select('type,amount,date,description')
+      .select('type,amount,date,description,accounts:account_id(currency)')
       .eq('user_id', userId)
       .eq('status', 'pendente')
       .gte('date', hojeISO).lte('date', ultimoDia),
@@ -53,13 +58,13 @@ export async function coletarContexto(userId) {
       .eq('fatura_referencia', anoMes),
 
     supabase.from('transactions')
-      .select('type,amount,recurrence_frequency,description')
+      .select('type,amount,recurrence_frequency,description,accounts:account_id(currency)')
       .eq('user_id', userId)
       .eq('is_recurring', true)
       .eq('recurrence_active', true),
 
     supabase.from('transactions')
-      .select('type,amount,date,status')
+      .select('type,amount,date,status,accounts:account_id(currency)')
       .eq('user_id', userId)
       .gte('date', mes3Atras).lte('date', primeiroDia)
       .eq('status', 'pago'),
@@ -70,17 +75,23 @@ export async function coletarContexto(userId) {
       .eq('mes_referencia', anoMes),
 
     supabase.from('card_transactions')
-      .select('descricao,valor_parcela,valor_total,parcela_atual,total_parcelas,fatura_referencia,credit_cards:card_id(nome),categories:category_id(nome,icon)')
+      .select('descricao,valor_parcela,valor_total,parcela_atual,parcelas,fatura_referencia,credit_cards:card_id(nome),categories:category_id(nome,icon)')
       .eq('user_id', userId)
       .eq('status', 'aberta')
-      .order('fatura_referencia', { ascending: false })
+      .gte('fatura_referencia', anoMes)
+      .order('fatura_referencia', { ascending: true })
       .limit(50),
   ]);
+
+  (transacoesMes||[]).forEach(t => { t.amount = valorBRL(t); });
+  (pendentes||[]).forEach(t => { t.amount = valorBRL(t); });
+  (recorrentes||[]).forEach(t => { t.amount = valorBRL(t); });
+  (historico3m||[]).forEach(t => { t.amount = valorBRL(t); });
 
   const pagas = (transacoesMes||[]).filter(t => t.status === 'pago');
   const receitasMes = pagas.filter(t => t.type === 'receita').reduce((s,t) => s+Number(t.amount||0), 0);
   const despesasMes = pagas.filter(t => t.type === 'despesa').reduce((s,t) => s+Number(t.amount||0), 0);
-  const saldoTotal  = (contas||[]).filter(c => (c.currency||'BRL')==='BRL').reduce((s,c) => s+Number(c.saldo_atual||0), 0);
+  const saldoTotal  = (contas||[]).reduce((s,c) => s+convertToBRL(c.saldo_atual, c.currency||'BRL', dolarAtual), 0);
   const totalFaturas = (parcelasMes||[]).reduce((s,p) => s+Number(p.valor_parcela||0), 0);
 
   // Receitas e despesas pendentes até fim do mês
@@ -149,11 +160,11 @@ export async function coletarContexto(userId) {
           descricao: c.descricao,
           valor: Number(c.valor_parcela||0),
           categoria: c.categories?.nome || 'Sem categoria',
-          parcela: c.total_parcelas > 1 ? `${c.parcela_atual}/${c.total_parcelas}` : null,
+          parcela: c.parcelas > 1 ? `${c.parcela_atual}/${c.parcelas}` : null,
         });
         grupos[ref].total += Number(c.valor_parcela||0);
       });
-      return Object.values(grupos).sort((a,b) => b.fatura.localeCompare(a.fatura)).slice(0,3);
+      return Object.values(grupos).sort((a,b) => a.fatura.localeCompare(b.fatura)).slice(0,3);
     })(),
     gastosPorCategoria: (() => {
       const grupos = {};

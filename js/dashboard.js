@@ -3,6 +3,7 @@ import { initAssistantBar } from './assistantBar.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { emailService } from './emailService.js';
+import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
@@ -57,8 +58,16 @@ function aplicarClasse(el, valor){
   el.classList.add(valor>=0?'positive':'negative');
 }
 
-// Paleta de cores para pizza
-const CORES = ['#f59e0b','#22c55e','#f59e0b','#ef4444','#7c5cfc','#06b6d4','#f97316','#ec4899','#84cc16','#8b5cf6'];
+// Paleta categórica validada (8 tons distintos sob visão de cor e no fundo escuro do app)
+const CORES = ['#3987e5','#199e70','#c98500','#008300','#9085e9','#e66767','#d55181','#d95926'];
+
+// Cor fixa por categoria (hash do nome) quando ela não tem cor própria cadastrada —
+// evita que a cor mude de mês a mês só porque o ranking de gastos mudou
+function corParaCategoria(nome){
+  let hash = 0;
+  for(let i=0;i<nome.length;i++){ hash = (hash*31 + nome.charCodeAt(i)) >>> 0; }
+  return CORES[hash % CORES.length];
+}
 
 // ── Navegação de janela — card "Tendência de Gastos" ──
 const MESES_NOMES  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -70,6 +79,10 @@ let previsaoBaseOffset = -1;    // início da janela: 1 mês atrás até 3 meses
 let previsaoCarregando = false;
 let previsaoReceitasRec = 0;    // receitas fixas/mês (igual ao card Receita Líquida Recorrente)
 let previsaoDespesasRec = 0;    // despesas fixas/mês
+let dolarAtual = 5.15;          // cotação USD/BRL — contas em dólar (ex: Nomad) convertem por este valor
+
+// Soma o valor de uma transação já convertido pra BRL, conforme a moeda da conta
+function valorBRL(t){ return convertToBRL(t.amount, t.accounts?.currency || 'BRL', dolarAtual); }
 
 function mesComOffset(offset){
   const d = hoje();
@@ -92,6 +105,8 @@ async function carregarDashboard(){
     const nextD  = new Date(hoje().getFullYear(), hoje().getMonth()+1, 1);
     const refProximo = `${nextD.getFullYear()}-${String(nextD.getMonth()+1).padStart(2,'0')}`;
 
+    try { dolarAtual = await getUsdBrlRate(user.id); } catch(_) {}
+
     const [
       { data: contas },
       { data: transacoesMes },
@@ -109,23 +124,29 @@ async function carregarDashboard(){
       { data: parcelasMesAll },
     ] = await Promise.all([
       supabase.from('accounts').select('id,nome,currency,saldo_atual,color').eq('user_id',user.id).eq('active',true),                                                                                                          // contas
-      supabase.from('transactions').select('type,amount,status,date,category_id,categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),                                              // transacoesMes
+      supabase.from('transactions').select('type,amount,status,date,category_id,accounts:account_id(currency),categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),                  // transacoesMes
       supabase.from('card_transactions').select('valor_parcela,fatura_referencia,status,card_id,category_id').eq('user_id',user.id).in('status',['aberta','pendente']).in('fatura_referencia',[ref,refProximo]),               // parcelasMes (atual+próximo, abertas)
       supabase.from('transactions').select('id,description,amount,date,type,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date', (() => { const d=new Date(hoje()); d.setDate(d.getDate()+7); return d.toISOString().split('T')[0]; })()).order('date',{ascending:true}).limit(5), // transacoesPendentes
       supabase.from('budgets').select('*,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',ref),                                                                                                   // orcamentos
       supabase.from('goals').select('*').eq('user_id',user.id).eq('ativo',true).order('data_alvo',{ascending:true}).limit(5),                                                                                                  // metas
-      supabase.from('transactions').select('type,amount,recurrence_frequency').eq('user_id',user.id).eq('is_recurring',true).eq('recurrence_active',true),                                                                     // recorrentes
+      supabase.from('transactions').select('type,amount,recurrence_frequency,accounts:account_id(currency)').eq('user_id',user.id).eq('is_recurring',true).eq('recurrence_active',true),                                        // recorrentes
       supabase.from('transactions').select('id,type,amount,description,date,status,created_at,accounts:account_id(nome,currency),categories:category_id(nome,icon)').eq('user_id',user.id).order('created_at',{ascending:false}).limit(8), // ultimosLanc
       supabase.from('categories').select('id,nome,icon,cor').eq('user_id',user.id),                                                                                                                                            // categorias
       supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date',ultimoDiaMes()),                                 // pendentesRestantesMes
       supabase.from('credit_cards').select('id,nome,vencimento_dia').eq('user_id',user.id).eq('ativo',true),                                                                                                                   // cartoes
       supabase.from('card_transactions').select('id,descricao,valor_total,data_compra,status,created_at,credit_cards:card_id(nome),categories:category_id(nome,icon)').eq('user_id',user.id).eq('parcela_atual',1).order('created_at',{ascending:false}).limit(8), // ultimosCartao
-      supabase.from('transactions').select('type,amount,status').eq('user_id',user.id).eq('status','pago').gte('date',primeiroDiaMesAnterior()).lte('date',ultimoDiaMesAnterior()),                                             // txMesAnterior
-      supabase.from('card_transactions').select('valor_parcela,category_id').eq('user_id',user.id).eq('fatura_referencia',ref),                                                                                                // parcelasMesAll (todos status, para orçamento)
+      supabase.from('transactions').select('type,amount,status,accounts:account_id(currency)').eq('user_id',user.id).eq('status','pago').gte('date',primeiroDiaMesAnterior()).lte('date',ultimoDiaMesAnterior()),                // txMesAnterior
+      supabase.from('card_transactions').select('valor_parcela,category_id,categories:category_id(nome,icon,cor)').eq('user_id',user.id).eq('fatura_referencia',ref),                                                            // parcelasMesAll (todos status, para orçamento + pizza)
     ]);
 
     // ── KPIs ─────────────────────────────────────────
-    const totalSaldo = (contas||[]).filter(c=>(c.currency||'BRL')==='BRL').reduce((s,c)=>s+Number(c.saldo_atual||0),0);
+    // Converte para BRL na origem — contas em dólar (ex: Nomad) não ficam de fora
+    // nem entram misturadas sem conversão nos totais abaixo.
+    (transacoesMes||[]).forEach(t => { t.amount = valorBRL(t); });
+    (txMesAnterior||[]).forEach(t => { t.amount = valorBRL(t); });
+    (recorrentes||[]).forEach(t => { t.amount = valorBRL(t); });
+
+    const totalSaldo = (contas||[]).reduce((s,c)=>s+convertToBRL(c.saldo_atual, c.currency||'BRL', dolarAtual),0);
     const tx = transacoesMes||[];
     const pagas = tx.filter(t=>t.status==='pago');
     const receitas = pagas.filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
@@ -138,6 +159,7 @@ async function carregarDashboard(){
     el('kpiDespesas').innerText  = fmt(despesas);
     el('kpiResultado').innerText = fmt(resultado);
     el('kpiFaturas').innerText   = fmt(totalFaturas);
+    ['kpiSaldo','kpiReceitas','kpiDespesas','kpiResultado','kpiFaturas'].forEach(id => el(id).classList.remove('kpi-loading'));
     aplicarClasse(el('kpiResultado'), resultado);
 
     // ── Ring cards (Stage 2) ─────────────────────────
@@ -163,10 +185,25 @@ async function carregarDashboard(){
     renderFaturas(cartoes||[], parcelasMes||[]);
 
     // ── Pizza de despesas ─────────────────────────────
-    renderPizza(pagas.filter(t=>t.type==='despesa'));
+    // Desmembra "Fatura de Cartão" nas categorias reais dos itens do cartão (mesmo critério do Orçamento: fatura_referencia do mês)
+    const catFatura = (categorias||[]).find(c => c.nome.trim().toLowerCase() === 'fatura de cartão');
+    const despesasSemFatura = pagas.filter(t => t.type==='despesa' && t.category_id !== catFatura?.id);
+    renderPizza(despesasSemFatura, parcelasMesAll||[]);
 
-    // ── Saúde do orçamento ───────────────────────────
-    renderOrcamento(orcamentos||[], pagas.filter(t=>t.type==='despesa'), parcelasMesAll||[]);
+    // ── Saúde do orçamento (herda do mês anterior se este mês ainda não tem nada configurado) ──
+    let orcamentosEfetivos = orcamentos||[];
+    let orcamentoMesHerdado = null;
+    if(!orcamentosEfetivos.length){
+      const { data: orcAnteriores } = await supabase.from('budgets')
+        .select('*,categories:category_id(nome,icon),mes_referencia')
+        .eq('user_id',user.id).lt('mes_referencia',ref)
+        .order('mes_referencia',{ascending:false}).limit(50);
+      if(orcAnteriores?.length){
+        orcamentoMesHerdado = orcAnteriores[0].mes_referencia;
+        orcamentosEfetivos  = orcAnteriores.filter(o=>o.mes_referencia===orcamentoMesHerdado);
+      }
+    }
+    renderOrcamento(orcamentosEfetivos, pagas.filter(t=>t.type==='despesa'), parcelasMesAll||[], orcamentoMesHerdado);
 
     // ── Metas ────────────────────────────────────────
     renderMetas(metas||[]);
@@ -204,6 +241,7 @@ async function carregarDashboard(){
     });
   } catch(err) {
     console.error('[Dashboard]', err);
+    ['kpiSaldo','kpiReceitas','kpiDespesas','kpiResultado','kpiFaturas'].forEach(id => el(id)?.classList.remove('kpi-loading'));
   }
 }
 
@@ -263,7 +301,7 @@ function renderContas(contas) {
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;
         padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer"
-        onclick="location.href='./account-statement.html'">
+        onclick="location.href='./account-statement.html?conta=${c.id}'">
         <span style="display:flex;align-items:center;font-size:13px;font-weight:600">${icon}${c.nome}</span>
         <span style="font-size:13px;font-weight:800;color:${cor}">${val}</span>
       </div>`;
@@ -337,7 +375,7 @@ function renderFaturas(cartoes, parcelasMes){
     const targetRef = `${anoV}-${String(mesV).padStart(2,'0')}`;
     const total  = parcelasMes.filter(p=>p.card_id===cartao.id && p.fatura_referencia===targetRef).reduce((s,p)=>s+Number(p.valor_parcela||0),0);
 
-    faturas.push({ nome: cartao.nome, diaVenc: diaV, dataVenc, total, dias });
+    faturas.push({ id: cartao.id, nome: cartao.nome, diaVenc: diaV, dataVenc, total, dias });
   });
 
   if(!faturas.length){
@@ -353,7 +391,7 @@ function renderFaturas(cartoes, parcelasMes){
   el('blocoFaturas').innerHTML = faturas.sort((a,b)=>a.dias-b.dias).map(f => {
     const pillClass = f.dias === 0 ? 'urgente' : f.total === 0 ? 'pago' : 'pendente';
     const pillLabel = f.dias === 0 ? 'Vence hoje' : f.total === 0 ? 'Sem lançamentos' : 'Pendente';
-    return `<div class="invoice-row">
+    return `<div class="invoice-row" style="cursor:pointer" onclick="location.href='./card-bills.html?cartao=${f.id}'">
       <div class="invoice-icon">
         <svg><use href="#db-credit-card"/></svg>
       </div>
@@ -370,72 +408,67 @@ function renderFaturas(cartoes, parcelasMes){
 }
 
 // ── Pizza ─────────────────────────────────────────────
-function renderPizza(despesasMes){
-  if(!despesasMes.length){
+function renderPizza(despesasMes, parcelasCartaoMes){
+  if(!despesasMes.length && !(parcelasCartaoMes||[]).length){
     el('blocoPizza').innerHTML = `
       <div style="text-align:center;padding:24px 16px">
-        <div style="font-size:36px;margin-bottom:8px">🍕</div>
+        <div style="font-size:36px;margin-bottom:8px">📊</div>
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhuma despesa registrada este mês.</p>
         <a href="./movements.html?tipo=despesa" class="btn btn-secondary compact" style="font-size:12px">Lançar despesa</a>
       </div>`;
     return;
   }
 
-  // Agrupar por categoria
+  // Agrupar por categoria (transações normais + itens de fatura de cartão, desmembrados por categoria real)
   const grupos = {};
   despesasMes.forEach(t => {
     const nome = t.categories?.nome || 'Sem categoria';
     const icon = t.categories?.icon || '';
     const cor  = t.categories?.cor;
-    if(!grupos[nome]) grupos[nome] = { nome, icon, cor, total: 0 };
+    if(!grupos[nome]) grupos[nome] = { nome, icon, cor, categoryId: t.category_id, total: 0 };
     grupos[nome].total += Number(t.amount||0);
+  });
+  (parcelasCartaoMes||[]).forEach(p => {
+    const nome = p.categories?.nome || 'Sem categoria';
+    const icon = p.categories?.icon || '';
+    const cor  = p.categories?.cor;
+    if(!grupos[nome]) grupos[nome] = { nome, icon, cor, categoryId: p.category_id, total: 0 };
+    grupos[nome].total += Number(p.valor_parcela||0);
   });
 
   const items = Object.values(grupos).sort((a,b)=>b.total-a.total).slice(0,8);
   const total = items.reduce((s,i)=>s+i.total,0);
 
-  // SVG donut
-  const R=60, cx=70, cy=70, stroke=22;
-  const circ = 2*Math.PI*R;
-  let offset = 0;
-  const segmentos = items.map((item,i) => {
-    const pct = item.total/total;
-    const dash = pct*circ;
-    const seg = `<circle cx="${cx}" cy="${cy}" r="${R}"
-      fill="none" stroke="${item.cor||CORES[i%CORES.length]}" stroke-width="${stroke}"
-      stroke-dasharray="${dash} ${circ-dash}"
-      stroke-dashoffset="${-offset}"
-      transform="rotate(-90 ${cx} ${cy})"/>`;
-    offset += dash;
-    item._cor = item.cor||CORES[i%CORES.length];
-    return seg;
-  });
-
-  const svg = `<svg class="pizza-svg" width="140" height="140" viewBox="0 0 140 140">
-    ${segmentos.join('')}
-    <text x="${cx}" y="${cy-6}" text-anchor="middle" fill="var(--muted)" font-size="10" font-weight="700">TOTAL</text>
-    <text x="${cx}" y="${cy+10}" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="800">${fmt(total)}</text>
-  </svg>`;
-
-  const legenda = items.map(item => {
-    const pct = (item.total/total*100).toFixed(1);
-    return `<div class="pizza-item">
-      <span class="pizza-dot" style="background:${item._cor}"></span>
-      <span class="pizza-label">${item.icon} ${item.nome}</span>
-      <span class="pizza-pct">${pct}%</span>
-    </div>`;
+  // Barra por categoria — cor customizada da categoria ou, na falta dela,
+  // cor fixa derivada do nome (não muda de mês a mês conforme o ranking)
+  const linhas = items.map(item => {
+    const pct = total>0 ? (item.total/total*100) : 0;
+    const cor = item.cor || corParaCategoria(item.nome);
+    const conteudo = `
+      <div class="categoria-row">
+        <span class="categoria-label">${item.icon} ${item.nome}</span>
+        <span class="categoria-valor">${fmt(item.total)} <span class="categoria-pct">(${pct.toFixed(1)}%)</span></span>
+      </div>
+      <div class="categoria-bar-wrap">
+        <div class="categoria-bar" style="width:${pct}%;background:${cor}"></div>
+      </div>`;
+    return item.categoryId
+      ? `<a class="categoria-item categoria-item-link" href="./movements.html?categoria=${item.categoryId}">${conteudo}</a>`
+      : `<div class="categoria-item">${conteudo}</div>`;
   }).join('');
 
-  el('blocoPizza').innerHTML = `<div class="pizza-wrap">${svg}<div class="pizza-legend">${legenda}</div></div>`;
+  el('blocoPizza').innerHTML = `
+    <div class="categoria-total"><span>TOTAL</span><strong>${fmt(total)}</strong></div>
+    ${linhas}`;
 }
 
 // ── Orçamento ─────────────────────────────────────────
-function renderOrcamento(orcamentos, despesasMes, parcelasMes){
+function renderOrcamento(orcamentos, despesasMes, parcelasMes, mesHerdado){
   if(!orcamentos.length){
     el('blocoOrcamento').innerHTML = `
       <div style="text-align:center;padding:24px 16px">
         <div style="font-size:36px;margin-bottom:8px">📊</div>
-        <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhum orçamento configurado para este mês.</p>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhum orçamento configurado ainda.</p>
         <a href="./budgets.html" class="btn btn-secondary compact" style="font-size:12px">Configurar orçamento</a>
       </div>`;
     return;
@@ -451,6 +484,10 @@ function renderOrcamento(orcamentos, despesasMes, parcelasMes){
   });
 
   let html = '';
+  if(mesHerdado){
+    const [ay,am] = mesHerdado.split('-');
+    html += `<p class="muted" style="font-size:11px;margin:0 0 10px">↻ Herdado de ${MESES_ABREV[Number(am)-1]}/${ay.slice(2)} — <a href="./budgets.html">configure este mês</a> para personalizar.</p>`;
+  }
   orcamentos.forEach(orc => {
     const planejado = Number(orc.valor_planejado||0);
     const gasto = gastos[orc.category_id]||0;
@@ -577,7 +614,7 @@ async function carregarTendencia(baseOffset){
     const [{ data: parcelas }, { data: despesasReais }] = await Promise.all([
       supabase.from('card_transactions').select('valor_parcela,fatura_referencia').eq('user_id',user.id).in('fatura_referencia', refs),
       passados.length
-        ? supabase.from('transactions').select('amount,date').eq('user_id',user.id).eq('status','pago').eq('type','despesa').gte('date',passados[0].inicio).lte('date',passados[passados.length-1].fim)
+        ? supabase.from('transactions').select('amount,date,accounts:account_id(currency)').eq('user_id',user.id).eq('status','pago').eq('type','despesa').gte('date',passados[0].inicio).lte('date',passados[passados.length-1].fim)
         : Promise.resolve({ data: [] }),
     ]);
 
@@ -587,7 +624,7 @@ async function carregarTendencia(baseOffset){
     const despesasPorMes = {};
     (despesasReais||[]).forEach(t => {
       const ref = String(t.date).slice(0,7);
-      despesasPorMes[ref] = (despesasPorMes[ref]||0) + Number(t.amount||0);
+      despesasPorMes[ref] = (despesasPorMes[ref]||0) + valorBRL(t);
     });
 
     // Comprometido = despesas fixas/mês (recorrentes) + parcelas de cartão do mês.
@@ -600,9 +637,11 @@ async function carregarTendencia(baseOffset){
         const total       = (despesasPorMes[m.ref]||0) + parcelasMes;
         const comprometido = Math.min(fixoAprox, total);
         const variavel      = Math.max(total - comprometido, 0);
-        return { ...m, comprometido, variavel, total, projetado:false };
+        const livre         = Math.max(previsaoReceitasRec - total, 0);
+        return { ...m, comprometido, variavel, livre, total, projetado:false };
       }
-      return { ...m, comprometido: fixoAprox, variavel: 0, total: fixoAprox, projetado:true };
+      const livre = Math.max(previsaoReceitasRec - fixoAprox, 0);
+      return { ...m, comprometido: fixoAprox, variavel: 0, livre, total: fixoAprox, projetado:true };
     });
 
     renderTendencia(dados);
@@ -621,16 +660,28 @@ function renderTendencia(dados){
   const barAreaHeight = barAreaBottom - barAreaTop;
   const colW = W / dados.length;
   const barW = colW * 0.46;
-  const maxTotal = Math.max(...dados.map(d => d.total), 1);
-  const escalaY = v => barAreaBottom - (v / maxTotal) * barAreaHeight;
+
+  // Detecta mês fora de escala (ex: mês de importação inicial de dados) e evita
+  // que ele esmague a visualização dos demais — escala pelo 2º maior valor e
+  // corta visualmente a barra do outlier, mantendo o rótulo com o valor real.
+  const totaisDesc = dados.map(d => d.total).sort((a,b) => b-a);
+  const [maior, segundoMaior] = totaisDesc;
+  const outlier  = segundoMaior > 0 && maior > segundoMaior * 1.8;
+  const maxTotal = Math.max(outlier ? segundoMaior : maior, previsaoReceitasRec, 1);
+  const escalaY  = v => barAreaBottom - (Math.min(v, maxTotal) / maxTotal) * barAreaHeight;
 
   const barras = dados.map((d,i) => {
     const x             = i*colW + (colW-barW)/2;
-    const hComprometido = (d.comprometido/maxTotal)*barAreaHeight;
-    const hVariavel     = (d.variavel/maxTotal)*barAreaHeight;
+    const estourou      = d.total > maxTotal;
+    const fatorCorte    = estourou ? maxTotal / d.total : 1;
+    const hComprometido = (d.comprometido/maxTotal)*barAreaHeight*fatorCorte;
+    const hVariavel     = (d.variavel/maxTotal)*barAreaHeight*fatorCorte;
+    const hLivre        = ((d.livre||0)/maxTotal)*barAreaHeight;
     const yComprometido = barAreaBottom - hComprometido;
     const yVariavel     = yComprometido - hVariavel;
-    const yTopo         = hVariavel > 0 ? yVariavel : yComprometido;
+    const yGasto        = hVariavel > 0 ? yVariavel : yComprometido;
+    const yLivre        = yGasto - hLivre;
+    const yTopo         = hLivre > 0 ? yLivre : yGasto;
     const destaque      = d.offset === 0;
     const fillComprometido = d.projetado ? 'url(#tendHatch)' : 'var(--accent)';
     const mesAbrev      = MESES_ABREV[Number(d.ref.split('-')[1])-1];
@@ -638,8 +689,10 @@ function renderTendencia(dados){
     return `
       <rect x="${x}" y="${yComprometido}" width="${barW}" height="${hComprometido}" fill="${fillComprometido}" rx="3"/>
       ${!d.projetado && hVariavel>0 ? `<rect x="${x}" y="${yVariavel}" width="${barW}" height="${hVariavel}" fill="var(--danger)" rx="3"/>` : ''}
+      ${hLivre>0 ? `<rect x="${x}" y="${yLivre}" width="${barW}" height="${hLivre}" fill="var(--success)" opacity=".5" rx="3"/>` : ''}
+      ${estourou ? `<line x1="${x}" y1="${barAreaTop}" x2="${x+barW}" y2="${barAreaTop}" stroke="var(--bg-root)" stroke-width="2.5" stroke-dasharray="3 2"/>` : ''}
       ${destaque ? `<rect x="${x-2.5}" y="${yTopo-2.5}" width="${barW+5}" height="${barAreaBottom-yTopo+5}" fill="none" stroke="var(--accent)" stroke-width="1.5" rx="5"/>` : ''}
-      <text x="${x+barW/2}" y="${escalaY(d.total)-8}" text-anchor="middle" font-size="10" font-weight="700" fill="${destaque?'var(--accent)':'var(--muted)'}">${d.projetado?'~':''}${fmtBarra(d.total)}</text>
+      <text x="${x+barW/2}" y="${yGasto-8}" text-anchor="middle" font-size="10" font-weight="700" fill="${destaque?'var(--accent)':'var(--muted)'}">${d.projetado?'~':''}${fmtBarra(d.total)}</text>
       <text x="${x+barW/2}" y="${barAreaBottom+16}" text-anchor="middle" font-size="10" font-weight="${destaque?800:600}" fill="${destaque?'var(--accent)':'var(--muted)'}">${mesAbrev}${destaque?' •':''}</text>
     `;
   }).join('');
@@ -670,8 +723,13 @@ function renderTendencia(dados){
   </svg>`;
 
   const atual = dados.find(d => d.offset===0);
-  const pctComprometido = atual && atual.total>0 ? Math.round(atual.comprometido/atual.total*100) : 0;
+  const pctComprometido = previsaoReceitasRec>0
+    ? Math.round((atual?.comprometido||0)/previsaoReceitasRec*100)
+    : (atual && atual.total>0 ? Math.round(atual.comprometido/atual.total*100) : 0);
   const corPct = pctComprometido>80 ? 'var(--danger)' : pctComprometido>60 ? '#f59e0b' : '#22c55e';
+  const insightTxt = previsaoReceitasRec>0
+    ? `Já são <strong style="color:${corPct}">${pctComprometido}%</strong> da receita provisionada (${fmt(previsaoReceitasRec)}) comprometidos este mês.`
+    : `Já são <strong style="color:${corPct}">${pctComprometido}%</strong> comprometidos este mês.`;
 
   const primeiro = dados[0], ultimo = dados[dados.length-1];
   const subiu = ultimo.total >= primeiro.total;
@@ -686,10 +744,11 @@ function renderTendencia(dados){
     <div class="tendencia-legend">
       <span><i style="background:var(--accent)"></i> Comprometido</span>
       <span><i style="background:var(--danger)"></i> Variável</span>
+      ${previsaoReceitasRec>0 ? `<span><i style="background:var(--success);opacity:.5"></i> Livre</span>` : ''}
       <span><i class="hatch"></i> Projetado</span>
     </div>
     <div class="tendencia-insight">
-      <p>Já são <strong style="color:${corPct}">${pctComprometido}%</strong> comprometidos este mês.</p>
+      <p>${insightTxt}</p>
       ${tendenciaTxt ? `<p class="muted">${tendenciaTxt}</p>` : ''}
     </div>
   `;
