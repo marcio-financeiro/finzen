@@ -726,7 +726,7 @@ function renderTendencia(dados){
   const pctComprometido = previsaoReceitasRec>0
     ? Math.round((atual?.comprometido||0)/previsaoReceitasRec*100)
     : (atual && atual.total>0 ? Math.round(atual.comprometido/atual.total*100) : 0);
-  const corPct = pctComprometido>80 ? 'var(--danger)' : pctComprometido>60 ? '#f59e0b' : '#22c55e';
+  const corPct = pctComprometido>80 ? 'var(--danger)' : pctComprometido>60 ? 'var(--warning)' : 'var(--success)';
   const insightTxt = previsaoReceitasRec>0
     ? `Já são <strong style="color:${corPct}">${pctComprometido}%</strong> da receita provisionada (${fmt(previsaoReceitasRec)}) comprometidos este mês.`
     : `Já são <strong style="color:${corPct}">${pctComprometido}%</strong> comprometidos este mês.`;
@@ -823,7 +823,7 @@ function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investiment
     label: 'Taxa de poupança',
     pts: ptsPoupanca,
     max: 25,
-    icon: taxaPoupanca >= 20 ? '✅' : taxaPoupanca >= 10 ? '🟡' : '🔴',
+    cor: taxaPoupanca >= 20 ? 'success' : taxaPoupanca >= 10 ? 'warning' : 'danger',
     detalhe: `${taxaPoupanca.toFixed(1)}% do salário`,
   });
 
@@ -838,7 +838,7 @@ function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investiment
     label: 'Reserva de emergência',
     pts: ptsReserva,
     max: 25,
-    icon: pctReserva >= 100 ? '✅' : pctReserva >= 50 ? '🟡' : '🔴',
+    cor: pctReserva >= 100 ? 'success' : pctReserva >= 50 ? 'warning' : 'danger',
     detalhe: `${pctReserva.toFixed(0)}% da meta (6x despesas)`,
   });
 
@@ -851,7 +851,7 @@ function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investiment
     label: 'Uso do cartão de crédito',
     pts: ptsCartao,
     max: 20,
-    icon: limiteTotal === 0 ? '⚪' : pctCartao <= 20 ? '✅' : pctCartao <= 40 ? '🟡' : '🔴',
+    cor: limiteTotal === 0 ? 'neutral' : pctCartao <= 20 ? 'success' : pctCartao <= 40 ? 'warning' : 'danger',
     detalhe: limiteTotal > 0 ? `${pctCartao.toFixed(0)}% do limite usado` : 'Sem limite cadastrado',
   });
 
@@ -863,7 +863,7 @@ function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investiment
     label: 'Diversificação de investimentos',
     pts: ptsInvest,
     max: 20,
-    icon: ptsInvest >= 15 ? '✅' : ptsInvest >= 5 ? '🟡' : '🔴',
+    cor: ptsInvest >= 15 ? 'success' : ptsInvest >= 5 ? 'warning' : 'danger',
     detalhe: totalInvest > 0 ? `${classes.size} classe${classes.size !== 1 ? 's' : ''} de ativo` : 'Sem investimentos',
   });
 
@@ -874,13 +874,13 @@ function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investiment
     label: 'Metas financeiras',
     pts: ptsMetas,
     max: 10,
-    icon: ptsMetas >= 6 ? '✅' : ptsMetas >= 2 ? '🟡' : '🔴',
+    cor: ptsMetas >= 6 ? 'success' : ptsMetas >= 2 ? 'warning' : 'danger',
     detalhe: `${metasAtivas.length} meta${metasAtivas.length !== 1 ? 's' : ''} com aporte`,
   });
 
   // ── Score total ────────────────────────────────────
   const score = itens.reduce((s,i) => s + i.pts, 0);
-  const corScore = score >= 80 ? '#22c55e' : score >= 60 ? '#f59e0b' : score >= 40 ? '#f59e0b' : '#ef4444';
+  const corScore = score >= 80 ? 'var(--success)' : score >= 40 ? 'var(--warning)' : 'var(--danger)';
   const labelScore = score >= 80 ? 'Excelente' : score >= 60 ? 'Bom' : score >= 40 ? 'Regular' : 'Atenção';
 
   // ── Atualizar DOM ──────────────────────────────────
@@ -896,20 +896,18 @@ function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investiment
     el('scoreCircle').style.strokeDashoffset = offset;
   }, 100);
 
+  const corVar = cor => cor === 'success' ? 'var(--success)' : cor === 'warning' ? 'var(--warning)' : cor === 'danger' ? 'var(--danger)' : 'var(--muted)';
+
   el('scoreItens').innerHTML = itens.map(item => `
     <div class="score-item">
-      <span style="font-size:13px">${item.icon}</span>
+      <span class="color-dot" style="background:${corVar(item.cor)};border-color:${corVar(item.cor)}"></span>
       <span class="score-item-label">${item.label}<br>
         <span style="font-size:10px;color:var(--muted)">${item.detalhe}</span>
       </span>
       <div class="score-item-bar-wrap">
-        <div class="score-item-bar" style="width:${(item.pts/item.max*100).toFixed(0)}%;background:${
-          item.pts/item.max >= .8 ? '#22c55e' : item.pts/item.max >= .5 ? '#f59e0b' : '#ef4444'
-        }"></div>
+        <div class="score-item-bar" style="width:${(item.pts/item.max*100).toFixed(0)}%;background:${corVar(item.cor)}"></div>
       </div>
-      <span class="score-item-pts" style="color:${
-        item.pts/item.max >= .8 ? '#22c55e' : item.pts/item.max >= .5 ? '#f59e0b' : '#ef4444'
-      }">${item.pts}/${item.max}</span>
+      <span class="score-item-pts" style="color:${corVar(item.cor)}">${item.pts}/${item.max}</span>
     </div>
   `).join('');
 

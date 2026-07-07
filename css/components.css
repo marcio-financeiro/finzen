@@ -759,6 +759,26 @@ input:-webkit-autofill:active{
 /* ── Collapse transition ── */
 .ia-body-collapsed{ display:none; }
 
+/* ── Insights IA: abas internas (Fluxo de Caixa / Anomalias) ── */
+.insights-tabs{
+  display:flex;gap:4px;padding:0 18px;margin-bottom:2px;
+}
+.insights-tab{
+  border:none;background:transparent;color:var(--muted);
+  font-size:12px;font-weight:700;padding:10px 4px;cursor:pointer;
+  border-bottom:2px solid transparent;transition:color .15s ease,border-color .15s ease;
+}
+.insights-tab:hover{ color:var(--text); }
+.insights-tab.active{ color:var(--accent);border-bottom-color:var(--accent); }
+
+/* ── Estado de erro padrão (dashboard) ── */
+.dash-error-state{
+  display:flex;align-items:center;gap:8px;
+  margin-top:10px;padding:10px 12px;border-radius:10px;
+  background:var(--danger-dim);color:var(--danger);font-size:12px;text-align:left;
+}
+.dash-error-state svg{ width:16px;height:16px;flex-shrink:0; }
+
 /* ── Painel proativo do assistente ── */
 .assistant-panel {
   border: 1px solid rgba(245,158,11,.22);

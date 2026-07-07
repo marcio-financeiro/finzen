@@ -33,6 +33,13 @@
   <symbol id="db-credit-card" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="13" rx="2.5"/><path d="M2.5 10.5h19"/><rect x="5.5" y="13.7" width="4" height="2" rx=".5" fill="currentColor" stroke="none"/></symbol>
   <symbol id="db-arrow-up-right" viewBox="0 0 24 24"><polyline points="7,17 17,7"/><polyline points="9,7 17,7 17,15"/></symbol>
   <symbol id="db-arrow-down-right" viewBox="0 0 24 24"><polyline points="7,7 17,17"/><polyline points="7,9 7,17 15,17"/></symbol>
+  <symbol id="db-bell" viewBox="0 0 24 24"><path d="M12 3a5 5 0 0 0-5 5v3c0 1-.5 2-1.5 3h13c-1-1-1.5-2-1.5-3V8a5 5 0 0 0-5-5z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/></symbol>
+  <symbol id="db-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="db-award" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 21l5-3 5 3-1.5-8.5"/></symbol>
+  <symbol id="db-sparkle" viewBox="0 0 24 24"><path d="M12 3c.6 2.8 1.8 4.6 4 5.5-2.2.9-3.4 2.7-4 5.5-.6-2.8-1.8-4.6-4-5.5 2.2-.9 3.4-2.7 4-5.5z"/></symbol>
+  <symbol id="db-ghost" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-6 6v10l2.5-2 2 2 1.5-1.5 1.5 1.5 2-2 2.5 2V9a6 6 0 0 0-6-6z"/><circle cx="9.5" cy="10" r=".8" fill="currentColor" stroke="none"/><circle cx="14.5" cy="10" r=".8" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="db-refresh" viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M4.5 13a8 8 0 1 0 2.5-6.5L4 10"/></symbol>
+  <symbol id="db-smartphone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></symbol>
 </defs>
 </svg>
 
@@ -53,7 +60,7 @@
       <button type="button" class="btn btn-secondary compact" id="btnModoSimples"
         onclick="localStorage.removeItem('finzen_modo_avancado');location.href='./mobile.html'"
         style="display:none">
-        📱 Modo Simples
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><use href="#db-smartphone"/></svg>Modo Simples
       </button>
       <div class="topbar-actions">
         <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
@@ -141,19 +148,19 @@
       <div class="score-gauge">
         <svg viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
           <circle cx="55" cy="55" r="46" fill="none" stroke="var(--border)" stroke-width="10"/>
-          <circle id="scoreCircle" cx="55" cy="55" r="46" fill="none" stroke="#22c55e"
+          <circle id="scoreCircle" cx="55" cy="55" r="46" fill="none" stroke="var(--success)"
             stroke-width="10" stroke-linecap="round"
             stroke-dasharray="289" stroke-dashoffset="289"
             transform="rotate(-90 55 55)"
             style="transition: stroke-dashoffset .8s ease, stroke .4s"/>
         </svg>
         <div class="score-gauge-num">
-          <span id="scoreNum" style="color:#22c55e">0</span>
+          <span id="scoreNum" style="color:var(--success)">0</span>
           <span class="score-gauge-label" id="scoreLabel" style="color:var(--muted)">—</span>
         </div>
       </div>
       <div class="score-info">
-        <h3>🏅 Score de Saúde Financeira</h3>
+        <h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><use href="#db-award"/></svg>Score de Saúde Financeira</h3>
         <div class="score-itens" id="scoreItens"></div>
       </div>
     </div>
@@ -162,7 +169,7 @@
     <div class="dash-grid">
       <div class="dash-block">
         <div class="dash-block-header">
-          <h2>🔔 Alertas</h2>
+          <h2><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><use href="#db-bell"/></svg>Alertas</h2>
           <a href="./movements.html" class="btn btn-secondary compact" style="font-size:11px">Ver pendentes</a>
         </div>
         <div class="dash-block-body" id="blocoAlertas">
@@ -228,7 +235,7 @@
           <!-- Progresso de metas -->
           <div class="dash-block" style="border:none;background:transparent">
             <div class="dash-block-header">
-              <h2>🎯 Metas</h2>
+              <h2><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><use href="#db-target"/></svg>Metas</h2>
               <a href="./goals.html" class="btn btn-secondary compact" style="font-size:11px">Gerenciar</a>
             </div>
             <div class="dash-block-body" id="blocoMetas">
@@ -250,37 +257,37 @@
       </div>
     </div>
 
-    <!-- Previsão IA de Fluxo de Caixa -->
-    <div class="cfai-block" id="cfaiBlock">
-      <div class="cfai-header" onclick="window.toggleBloco('cfaiBody','cfaiToggle')">
-        <h2>🤖 Previsão Inteligente de Fluxo de Caixa <span class="cfai-badge">IA</span></h2>
-        <span id="cfaiToggle" style="color:var(--muted);font-size:16px;transition:transform .2s">▾</span>
+    <!-- Insights IA: Previsão de Fluxo de Caixa + Anomalias, unificados em abas -->
+    <div class="cfai-block" id="insightsIABlock">
+      <div class="cfai-header" onclick="window.toggleBloco('insightsBody','insightsToggle')">
+        <h2><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><use href="#db-sparkle"/></svg>Insights IA <span class="cfai-badge">IA</span></h2>
+        <span id="insightsToggle" style="color:var(--muted);font-size:16px;transition:transform .2s">▾</span>
       </div>
-      <div class="cfai-body" id="cfaiBody">
-        <div class="cfai-placeholder" id="cfaiPlaceholder">
-          <p>Analise seus dados financeiros com IA e receba previsões, alertas de risco e recomendações personalizadas para o mês.</p>
-          <button class="cfai-btn" id="cfaiBtnAnalisar" onclick="event.stopPropagation();window.cfaiAnalisar()">
-            ✨ Analisar meu fluxo de caixa
-          </button>
+      <div id="insightsBody">
+        <div class="insights-tabs">
+          <button type="button" class="insights-tab active" data-tab="cfai" onclick="event.stopPropagation();window.switchInsightsTab('cfai')">Fluxo de Caixa</button>
+          <button type="button" class="insights-tab" data-tab="anai" onclick="event.stopPropagation();window.switchInsightsTab('anai')">Anomalias</button>
         </div>
-        <div class="cfai-output" id="cfaiOutput" style="display:none"></div>
-      </div>
-    </div>
 
-    <!-- Detecção de Anomalias e Assinaturas Fantasmas -->
-    <div class="anai-block" id="anaiBlock">
-      <div class="anai-header" onclick="window.toggleBloco('anaiBody','anaiToggle')">
-        <h2>👻 Anomalias e Assinaturas Fantasmas <span class="anai-badge">IA</span></h2>
-        <span id="anaiToggle" style="color:var(--muted);font-size:16px;transition:transform .2s">▾</span>
-      </div>
-      <div class="anai-body" id="anaiBody">
-        <div class="anai-placeholder" id="anaiPlaceholder">
-          <p>Detecte assinaturas esquecidas, gastos suspeitos e variações anômalas nos seus últimos 6 meses de histórico.</p>
-          <button class="anai-btn" id="anaiBtnAnalisar" onclick="event.stopPropagation();window.anaiAnalisar()">
-            🔍 Detectar anomalias
-          </button>
+        <div class="cfai-body" id="cfaiBody" data-tab-panel="cfai">
+          <div class="cfai-placeholder" id="cfaiPlaceholder">
+            <p>Analise seus dados financeiros com IA e receba previsões, alertas de risco e recomendações personalizadas para o mês.</p>
+            <button class="cfai-btn" id="cfaiBtnAnalisar" onclick="event.stopPropagation();window.cfaiAnalisar()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><use href="#db-sparkle"/></svg>Analisar meu fluxo de caixa
+            </button>
+          </div>
+          <div class="cfai-output" id="cfaiOutput" style="display:none"></div>
         </div>
-        <div class="anai-output" id="anaiOutput" style="display:none"></div>
+
+        <div class="anai-body" id="anaiBody" data-tab-panel="anai" style="display:none">
+          <div class="anai-placeholder" id="anaiPlaceholder">
+            <p>Detecte assinaturas esquecidas, gastos suspeitos e variações anômalas nos seus últimos 6 meses de histórico.</p>
+            <button class="anai-btn" id="anaiBtnAnalisar" onclick="event.stopPropagation();window.anaiAnalisar()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><use href="#db-ghost"/></svg>Detectar anomalias
+            </button>
+          </div>
+          <div class="anai-output" id="anaiOutput" style="display:none"></div>
+        </div>
       </div>
     </div>
 
@@ -323,33 +330,35 @@
   };
 
   // Iniciar bloco Análise do Mês: aberto por padrão (estado salvo no localStorage)
-  (['analiseBody'].concat(['cfaiBody', 'anaiBody'])).forEach(bodyId => {
-    const iconId = bodyId === 'analiseBody' ? 'analiseToggle' : bodyId === 'cfaiBody' ? 'cfaiToggle' : 'anaiToggle';
-    const body = document.getElementById(bodyId);
-    const icon = document.getElementById(iconId);
-    if(!body || !icon) return;
-    const estado = localStorage.getItem('finzen_ia_' + bodyId);
-    if(bodyId === 'analiseBody'){
-      if(estado === 'closed'){
-        body.classList.add('ia-body-collapsed');
-        icon.style.transform = 'rotate(-90deg)';
-      }
-    }
-  });
-
-  // Iniciar blocos de IA sempre fechados por padrão
-  ['cfaiBody', 'anaiBody'].forEach(bodyId => {
-    const iconId = bodyId === 'cfaiBody' ? 'cfaiToggle' : 'anaiToggle';
-    const estado = localStorage.getItem('finzen_ia_' + bodyId);
-    const body   = document.getElementById(bodyId);
-    const icon   = document.getElementById(iconId);
-    if(!body || !icon) return;
-    // Só abre se o usuário explicitamente abriu antes
-    if(estado !== 'open') {
+  {
+    const body = document.getElementById('analiseBody');
+    const icon = document.getElementById('analiseToggle');
+    if(body && icon && localStorage.getItem('finzen_ia_analiseBody') === 'closed'){
       body.classList.add('ia-body-collapsed');
       icon.style.transform = 'rotate(-90deg)';
     }
-  });
+  }
+
+  // Iniciar bloco Insights IA sempre fechado por padrão (só abre se o usuário abriu antes)
+  {
+    const body = document.getElementById('insightsBody');
+    const icon = document.getElementById('insightsToggle');
+    if(body && icon && localStorage.getItem('finzen_ia_insightsBody') !== 'open'){
+      body.classList.add('ia-body-collapsed');
+      icon.style.transform = 'rotate(-90deg)';
+    }
+  }
+
+  // Alternar entre as abas Fluxo de Caixa / Anomalias dentro de Insights IA
+  window.switchInsightsTab = function(tab){
+    document.getElementById('cfaiBody').style.display = tab === 'cfai' ? '' : 'none';
+    document.getElementById('anaiBody').style.display = tab === 'anai' ? '' : 'none';
+    document.querySelectorAll('.insights-tab').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    localStorage.setItem('finzen_insights_tab', tab);
+  };
+  window.switchInsightsTab(localStorage.getItem('finzen_insights_tab') || 'cfai');
 </script>
 <script type="module">
   import { coletarContexto, analisarComIA, renderMd } from '../js/cashflowAI.js';
@@ -380,7 +389,7 @@
     output.innerHTML = renderMd(texto) + `
       <div class="cfai-footer">
         <span>Gerado em ${tempoLabel}</span>
-        <button class="cfai-refresh" onclick="window.cfaiAnalisar(true)">🔄 Atualizar análise</button>
+        <button class="cfai-refresh" onclick="window.cfaiAnalisar(true)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><use href="#db-refresh"/></svg>Atualizar análise</button>
       </div>`;
   }
 
@@ -439,15 +448,16 @@
       output.style.display = 'none';
       if (btn) {
         btn.disabled = false;
-        btn.innerHTML = '✨ Analisar meu fluxo de caixa';
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><use href="#db-sparkle"/></svg>Analisar meu fluxo de caixa';
       }
       // Mostrar erro discreto
-      const errEl = document.createElement('p');
-      errEl.style.cssText = 'color:var(--danger);font-size:12px;margin-top:8px;text-align:center';
-      errEl.textContent = '⚠️ ' + err.message;
+      const errEl = document.createElement('div');
+      errEl.className = 'dash-error-state';
+      errEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#db-alert-triangle"/></svg><span></span>';
+      errEl.querySelector('span').textContent = err.message;
       document.getElementById('cfaiPlaceholder').appendChild(errEl);
     } finally {
-      if (btn) { btn.disabled = false; btn.innerHTML = '✨ Analisar meu fluxo de caixa'; }
+      if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><use href="#db-sparkle"/></svg>Analisar meu fluxo de caixa'; }
     }
   };
 
@@ -490,7 +500,7 @@
     output.innerHTML = renderMd(texto) + `
       <div class="anai-footer">
         <span>Gerado em ${tempoLabel}</span>
-        <button class="anai-refresh" onclick="window.anaiAnalisar(true)">🔄 Atualizar detecção</button>
+        <button class="anai-refresh" onclick="window.anaiAnalisar(true)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><use href="#db-refresh"/></svg>Atualizar detecção</button>
       </div>`;
   }
 
@@ -543,13 +553,14 @@
     } catch(err) {
       placeholder.style.display = 'flex';
       output.style.display = 'none';
-      if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Detectar anomalias'; }
-      const errEl = document.createElement('p');
-      errEl.style.cssText = 'color:var(--danger);font-size:12px;margin-top:8px;text-align:center';
-      errEl.textContent = '⚠️ ' + err.message;
+      if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><use href="#db-ghost"/></svg>Detectar anomalias'; }
+      const errEl = document.createElement('div');
+      errEl.className = 'dash-error-state';
+      errEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#db-alert-triangle"/></svg><span></span>';
+      errEl.querySelector('span').textContent = err.message;
       document.getElementById('anaiPlaceholder').appendChild(errEl);
     } finally {
-      if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Detectar anomalias'; }
+      if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><use href="#db-ghost"/></svg>Detectar anomalias'; }
     }
   };
 
