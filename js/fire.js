@@ -27,25 +27,25 @@ const fmtM = v => {
 // ── Tipos FIRE ────────────────────────────────────────
 const TIPOS_FIRE = {
   regular: {
-    label: '🔥 Regular FIRE',
+    label: 'Regular FIRE',
     hint: 'Independência financeira total com padrão de vida atual',
     multiplicador: 25,
     taxa: 0.04,
   },
   lean: {
-    label: '🥗 Lean FIRE',
+    label: 'Lean FIRE',
     hint: 'Vida simples e frugal — menos patrimônio necessário',
     multiplicador: 20,
     taxa: 0.05,
   },
   fat: {
-    label: '💰 Fat FIRE',
+    label: 'Fat FIRE',
     hint: 'Independência com alto padrão de vida e margem de segurança',
     multiplicador: 33,
     taxa: 0.03,
   },
   barista: {
-    label: '☕ Barista FIRE',
+    label: 'Barista FIRE',
     hint: 'Semi-aposentadoria — trabalho leve para complementar a renda',
     multiplicador: 15,
     taxa: 0.05,
@@ -303,13 +303,13 @@ function renderInsights(patrimonio, aporte, gastos, meta, meses, idadeIF, rentAn
 
   // Insight 1: Taxa de poupança
   if(taxaPoupanca >= 50) {
-    insights.push({ cor:'verde', texto:`🚀 Taxa de poupança de <strong>${taxaPoupanca.toFixed(0)}%</strong> — você está no caminho da aceleração máxima. Poucas pessoas chegam a esse nível!` });
+    insights.push({ cor:'verde', texto:`Taxa de poupança de <strong>${taxaPoupanca.toFixed(0)}%</strong> — você está no caminho da aceleração máxima. Poucas pessoas chegam a esse nível!` });
   } else if(taxaPoupanca >= 30) {
-    insights.push({ cor:'azul', texto:`✅ Taxa de poupança de <strong>${taxaPoupanca.toFixed(0)}%</strong> — excelente! Com essa disciplina, a IF está bem dentro do horizonte.` });
+    insights.push({ cor:'azul', texto:`Taxa de poupança de <strong>${taxaPoupanca.toFixed(0)}%</strong> — excelente! Com essa disciplina, a IF está bem dentro do horizonte.` });
   } else if(taxaPoupanca >= 15) {
-    insights.push({ cor:'amarelo', texto:`🟡 Taxa de poupança de <strong>${taxaPoupanca.toFixed(0)}%</strong>. Aumentar para 30%+ aceleraria significativamente sua IF.` });
+    insights.push({ cor:'amarelo', texto:`Taxa de poupança de <strong>${taxaPoupanca.toFixed(0)}%</strong>. Aumentar para 30%+ aceleraria significativamente sua IF.` });
   } else {
-    insights.push({ cor:'vermelho', texto:`⚠️ Taxa de poupança de <strong>${taxaPoupanca.toFixed(0)}%</strong> — aumentar o aporte mensal é o fator mais importante para antecipar a IF.` });
+    insights.push({ cor:'vermelho', texto:`Taxa de poupança de <strong>${taxaPoupanca.toFixed(0)}%</strong> — aumentar o aporte mensal é o fator mais importante para antecipar a IF.` });
   }
 
   // Insight 2: Impacto do aumento de aporte
@@ -323,32 +323,32 @@ function renderInsights(patrimonio, aporte, gastos, meta, meses, idadeIF, rentAn
     }
     const economizados = meses - mesesExtra;
     if(economizados > 6) {
-      insights.push({ cor:'azul', texto:`💡 Aumentar o aporte em apenas <strong>20% (${fmt(aporte * 0.2)}/mês)</strong> anteciparia sua IF em <strong>${Math.floor(economizados/12)} anos e ${economizados%12} meses</strong>.` });
+      insights.push({ cor:'azul', texto:`Aumentar o aporte em apenas <strong>20% (${fmt(aporte * 0.2)}/mês)</strong> anteciparia sua IF em <strong>${Math.floor(economizados/12)} anos e ${economizados%12} meses</strong>.` });
     }
   }
 
   // Insight 3: Rentabilidade
   if(rentAnual <= 0.05) {
-    insights.push({ cor:'amarelo', texto:`📈 Com rentabilidade de <strong>${(rentAnual*100).toFixed(0)}%</strong>, considere diversificar em renda variável para potencializar os rendimentos.` });
+    insights.push({ cor:'amarelo', texto:`Com rentabilidade de <strong>${(rentAnual*100).toFixed(0)}%</strong>, considere diversificar em renda variável para potencializar os rendimentos.` });
   } else if(rentAnual >= 0.10) {
-    insights.push({ cor:'verde', texto:`🎯 Rentabilidade de <strong>${(rentAnual*100).toFixed(0)}%</strong> ao ano é agressiva — certifique-se de ter diversificação adequada para sustentar esse retorno.` });
+    insights.push({ cor:'verde', texto:`Rentabilidade de <strong>${(rentAnual*100).toFixed(0)}%</strong> ao ano é agressiva — certifique-se de ter diversificação adequada para sustentar esse retorno.` });
   }
 
   // Insight 4: Idade na IF
   if(idadeIF < 40) {
-    insights.push({ cor:'verde', texto:`🏆 IF aos <strong>${idadeIF} anos</strong> — isso é FIRE extremo! Você terá décadas pela frente para aproveitar.` });
+    insights.push({ cor:'verde', texto:`IF aos <strong>${idadeIF} anos</strong> — isso é FIRE extremo! Você terá décadas pela frente para aproveitar.` });
   } else if(idadeIF < 50) {
-    insights.push({ cor:'azul', texto:`✨ IF aos <strong>${idadeIF} anos</strong> — muito antes da aposentadoria tradicional. Excelente planejamento!` });
+    insights.push({ cor:'azul', texto:`IF aos <strong>${idadeIF} anos</strong> — muito antes da aposentadoria tradicional. Excelente planejamento!` });
   } else if(idadeIF < 60) {
-    insights.push({ cor:'amarelo', texto:`⏰ IF aos <strong>${idadeIF} anos</strong> — ainda antes da aposentadoria convencional. Aumentar aportes pode antecipar esse prazo.` });
+    insights.push({ cor:'amarelo', texto:`IF aos <strong>${idadeIF} anos</strong> — ainda antes da aposentadoria convencional. Aumentar aportes pode antecipar esse prazo.` });
   } else {
-    insights.push({ cor:'vermelho', texto:`🔴 IF aos <strong>${idadeIF} anos</strong> — próximo à aposentadoria tradicional. Rever gastos e aumentar aportes pode fazer grande diferença.` });
+    insights.push({ cor:'vermelho', texto:`IF aos <strong>${idadeIF} anos</strong> — próximo à aposentadoria tradicional. Rever gastos e aumentar aportes pode fazer grande diferença.` });
   }
 
   // Insight 5: Patrimônio atual vs meta
   const pct = (patrimonio / meta * 100).toFixed(0);
   if(pct > 0) {
-    insights.push({ cor:'azul', texto:`📊 Você já tem <strong>${pct}% da meta</strong> acumulada (${fmtM(patrimonio)} de ${fmtM(meta)}). Cada real investido agora tem maior impacto pelo efeito dos juros compostos.` });
+    insights.push({ cor:'azul', texto:`Você já tem <strong>${pct}% da meta</strong> acumulada (${fmtM(patrimonio)} de ${fmtM(meta)}). Cada real investido agora tem maior impacto pelo efeito dos juros compostos.` });
   }
 
   el('fireInsights').innerHTML = insights.map(i =>

@@ -228,7 +228,7 @@ async function gerarAnaliseComite() {
     msgEl.innerText = 'Erro: ' + e.message;
   } finally {
     btnGerar.disabled = false;
-    btnGerar.innerHTML = '🧠 Gerar análise';
+    btnGerar.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M12 3c.6 2.8 1.8 4.6 4 5.5-2.2.9-3.4 2.7-4 5.5-.6-2.8-1.8-4.6-4-5.5 2.2-.9 3.4-2.7 4-5.5z"/></svg>Gerar análise';
   }
 }
 
@@ -318,7 +318,7 @@ async function atualizarCotacoes(silencioso=false){
     if(!silencioso) msg('mensagemCotacao','Erro: '+e.message,'danger');
   }finally{
     el('btnAtualizar').disabled=false;
-    el('btnAtualizar').innerHTML='🔄 Atualizar cotações';
+    el('btnAtualizar').innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M4 4v6h6"/><path d="M4.5 13a8 8 0 1 0 2.5-6.5L4 10"/></svg>Atualizar cotações';
   }
 }
 
@@ -693,7 +693,7 @@ function renderizarCarteira(){
     const colId = `col-carteira-${classe.replace(/\s/g,'_')}`;
     html+=`
       <div class="inv-class-header inv-collapsible" onclick="document.getElementById('${colId}').classList.toggle('collapsed')">
-        <span>📁 ${classe} — ${formatCurrency(grupo.total,'BRL')}</span>
+        <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>${classe} — ${formatCurrency(grupo.total,'BRL')}</span>
         <div style="display:flex;align-items:center;gap:12px;">
           <div class="inv-class-pct">
             <span>Real: <strong>${formatPercent(pctReal)}</strong></span>
@@ -745,16 +745,16 @@ function renderizarCarteira(){
         </td>
         <td>${formatPercent(pctCart)}</td>
         <td>${pideal?formatPercent(pideal):'-'}</td>
-        <td>${comprar==='sim'?'<span class="badge-comprar">✅ Sim</span>':comprar==='vender'?'<span class="badge-vender">⬇ Reduzir</span>':comprar==='ok'?'<span class="badge-nao">— Ok</span>':'-'}</td>
+        <td>${comprar==='sim'?'<span class="badge-comprar"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 11,15.5 16,9"/></svg>Sim</span>':comprar==='vender'?'<span class="badge-vender">⬇ Reduzir</span>':comprar==='ok'?'<span class="badge-nao">— Ok</span>':'-'}</td>
         <td>
           <div class="inv-acoes-wrap">
             <button class="btn btn-secondary compact inv-acoes-btn" data-menu="${a.id}" title="Ações">⋯</button>
             <div class="inv-acoes-menu" id="menu-${a.id}">
-              <button data-editar="${a.id}">✏️ Editar</button>
-              <button data-action="abrirCotacaoManual" data-cot-manual="${a.id}" data-ticker="${a.ticker}">💲 Cotação manual</button>
-              <button data-action="abrirDiarioTese" data-tese="${a.id}" data-ticker="${a.ticker}">📓 Diário de tese</button>
-              ${isBR(a.tipo)?`<button data-action="abrirFicha" data-ticker="${a.ticker}">📊 Fundamentalistas</button>`:''}
-              <button data-excluir="${a.id}" data-ticker="${a.ticker}" style="color:var(--danger)">🗑️ Excluir</button>
+              <button data-editar="${a.id}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Editar</button>
+              <button data-action="abrirCotacaoManual" data-cot-manual="${a.id}" data-ticker="${a.ticker}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M7 3h4l7 7-8 8-7-7z"/><circle cx="8.5" cy="7.5" r="1" fill="currentColor" stroke="none"/></svg>Cotação manual</button>
+              <button data-action="abrirDiarioTese" data-tese="${a.id}" data-ticker="${a.ticker}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="12" y1="8" x2="17" y2="8"/><line x1="12" y1="12" x2="17" y2="12"/></svg>Diário de tese</button>
+              ${isBR(a.tipo)?`<button data-action="abrirFicha" data-ticker="${a.ticker}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><line x1="3" y1="20" x2="21" y2="20"/><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="4"/></svg>Fundamentalistas</button>`:''}
+              <button data-excluir="${a.id}" data-ticker="${a.ticker}" style="color:var(--danger)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>Excluir</button>
             </div>
           </div>
         </td>
@@ -782,11 +782,11 @@ function renderizarCarteira(){
           ${m==='USD'?`<div><span>Em BRL</span><strong class="money">${formatCurrency(calcBRL(a,atual),'BRL')}</strong></div>`:''}
         </div>
         <div class="inv-mobile-actions">
-          <button class="btn btn-secondary compact" data-editar="${a.id}">✏️ Editar</button>
-          <button class="btn btn-secondary compact" data-action="abrirCotacaoManual" data-cot-manual="${a.id}" data-ticker="${a.ticker}">💲 Cotação</button>
-          <button class="btn btn-secondary compact" data-action="abrirDiarioTese" data-tese="${a.id}" data-ticker="${a.ticker}">📓 Tese</button>
-          ${isBR(a.tipo)?`<button class="btn btn-secondary compact" data-action="abrirFicha" data-ticker="${a.ticker}">📊 Ficha</button>`:''}
-          <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}">🗑️</button>
+          <button class="btn btn-secondary compact" data-editar="${a.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Editar</button>
+          <button class="btn btn-secondary compact" data-action="abrirCotacaoManual" data-cot-manual="${a.id}" data-ticker="${a.ticker}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M7 3h4l7 7-8 8-7-7z"/><circle cx="8.5" cy="7.5" r="1" fill="currentColor" stroke="none"/></svg>Cotação</button>
+          <button class="btn btn-secondary compact" data-action="abrirDiarioTese" data-tese="${a.id}" data-ticker="${a.ticker}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="12" y1="8" x2="17" y2="8"/><line x1="12" y1="12" x2="17" y2="12"/></svg>Tese</button>
+          ${isBR(a.tipo)?`<button class="btn btn-secondary compact" data-action="abrirFicha" data-ticker="${a.ticker}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><line x1="3" y1="20" x2="21" y2="20"/><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="4"/></svg>Ficha</button>`:''}
+          <button class="btn btn-danger compact" data-excluir="${a.id}" data-ticker="${a.ticker}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button>
         </div>
       </div>`;
     });
@@ -1051,7 +1051,7 @@ async function carregarDividendos(){
         <td class="money">${toNumber(d.quantidade_cotas).toLocaleString('pt-BR',{maximumFractionDigits:4})}</td>
         <td class="money positive">+${formatCurrency(toNumber(d.valor_total),'BRL')}</td>
         <td>${c?.nome||'-'}</td>
-        <td><button class="btn compact" data-action="excluirDividendo" data-id="${d.id}" style="padding:4px 8px;font-size:12px;color:var(--danger);background:transparent;border:1px solid var(--danger);margin:0" title="Excluir registro">🗑️</button></td>
+        <td><button class="btn compact" data-action="excluirDividendo" data-id="${d.id}" style="padding:4px 8px;color:var(--danger);background:transparent;border:1px solid var(--danger);margin:0" title="Excluir registro"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button></td>
       </tr>`;
     }).join('')}</tbody>
   </table>`;
@@ -1187,7 +1187,7 @@ function renderizarBalancear(){
     const temAtivos=lista.length>0;
 
     html+=`<div class="bal-classe-row inv-collapsible" onclick="document.getElementById('${colId}').classList.toggle('collapsed')">
-      <span><strong>📁 ${classe}</strong>${!temAtivos?'<small class="muted" style="margin-left:8px">sem ativos</small>':''}</span>
+      <span><strong><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>${classe}</strong>${!temAtivos?'<small class="muted" style="margin-left:8px">sem ativos</small>':''}</span>
       <div style="display:flex;align-items:center;gap:8px;">
         <label style="margin:0;color:var(--muted);font-size:12px;">% ideal</label>
         <input type="number" class="bal-classe-input" data-classe="${ck}"
@@ -1318,7 +1318,7 @@ function calcularBalanceamento(){
       </div>
       ${sugestoes.map(s=>s.semAtivo?`
         <div class="bal-sugestao-item" style="display:grid;grid-template-columns:1fr 80px 100px 80px 100px;gap:8px;opacity:.75;background:var(--surface-2,rgba(255,200,0,.04));border-radius:6px;padding:4px 0;">
-          <span><strong>${s.tipo}</strong> <span class="muted" style="font-size:11px">⚠️ sem ativo cadastrado</span></span>
+          <span><strong>${s.tipo}</strong> <span class="muted" style="font-size:11px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><path d="M12 4 3 19h18z"/><line x1="12" y1="10" x2="12" y2="14.5"/><circle cx="12" cy="17" r=".7" fill="currentColor" stroke="none"/></svg>sem ativo cadastrado</span></span>
           <span>${formatPercent(s.pideal)}</span>
           <span class="positive">+${formatCurrency(s.diferenca,'BRL')}</span>
           <span class="muted">—</span>
@@ -1534,7 +1534,7 @@ registrarAcao('abrirDiarioTese', async (el) => {
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;
       padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h2 style="margin:0;font-size:16px;">📓 Diário de Tese — ${ticker}</h2>
+        <h2 style="margin:0;font-size:16px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="12" y1="8" x2="17" y2="8"/><line x1="12" y1="12" x2="17" y2="12"/></svg>Diário de Tese — ${ticker}</h2>
         <button onclick="document.getElementById('modalTese').remove()"
           style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">×</button>
       </div>
@@ -1571,7 +1571,7 @@ registrarAcao('abrirDiarioTese', async (el) => {
           <button onclick="document.getElementById('modalTese').remove()"
             class="btn btn-secondary">Cancelar</button>
           <button data-action="salvarTese" data-tese="${id}" data-ticker="${ticker}"
-            class="btn btn-primary">💾 Salvar</button>
+            class="btn btn-primary"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>Salvar</button>
         </div>
       </div>
     </div>
@@ -1613,7 +1613,7 @@ registrarAcao('abrirFicha', async (el) => {
 
   const fechar = `<button onclick="document.getElementById('modalFicha').remove()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;flex-shrink:0">×</button>`;
   const wrap   = (html) => `<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto">${html}</div>`;
-  const header = (sub='') => `<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div><h2 style="margin:0;font-size:18px;font-weight:800">📊 ${ticker}</h2>${sub}</div>${fechar}</div>`;
+  const header = (sub='') => `<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div><h2 style="margin:0;font-size:18px;font-weight:800"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><line x1="3" y1="20" x2="21" y2="20"/><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="4"/></svg>${ticker}</h2>${sub}</div>${fechar}</div>`;
 
   modal.innerHTML = wrap(header() + '<p class="muted" style="font-size:13px">Carregando...</p>');
 

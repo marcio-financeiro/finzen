@@ -229,7 +229,7 @@ function simular() {
         <td>
           <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${produto.cor};margin-right:6px"></span>
           <strong>${produto.nome}</strong>
-          ${melhor ? '<span class="badge-melhor">🏆 Melhor</span>' : ''}
+          ${melhor ? '<span class="badge-melhor"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 21l5-3 5 3-1.5-8.5"/></svg>Melhor</span>' : ''}
           <br><span style="font-size:11px;color:var(--muted)">${produto.descricao||''}</span>
         </td>
         <td style="font-weight:700">${resultado.taxaAnual.toFixed(2)}%</td>

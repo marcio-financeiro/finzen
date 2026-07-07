@@ -35,12 +35,12 @@ function fmtData(iso){
 function msg(t,tipo='info'){ const e=el('mensagemMeta'); e.className=`message ${tipo}`; e.innerText=t; }
 
 function statusMeta(pct, iso){
-  if(pct>=100) return {texto:'✅ Concluída', classe:'success'};
+  if(pct>=100) return {texto:'Concluída', classe:'success'};
   const dias = diasRestantes(iso);
-  if(dias!==null && dias<0) return {texto:'⏰ Vencida', classe:'danger'};
-  if(pct>=80) return {texto:'🔥 Avançada', classe:'success'};
-  if(pct>=40) return {texto:'▶ Em andamento', classe:'neutral'};
-  return {texto:'🌱 Inicial', classe:'neutral'};
+  if(dias!==null && dias<0) return {texto:'Vencida', classe:'danger'};
+  if(pct>=80) return {texto:'Avançada', classe:'success'};
+  if(pct>=40) return {texto:'Em andamento', classe:'neutral'};
+  return {texto:'Inicial', classe:'neutral'};
 }
 
 // ── Análise de viabilidade ────────────────────────────
@@ -138,7 +138,7 @@ registrarAcao('abrirModalAporte', (el) => {
   modal.innerHTML = `
     <div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9997;display:flex;align-items:center;justify-content:center;padding:16px">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;padding:24px">
-        <h3 style="font-size:15px;margin-bottom:4px">💰 Aportar para meta</h3>
+        <h3 style="font-size:15px;margin-bottom:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><path d="M9 15.5c.5 1 1.7 1.5 3 1.5 2 0 3.2-1 3.2-2.3 0-3-6-1.4-6-4.2 0-1.3 1.2-2.3 3-2.3 1.3 0 2.4.5 3 1.4"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>Aportar para meta</h3>
         <p style="color:var(--muted);font-size:13px;margin-bottom:20px">${nome}</p>
 
         <div style="background:var(--surface-2,rgba(255,255,255,.04));border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px">
@@ -311,7 +311,7 @@ function renderMetas(metas){
           background:${a.tipo==='success'?'rgba(34,197,94,.08)':a.tipo==='warning'?'rgba(245,158,11,.08)':'rgba(239,68,68,.08)'};
           border:1px solid ${a.tipo==='success'?'rgba(34,197,94,.2)':a.tipo==='warning'?'rgba(245,158,11,.2)':'rgba(239,68,68,.2)'};
           margin-bottom:6px;font-size:12px;color:var(--text)">
-          ${a.tipo==='success'?'✅':a.tipo==='warning'?'⚠️':'🔴'} ${a.texto}
+          <span class="color-dot" style="background:${a.tipo==='success'?'var(--success)':a.tipo==='warning'?'var(--warning)':'var(--danger)'};flex-shrink:0;margin-top:3px"></span> ${a.texto}
         </div>`).join('');
 
       const projecaoHtml = analise.porMesNecessario ? `
@@ -328,13 +328,13 @@ function renderMetas(metas){
 
       const tempoSemPrazoHtml = analise.tempoComMedia ? `
         <p style="font-size:12px;color:var(--muted);margin-bottom:8px">
-          📅 No ritmo atual você atingiria essa meta em aproximadamente
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>No ritmo atual você atingiria essa meta em aproximadamente
           <strong style="color:var(--text)">${analise.tempoComMedia} ${analise.tempoComMedia===1?'mês':'meses'}</strong>
         </p>` : '';
 
       blocoInteligencia = `
         <div style="margin-top:12px;padding:12px;background:var(--surface-2,rgba(255,255,255,.03));border:1px solid var(--border);border-radius:10px">
-          <p style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.04em;margin-bottom:8px">📊 ANÁLISE INTELIGENTE</p>
+          <p style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.04em;margin-bottom:8px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px"><line x1="3" y1="20" x2="21" y2="20"/><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="4"/></svg>ANÁLISE INTELIGENTE</p>
           ${projecaoHtml}
           ${tempoSemPrazoHtml}
           ${alertasHtml}
@@ -356,8 +356,8 @@ function renderMetas(metas){
           <div style="display:flex;gap:6px;flex-shrink:0">
             ${falta>0?`<button class="btn btn-primary compact"
               data-action="abrirModalAporte" data-meta-id="${m.id}" data-meta-nome="${m.nome.replace(/"/g,'&quot;')}" data-falta="${falta}" data-sugestao="${analise?.sugestaoAporte||0}">
-              💰 Aportar</button>`:''}
-            <button class="btn btn-secondary compact" data-action="editarMeta" data-meta-id="${m.id}">✏️</button>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="9"/><path d="M9 15.5c.5 1 1.7 1.5 3 1.5 2 0 3.2-1 3.2-2.3 0-3-6-1.4-6-4.2 0-1.3 1.2-2.3 3-2.3 1.3 0 2.4.5 3 1.4"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>Aportar</button>`:''}
+            <button class="btn btn-secondary compact" data-action="editarMeta" data-meta-id="${m.id}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
             <button class="btn btn-danger compact" data-action="excluirMeta" data-meta-id="${m.id}" data-meta-nome="${m.nome.replace(/"/g,'&quot;')}">✕</button>
           </div>
         </div>

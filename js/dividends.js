@@ -213,7 +213,7 @@ function renderizarTabela(proventos){
               <td><span class="badge ${classeTipo(item.tipo)}">${tipoLabel(item.tipo)}</span></td>
               <td class="money positive">${formatCurrency(total, 'BRL')}</td>
               <td>${item.observacao || '-'}</td>
-              <td><button class="btn compact" onclick="window.excluirProvento('${item.id}')" style="padding:4px 8px;font-size:12px;color:var(--danger);background:transparent;border:1px solid var(--danger);margin:0" title="Excluir">🗑️</button></td>
+              <td><button class="btn compact" onclick="window.excluirProvento('${item.id}')" style="padding:4px 8px;color:var(--danger);background:transparent;border:1px solid var(--danger);margin:0" title="Excluir"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button></td>
             </tr>
           `;
         }).join('')}

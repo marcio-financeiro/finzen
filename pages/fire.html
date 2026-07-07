@@ -55,7 +55,7 @@
 }
 .fire-resultado.show { display: block; }
 .fire-resultado-titulo { font-size: 12px; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
-.fire-resultado-valor { font-size: 28px; font-weight: 900; color: #22c55e; line-height: 1.1; }
+.fire-resultado-valor { font-size: 28px; font-weight: 900; color: var(--success); line-height: 1.1; }
 .fire-resultado-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
 /* ── KPIs resultado ── */
@@ -83,7 +83,8 @@
   display: none;
 }
 .fire-badge.show { display: block; }
-.fire-badge .icon { font-size: 40px; margin-bottom: 8px; }
+.fire-badge .icon { margin-bottom: 8px; }
+.fire-badge .icon svg { width: 40px; height: 40px; }
 .fire-badge h3 { font-size: 16px; font-weight: 900; margin-bottom: 4px; }
 .fire-badge p { font-size: 13px; opacity: .9; }
 
@@ -111,10 +112,10 @@ input[type="range"] {
   padding: 10px 14px; border-radius: 10px; font-size: 13px; line-height: 1.5;
   border-left: 3px solid;
 }
-.fire-insight.verde  { background: rgba(34,197,94,.08);  border-color: #22c55e; }
-.fire-insight.azul   { background: rgba(245,158,11,.08); border-color: #f59e0b; }
-.fire-insight.amarelo{ background: rgba(245,158,11,.08); border-color: #f59e0b; }
-.fire-insight.vermelho{ background: rgba(239,68,68,.08); border-color: #ef4444; }
+.fire-insight.verde  { background: rgba(34,197,94,.08);  border-color: var(--success); }
+.fire-insight.azul   { background: rgba(59,130,246,.08); border-color: var(--info); }
+.fire-insight.amarelo{ background: rgba(245,158,11,.08); border-color: var(--warning); }
+.fire-insight.vermelho{ background: rgba(239,68,68,.08); border-color: var(--danger); }
 </style>
 </head>
 <body>
@@ -127,7 +128,7 @@ input[type="range"] {
   <main class="content">
     <header class="topbar">
       <div>
-        <h1>🔥 Simulador FIRE</h1>
+        <h1><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17a2.5 2.5 0 0 0 2.5-2.5c0-1.38-.5-2-1-3 1.5.5 3 2.5 3 5a4.5 4.5 0 0 1-9 0c0-2 1-3.5 2-5 0 1.5 1 2.5 1 2.5z"/></svg>Simulador FIRE</h1>
         <p id="userEmail" class="muted"></p>
       </div>
       <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
@@ -146,16 +147,16 @@ input[type="range"] {
       <!-- Painel de inputs -->
       <div>
         <div class="fire-panel" style="margin-bottom:16px">
-          <h2>⚙️ Seus dados</h2>
+          <h2><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Seus dados</h2>
 
           <!-- Tipo FIRE -->
           <div class="fire-input-group">
             <label>Tipo de FIRE</label>
             <div class="fire-tipos">
-              <button class="fire-tipo-btn ativo" data-tipo="regular" onclick="selecionarTipo(this)">🔥 Regular</button>
-              <button class="fire-tipo-btn" data-tipo="lean" onclick="selecionarTipo(this)">🥗 Lean</button>
-              <button class="fire-tipo-btn" data-tipo="fat" onclick="selecionarTipo(this)">💰 Fat</button>
-              <button class="fire-tipo-btn" data-tipo="barista" onclick="selecionarTipo(this)">☕ Barista</button>
+              <button class="fire-tipo-btn ativo" data-tipo="regular" onclick="selecionarTipo(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17a2.5 2.5 0 0 0 2.5-2.5c0-1.38-.5-2-1-3 1.5.5 3 2.5 3 5a4.5 4.5 0 0 1-9 0c0-2 1-3.5 2-5 0 1.5 1 2.5 1 2.5z"/></svg>Regular</button>
+              <button class="fire-tipo-btn" data-tipo="lean" onclick="selecionarTipo(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M12 2s7 7.5 7 12a7 7 0 0 1-14 0c0-4.5 7-12 7-12z"/></svg>Lean</button>
+              <button class="fire-tipo-btn" data-tipo="fat" onclick="selecionarTipo(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="9"/><path d="M9 15.5c.5 1 1.7 1.5 3 1.5 2 0 3.2-1 3.2-2.3 0-3-6-1.4-6-4.2 0-1.3 1.2-2.3 3-2.3 1.3 0 2.4.5 3 1.4"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>Fat</button>
+              <button class="fire-tipo-btn" data-tipo="barista" onclick="selecionarTipo(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M4 9h13v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M17 10h2a2 2 0 0 1 0 4h-2"/><path d="M8 2s0 2-1.5 3S6 8 6 8"/><path d="M12 2s0 2-1.5 3S10 8 10 8"/></svg>Barista</button>
             </div>
             <p class="fire-input-hint" id="hintTipo">Independência financeira total com padrão de vida atual</p>
           </div>
@@ -196,14 +197,14 @@ input[type="range"] {
 
         <!-- Resultado destaque -->
         <div class="fire-resultado" id="fireResultado">
-          <div class="fire-resultado-titulo">🎯 Você atingirá a IF em</div>
+          <div class="fire-resultado-titulo"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>Você atingirá a IF em</div>
           <div class="fire-resultado-valor" id="fireAnos">—</div>
           <div class="fire-resultado-sub" id="fireSub">—</div>
         </div>
 
         <!-- Conquista -->
         <div class="fire-badge" id="fireBadge">
-          <div class="icon">🏆</div>
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 21l5-3 5 3-1.5-8.5"/></svg></div>
           <h3>Você já é Financeiramente Independente!</h3>
           <p id="fireBadgeMsg">Seu patrimônio já cobre seus gastos.</p>
         </div>
@@ -215,7 +216,7 @@ input[type="range"] {
         <div class="fire-kpis" id="fireKpis" style="display:none">
           <div class="fire-kpi">
             <span>Meta patrimonial</span>
-            <strong id="kpiMeta" style="color:#f59e0b">R$ 0</strong>
+            <strong id="kpiMeta" style="color:var(--accent)">R$ 0</strong>
           </div>
           <div class="fire-kpi">
             <span>Falta acumular</span>
@@ -223,17 +224,17 @@ input[type="range"] {
           </div>
           <div class="fire-kpi">
             <span>Idade na IF</span>
-            <strong id="kpiIdade" style="color:#22c55e">—</strong>
+            <strong id="kpiIdade" style="color:var(--success)">—</strong>
           </div>
           <div class="fire-kpi">
             <span>Regra dos 4%</span>
-            <strong id="kpiRegra" style="color:#f59e0b">—</strong>
+            <strong id="kpiRegra" style="color:var(--accent)">—</strong>
           </div>
         </div>
 
         <!-- Gráfico -->
         <div class="fire-panel" style="margin-bottom:16px">
-          <h2>📈 Projeção de patrimônio</h2>
+          <h2><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><polyline points="3,17 9,11 13,15 21,6"/><polyline points="15,6 21,6 21,12"/></svg>Projeção de patrimônio</h2>
           <div class="fire-chart-wrap">
             <canvas id="chartFire"></canvas>
           </div>
@@ -241,7 +242,7 @@ input[type="range"] {
 
         <!-- Insights -->
         <div class="fire-panel">
-          <h2>💡 Insights personalizados</h2>
+          <h2><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.05V17h6v-2.25c0-.85.4-1.55 1-2.05A7 7 0 0 0 12 2z"/></svg>Insights personalizados</h2>
           <div class="fire-insights" id="fireInsights">
             <p class="muted" style="font-size:13px">Preencha os dados ao lado para ver insights.</p>
           </div>
