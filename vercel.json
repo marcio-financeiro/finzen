@@ -15,6 +15,10 @@
     {
       "path": "/api/cotacao-cron",
       "schedule": "0 22 * * 1-5"
+    },
+    {
+      "path": "/api/recurring-cron",
+      "schedule": "0 8 * * *"
     }
   ]
 }
