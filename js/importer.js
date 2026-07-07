@@ -310,8 +310,8 @@ function renderTabela() {
   const naoReconhecidas = transacoesImportadas.length - reconhecidas;
 
   el('statsImport').innerHTML = `
-    <span style="color:#22c55e">✅ ${reconhecidas} categorizadas automaticamente</span>
-    ${naoReconhecidas > 0 ? `<span style="color:#f59e0b">⚠️ ${naoReconhecidas} precisam de categoria</span>` : ''}
+    <span style="color:var(--success)">${reconhecidas} categorizadas automaticamente</span>
+    ${naoReconhecidas > 0 ? `<span style="color:var(--warning)">${naoReconhecidas} precisam de categoria</span>` : ''}
   `;
 
   tbody.innerHTML = transacoesImportadas.map((tx, i) => `
@@ -333,7 +333,7 @@ function renderTabela() {
         <select class="cat-select" data-idx="${i}"
           style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;
             background:var(--surface);color:var(--text);width:100%;max-width:180px;
-            ${!tx.categoria_id ? 'border-color:#f59e0b' : ''}">
+            ${!tx.categoria_id ? 'border-color:var(--warning)' : ''}">
           <option value="">— Sem categoria —</option>
           ${categorias
             .filter(c => c.tipo === tx.tipo || c.tipo === 'despesa')
@@ -342,7 +342,11 @@ function renderTabela() {
         </select>
       </td>
       <td style="font-size:10px;color:var(--muted)">
-        ${tx.origem === 'aprendido' ? '🧠' : tx.origem === 'regra' ? '📋' : '✏️'}
+        ${tx.origem === 'aprendido'
+          ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c.6 2.8 1.8 4.6 4 5.5-2.2.9-3.4 2.7-4 5.5-.6-2.8-1.8-4.6-4-5.5 2.2-.9 3.4-2.7 4-5.5z"/></svg>'
+          : tx.origem === 'regra'
+          ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 3h6v3H9z"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="16" y2="15"/></svg>'
+          : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'}
       </td>
     </tr>
   `).join('');
@@ -381,7 +385,7 @@ el('btnImportar').addEventListener('click', async () => {
   if(!selecionadas.length) { mostrarMsg('Nenhuma transação selecionada.', 'warning'); return; }
 
   el('btnImportar').disabled = true;
-  el('btnImportar').textContent = '⏳ Importando...';
+  el('btnImportar').textContent = 'Importando...';
 
   try {
     // 1. Inserir transações
@@ -434,7 +438,7 @@ el('btnImportar').addEventListener('click', async () => {
       }).eq('id', contaId);
     }
 
-    mostrarMsg(`✅ ${selecionadas.length} transações importadas com sucesso! ${novasRegras.length} regras aprendidas.`, 'success');
+    mostrarMsg(`${selecionadas.length} transações importadas com sucesso! ${novasRegras.length} regras aprendidas.`, 'success');
     el('secaoRevisao').style.display = 'none';
     el('inputArquivo').value = '';
     transacoesImportadas = [];
@@ -443,7 +447,7 @@ el('btnImportar').addEventListener('click', async () => {
     mostrarMsg('Erro ao importar: ' + err.message, 'danger');
   } finally {
     el('btnImportar').disabled = false;
-    el('btnImportar').textContent = '✅ Confirmar importação';
+    el('btnImportar').innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 11,15.5 16,9"/></svg>Confirmar importação';
   }
 });
 

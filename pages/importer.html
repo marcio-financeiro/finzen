@@ -36,7 +36,8 @@
   width: 100%;
   height: 100%;
 }
-.upload-icon { font-size: 48px; margin-bottom: 12px; }
+.upload-icon { margin-bottom: 12px; color: var(--muted); }
+.upload-icon svg { width: 44px; height: 44px; }
 .upload-zone h3 { font-size: 16px; margin-bottom: 6px; }
 .upload-zone p  { font-size: 13px; color: var(--muted); }
 
@@ -92,7 +93,7 @@
   vertical-align: middle;
 }
 #tabelaPreview tr:hover td { background: rgba(255,255,255,.02); }
-tr.row-manual td:first-child { border-left: 2px solid #f59e0b; }
+tr.row-manual td:first-child { border-left: 2px solid var(--warning); }
 
 /* ── Legenda ── */
 .legenda {
@@ -132,7 +133,7 @@ tr.row-manual td:first-child { border-left: 2px solid #f59e0b; }
   <main class="content">
     <header class="topbar">
       <div>
-        <h1>📥 Importar Extrato</h1>
+        <h1><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M12 3v11"/><polyline points="8,10 12,14 16,10"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>Importar Extrato</h1>
         <p id="userEmail" class="muted"></p>
       </div>
       <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
@@ -147,13 +148,13 @@ tr.row-manual td:first-child { border-left: 2px solid #f59e0b; }
         <p>3. Revise as categorias sugeridas automaticamente</p>
         <p>4. Corrija as que precisar — o Vyn aprende para as próximas importações</p>
         <div class="banco-chips">
-          <span class="banco-chip">🏦 Itaú (OFX)</span>
-          <span class="banco-chip">💜 Nubank (CSV)</span>
-          <span class="banco-chip">🟠 Inter (CSV)</span>
-          <span class="banco-chip">🔵 Bradesco (OFX)</span>
-          <span class="banco-chip">🟡 BB (OFX)</span>
-          <span class="banco-chip">🔴 Santander (OFX)</span>
-          <span class="banco-chip">⚫ C6 Bank (CSV)</span>
+          <span class="banco-chip"><span class="color-dot" style="background:#f7931e;border-color:#f7931e"></span> Itaú (OFX)</span>
+          <span class="banco-chip"><span class="color-dot" style="background:#8a05be;border-color:#8a05be"></span> Nubank (CSV)</span>
+          <span class="banco-chip"><span class="color-dot" style="background:#ff7a00;border-color:#ff7a00"></span> Inter (CSV)</span>
+          <span class="banco-chip"><span class="color-dot" style="background:#cc092f;border-color:#cc092f"></span> Bradesco (OFX)</span>
+          <span class="banco-chip"><span class="color-dot" style="background:#f5c400;border-color:#f5c400"></span> BB (OFX)</span>
+          <span class="banco-chip"><span class="color-dot" style="background:#ec0000;border-color:#ec0000"></span> Santander (OFX)</span>
+          <span class="banco-chip"><span class="color-dot" style="background:#000000;border-color:#333"></span> C6 Bank (CSV)</span>
         </div>
       </div>
     </div>
@@ -172,7 +173,7 @@ tr.row-manual td:first-child { border-left: 2px solid #f59e0b; }
 
         <div class="upload-zone" id="uploadZone">
           <input type="file" id="inputArquivo" accept=".ofx,.qfx,.csv">
-          <div class="upload-icon">📂</div>
+          <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
           <h3>Arraste o arquivo aqui ou clique para selecionar</h3>
           <p>Formatos aceitos: OFX, QFX, CSV</p>
         </div>
@@ -193,7 +194,7 @@ tr.row-manual td:first-child { border-left: 2px solid #f59e0b; }
           <h2>Revisar transações</h2>
           <div style="display:flex;gap:8px">
             <button class="btn btn-secondary compact" id="btnCancelar">Cancelar</button>
-            <button class="btn btn-primary" id="btnImportar">✅ Confirmar importação</button>
+            <button class="btn btn-primary" id="btnImportar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 11,15.5 16,9"/></svg>Confirmar importação</button>
           </div>
         </div>
         <div style="padding:12px 20px">
@@ -201,10 +202,10 @@ tr.row-manual td:first-child { border-left: 2px solid #f59e0b; }
           <div id="statsImport"></div>
 
           <div class="legenda">
-            <span>🧠 Regra aprendida</span>
-            <span>📋 Regra padrão</span>
-            <span>✏️ Precisa categorizar</span>
-            <span><span style="display:inline-block;width:8px;height:8px;border-left:2px solid #f59e0b"></span> Sem categoria</span>
+            <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c.6 2.8 1.8 4.6 4 5.5-2.2.9-3.4 2.7-4 5.5-.6-2.8-1.8-4.6-4-5.5 2.2-.9 3.4-2.7 4-5.5z"/></svg> Regra aprendida</span>
+            <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 3h6v3H9z"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="16" y2="15"/></svg> Regra padrão</span>
+            <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Precisa categorizar</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-left:2px solid var(--warning)"></span> Sem categoria</span>
           </div>
 
           <div style="overflow-x:auto">

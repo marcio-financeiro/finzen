@@ -199,20 +199,20 @@ async function backupLocal(){
     localStorage.setItem('finzen_ultimo_backup', new Date().toISOString());
     el('backupActions').style.display = 'flex';
     el('backupStats').innerHTML = renderStats(resultados, totalRegistros);
-    msg(`✅ Download iniciado — ${totalRegistros} registros em ${TABELAS.length} tabelas.`, 'success');
+    msg(`Download iniciado — ${totalRegistros} registros em ${TABELAS.length} tabelas.`, 'success');
     atualizarInfoUltimoBackup();
   }catch(e){
     msg('Erro: ' + e.message, 'danger');
   }finally{
     el('btnBackupLocal').disabled = false;
-    el('btnBackupLocal').innerText = '⬇️ Baixar JSON';
+    el('btnBackupLocal').innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M12 3v11"/><polyline points="8,10 12,14 16,10"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>Baixar JSON';
   }
 }
 
 // ── Ação: Salvar no Google Drive ──────────────────────
 async function backupDrive(){
   el('btnBackupDrive').disabled = true;
-  el('btnBackupDrive').innerText = '⏳ Salvando...';
+  el('btnBackupDrive').innerText = 'Salvando...';
   msg('');
 
   try{
@@ -231,15 +231,21 @@ async function backupDrive(){
       TABELAS.map(t=>({ tabela:t, data: JSON.parse(ultimoBackupJson).tables[t]||[], error:null })),
       JSON.parse(ultimoBackupJson) && Object.values(JSON.parse(ultimoBackupJson).tables).reduce((s,a)=>s+a.length,0)
     );
-    msg(`✅ Backup salvo no Google Drive → pasta "${DRIVE_FOLDER}" → ${ultimoBackupNome}`, 'success');
+    msg(`Backup salvo no Google Drive → pasta "${DRIVE_FOLDER}" → ${ultimoBackupNome}`, 'success');
     atualizarInfoUltimoBackup();
-    el('driveStatus').innerHTML = `✅ Último backup no Drive: <strong>${ultimoBackupNome}</strong>`;
+    el('driveStatus').innerHTML = `Último backup no Drive: <strong>${ultimoBackupNome}</strong>`;
     el('driveStatus').style.color = 'var(--success)';
   }catch(e){
     msg('Erro ao salvar no Drive: ' + e.message, 'danger');
   }finally{
     el('btnBackupDrive').disabled = false;
-    el('btnBackupDrive').innerText = '☁️ Salvar no Google Drive';
+    el('btnBackupDrive').innerHTML = `<svg style="width:16px;height:16px;vertical-align:middle;margin-right:6px" viewBox="0 0 48 48">
+            <path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#34A853" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          Salvar no Drive`;
   }
 }
 
@@ -297,7 +303,7 @@ function atualizarInfoUltimoBackup(){
     e.innerText = 'Nenhum backup realizado neste dispositivo ainda.';
   }
   if(drive && el('driveStatus')){
-    el('driveStatus').innerHTML = `☁️ Último no Drive: <strong>${drive}</strong>`;
+    el('driveStatus').innerHTML = `Último no Drive: <strong>${drive}</strong>`;
   }
 }
 

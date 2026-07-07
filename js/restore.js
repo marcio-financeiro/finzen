@@ -169,7 +169,7 @@ async function restaurarBackup(){
     }
 
     setProgress(100, 'Concluído!');
-    msgRestore(`✅ Backup restaurado com sucesso no modo "${modo === 'replace' ? 'Substituir tudo' : 'Mesclar'}"!`, 'success');
+    msgRestore(`Backup restaurado com sucesso no modo "${modo === 'replace' ? 'Substituir tudo' : 'Mesclar'}"!`, 'success');
 
   }catch(e){
     msgRestore('Erro durante a restauração: ' + e.message, 'danger');

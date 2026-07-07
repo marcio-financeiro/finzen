@@ -99,7 +99,7 @@ async function buscar(){
   if(transactions?.length){
     total += transactions.length;
     html += `<div class="panel" style="margin-bottom:12px">
-      <div class="panel-header"><h2>💸 Movimentações <span class="muted" style="font-size:13px;font-weight:400">(${transactions.length})</span></h2></div>
+      <div class="panel-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M7 3v14M7 17l-3-3M7 17l3-3"/><path d="M17 21V7M17 7l3 3M17 7l-3 3"/></svg>Movimentações <span class="muted" style="font-size:13px;font-weight:400">(${transactions.length})</span></h2></div>
       <div class="table-wrap"><table class="data-table"><thead><tr>
         <th>Data</th><th>Tipo</th><th>Descrição</th><th>Conta</th><th>Categoria</th><th>Status</th><th style="text-align:right">Valor</th>
       </tr></thead><tbody>`;
@@ -124,7 +124,7 @@ async function buscar(){
   if(cardTx?.length){
     total += cardTx.length;
     html += `<div class="panel" style="margin-bottom:12px">
-      <div class="panel-header"><h2>💳 Compras no Cartão <span class="muted" style="font-size:13px;font-weight:400">(${cardTx.length})</span></h2></div>
+      <div class="panel-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="2.5" y="6" width="19" height="13" rx="2.5"/><path d="M2.5 10.5h19"/></svg>Compras no Cartão <span class="muted" style="font-size:13px;font-weight:400">(${cardTx.length})</span></h2></div>
       <div class="table-wrap"><table class="data-table"><thead><tr>
         <th>Descrição</th><th>Cartão</th><th>Categoria</th><th>Fatura</th><th>Parcela</th><th style="text-align:right">Valor Parcela</th>
       </tr></thead><tbody>`;
@@ -145,7 +145,7 @@ async function buscar(){
   if(transfers?.length){
     total += transfers.length;
     html += `<div class="panel" style="margin-bottom:12px">
-      <div class="panel-header"><h2>🔁 Transferências <span class="muted" style="font-size:13px;font-weight:400">(${transfers.length})</span></h2></div>
+      <div class="panel-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M4 4v6h6"/><path d="M4.5 13a8 8 0 1 0 2.5-6.5L4 10"/></svg>Transferências <span class="muted" style="font-size:13px;font-weight:400">(${transfers.length})</span></h2></div>
       <div class="table-wrap"><table class="data-table"><thead><tr>
         <th>Data</th><th>Descrição</th><th>Origem</th><th>Destino</th><th style="text-align:right">Valor</th>
       </tr></thead><tbody>`;
@@ -165,7 +165,7 @@ async function buscar(){
   if(dividends?.length){
     total += dividends.length;
     html += `<div class="panel" style="margin-bottom:12px">
-      <div class="panel-header"><h2>💰 Dividendos <span class="muted" style="font-size:13px;font-weight:400">(${dividends.length})</span></h2></div>
+      <div class="panel-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><path d="M9 15.5c.5 1 1.7 1.5 3 1.5 2 0 3.2-1 3.2-2.3 0-3-6-1.4-6-4.2 0-1.3 1.2-2.3 3-2.3 1.3 0 2.4.5 3 1.4"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>Dividendos <span class="muted" style="font-size:13px;font-weight:400">(${dividends.length})</span></h2></div>
       <div class="table-wrap"><table class="data-table"><thead><tr>
         <th>Data</th><th>Ativo</th><th>Tipo</th><th>Observação</th><th style="text-align:right">Valor</th>
       </tr></thead><tbody>`;
@@ -185,7 +185,7 @@ async function buscar(){
   if(investments?.length){
     total += investments.length;
     html += `<div class="panel" style="margin-bottom:12px">
-      <div class="panel-header"><h2>📈 Ativos <span class="muted" style="font-size:13px;font-weight:400">(${investments.length})</span></h2></div>
+      <div class="panel-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><polyline points="3,17 9,11 13,15 21,6"/><polyline points="15,6 21,6 21,12"/></svg>Ativos <span class="muted" style="font-size:13px;font-weight:400">(${investments.length})</span></h2></div>
       <div class="table-wrap"><table class="data-table"><thead><tr>
         <th>Ticker</th><th>Nome</th><th>Tipo</th><th style="text-align:right">Qtd</th><th style="text-align:right">Cotação</th>
       </tr></thead><tbody>`;
@@ -205,7 +205,7 @@ async function buscar(){
   if(accounts?.length){
     total += accounts.length;
     html += `<div class="panel" style="margin-bottom:12px">
-      <div class="panel-header"><h2>🏦 Contas <span class="muted" style="font-size:13px;font-weight:400">(${accounts.length})</span></h2></div>
+      <div class="panel-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="16" cy="14.5" r="1.2" fill="currentColor" stroke="none"/></svg>Contas <span class="muted" style="font-size:13px;font-weight:400">(${accounts.length})</span></h2></div>
       <div class="table-wrap"><table class="data-table"><thead><tr>
         <th>Conta</th><th>Moeda</th><th style="text-align:right">Saldo</th>
       </tr></thead><tbody>`;
@@ -223,7 +223,7 @@ async function buscar(){
   if(categories?.length){
     total += categories.length;
     html += `<div class="panel" style="margin-bottom:12px">
-      <div class="panel-header"><h2>🏷️ Categorias <span class="muted" style="font-size:13px;font-weight:400">(${categories.length})</span></h2></div>
+      <div class="panel-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M20.6 12L12 20.6a2 2 0 0 1-2.8 0l-7.8-7.8a2 2 0 0 1 0-2.8L9 1.4 20.6 12z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg>Categorias <span class="muted" style="font-size:13px;font-weight:400">(${categories.length})</span></h2></div>
       <div class="table-wrap"><table class="data-table"><thead><tr>
         <th>Ícone</th><th>Nome</th><th>Tipo</th>
       </tr></thead><tbody>`;

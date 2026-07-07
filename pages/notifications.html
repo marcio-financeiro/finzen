@@ -32,7 +32,7 @@
 .notif-status.denied   { background: rgba(239,68,68,.08);  border: 1px solid rgba(239,68,68,.2); }
 .notif-status.default  { background: rgba(79,132,243,.08); border: 1px solid rgba(79,132,243,.2); }
 .notif-status.indisp   { background: rgba(148,163,184,.08);border: 1px solid var(--border); }
-.notif-status-icon { font-size: 24px; }
+.notif-status-icon svg { width: 22px; height: 22px; }
 
 .notif-toggle {
   display: flex; justify-content: space-between; align-items: center;
@@ -81,7 +81,7 @@
   <main class="content">
     <header class="topbar">
       <div>
-        <h1>🔔 Notificações</h1>
+        <h1><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M12 3a5 5 0 0 0-5 5v3c0 1-.5 2-1.5 3h13c-1-1-1.5-2-1.5-3V8a5 5 0 0 0-5-5z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/></svg>Notificações</h1>
         <p id="userEmail" class="muted"></p>
       </div>
       <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
@@ -91,17 +91,17 @@
     <div class="notif-card">
       <h2>Status das notificações</h2>
       <div class="notif-status" id="statusBox">
-        <span class="notif-status-icon">⏳</span>
+        <span class="notif-status-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15,14"/></svg></span>
         <div>
           <strong>Verificando...</strong>
           <p class="muted" style="font-size:12px;margin-top:2px">Aguarde</p>
         </div>
       </div>
       <button class="notif-teste-btn" id="btnHabilitar" style="display:none">
-        🔔 Habilitar notificações
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M12 3a5 5 0 0 0-5 5v3c0 1-.5 2-1.5 3h13c-1-1-1.5-2-1.5-3V8a5 5 0 0 0-5-5z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/></svg>Habilitar notificações
       </button>
       <button class="notif-teste-btn" id="btnTestar" style="display:none;background:linear-gradient(135deg,#22c55e,#16a34a)">
-        ✅ Enviar notificação de teste
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 11,15.5 16,9"/></svg>Enviar notificação de teste
       </button>
       <div id="msgNotif" class="message" style="margin-top:12px"></div>
     </div>
@@ -112,7 +112,7 @@
 
       <div class="notif-toggle">
         <div class="notif-toggle-info">
-          <strong>💳 Faturas próximas</strong>
+          <strong><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="2.5" y="6" width="19" height="13" rx="2.5"/><path d="M2.5 10.5h19"/></svg>Faturas próximas</strong>
           <span>Alerta 3 dias antes e no dia do vencimento</span>
         </div>
         <label class="switch">
@@ -123,7 +123,7 @@
 
       <div class="notif-toggle">
         <div class="notif-toggle-info">
-          <strong>⏰ Lançamentos pendentes</strong>
+          <strong><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15,14"/></svg>Lançamentos pendentes</strong>
           <span>Avisa quando tem despesa pendente nos próximos 7 dias</span>
         </div>
         <label class="switch">
@@ -134,7 +134,7 @@
 
       <div class="notif-toggle">
         <div class="notif-toggle-info">
-          <strong>📊 Resumo mensal</strong>
+          <strong><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><line x1="3" y1="20" x2="21" y2="20"/><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="4"/></svg>Resumo mensal</strong>
           <span>Notificação no dia 1 com resumo do mês anterior</span>
         </div>
         <label class="switch">
@@ -183,11 +183,16 @@
     const btnH = el('btnHabilitar');
     const btnT = el('btnTestar');
 
+    const icoCheck  = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 11,15.5 16,9"/></svg>';
+    const icoBlocked= '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="5.5" x2="18.5" y2="18.5"/></svg>';
+    const icoBell   = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a5 5 0 0 0-5 5v3c0 1-.5 2-1.5 3h13c-1-1-1.5-2-1.5-3V8a5 5 0 0 0-5-5z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/></svg>';
+    const icoX      = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="9.5" y1="9.5" x2="14.5" y2="14.5"/><line x1="14.5" y1="9.5" x2="9.5" y2="14.5"/></svg>';
+
     const configs = {
-      granted:     { classe:'granted',  icon:'✅', titulo:'Notificações ativas',     desc:'Você receberá alertas do Vyn.' },
-      denied:      { classe:'denied',   icon:'🚫', titulo:'Notificações bloqueadas', desc:'Habilite nas configurações do navegador/sistema.' },
-      default:     { classe:'default',  icon:'🔔', titulo:'Permissão necessária',    desc:'Clique abaixo para habilitar as notificações.' },
-      indisponivel:{ classe:'indisp',   icon:'❌', titulo:'Não suportado',           desc:'Seu navegador não suporta notificações push.' },
+      granted:     { classe:'granted',  icon:icoCheck,   titulo:'Notificações ativas',     desc:'Você receberá alertas do Vyn.' },
+      denied:      { classe:'denied',   icon:icoBlocked, titulo:'Notificações bloqueadas', desc:'Habilite nas configurações do navegador/sistema.' },
+      default:     { classe:'default',  icon:icoBell,    titulo:'Permissão necessária',    desc:'Clique abaixo para habilitar as notificações.' },
+      indisponivel:{ classe:'indisp',   icon:icoX,       titulo:'Não suportado',           desc:'Seu navegador não suporta notificações push.' },
     };
 
     const cfg = configs[status] || configs.indisponivel;
@@ -209,7 +214,7 @@
     if(ok){
       const n = await agendarAlertas(user.id);
       el('msgNotif').className = 'message success';
-      el('msgNotif').textContent = `✅ Notificações habilitadas! ${n} alerta(s) agendado(s).`;
+      el('msgNotif').textContent = `Notificações habilitadas! ${n} alerta(s) agendado(s).`;
     }
   });
 

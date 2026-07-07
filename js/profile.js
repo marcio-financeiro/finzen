@@ -135,7 +135,7 @@ el('btnSalvarPerfil').addEventListener('click', async () => {
       .from('user_settings')
       .upsert(u, { onConflict: 'user_id,setting_key' });
     if (error) {
-      el('btnSalvarPerfil').textContent = '💾 Salvar perfil';
+      el('btnSalvarPerfil').innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>Salvar perfil';
       msg('pfMsg', `Erro ao salvar ${u.setting_key}: ${error.message}`, 'danger');
       return;
     }
@@ -169,8 +169,8 @@ el('btnSalvarPerfil').addEventListener('click', async () => {
   const uel = document.getElementById('userEmail');
   if (uel) uel.textContent = nome;
 
-  el('btnSalvarPerfil').textContent = '💾 Salvar perfil';
-  msg('pfMsg', '✅ Perfil salvo com sucesso!', 'success');
+  el('btnSalvarPerfil').innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>Salvar perfil';
+  msg('pfMsg', 'Perfil salvo com sucesso!', 'success');
 });
 
 // ── Alterar senha ─────────────────────────────────────
@@ -185,13 +185,13 @@ el('btnAlterarSenha').addEventListener('click', async () => {
   el('btnAlterarSenha').textContent = 'Alterando...';
   const { error } = await supabase.auth.updateUser({ password: senha });
 
-  el('btnAlterarSenha').textContent = '🔒 Alterar senha';
+  el('btnAlterarSenha').innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Alterar senha';
   if (error) {
     msg('pfSenhaMsg', 'Erro: ' + error.message, 'danger');
   } else {
     el('pfSenha').value = '';
     el('pfSenhaConf').value = '';
-    msg('pfSenhaMsg', '✅ Senha alterada com sucesso!', 'success');
+    msg('pfSenhaMsg', 'Senha alterada com sucesso!', 'success');
   }
 });
 
@@ -240,7 +240,7 @@ el('btnGerarCodigo').addEventListener('click', async () => {
   } catch (e) {
     msg('telegramMsg', 'Erro: ' + e.message, 'danger');
   }
-  el('btnGerarCodigo').textContent = '📲 Gerar código de vinculação';
+  el('btnGerarCodigo').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg>Gerar código de vinculação';
 });
 
 el('btnDesvincular').addEventListener('click', async () => {
