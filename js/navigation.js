@@ -201,7 +201,6 @@ function isActive(href) {
     'accounts.html':        'registrations.html',
     'categories.html':      'registrations.html',
     'card-purchases.html':  'cards.html',
-    'wealth-dashboard.html':'patrimony-history.html',
     'asset-transactions.html': 'investments.html',
     'dividends.html':       'investments.html',
     'allocation.html':      'investments.html',
