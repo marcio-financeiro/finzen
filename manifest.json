@@ -5,7 +5,7 @@
   "start_url": "./login.html",
   "display": "standalone",
   "background_color": "#07080f",
-  "theme_color": "#4b84f3",
+  "theme_color": "#C9A968",
   "orientation": "portrait-primary",
   "permissions": ["notifications"],
   "icons": [

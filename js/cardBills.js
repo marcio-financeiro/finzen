@@ -154,21 +154,24 @@ function renderFaturas() {
 
   let html = '';
 
+  const icoAlerta = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M12 4 3 19h18z"/><line x1="12" y1="10" x2="12" y2="14.5"/><circle cx="12" cy="17" r=".7" fill="currentColor" stroke="none"/></svg>`;
+  const icoCalendario = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>`;
+
   if (passadas.length) {
-    html += `<p class="bills-section-title" style="color:var(--danger,#ef4444)">⚠️ Faturas anteriores</p>`;
+    html += `<p class="bills-section-title" style="color:var(--danger,#ef4444)">${icoAlerta}Faturas anteriores</p>`;
     passadas.forEach((f, i) => { html += billCardHtml(f, `passada_${i}`, false); });
   }
 
   if (doMes.length) {
-    html += `<p class="bills-section-title">📅 Fatura do mês atual — ${formatRef(atual)}</p>`;
+    html += `<p class="bills-section-title">${icoCalendario}Fatura do mês atual — ${formatRef(atual)}</p>`;
     doMes.forEach((f, i) => { html += billCardHtml(f, `atual_${i}`, true); });
   } else {
-    html += `<p class="bills-section-title">📅 Mês atual — ${formatRef(atual)}</p>
+    html += `<p class="bills-section-title">${icoCalendario}Mês atual — ${formatRef(atual)}</p>
       <p class="muted" style="padding:4px 0 16px">Nenhuma fatura no mês atual.</p>`;
   }
 
   if (futuras.length) {
-    html += `<p class="bills-section-title">🗓 Faturas futuras</p>`;
+    html += `<p class="bills-section-title">${icoCalendario}Faturas futuras</p>`;
     futuras.forEach((f, i) => { html += billCardHtml(f, `futura_${i}`, false); });
   }
 

@@ -965,12 +965,14 @@ async function loadUpcomingRecurring(){
   // Totalizar por tipo
   const totalReceitas = previews.filter(p=>p.type==='receita').reduce((s,p)=>s+p.amount,0);
   const totalDespesas = previews.filter(p=>p.type==='despesa').reduce((s,p)=>s+p.amount,0);
+  const icoCalendarioResumo = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>`;
+  const icoSaldoResumo = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="9"/><path d="M9 15.5c.5 1 1.7 1.5 3 1.5 2 0 3.2-1 3.2-2.3 0-3-6-1.4-6-4.2 0-1.3 1.2-2.3 3-2.3 1.3 0 2.4.5 3 1.4"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>`;
   const resumo = filtroMes ? `
     <div style="display:flex;gap:16px;padding:12px 16px;font-size:12px;border-bottom:1px solid var(--border);flex-wrap:wrap">
-      <span>📅 <strong>${previews.length}</strong> recorrências</span>
+      <span>${icoCalendarioResumo}<strong>${previews.length}</strong> recorrências</span>
       <span class="positive">↑ Receitas: <strong>${formatCurrency(totalReceitas,'BRL')}</strong></span>
       <span class="negative">↓ Despesas: <strong>${formatCurrency(totalDespesas,'BRL')}</strong></span>
-      <span>💰 Saldo previsto: <strong class="${totalReceitas-totalDespesas>=0?'positive':'negative'}">${formatCurrency(totalReceitas-totalDespesas,'BRL')}</strong></span>
+      <span>${icoSaldoResumo}Saldo previsto: <strong class="${totalReceitas-totalDespesas>=0?'positive':'negative'}">${formatCurrency(totalReceitas-totalDespesas,'BRL')}</strong></span>
     </div>` : '';
 
   upcomingRecurringList.innerHTML = resumo + `

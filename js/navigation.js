@@ -27,6 +27,27 @@ function injectSvgSprite() {
     <symbol id="ic-eye-off"      viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></symbol>
     <symbol id="ic-chevron-left" viewBox="0 0 24 24"><polyline points="15,4 9,12 15,20"/></symbol>
     <symbol id="ic-chevron-down" viewBox="0 0 24 24"><polyline points="6,9 12,15 18,9"/></symbol>
+    <symbol id="ic-arrows-updown" viewBox="0 0 24 24"><path d="M7 3v14M7 17l-3-3M7 17l3-3"/><path d="M17 21V7M17 7l3 3M17 7l-3 3"/></symbol>
+    <symbol id="ic-receipt"       viewBox="0 0 24 24"><path d="M5 3h14v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5V3z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></symbol>
+    <symbol id="ic-card"          viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="13" rx="2.5"/><path d="M2.5 10.5h19"/><rect x="5.5" y="13.7" width="4" height="2" rx=".5" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="ic-file-text"     viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></symbol>
+    <symbol id="ic-target"        viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="ic-briefcase"     viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="3" y1="12" x2="21" y2="12"/></symbol>
+    <symbol id="ic-coin"          viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 15.5c.5 1 1.7 1.5 3 1.5 2 0 3.2-1 3.2-2.3 0-3-6-1.4-6-4.2 0-1.3 1.2-2.3 3-2.3 1.3 0 2.4.5 3 1.4"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></symbol>
+    <symbol id="ic-diamond"       viewBox="0 0 24 24"><path d="M2 9h20M9 3l-3 6 6 12 6-12-3-6z"/></symbol>
+    <symbol id="ic-flag"          viewBox="0 0 24 24"><path d="M5 3v18"/><path d="M5 4h13l-3 4 3 4H5"/></symbol>
+    <symbol id="ic-flame"         viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17a2.5 2.5 0 0 0 2.5-2.5c0-1.38-.5-2-1-3 1.5.5 3 2.5 3 5a4.5 4.5 0 0 1-9 0c0-2 1-3.5 2-5 0 1.5 1 2.5 1 2.5z"/></symbol>
+    <symbol id="ic-scale"         viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M5 7h14"/><path d="M5 7l-3 7a4 4 0 0 0 6 0z"/><path d="M19 7l-3 7a4 4 0 0 0 6 0z"/></symbol>
+    <symbol id="ic-droplet"       viewBox="0 0 24 24"><path d="M12 2s7 7.5 7 12a7 7 0 0 1-14 0c0-4.5 7-12 7-12z"/></symbol>
+    <symbol id="ic-bar-chart"     viewBox="0 0 24 24"><line x1="3" y1="20" x2="21" y2="20"/><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="4"/></symbol>
+    <symbol id="ic-activity"      viewBox="0 0 24 24"><polyline points="3,12 8,12 10,18 14,6 16,12 21,12"/></symbol>
+    <symbol id="ic-search"        viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></symbol>
+    <symbol id="ic-folder"        viewBox="0 0 24 24"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="ic-user"          viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></symbol>
+    <symbol id="ic-import"        viewBox="0 0 24 24"><path d="M12 3v11"/><polyline points="8,10 12,14 16,10"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+    <symbol id="ic-bell"          viewBox="0 0 24 24"><path d="M12 3a5 5 0 0 0-5 5v3c0 1-.5 2-1.5 3h13c-1-1-1.5-2-1.5-3V8a5 5 0 0 0-5-5z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/></symbol>
+    <symbol id="ic-archive"       viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><line x1="10" y1="13" x2="14" y2="13"/></symbol>
+    <symbol id="ic-rotate-ccw"    viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M4.5 13a8 8 0 1 0 2.5-6.5L4 10"/></symbol>
   `;
   document.body.insertBefore(svg, document.body.firstChild);
 }
@@ -108,54 +129,54 @@ const NAV_GROUPS = [
     label: 'Financeiro',
     icon: 'ic-wallet',
     items: [
-      { title: 'Movimentações',  icon: '💸', href: './movements.html' },
-      { title: 'Extrato',        icon: '🧾', href: './account-statement.html' },
-      { title: 'Cartões',        icon: '💳', href: './cards.html' },
-      { title: 'Faturas',        icon: '📄', href: './card-bills.html' },
-      { title: 'Orçamento',      icon: '🎯', href: './budgets.html' },
+      { title: 'Movimentações',  icon: 'ic-arrows-updown', href: './movements.html' },
+      { title: 'Extrato',        icon: 'ic-receipt', href: './account-statement.html' },
+      { title: 'Cartões',        icon: 'ic-card', href: './cards.html' },
+      { title: 'Faturas',        icon: 'ic-file-text', href: './card-bills.html' },
+      { title: 'Orçamento',      icon: 'ic-target', href: './budgets.html' },
     ]
   },
   {
     label: 'Investimentos',
     icon: 'ic-trend',
     items: [
-      { title: 'Carteira',       icon: '📈', href: './investments.html' },
-      { title: 'Proventos',      icon: '💰', href: './dividends.html' },
-      { title: 'Alocação',       icon: '🎯', href: './allocation.html' },
-      { title: 'Patrimônio',     icon: '💎', href: './patrimony-history.html' },
-      { title: 'Metas',          icon: '🏆', href: './goals.html' },
-      { title: 'FIRE',           icon: '🔥', href: './fire.html' },
-      { title: 'Comparador',     icon: '⚖️', href: './comparador.html' },
+      { title: 'Carteira',       icon: 'ic-briefcase', href: './investments.html' },
+      { title: 'Proventos',      icon: 'ic-coin', href: './dividends.html' },
+      { title: 'Alocação',       icon: 'ic-target', href: './allocation.html' },
+      { title: 'Patrimônio',     icon: 'ic-diamond', href: './patrimony-history.html' },
+      { title: 'Metas',          icon: 'ic-flag', href: './goals.html' },
+      { title: 'FIRE',           icon: 'ic-flame', href: './fire.html' },
+      { title: 'Comparador',     icon: 'ic-scale', href: './comparador.html' },
     ]
   },
   {
     label: 'Gestão Pessoal',
     icon: 'ic-calendar',
     items: [
-      { title: 'Calendário',     icon: '📅', href: './calendar.html' },
-      { title: 'Offshore',       icon: '🛢️', href: './offshore.html' },
+      { title: 'Calendário',     icon: 'ic-calendar', href: './calendar.html' },
+      { title: 'Offshore',       icon: 'ic-droplet', href: './offshore.html' },
     ]
   },
   {
     label: 'Inteligência',
     icon: 'ic-chat',
     items: [
-      { title: 'Chat IA',        icon: '💬', href: './chat.html' },
-      { title: 'Relatório',      icon: '📊', href: './reports.html' },
-      { title: 'Analytics',      icon: '📉', href: './analytics.html' },
+      { title: 'Chat IA',        icon: 'ic-chat', href: './chat.html' },
+      { title: 'Relatório',      icon: 'ic-bar-chart', href: './reports.html' },
+      { title: 'Analytics',      icon: 'ic-activity', href: './analytics.html' },
     ]
   },
   {
     label: 'Sistema',
     icon: 'ic-settings',
     items: [
-      { title: 'Busca',          icon: '🔍', href: './search.html' },
-      { title: 'Cadastros',      icon: '⚙️', href: './registrations.html' },
-      { title: 'Meu Perfil',     icon: '👤', href: './profile.html' },
-      { title: 'Importar',       icon: '📥', href: './importer.html' },
-      { title: 'Notificações',   icon: '🔔', href: './notifications.html' },
-      { title: 'Backup',         icon: '💾', href: './backup.html' },
-      { title: 'Restaurar',      icon: '📤', href: './restore.html' },
+      { title: 'Busca',          icon: 'ic-search', href: './search.html' },
+      { title: 'Cadastros',      icon: 'ic-folder', href: './registrations.html' },
+      { title: 'Meu Perfil',     icon: 'ic-user', href: './profile.html' },
+      { title: 'Importar',       icon: 'ic-import', href: './importer.html' },
+      { title: 'Notificações',   icon: 'ic-bell', href: './notifications.html' },
+      { title: 'Backup',         icon: 'ic-archive', href: './backup.html' },
+      { title: 'Restaurar',      icon: 'ic-rotate-ccw', href: './restore.html' },
     ]
   }
 ];
@@ -393,7 +414,7 @@ function groupHtml(group, forDrawer = false) {
 
   const itemsHtml = group.items.map(item => `
     <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">
-      <span class="nav-icon">${item.icon}</span>
+      <span class="nav-icon">${navIcon(item.icon)}</span>
       <span>${item.title}</span>
       ${item.badge ? '<span class="nav-badge nav-dashboard-badge" style="display:none">0</span>' : ''}
     </a>
@@ -1041,7 +1062,7 @@ function ensureFAB() {
         <span>Cartão</span>
       </a>
       <a class="finzen-fab-option" href="${base}?tipo=transferencia">
-        <span class="finzen-fab-icon" style="background:var(--purple)">⇄</span>
+        <span class="finzen-fab-icon" style="background:var(--info)">⇄</span>
         <span>Transferência</span>
       </a>
       <a class="finzen-fab-option" href="${base}?tipo=cambio">
