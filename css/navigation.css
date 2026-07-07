@@ -674,6 +674,11 @@ html.sidebar-rail .sidebar .sidebar-profile-stats { display: none; }
   position: fixed; bottom: 28px; right: 22px;
   z-index: 9996;
   display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+  /* O wrap todo (incluindo a área do menu fechado, que ocupa espaço mesmo
+     invisível) nunca deve capturar clique — só a bolinha e as opções
+     abertas, reativados abaixo. Evita "roubar" toques de botões da página
+     que caiam por trás dessa área fixa em telas menores. */
+  pointer-events: none;
 }
 @media (min-width: 821px) { .finzen-fab-wrap { display: none; } }
 
@@ -685,6 +690,7 @@ html.sidebar-rail .sidebar .sidebar-profile-stats { display: none; }
   cursor: pointer;
   transition: transform .2s ease, background .2s ease;
   display: flex; align-items: center; justify-content: center;
+  pointer-events: auto;
 }
 .finzen-fab-btn:active { transform: scale(.92); }
 .finzen-fab-wrap.open .finzen-fab-btn { background: var(--danger); transform: rotate(45deg); }
