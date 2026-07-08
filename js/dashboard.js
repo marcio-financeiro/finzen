@@ -609,12 +609,18 @@ async function carregarTendencia(baseOffset){
   try {
     const meses    = Array.from({length:TENDENCIA_MESES}, (_,i) => ({ offset: baseOffset+i, ...mesComOffset(baseOffset+i) }));
     const passados = meses.filter(m => m.offset <= 0);
+    const futuros  = meses.filter(m => m.offset > 0);
     const refs     = meses.map(m => m.ref);
 
-    const [{ data: parcelas }, { data: despesasReais }] = await Promise.all([
+    const [{ data: parcelas }, { data: despesasReais }, { data: futurasReais }] = await Promise.all([
       supabase.from('card_transactions').select('valor_parcela,fatura_referencia').eq('user_id',user.id).in('fatura_referencia', refs),
       passados.length
         ? supabase.from('transactions').select('amount,date,accounts:account_id(currency)').eq('user_id',user.id).eq('status','pago').eq('type','despesa').gte('date',passados[0].inicio).lte('date',passados[passados.length-1].fim)
+        : Promise.resolve({ data: [] }),
+      // Meses futuros: usa os lançamentos recorrentes já gerados (pendentes) em vez de
+      // uma média fixa repetida — reflete o que está realmente previsto em cada mês.
+      futuros.length
+        ? supabase.from('transactions').select('type,amount,date,accounts:account_id(currency)').eq('user_id',user.id).eq('status','pendente').gte('date',futuros[0].inicio).lte('date',futuros[futuros.length-1].fim)
         : Promise.resolve({ data: [] }),
     ]);
 
@@ -627,21 +633,32 @@ async function carregarTendencia(baseOffset){
       despesasPorMes[ref] = (despesasPorMes[ref]||0) + valorBRL(t);
     });
 
+    const despesasFuturasPorMes = {};
+    const receitasFuturasPorMes = {};
+    (futurasReais||[]).forEach(t => {
+      const ref  = String(t.date).slice(0,7);
+      const alvo = t.type==='despesa' ? despesasFuturasPorMes : receitasFuturasPorMes;
+      alvo[ref]  = (alvo[ref]||0) + valorBRL(t);
+    });
+
     // Comprometido = despesas fixas/mês (recorrentes) + parcelas de cartão do mês.
     // Passado/atual: limitado ao total real gasto no mês; o restante é "Variável".
-    // Futuro: só existe a projeção do comprometido (não há como saber o variável ainda).
+    // Futuro: soma os lançamentos recorrentes já gerados (pendentes) para aquele mês
+    // específico + parcelas de cartão — não há "Variável" ainda por não ter acontecido.
     const dados = meses.map(m => {
       const parcelasMes = parcelasPorMes[m.ref] || 0;
-      const fixoAprox    = previsaoDespesasRec + parcelasMes;
       if(m.offset <= 0){
-        const total       = (despesasPorMes[m.ref]||0) + parcelasMes;
-        const comprometido = Math.min(fixoAprox, total);
+        const fixoAprox     = previsaoDespesasRec + parcelasMes;
+        const total         = (despesasPorMes[m.ref]||0) + parcelasMes;
+        const comprometido  = Math.min(fixoAprox, total);
         const variavel      = Math.max(total - comprometido, 0);
         const livre         = Math.max(previsaoReceitasRec - total, 0);
         return { ...m, comprometido, variavel, livre, total, projetado:false };
       }
-      const livre = Math.max(previsaoReceitasRec - fixoAprox, 0);
-      return { ...m, comprometido: fixoAprox, variavel: 0, livre, total: fixoAprox, projetado:true };
+      const comprometido = (despesasFuturasPorMes[m.ref]||0) + parcelasMes;
+      const receitasMes  = receitasFuturasPorMes[m.ref] || 0;
+      const livre         = Math.max(receitasMes - comprometido, 0);
+      return { ...m, comprometido, variavel: 0, livre, total: comprometido, projetado:true };
     });
 
     renderTendencia(dados);
