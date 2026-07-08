@@ -7,6 +7,7 @@ import { supabase }   from './supabaseClient.js';
 import { navigate }   from './router.js';
 import { emailService } from './emailService.js';
 import { registrarAcao } from './eventBus.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -15,6 +16,7 @@ const user = sd.session.user;
 document.getElementById('btnVoltar').addEventListener('click', () => navigate('./dashboard.html'));
 
 const el  = id => document.getElementById(id);
+attachMoneyMask(el('heValorHora'));
 const fmt = v  => Number(v).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
 
 let editandoCicloId = null;
@@ -464,7 +466,7 @@ el('btnSalvarHE').addEventListener('click', async () => {
     cycle_id    : el('heCiclo').value || null,
     data,
     horas_extras: parseFloat(el('heHoras').value)     || 0,
-    valor_hora  : parseFloat(el('heValorHora').value) || null,
+    valor_hora  : readMoneyValue(el('heValorHora')) || null,
     sobreaviso  : el('heSobreaviso').checked,
     descricao   : el('heDesc').value.trim() || null,
   };

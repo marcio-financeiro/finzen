@@ -7,6 +7,7 @@ import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
 import { DEFAULT_USD_BRL, formatPercent, formatUSD, getUsdBrlRate, saveUsdBrlRate, toNumber } from './services/financeService.js';
 import { ensureDailySnapshot } from './services/patrimonySnapshot.js';
+import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 
 // ─────────────────────────────────────────────
 // AUTH
@@ -30,6 +31,9 @@ let editandoId  = null;
 let chartEvolucao = null;
 
 const el = id => document.getElementById(id);
+attachMoneyMask(el('valorTotalAtivo'));
+attachMoneyMask(el('divValorTotal'));
+attachMoneyMask(el('balValorAporte'));
 
 // ─────────────────────────────────────────────
 // ABAS
@@ -829,7 +833,7 @@ async function salvarAtivo(){
   const moeda     = el('moedaAtivo').value||'BRL';
   const data      = el('dataAtivo').value||hojeISO();
   const obs       = el('obsAtivo').value.trim();
-  const totalInf  = toNumber(el('valorTotalAtivo').value);
+  const totalInf  = readMoneyValue(el('valorTotalAtivo'));
 
   // Se não informou preço mas informou total, calcula
   if(!preco && totalInf && qtd){
@@ -1077,7 +1081,7 @@ async function salvarDividendo(){
 
   // Para USD: o total informado em divValorTotal é OBRIGATÓRIO (nunca multiplicar por cotas)
   // Para BRL: aceita total direto ou calcula de valCota × qtdCotas
-  const totalDigitado = toNumber(el('divValorTotal').value);
+  const totalDigitado = readMoneyValue(el('divValorTotal'));
   let valTotalMoeda;
   if(moedaDiv === 'USD'){
     valTotalMoeda = totalDigitado;
@@ -1242,7 +1246,7 @@ async function salvarPesos(){
 }
 
 function calcularBalanceamento(){
-  const aporte=toNumber(el('balValorAporte').value);
+  const aporte=readMoneyValue(el('balValorAporte'));
   if(!aporte){ msg('mensagemBal','Informe o valor do aporte.','warning'); return; }
 
   const patrimAtual=somaSegura(ativos.map(a=>calcBRL(a,calcAtual(a))));
@@ -1372,11 +1376,11 @@ el('filtroCorretora').addEventListener('change',renderizarCarteira);
 function recalcFromPrice(){
   const q=toNumber(el('quantidadeAtivo').value);
   const p=toNumber(el('precoAtivo').value);
-  if(q&&p) el('valorTotalAtivo').value=(q*p).toFixed(2);
+  if(q&&p) setMoneyValue(el('valorTotalAtivo'), q*p);
 }
 function recalcFromTotal(){
   const q=toNumber(el('quantidadeAtivo').value);
-  const t=toNumber(el('valorTotalAtivo').value);
+  const t=readMoneyValue(el('valorTotalAtivo'));
   if(q&&t) el('precoAtivo').value=(t/q).toFixed(6);
 }
 el('quantidadeAtivo').addEventListener('input',recalcFromPrice);
@@ -1423,7 +1427,7 @@ el('divValorCota').addEventListener('input',()=>{
   const v=toNumber(el('divValorCota').value);
   const q=toNumber(el('divQtdCotas').value);
   const moeda = el('divMoeda')?.value || 'BRL';
-  if(v&&q&&moeda!=='USD') el('divValorTotal').value=(v*q).toFixed(6);
+  if(v&&q&&moeda!=='USD') setMoneyValue(el('divValorTotal'), v*q);
   atualizarConversaoDiv();
 });
 el('divValorTotal').addEventListener('input', atualizarConversaoDiv);
@@ -1436,7 +1440,7 @@ if(el('divMoeda')) el('divMoeda').addEventListener('change', () => {
 
 function atualizarConversaoDiv(){
   const moeda   = el('divMoeda')?.value || 'BRL';
-  const total   = toNumber(el('divValorTotal').value);
+  const total   = readMoneyValue(el('divValorTotal'));
   const label   = el('labelDivTotal');
   const preview = el('divConversao');
   if(!label || !preview) return;

@@ -5,6 +5,7 @@ import { confirmarExclusao} from './confirmModal.js';
 import { registrarAcao }    from './eventBus.js';
 import { notificarMetaAtingida } from './telegram.js';
 import { openModal }        from './modal.js';
+import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 
 const { data: sd } = await supabase.auth.getSession();
 if(!sd.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
@@ -13,6 +14,8 @@ document.getElementById('btnLogout').addEventListener('click', async()=>{ await 
 
 const el  = id => document.getElementById(id);
 const fmt = v  => formatCurrency(v, 'BRL');
+attachMoneyMask(el('valorAlvo'));
+attachMoneyMask(el('valorAtual'));
 
 let editandoId   = null;
 let saldoContas  = 0;   // saldo disponível atual
@@ -158,8 +161,7 @@ registrarAcao('abrirModalAporte', (el) => {
         </div>
 
         <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">Valor a aportar (R$)</label>
-        <input type="number" id="inputAporte" placeholder="0,00" step="0.01" min="0"
-          value="${sugestao ? sugestao.toFixed(2) : ''}" inputmode="decimal">
+        <input type="text" id="inputAporte" placeholder="0,00" inputmode="decimal">
       </div>
       <div class="fz-modal-actions" style="flex-direction:row">
         <button type="button" class="btn btn-secondary" id="cancelarAporte" style="flex:1">Cancelar</button>
@@ -170,16 +172,19 @@ registrarAcao('abrirModalAporte', (el) => {
     `,
   });
   overlay.id = 'modalAporte';
+  const inputAporteEl = overlay.querySelector('#inputAporte');
+  attachMoneyMask(inputAporteEl);
+  if(sugestao) setMoneyValue(inputAporteEl, sugestao);
   overlay.querySelector('#cancelarAporte').addEventListener('click', () => overlay.remove());
-  overlay.querySelector('#inputAporte').focus();
-  overlay.querySelector('#inputAporte').select();
+  inputAporteEl.focus();
+  inputAporteEl.select();
 });
 
 registrarAcao('confirmarAporte', async (el) => {
   const id   = el.dataset.metaId;
   const nome = el.dataset.metaNome;
-  const valor = parseFloat((document.getElementById('inputAporte')?.value||'0').replace(',','.'));
-  if(isNaN(valor) || valor <= 0){ alert('Informe um valor válido.'); return; }
+  const valor = readMoneyValue(document.getElementById('inputAporte'));
+  if(valor <= 0){ alert('Informe um valor válido.'); return; }
 
   const { data: meta } = await supabase.from('goals').select('valor_atual,valor_alvo').eq('id',id).single();
   if(!meta) return;
@@ -200,8 +205,8 @@ registrarAcao('confirmarAporte', async (el) => {
 async function salvar(){
   const nome      = el('nomeMeta').value.trim();
   const descricao = el('descricaoMeta').value.trim();
-  const alvo      = Number(el('valorAlvo').value||0);
-  const atual     = Number(el('valorAtual').value||0);
+  const alvo      = readMoneyValue(el('valorAlvo'));
+  const atual     = readMoneyValue(el('valorAtual'));
   const dataAlvo  = el('dataAlvo').value||null;
   const categoria = el('categoriaMeta').value||'geral';
   const cor       = el('corMeta').value||'#22c55e';
@@ -239,8 +244,8 @@ registrarAcao('editarMeta', async (el) => {
   editandoId = id;
   el('nomeMeta').value      = data.nome||'';
   el('descricaoMeta').value = data.descricao||'';
-  el('valorAlvo').value     = data.valor_alvo||'';
-  el('valorAtual').value    = data.valor_atual||'';
+  setMoneyValue(el('valorAlvo'), data.valor_alvo);
+  setMoneyValue(el('valorAtual'), data.valor_atual);
   el('dataAlvo').value      = data.data_alvo||'';
   el('categoriaMeta').value = data.categoria||'geral';
   el('corMeta').value       = data.cor||'#22c55e';

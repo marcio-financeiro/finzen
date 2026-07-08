@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -9,6 +10,7 @@ const btnSalvarCartao = document.getElementById('btnSalvarCartao');
 const nomeCartao = document.getElementById('nomeCartao');
 const bancoCartao = document.getElementById('bancoCartao');
 const limiteCartao = document.getElementById('limiteCartao');
+attachMoneyMask(limiteCartao);
 const fechamentoCartao = document.getElementById('fechamentoCartao');
 const vencimentoCartao = document.getElementById('vencimentoCartao');
 const bandeiraCartao = document.getElementById('bandeiraCartao');
@@ -43,7 +45,7 @@ async function salvarCartao(){
 
   const nome = nomeCartao.value.trim();
   const banco = bancoCartao.value.trim();
-  const limite = Number(limiteCartao.value || 0);
+  const limite = readMoneyValue(limiteCartao);
   const fechamento = Number(fechamentoCartao.value || 0);
   const vencimento = Number(vencimentoCartao.value || 0);
   const bandeira = bandeiraCartao.value;

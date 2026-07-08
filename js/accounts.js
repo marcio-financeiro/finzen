@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { escapeHtml } from './utils/escapeHtml.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -13,6 +14,7 @@ const tipoConta = document.getElementById('tipoConta');
 const moedaConta = document.getElementById('moedaConta');
 const corConta = document.getElementById('corConta');
 const saldoInicial = document.getElementById('saldoInicial');
+attachMoneyMask(saldoInicial);
 const statusConta = document.getElementById('statusConta');
 const mensagemConta = document.getElementById('mensagemConta');
 const listaContas = document.getElementById('listaContas');
@@ -46,7 +48,7 @@ async function salvarConta(){
   const tipo = tipoConta.value;
   const moeda = moedaConta.value;
   const cor = corConta.value || '#4f8ef7';
-  const saldo = Number(saldoInicial.value || 0);
+  const saldo = readMoneyValue(saldoInicial);
   const ativo = statusConta.value === 'true';
 
   if(!nome || !tipo){

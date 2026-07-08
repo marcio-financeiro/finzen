@@ -4,6 +4,7 @@ import { formatCurrency } from './utils.js';
 import { notificarTransacao } from './telegram.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { showChoice, showDetail } from './modal.js';
+import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 
 // ─────────────────────────────────────────────
 // ELEMENTOS DO DOM
@@ -22,6 +23,7 @@ const movementCard     = el('movementCard');
 const movementCategory = el('movementCategory');
 const movementDescription = el('movementDescription');
 const movementAmount   = el('movementAmount');
+attachMoneyMask(movementAmount);
 const movementInstallments = el('movementInstallments');
 const movementValueType = el('movementValueType');
 const movementValuePreview = el('movementValuePreview');
@@ -289,7 +291,7 @@ function updateFormVisibility(){
 }
 
 function calculateCardValues(){
-  const value        = Number(movementAmount.value || 0);
+  const value        = readMoneyValue(movementAmount);
   const installments = Number(movementInstallments.value || 1);
   const type         = movementValueType.value || 'total';
 
@@ -428,7 +430,7 @@ async function saveMovement(){
   const type        = movementType.value;
   const method      = paymentMethod.value;
   const description = movementDescription.value.trim();
-  const amount      = Number(movementAmount.value || 0);
+  const amount      = readMoneyValue(movementAmount);
   const date        = movementDate.value;
   const notes       = movementNotes.value.trim();
 
@@ -494,7 +496,7 @@ async function saveTransactionEdit(){
   const accountId   = movementAccount.value;
   const categoryId  = movementCategory.value || null;
   const description = movementDescription.value.trim();
-  const amount      = Number(movementAmount.value || 0);
+  const amount      = readMoneyValue(movementAmount);
   const date        = movementDate.value;
   const status      = movementStatus.value;
   const notes       = movementNotes.value.trim();
@@ -565,7 +567,7 @@ async function saveTransfer(description, amount, date){
 
 function updateExchangePreview(){
   if(movementType.value !== 'cambio') return;
-  const amount = Number(movementAmount.value || 0);
+  const amount = readMoneyValue(movementAmount);
   const rate   = Number(exchangeRateInput.value || 0);
   if(!amount || !rate){ exchangePreview.value = 'Preencha valor e taxa'; return; }
 
@@ -656,7 +658,7 @@ async function editTransaction(id){
   movementAccount.value = data.account_id || '';
   movementCategory.value = data.category_id || '';
   movementDescription.value = data.description || '';
-  movementAmount.value = data.amount || '';
+  setMoneyValue(movementAmount, data.amount);
   movementDate.value = data.date || todayISO();
   movementStatus.value = data.status || 'pendente';
   movementRecurrence.value = data.is_recurring ? (data.recurrence_frequency || 'mensal') : 'nao';

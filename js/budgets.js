@@ -3,6 +3,7 @@ import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { confirmarExclusao } from './confirmModal.js';
 import { notificarOrcamentoEstourado } from './telegram.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
 
 const { data: sd } = await supabase.auth.getSession();
 if(!sd.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
@@ -10,6 +11,7 @@ const user = sd.session.user;
 document.getElementById('btnLogout').addEventListener('click', async()=>{ await supabase.auth.signOut(); navigate('../login.html'); throw new Error('unauthenticated'); });
 
 const el = id => document.getElementById(id);
+attachMoneyMask(el('valorPlanejado'));
 const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 let categorias = [], orcamentos = [], gastos = {}, mesHerdado = null;
 
@@ -129,7 +131,7 @@ function renderLista(){
 async function salvar(){
   const ref      = el('mesReferencia').value;
   const catId    = el('categoriaOrcamento').value;
-  const valor    = Number(el('valorPlanejado').value||0);
+  const valor    = readMoneyValue(el('valorPlanejado'));
 
   if(!ref || !catId || !valor){ msg('Preencha mês, categoria e valor.','warning'); return; }
 

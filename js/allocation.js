@@ -3,6 +3,7 @@ import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { getCotacoes } from './quoteCache.js';
 import { getUsdBrlRate } from './services/financeService.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -17,6 +18,7 @@ const btnSalvarAlvo = document.getElementById('btnSalvarAlvo');
 const btnCriarPadrao = document.getElementById('btnCriarPadrao');
 
 const valorAporte = document.getElementById('valorAporte');
+attachMoneyMask(valorAporte);
 const btnCalcularAporte = document.getElementById('btnCalcularAporte');
 const sugestaoAporte = document.getElementById('sugestaoAporte');
 
@@ -390,7 +392,7 @@ function renderizarTabela(){
 }
 
 function calcularSugestaoAporte(){
-  const aporte = Number(valorAporte.value || 0);
+  const aporte = readMoneyValue(valorAporte);
 
   if(aporte <= 0){
     sugestaoAporte.innerHTML = '<p class="muted">Informe um valor de aporte.</p>';

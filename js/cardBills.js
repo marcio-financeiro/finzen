@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient.js';
 import { navigate }  from './router.js';
 import { formatCurrency } from './utils.js';
 import { showChoice } from './modal.js';
+import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 
 // ─── DOM ───────────────────────────────────────
 const userEmail    = document.getElementById('userEmail');
@@ -13,6 +14,7 @@ const btnLimparPesquisa = document.getElementById('btnLimparPesquisa');
 const mensagem     = document.getElementById('mensagemFatura');
 const listaFaturas = document.getElementById('listaFaturas');
 const modalEl      = document.getElementById('modalEditarItem');
+attachMoneyMask(document.getElementById('editValor'));
 
 // ─── ESTADO ────────────────────────────────────
 let user          = null;
@@ -364,7 +366,7 @@ window.abrirEditarItem = function(id) {
   editandoId = id;
 
   document.getElementById('editDescricao').value  = item.descricao || '';
-  document.getElementById('editValor').value      = item.valor_parcela || '';
+  setMoneyValue(document.getElementById('editValor'), item.valor_parcela);
   document.getElementById('editDataCompra').value = item.data_compra || '';
   document.getElementById('editFaturaRef').value  = item.fatura_referencia || '';
 
@@ -396,7 +398,7 @@ window.salvarEdicaoItem = async function() {
   if (!editandoId) return;
 
   const descricao      = document.getElementById('editDescricao').value.trim();
-  const valorParcela   = parseFloat(document.getElementById('editValor').value);
+  const valorParcela   = readMoneyValue(document.getElementById('editValor'));
   const dataCompra     = document.getElementById('editDataCompra').value;
   const categoryId     = document.getElementById('editCategoria').value || null;
   const faturaRef      = document.getElementById('editFaturaRef').value || null;

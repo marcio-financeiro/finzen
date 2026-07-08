@@ -8,6 +8,7 @@ import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { registrarAcao }  from './eventBus.js';
+import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -18,6 +19,8 @@ document.getElementById('btnLogout').addEventListener('click', async () => {
 });
 
 const el  = id => document.getElementById(id);
+attachMoneyMask(el('valorInicial'));
+setMoneyValue(el('valorInicial'), 10000);
 const fmt = v  => formatCurrency(v, 'BRL');
 const fmtM = v => {
   if(v >= 1e6) return `R$ ${(v/1e6).toFixed(2)}M`;
@@ -198,7 +201,7 @@ function calcularProduto(produto, valorInicial, aporteMensal, anos, cdi, ipca) {
 
 // ── Simular todos os produtos ─────────────────────────
 function simular() {
-  const valorInicial = Number(el('valorInicial').value || 0);
+  const valorInicial = readMoneyValue(el('valorInicial'));
   const aporteMensal = Number(el('aporteMensal').value || 0);
   const ipca         = Number(el('ipca').value || 4.5);
 

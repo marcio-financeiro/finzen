@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -10,6 +11,7 @@ const cartaoCompra = document.getElementById('cartaoCompra');
 const categoriaCompra = document.getElementById('categoriaCompra');
 const descricaoCompra = document.getElementById('descricaoCompra');
 const valorCompra = document.getElementById('valorCompra');
+attachMoneyMask(valorCompra);
 const parcelasCompra = document.getElementById('parcelasCompra');
 const dataCompra = document.getElementById('dataCompra');
 
@@ -150,7 +152,7 @@ async function salvarCompra(){
   const cardId = cartaoCompra.value;
   const categoryId = categoriaCompra.value || null;
   const descricao = descricaoCompra.value.trim();
-  const valorTotal = Number(valorCompra.value || 0);
+  const valorTotal = readMoneyValue(valorCompra);
   const parcelas = Number(parcelasCompra.value || 1);
   const data = dataCompra.value;
 

@@ -2,8 +2,11 @@ import { confirmarExclusao } from './confirmModal.js';
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 
 const el = id => document.getElementById(id);
+attachMoneyMask(el('contaSaldo'));
+attachMoneyMask(el('cartaoLimite'));
 const { data: sessionData } = await supabase.auth.getSession();
 if(!sessionData.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
 const user = sessionData.session.user;
@@ -70,7 +73,7 @@ function editarConta(c){
   el('contaTipo').value=c.tipo||'';
   el('contaKind').value=c.account_kind||'bank';
   el('contaMoeda').value=c.currency||'BRL';
-  el('contaSaldo').value=c.saldo_atual||0;
+  setMoneyValue(el('contaSaldo'), c.saldo_atual);
   el('contaCor').value=c.color||'#4f8ef7';
   el('contaStatus').value=String(c.active!==false);
   // Ícone
@@ -188,7 +191,7 @@ async function salvarConta(){
   const tipo=el('contaTipo').value;
   const kind=el('contaKind').value;
   const moeda=el('contaMoeda').value;
-  const saldo=Number(el('contaSaldo').value||0);
+  const saldo=readMoneyValue(el('contaSaldo'));
   const cor=el('contaCor').value;
   const ativo=el('contaStatus').value==='true';
   const icone=(el('contaIcone')?.value?.trim()) || document.getElementById('emojiPreviewConta')?.textContent?.trim() || '🏦';
@@ -271,7 +274,7 @@ function editarCartao(c){
   el('cartaoNome').value=c.nome||'';
   el('cartaoBanco').value=c.banco||'';
   el('cartaoBandeira').value=c.bandeira||'';
-  el('cartaoLimite').value=c.limite||0;
+  setMoneyValue(el('cartaoLimite'), c.limite);
   el('cartaoFechamento').value=c.fechamento_dia||'';
   el('cartaoVencimento').value=c.vencimento_dia||'';
   el('cartaoCor').value=c.color||'#8b5cf6';
@@ -295,7 +298,7 @@ async function salvarCartao(){
   const nome=el('cartaoNome').value.trim();
   const banco=el('cartaoBanco').value.trim();
   const bandeira=el('cartaoBandeira').value;
-  const limite=Number(el('cartaoLimite').value||0);
+  const limite=readMoneyValue(el('cartaoLimite'));
   const fechamento=Number(el('cartaoFechamento').value)||null;
   const vencimento=Number(el('cartaoVencimento').value)||null;
   const cor=el('cartaoCor').value;

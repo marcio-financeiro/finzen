@@ -9,6 +9,7 @@ import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
 import { registrarAcao }  from './eventBus.js';
 import { notificarTransacao } from './telegram.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -16,6 +17,7 @@ if(!sd.session){ navigate('../login.html'); throw new Error('unauthenticated'); 
 const user = sd.session.user;
 
 const el  = id => document.getElementById(id);
+attachMoneyMask(el('mobValor'));
 const fmt = v  => formatCurrency(v, 'BRL');
 
 // ── Saudação ──────────────────────────────────────────
@@ -483,7 +485,7 @@ function fecharModal() {
 
 // ── Salvar lançamento ─────────────────────────────────
 registrarAcao('salvarLancamento', async () => {
-  const valor   = parseFloat((el('mobValor').value || '0').replace(',', '.'));
+  const valor   = readMoneyValue(el('mobValor'));
   const desc    = el('mobDescricao').value.trim();
   const catId   = catSelecionada || el('mobCatSelect').value || null;
   const data    = el('mobData').value;

@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -11,6 +12,7 @@ const tipoCategoria = document.getElementById('tipoCategoria');
 const iconeCategoria = document.getElementById('iconeCategoria');
 const corCategoria = document.getElementById('corCategoria');
 const orcamentoCategoria = document.getElementById('orcamentoCategoria');
+attachMoneyMask(orcamentoCategoria);
 const statusCategoria = document.getElementById('statusCategoria');
 const mensagemCategoria = document.getElementById('mensagemCategoria');
 const listaCategorias = document.getElementById('listaCategorias');
@@ -114,7 +116,7 @@ async function salvarCategoria(){
   const tipo = tipoCategoria.value;
   const icon = iconeCategoria.value.trim() || document.getElementById('emojiPreview')?.textContent?.trim() || '';
   const cor = corCategoria.value || '#4f8ef7';
-  const budget = orcamentoCategoria.value ? Number(orcamentoCategoria.value) : null;
+  const budget = orcamentoCategoria.value ? readMoneyValue(orcamentoCategoria) : null;
   const ativo = statusCategoria.value === 'true';
 
   if(!nome || !tipo){

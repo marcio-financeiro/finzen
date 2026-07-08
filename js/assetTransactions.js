@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -11,6 +12,7 @@ const tipoMovimento = document.getElementById('tipoMovimento');
 const quantidadeMovimento = document.getElementById('quantidadeMovimento');
 const precoMovimento = document.getElementById('precoMovimento');
 const valorTotalMovimento = document.getElementById('valorTotalMovimento');
+attachMoneyMask(valorTotalMovimento);
 const exchangeRateMovimento = document.getElementById('exchangeRateMovimento');
 const dataMovimento = document.getElementById('dataMovimento');
 const observacaoMovimento = document.getElementById('observacaoMovimento');
@@ -45,7 +47,7 @@ function calcularValorTotal(){
   const preco = Number(precoMovimento.value || 0);
 
   if(quantidade && preco){
-    valorTotalMovimento.value = (quantidade * preco).toFixed(2);
+    setMoneyValue(valorTotalMovimento, quantidade * preco);
   }
 }
 
@@ -121,7 +123,7 @@ async function salvarMovimento(){
   const tipo = tipoMovimento.value;
   const quantidade = quantidadeMovimento.value ? Number(quantidadeMovimento.value) : null;
   const preco = precoMovimento.value ? Number(precoMovimento.value) : null;
-  const valorTotal = Number(valorTotalMovimento.value || 0);
+  const valorTotal = readMoneyValue(valorTotalMovimento);
   const exchangeRate = exchangeRateMovimento?.value ? Number(exchangeRateMovimento.value) : null;
   const dataMov = dataMovimento.value;
   const observacao = observacaoMovimento.value.trim();

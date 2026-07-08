@@ -12,6 +12,7 @@ import {
   validateCurrencyExchange,
   validateTransfer
 } from './services/transferService.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -19,6 +20,7 @@ const btnLogout = document.getElementById('btnLogout');
 const fromAccount = document.getElementById('fromAccount');
 const toAccount = document.getElementById('toAccount');
 const transferAmount = document.getElementById('transferAmount');
+attachMoneyMask(transferAmount);
 const transferDate = document.getElementById('transferDate');
 const transferDescription = document.getElementById('transferDescription');
 const btnTransferir = document.getElementById('btnTransferir');
@@ -28,6 +30,7 @@ const listaTransferencias = document.getElementById('listaTransferencias');
 const exchangeFromAccount = document.getElementById('exchangeFromAccount');
 const exchangeToAccount = document.getElementById('exchangeToAccount');
 const exchangeAmount = document.getElementById('exchangeAmount');
+attachMoneyMask(exchangeAmount);
 const exchangeRate = document.getElementById('exchangeRate');
 const exchangeDate = document.getElementById('exchangeDate');
 const exchangeDescription = document.getElementById('exchangeDescription');
@@ -135,7 +138,7 @@ async function carregarContas(){
 async function criarTransferencia(){
   const origem = fromAccount.value;
   const destino = toAccount.value;
-  const valor = Number(transferAmount.value || 0);
+  const valor = readMoneyValue(transferAmount);
   const data = transferDate.value || hojeISO();
   const descricao = transferDescription.value.trim();
 
@@ -178,7 +181,7 @@ async function criarTransferencia(){
 async function criarConversaoCambio(){
   const origem = exchangeFromAccount.value;
   const destino = exchangeToAccount.value;
-  const valor = Number(exchangeAmount.value || 0);
+  const valor = readMoneyValue(exchangeAmount);
   const taxa = Number(exchangeRate.value || 0);
   const data = exchangeDate.value || hojeISO();
   const descricao = exchangeDescription.value.trim();
@@ -227,7 +230,7 @@ function atualizarPreviaCambio(){
 
   const origem = obterConta(exchangeFromAccount?.value);
   const destino = obterConta(exchangeToAccount?.value);
-  const valor = Number(exchangeAmount?.value || 0);
+  const valor = readMoneyValue(exchangeAmount);
   const taxa = Number(exchangeRate?.value || 0);
 
   if(!origem || !destino || valor <= 0 || taxa <= 0){
