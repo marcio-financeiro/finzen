@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { navigate }  from './router.js';
 import { formatCurrency } from './utils.js';
+import { showChoice } from './modal.js';
 
 // ─── DOM ───────────────────────────────────────
 const userEmail    = document.getElementById('userEmail');
@@ -323,12 +324,34 @@ function billCardHtml(fatura, key, isAtual) {
 
 // ─── EXCLUIR ITEM ──────────────────────────────
 window.excluirItemFatura = async function(id) {
-  if (!confirm('Excluir este lançamento do cartão?')) return;
+  const item = itensPorId[id];
+  if (!item) return;
 
-  const { error } = await supabase
-    .from('card_transactions').delete()
-    .eq('id', id).eq('user_id', user.id);
+  let scope = 'only';
+  if (item.parcelas > 1) {
+    scope = await showChoice({
+      title: 'Excluir compra parcelada',
+      message: 'Esta compra tem parcelas futuras. Escolha o alcance da exclusão.',
+      options: [
+        { value: 'only',   label: 'Excluir somente esta parcela', primary: true },
+        { value: 'future', label: 'Excluir esta e as parcelas seguintes', danger: true },
+      ],
+    });
+    if (!scope) return;
+  } else if (!confirm('Excluir este lançamento do cartão?')) {
+    return;
+  }
 
+  let query = supabase.from('card_transactions').delete().eq('user_id', user.id);
+  if (scope === 'only') {
+    query = query.eq('id', item.id);
+  } else {
+    query = query
+      .eq('card_id', item.card_id).eq('parcelas', item.parcelas).eq('valor_total', item.valor_total)
+      .gte('parcela_atual', item.parcela_atual);
+  }
+
+  const { error } = await query;
   if (error) { alert('Erro ao excluir: ' + error.message); return; }
   await carregarFaturas();
 };
