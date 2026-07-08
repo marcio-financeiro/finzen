@@ -62,44 +62,53 @@ async function gerarOcorrencias() {
     '&select=id,user_id,account_id,category_id,type,amount,description,notes,date,recurrence_frequency,recurrence_until,recurrence_group_id'
   );
 
+  const resultado = { modelos: modelos?.length || 0, geradas: 0, erros: [] };
+
   for (const modelo of modelos || []) {
-    const groupId = modelo.recurrence_group_id || modelo.id;
-    const frequencia = modelo.recurrence_frequency || 'mensal';
-    const limite = modelo.recurrence_until && modelo.recurrence_until < horizonte
-      ? modelo.recurrence_until
-      : horizonte;
+    try {
+      const groupId = modelo.recurrence_group_id || modelo.id;
+      const frequencia = modelo.recurrence_frequency || 'mensal';
+      const limite = modelo.recurrence_until && modelo.recurrence_until < horizonte
+        ? modelo.recurrence_until
+        : horizonte;
 
-    const [ultima] = await sbFetch(
-      `transactions?recurrence_group_id=eq.${groupId}&select=date&order=date.desc&limit=1`
-    );
-    let cursor = ultima?.date || modelo.date;
+      const [ultima] = await sbFetch(
+        `transactions?recurrence_group_id=eq.${groupId}&select=date&order=date.desc&limit=1`
+      );
+      let cursor = ultima?.date || modelo.date;
 
-    const novas = [];
-    let guard = 0;
-    let next = nextDate(cursor, frequencia);
-    while (next <= limite && guard < 60) {
-      guard++;
-      novas.push({
-        user_id: modelo.user_id,
-        account_id: modelo.account_id,
-        category_id: modelo.category_id,
-        type: modelo.type,
-        amount: modelo.amount,
-        description: modelo.description,
-        notes: modelo.notes,
-        date: next,
-        status: 'pendente',
-        is_recurring: false,
-        recurrence_group_id: groupId,
-        parent_transaction_id: modelo.id,
-      });
-      next = nextDate(next, frequencia);
-    }
+      const novas = [];
+      let guard = 0;
+      let next = nextDate(cursor, frequencia);
+      while (next <= limite && guard < 60) {
+        guard++;
+        novas.push({
+          user_id: modelo.user_id,
+          account_id: modelo.account_id,
+          category_id: modelo.category_id,
+          type: modelo.type,
+          amount: modelo.amount,
+          description: modelo.description,
+          notes: modelo.notes,
+          date: next,
+          status: 'pendente',
+          is_recurring: false,
+          recurrence_group_id: groupId,
+          parent_transaction_id: modelo.id,
+        });
+        next = nextDate(next, frequencia);
+      }
 
-    if (novas.length) {
-      await sbFetch('transactions', { method: 'POST', body: JSON.stringify(novas) });
+      if (novas.length) {
+        await sbFetch('transactions', { method: 'POST', body: JSON.stringify(novas) });
+        resultado.geradas += novas.length;
+      }
+    } catch (e) {
+      resultado.erros.push({ modeloId: modelo.id, descricao: modelo.description, erro: e.message });
     }
   }
+
+  return resultado;
 }
 
 export default async function handler(req, res) {
@@ -109,10 +118,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    await gerarOcorrencias();
-    res.status(200).json({ ok: true });
+    const resultado = await gerarOcorrencias();
+    res.status(200).json({ ok: true, ...resultado });
   } catch (e) {
     console.error('recurring-cron:', e.message);
-    res.status(200).json({ ok: true });
+    res.status(200).json({ ok: true, fatal: e.message });
   }
 }
