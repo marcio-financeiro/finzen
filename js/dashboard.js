@@ -79,6 +79,7 @@ let previsaoBaseOffset = -1;    // início da janela: 1 mês atrás até 3 meses
 let previsaoCarregando = false;
 let previsaoReceitasRec = 0;    // receitas fixas/mês (igual ao card Receita Líquida Recorrente)
 let previsaoDespesasRec = 0;    // despesas fixas/mês
+let saldoContaAtual = 0;        // saldo real das contas agora — base pra acumular a Tendência de Gastos
 let dolarAtual = 5.15;          // cotação USD/BRL — contas em dólar (ex: Nomad) convertem por este valor
 
 // Soma o valor de uma transação já convertido pra BRL, conforme a moeda da conta
@@ -147,6 +148,7 @@ async function carregarDashboard(){
     (recorrentes||[]).forEach(t => { t.amount = valorBRL(t); });
 
     const totalSaldo = (contas||[]).reduce((s,c)=>s+convertToBRL(c.saldo_atual, c.currency||'BRL', dolarAtual),0);
+    saldoContaAtual = totalSaldo;
     const tx = transacoesMes||[];
     const pagas = tx.filter(t=>t.status==='pago');
     const receitas = pagas.filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
@@ -609,7 +611,9 @@ async function carregarTendencia(baseOffset){
   try {
     const meses    = Array.from({length:TENDENCIA_MESES}, (_,i) => ({ offset: baseOffset+i, ...mesComOffset(baseOffset+i) }));
     const passados = meses.filter(m => m.offset <= 0);
-    const futuros  = meses.filter(m => m.offset > 0);
+    // Mês atual entra na consulta de pendentes também — precisa do que ainda falta
+    // acontecer neste mês pra acumular o saldo corretamente a partir de agora.
+    const futuros  = meses.filter(m => m.offset >= 0);
     const refs     = meses.map(m => m.ref);
 
     const [{ data: parcelas }, { data: despesasReais }, { data: futurasReais }] = await Promise.all([
@@ -617,8 +621,9 @@ async function carregarTendencia(baseOffset){
       passados.length
         ? supabase.from('transactions').select('amount,date,accounts:account_id(currency)').eq('user_id',user.id).eq('status','pago').eq('type','despesa').gte('date',passados[0].inicio).lte('date',passados[passados.length-1].fim)
         : Promise.resolve({ data: [] }),
-      // Meses futuros: usa os lançamentos recorrentes já gerados (pendentes) em vez de
-      // uma média fixa repetida — reflete o que está realmente previsto em cada mês.
+      // Mês atual em diante: usa os lançamentos ainda pendentes (recorrentes já gerados
+      // + qualquer outro) em vez de uma média fixa repetida — reflete o que está
+      // realmente previsto em cada mês.
       futuros.length
         ? supabase.from('transactions').select('type,amount,date,accounts:account_id(currency)').eq('user_id',user.id).eq('status','pendente').gte('date',futuros[0].inicio).lte('date',futuros[futuros.length-1].fim)
         : Promise.resolve({ data: [] }),
@@ -642,23 +647,39 @@ async function carregarTendencia(baseOffset){
     });
 
     // Comprometido = despesas fixas/mês (recorrentes) + parcelas de cartão do mês.
-    // Passado/atual: limitado ao total real gasto no mês; o restante é "Variável".
-    // Futuro: soma os lançamentos recorrentes já gerados (pendentes) para aquele mês
-    // específico + parcelas de cartão — não há "Variável" ainda por não ter acontecido.
+    // Passado: limitado ao total real gasto no mês; o restante é "Variável".
+    // Atual em diante: soma os lançamentos ainda pendentes daquele mês específico +
+    // parcelas de cartão — não há "Variável" ainda por não ter acontecido.
+    // "Livre" continua sendo a sobra daquele mês isolado (pra não distorcer a escala
+    // das barras). saldoProjetado é o acumulado de verdade — parte do saldo atual das
+    // contas e soma o resultado líquido mês a mês, igual ao Saldo Livre Estimado de
+    // Movimentações, só que projetado adiante — mostrado como texto abaixo do gráfico.
+    let saldoAcumulado = saldoContaAtual;
     const dados = meses.map(m => {
       const parcelasMes = parcelasPorMes[m.ref] || 0;
-      if(m.offset <= 0){
+      if(m.offset < 0){
         const fixoAprox     = previsaoDespesasRec + parcelasMes;
         const total         = (despesasPorMes[m.ref]||0) + parcelasMes;
         const comprometido  = Math.min(fixoAprox, total);
         const variavel      = Math.max(total - comprometido, 0);
+        return { ...m, comprometido, variavel, livre:0, total, projetado:false, saldoProjetado:null };
+      }
+      if(m.offset === 0){
+        const fixoAprox     = previsaoDespesasRec + parcelasMes;
+        const total         = (despesasPorMes[m.ref]||0) + parcelasMes;
+        const comprometido  = Math.min(fixoAprox, total);
+        const variavel      = Math.max(total - comprometido, 0);
+        const pendReceita   = receitasFuturasPorMes[m.ref] || 0;
+        const pendDespesa   = despesasFuturasPorMes[m.ref] || 0;
         const livre         = Math.max(previsaoReceitasRec - total, 0);
-        return { ...m, comprometido, variavel, livre, total, projetado:false };
+        saldoAcumulado += pendReceita - pendDespesa;
+        return { ...m, comprometido, variavel, livre, total, projetado:false, saldoProjetado:saldoAcumulado };
       }
       const comprometido = (despesasFuturasPorMes[m.ref]||0) + parcelasMes;
       const receitasMes  = receitasFuturasPorMes[m.ref] || 0;
       const livre         = Math.max(receitasMes - comprometido, 0);
-      return { ...m, comprometido, variavel: 0, livre, total: comprometido, projetado:true };
+      saldoAcumulado += receitasMes - comprometido;
+      return { ...m, comprometido, variavel: 0, livre, total: comprometido, projetado:true, saldoProjetado:saldoAcumulado };
     });
 
     renderTendencia(dados);
@@ -756,6 +777,13 @@ function renderTendencia(dados){
     ? `Projeção ${subiu?'sobe':'cai'} de ${fmt(primeiro.total)} (${mesInicial}) para ${fmt(ultimo.total)} (${mesFinal}).`
     : '';
 
+  // Saldo real acumulado (parte do saldo atual das contas, soma o resultado líquido
+  // mês a mês) — mesmo raciocínio do Saldo Livre Estimado de Movimentações, projetado
+  // até o último mês da janela.
+  const saldoTxt = ultimo.saldoProjetado !== null
+    ? `Saldo projetado até ${mesFinal}: <strong style="color:${ultimo.saldoProjetado>=0?'var(--success)':'var(--danger)'}">${fmt(ultimo.saldoProjetado)}</strong>`
+    : '';
+
   el('blocoPrevisao').innerHTML = `
     ${svg}
     <div class="tendencia-legend">
@@ -767,6 +795,7 @@ function renderTendencia(dados){
     <div class="tendencia-insight">
       <p>${insightTxt}</p>
       ${tendenciaTxt ? `<p class="muted">${tendenciaTxt}</p>` : ''}
+      ${saldoTxt ? `<p class="muted">${saldoTxt}</p>` : ''}
     </div>
   `;
 }
