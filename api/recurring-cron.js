@@ -49,8 +49,9 @@ function nextDate(dateISO, frequency) {
 
 async function sbFetch(path, options = {}) {
   const r = await fetch(`${SB_URL}/rest/v1/${path}`, { headers: sbHeaders, ...options });
-  if (!r.ok) throw new Error(`Supabase ${path} → ${r.status}: ${await r.text()}`);
-  return r.status === 204 ? null : r.json();
+  const text = await r.text();
+  if (!r.ok) throw new Error(`Supabase ${path} → ${r.status}: ${text}`);
+  return text ? JSON.parse(text) : null;
 }
 
 async function gerarOcorrencias() {
