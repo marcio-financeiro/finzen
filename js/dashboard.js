@@ -707,7 +707,11 @@ function renderTendencia(dados){
   const totaisDesc = dados.map(d => d.total).sort((a,b) => b-a);
   const [maior, segundoMaior] = totaisDesc;
   const outlier  = segundoMaior > 0 && maior > segundoMaior * 1.8;
-  const maxTotal = Math.max(outlier ? segundoMaior : maior, previsaoReceitasRec, 1);
+  // A pilha visual da barra é comprometido+variável+livre — precisa caber na escala,
+  // não só o total (comprometido+variável), senão o "Livre" do mês atual (agora um
+  // valor real, não mais uma sobra pequena) estoura pra fora da área do gráfico.
+  const maiorPilha = Math.max(...dados.map(d => d.total + (d.livre||0)));
+  const maxTotal = Math.max(outlier ? segundoMaior : maior, previsaoReceitasRec, maiorPilha, 1);
   const escalaY  = v => barAreaBottom - (Math.min(v, maxTotal) / maxTotal) * barAreaHeight;
 
   const barras = dados.map((d,i) => {
