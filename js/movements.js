@@ -472,11 +472,20 @@ async function saveAccountTransaction(description, amount, date, notes){
     if(!ok) return;
   }
 
+  if(isRecurring) await gerarOcorrenciasRecorrentes();
+
   showMessage(isRecurring ? 'Movimentação salva como recorrente.' : 'Movimentação salva.','success');
   const contaNome = (accounts||[]).find(a=>a.id===accountId)?.nome || 'Conta';
   notificarTransacao({ tipo:type, descricao:description, valor:amount, conta:contaNome }).catch(()=>{});
   clearForm();
   await refreshAll();
+}
+
+// Dispara o cron de geração de recorrências (api/recurring-cron.js) na hora,
+// em vez de esperar o horário agendado — assim os próximos meses já aparecem
+// no extrato logo após salvar/editar um lançamento recorrente.
+async function gerarOcorrenciasRecorrentes(){
+  await fetch('/api/recurring-cron').catch(()=>{});
 }
 
 async function saveTransactionEdit(){
@@ -527,6 +536,8 @@ async function saveTransactionEdit(){
     }).eq('id',old.id).eq('user_id',user.id);
     if(error){ showMessage('Erro ao editar lançamento: '+error.message,'danger'); return; }
   }
+
+  if(isRecurring) await gerarOcorrenciasRecorrentes();
 
   showMessage(scope === 'future' ? 'Esta e futuras ocorrências foram alteradas.' : 'Lançamento alterado.','success');
   cancelEdit();
