@@ -671,8 +671,10 @@ async function carregarTendencia(baseOffset){
         const variavel      = Math.max(total - comprometido, 0);
         const pendReceita   = receitasFuturasPorMes[m.ref] || 0;
         const pendDespesa   = despesasFuturasPorMes[m.ref] || 0;
-        const livre         = Math.max(previsaoReceitasRec - total, 0);
+        // Mesmo cálculo do Saldo Livre Estimado (Movimentações): saldo real das
+        // contas + o que ainda falta entrar/sair até o fim do mês.
         saldoAcumulado += pendReceita - pendDespesa;
+        const livre = Math.max(saldoAcumulado, 0);
         return { ...m, comprometido, variavel, livre, total, projetado:false, saldoProjetado:saldoAcumulado };
       }
       const comprometido = (despesasFuturasPorMes[m.ref]||0) + parcelasMes;
