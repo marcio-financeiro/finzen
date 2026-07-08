@@ -679,8 +679,8 @@ async function carregarTendencia(baseOffset){
       }
       const comprometido = (despesasFuturasPorMes[m.ref]||0) + parcelasMes;
       const receitasMes  = receitasFuturasPorMes[m.ref] || 0;
-      const livre         = Math.max(receitasMes - comprometido, 0);
       saldoAcumulado += receitasMes - comprometido;
+      const livre = Math.max(saldoAcumulado, 0);
       return { ...m, comprometido, variavel: 0, livre, total: comprometido, projetado:true, saldoProjetado:saldoAcumulado };
     });
 
