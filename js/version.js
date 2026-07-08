@@ -24,4 +24,18 @@ const ASSET_VERSION = '1218';
 
   // Roda imediatamente (este script é síncrono e vai no <head> antes dos outros)
   aplicarVersao();
+
+  // Bloqueia pinch-zoom (gesturestart/change/end são eventos proprietários do
+  // WebKit — só assim dá pra impedir o zoom de página inteira no Safari iOS,
+  // que ignora touch-action/user-scalable por acessibilidade) e double-tap-zoom.
+  document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+  document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
+  document.addEventListener('gestureend', e => e.preventDefault(), { passive: false });
+
+  let ultimoToque = 0;
+  document.addEventListener('touchend', e => {
+    const agora = Date.now();
+    if (agora - ultimoToque <= 300) e.preventDefault();
+    ultimoToque = agora;
+  }, { passive: false });
 })();
