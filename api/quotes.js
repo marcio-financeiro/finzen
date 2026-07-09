@@ -82,16 +82,32 @@ export default async function handler(req, res) {
   // ── Cotações BR — brapi.dev (1 ativo por req no plano free → paralelo) ────
   if (tickersBR.length && BRAPI_TOKEN) {
     const fundParams = fundamental === 'true' ? '&fundamental=true' : '';
-    const fetchBR = async (ticker) => {
+    // Uma tentativa extra após falha: sob carga (muitos tickers em paralelo),
+    // a brapi.dev ocasionalmente falha um subconjunto aleatório (rate limit
+    // transitório) — retry com pequeno atraso recupera a maioria dos casos.
+    // Falha final é logada (visível nos Logs do Vercel) em vez de sumir sem rastro.
+    const fetchBR = async (ticker, tentativa = 1) => {
+      let motivo;
       try {
         const r = await fetchTimeout(
           `https://brapi.dev/api/quote/${encodeURIComponent(ticker)}?token=${BRAPI_TOKEN}${fundParams}`,
           { headers: { 'User-Agent': 'FinZen/1.0' } }
         );
-        if (!r.ok) return null;
-        const j = await r.json();
-        return j.results?.[0] || null;
-      } catch (_) { return null; }
+        if (!r.ok) motivo = `HTTP ${r.status}`;
+        else {
+          const j = await r.json();
+          const item = j.results?.[0] || null;
+          if (item) return item;
+          motivo = 'sem resultado';
+        }
+      } catch (e) { motivo = e.message; }
+
+      if (tentativa === 1) {
+        await new Promise(res => setTimeout(res, 400));
+        return fetchBR(ticker, 2);
+      }
+      console.error(`brapi.dev falhou para ${ticker}: ${motivo}`);
+      return null;
     };
 
     const resBR = await Promise.allSettled(

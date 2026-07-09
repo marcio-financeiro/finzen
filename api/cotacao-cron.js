@@ -77,11 +77,12 @@ async function executar() {
   const grupos = {};
   let deltaBR = 0, deltaEUA = 0;
   let deltaValidoBR = true, deltaValidoEUA = true;
+  const semCotacao = [];
 
   for (const a of ativos) {
     const key = a.ticker.toUpperCase();
     const novaCotacao = quotes[key];
-    if (!novaCotacao) continue;
+    if (!novaCotacao) { semCotacao.push(key); continue; }
 
     const changePct = quotes[`${key}_chg`] ?? null;
     const moeda     = a.moeda || 'BRL';
@@ -132,6 +133,13 @@ async function executar() {
   };
   if (deltaValidoBR && tickersBR.length)   linhas.push(linhaDelta('Nacional', deltaBR));
   if (deltaValidoEUA && tickersEUA.length) linhas.push(linhaDelta('EUA', deltaEUA));
+
+  // Avisa quais ativos ficaram sem cotação hoje (falha momentânea da API de
+  // cotações) em vez de eles simplesmente sumirem da lista sem explicação
+  if (semCotacao.length) {
+    linhas.push('');
+    linhas.push(`⚠️ Sem cotação hoje: ${semCotacao.join(', ')}`);
+  }
 
   await enviarTelegram(linhas.join('\n').trim());
   return { ok: true, ativos: ativos.length };
