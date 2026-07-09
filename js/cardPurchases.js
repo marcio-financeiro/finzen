@@ -2,7 +2,7 @@ import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
-import { invoiceRef, addMonthsRef } from './services/cardService.js';
+import { invoiceRef, addMonthsRef, novoGrupoCompra, inserirParcelasCartao } from './services/cardService.js';
 import { comTrava } from './toast.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 
@@ -165,6 +165,7 @@ async function salvarCompra(){
 
   const valorParcela = Number((valorTotal / parcelas).toFixed(2));
   const refBase = invoiceRef(data, Number(cartao.fechamento_dia || 1), Number(cartao.vencimento_dia || 0));
+  const grupoId = novoGrupoCompra();
   const registros = [];
 
   for(let i = 0; i < parcelas; i++){
@@ -181,13 +182,12 @@ async function salvarCompra(){
       valor_parcela:valorParcela,
       data_compra:data,
       fatura_referencia:referencia,
-      status:'aberta'
+      status:'aberta',
+      purchase_group_id:grupoId
     });
   }
 
-  const { error } = await supabase
-    .from('card_transactions')
-    .insert(registros);
+  const { error } = await inserirParcelasCartao(supabase, registros);
 
   if(error){
     mostrarMensagem('Erro ao salvar: ' + error.message, 'danger');

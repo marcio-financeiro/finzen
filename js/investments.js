@@ -8,6 +8,8 @@ import { formatCurrency } from './utils.js';
 import { DEFAULT_USD_BRL, formatPercent, formatUSD, getUsdBrlRate, saveUsdBrlRate, toNumber } from './services/financeService.js';
 import { ensureDailySnapshot } from './services/patrimonySnapshot.js';
 import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
+import { ajustarSaldo } from './services/balanceService.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 // ─────────────────────────────────────────────
 // AUTH
@@ -354,16 +356,16 @@ async function carregarCorretoras(){
 
   // Filtro carteira
   el('filtroCorretora').innerHTML='<option value="">Todas as corretoras</option>'+
-    corretoras.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
+    corretoras.map(c=>`<option value="${escapeHtml(c.nome)}">${escapeHtml(c.nome)}</option>`).join('');
 
   // Select aporte
   el('corretoraAtivo').innerHTML='<option value="">Selecione a corretora</option>'+
-    corretoras.map(c=>`<option value="${c.id}" data-currency="${c.currency||'BRL'}" data-nome="${c.nome}">
-      ${c.nome} — saldo: ${formatCurrency(c.saldo_atual||0,c.currency||'BRL')}</option>`).join('');
+    corretoras.map(c=>`<option value="${c.id}" data-currency="${c.currency||'BRL'}" data-nome="${escapeHtml(c.nome)}">
+      ${escapeHtml(c.nome)} — saldo: ${formatCurrency(c.saldo_atual||0,c.currency||'BRL')}</option>`).join('');
 
   // Select dividendo conta destino
   el('divConta').innerHTML='<option value="">Selecione a conta</option>'+
-    todasContas.map(c=>`<option value="${c.id}">${c.nome} (${formatCurrency(c.saldo_atual||0,c.currency||'BRL')})</option>`).join('');
+    todasContas.map(c=>`<option value="${c.id}">${escapeHtml(c.nome)} (${formatCurrency(c.saldo_atual||0,c.currency||'BRL')})</option>`).join('');
 }
 
 async function carregarAtivos(){
@@ -375,7 +377,7 @@ async function carregarAtivos(){
 
   // Preencher select de ativos nos dividendos
   el('divAtivo').innerHTML='<option value="">Selecione o ativo</option>'+
-    ativos.map(a=>`<option value="${a.id}" data-qty="${a.quantidade}">${a.ticker} — ${a.nome||''}</option>`).join('');
+    ativos.map(a=>`<option value="${a.id}" data-qty="${a.quantidade}">${escapeHtml(a.ticker)} — ${escapeHtml(a.nome||'')}</option>`).join('');
 }
 
 async function carregarPesos(){
@@ -733,8 +735,8 @@ function renderizarCarteira(){
       const comprar = pideal>0?(diff>1?'sim':diff<-1?'vender':'ok'):'';
 
       html+=`<tr>
-        <td><strong>${a.ticker}</strong></td>
-        <td>${a.nome||'-'}</td>
+        <td><strong>${escapeHtml(a.ticker)}</strong></td>
+        <td>${escapeHtml(a.nome||'-')}</td>
         <td class="money">${toNumber(a.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:6})}</td>
         <td class="money">${fmtMoeda(toNumber(a.cotacao_atual||a.preco_medio),m)}
           ${a.atualizado_em?'<span style="font-size:9px;color:var(--success)"> ✓auto</span>':''}
@@ -917,12 +919,8 @@ async function salvarAtivo(){
       });
       if(erroTx) throw erroTx;
 
-      // Debitar/creditar conta
-      const novoSaldo = operacao==='compra'
-        ? toNumber(conta.saldo_atual)-valorTotal
-        : toNumber(conta.saldo_atual)+valorTotal;
-
-      await supabase.from('accounts').update({saldo_atual:novoSaldo}).eq('id',contaId).eq('user_id',user.id);
+      // Debitar/creditar conta (delta atômico via balanceService)
+      await ajustarSaldo(contaId, operacao==='compra' ? -valorTotal : valorTotal);
 
       // Registrar em transactions para aparecer no dashboard
       await supabase.from('transactions').insert({
@@ -1125,9 +1123,8 @@ async function salvarDividendo(){
     }).select('id').single();
     if(e1) throw e1;
 
-    // Creditar na conta usando a moeda da conta
-    const novoSaldo=toNumber(conta.saldo_atual)+valorConta;
-    await supabase.from('accounts').update({saldo_atual:novoSaldo}).eq('id',contaId).eq('user_id',user.id);
+    // Creditar na conta usando a moeda da conta (delta atômico)
+    await ajustarSaldo(contaId, valorConta);
 
     // Registrar transação com o valor na moeda da conta
     const {data:txRow, error:e2}=await supabase.from('transactions').insert({

@@ -14,6 +14,7 @@ import {
 } from './services/transferService.js';
 import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
 import { comTrava } from './toast.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -74,7 +75,7 @@ function formatarData(dataISO){
 function optionConta(conta){
   return `
     <option value="${conta.id}">
-      ${conta.nome} - ${formatCurrency(conta.saldo_atual || 0, conta.currency || 'BRL')}
+      ${escapeHtml(conta.nome)} - ${formatCurrency(conta.saldo_atual || 0, conta.currency || 'BRL')}
     </option>
   `;
 }

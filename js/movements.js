@@ -5,8 +5,9 @@ import { notificarTransacao } from './telegram.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { showChoice, showDetail } from './modal.js';
 import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
-import { invoiceRef, addMonthsRef, refName } from './services/cardService.js';
+import { invoiceRef, addMonthsRef, refName, novoGrupoCompra, inserirParcelasCartao } from './services/cardService.js';
 import { toast, comTrava } from './toast.js';
+import { ajustarSaldo, deltaTransacao } from './services/balanceService.js';
 
 // ─────────────────────────────────────────────
 // ELEMENTOS DO DOM
@@ -379,26 +380,13 @@ async function loadData(){
 // SALDO DE CONTA
 // ─────────────────────────────────────────────
 async function applyAccountBalance(accountId, type, amount, mode='apply'){
-  const { data, error } = await supabase
-    .from('accounts').select('saldo_atual')
-    .eq('id',accountId).eq('user_id',user.id).single();
-
-  if(error){ showMessage('Erro ao ler saldo: '+error.message,'danger'); return false; }
-
-  const current = Number(data.saldo_atual || 0);
-  let next = current;
-
-  if(mode === 'apply'){
-    next = type === 'receita' ? current + amount : current - amount;
-  }else{
-    next = type === 'receita' ? current - amount : current + amount;
+  try{
+    await ajustarSaldo(accountId, deltaTransacao(type, amount, mode));
+    return true;
+  }catch(e){
+    showMessage('Erro ao atualizar saldo: '+e.message,'danger');
+    return false;
   }
-
-  const upd = await supabase.from('accounts')
-    .update({ saldo_atual:next }).eq('id',accountId).eq('user_id',user.id);
-
-  if(upd.error){ showMessage('Erro ao atualizar saldo: '+upd.error.message,'danger'); return false; }
-  return true;
 }
 
 // ─────────────────────────────────────────────
@@ -616,6 +604,7 @@ async function saveCardPurchase(description, date){
 
   if(!cardId || !invoice){ showMessage('Selecione cartão e fatura inicial.','warning'); return; }
 
+  const grupoId = novoGrupoCompra();
   const registros = [];
   for(let i=0; i<calc.installments; i++){
     registros.push({
@@ -624,10 +613,11 @@ async function saveCardPurchase(description, date){
       parcelas:calc.installments, parcela_atual:i+1,
       valor_parcela:calc.installment, data_compra:date,
       fatura_referencia:addMonthsRef(invoice, i), status:'aberta',
+      purchase_group_id:grupoId,
     });
   }
 
-  const { error } = await supabase.from('card_transactions').insert(registros);
+  const { error } = await inserirParcelasCartao(supabase, registros);
   if(error){ showMessage('Erro ao salvar compra no cartão: '+error.message,'danger'); return; }
 
   showMessage(`Compra salva: ${calc.installments}x de ${formatCurrency(calc.installment,'BRL')}.`,'success');

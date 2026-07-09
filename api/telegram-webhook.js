@@ -815,13 +815,23 @@ async function processar(texto) {
 
 // ── Handler Vercel ────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
+  const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
+
   if (req.method === 'GET' && req.query?.setup === '1') {
-    const url = `https://${req.headers.host}/api/telegram-webhook`;
-    const r   = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=${url}`);
+    // Registra o webhook; com TELEGRAM_WEBHOOK_SECRET setado, o Telegram passa
+    // a enviar o header X-Telegram-Bot-Api-Secret-Token em cada update.
+    let url = `https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=${encodeURIComponent(`https://${req.headers.host}/api/telegram-webhook`)}`;
+    if (WEBHOOK_SECRET) url += `&secret_token=${encodeURIComponent(WEBHOOK_SECRET)}`;
+    const r = await fetch(url);
     return res.status(200).json(await r.json());
   }
 
   if (req.method !== 'POST') return res.status(200).json({ ok: true });
+
+  // Valida o secret quando configurado — impede updates forjados por terceiros
+  if (WEBHOOK_SECRET && req.headers['x-telegram-bot-api-secret-token'] !== WEBHOOK_SECRET) {
+    return res.status(403).json({ ok: false });
+  }
 
   const body = req.body || {};
 

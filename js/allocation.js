@@ -4,6 +4,7 @@ import { formatCurrency } from './utils.js';
 import { getCotacoes } from './quoteCache.js';
 import { getUsdBrlRate } from './services/financeService.js';
 import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -322,7 +323,7 @@ function renderizarDonuts(){
     const cor = CORES_CLASSES[i.classe] || '#94a3b8';
     return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px">
       <span style="width:10px;height:10px;border-radius:50%;background:${cor};flex-shrink:0"></span>
-      <span style="flex:1">${i.nome}</span>
+      <span style="flex:1">${escapeHtml(i.nome)}</span>
       <span style="color:var(--muted);font-size:11px;min-width:36px;text-align:right">${formatarPercentual(i.percentualAtual)}</span>
       <span style="color:var(--accent);font-size:11px;font-weight:700;min-width:36px;text-align:right">${formatarPercentual(i.percentualIdeal)}</span>
     </div>`;
@@ -373,7 +374,7 @@ function renderizarTabela(){
 
           return `
             <tr>
-              <td>${item.nome}</td>
+              <td>${escapeHtml(item.nome)}</td>
               <td class="money">${formatCurrency(item.valorAtual, 'BRL')}</td>
               <td>${formatarPercentual(item.percentualAtual)}</td>
               <td>${formatarPercentual(item.percentualIdeal)}</td>
@@ -427,7 +428,7 @@ function calcularSugestaoAporte(){
 
           return `
             <tr>
-              <td>${item.nome}</td>
+              <td>${escapeHtml(item.nome)}</td>
               <td class="money">${formatCurrency(item.faltaValor, 'BRL')}</td>
               <td class="money positive">${formatCurrency(sugestao, 'BRL')}</td>
             </tr>

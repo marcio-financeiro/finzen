@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -122,9 +123,9 @@ async function carregarCartoes(){
         ${cartoes.map(cartao => `
           <tr>
             <td><span class="color-dot" style="background:${cartao.cor || '#7c5cfc'}"></span></td>
-            <td>${cartao.nome || ''}</td>
-            <td>${cartao.banco || '-'}</td>
-            <td>${cartao.bandeira || '-'}</td>
+            <td>${escapeHtml(cartao.nome || '')}</td>
+            <td>${escapeHtml(cartao.banco || '-')}</td>
+            <td>${escapeHtml(cartao.bandeira || '-')}</td>
             <td class="money">${formatCurrency(cartao.limite || 0, 'BRL')}</td>
             <td>Dia ${cartao.fechamento_dia}</td>
             <td>Dia ${cartao.vencimento_dia}</td>

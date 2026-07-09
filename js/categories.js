@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -216,8 +217,8 @@ async function carregarCategorias(){
         ${categorias.map(categoria => `
           <tr>
             <td><span class="color-dot" style="background:${categoria.cor || '#4f8ef7'}"></span></td>
-            <td>${categoria.icon || '-'}</td>
-            <td>${categoria.nome || ''}</td>
+            <td>${escapeHtml(categoria.icon || '-')}</td>
+            <td>${escapeHtml(categoria.nome || '')}</td>
             <td><span class="badge ${classeTipo(categoria.tipo)}">${categoria.tipo || '-'}</span></td>
             <td class="money">${categoria.budget_amount ? formatCurrency(categoria.budget_amount) : '-'}</td>
             <td><span class="badge ${categoria.ativo ? 'success' : 'danger'}">${categoria.ativo ? 'ativa' : 'inativa'}</span></td>

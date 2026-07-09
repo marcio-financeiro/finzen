@@ -10,6 +10,7 @@ import { navigate }     from './router.js';
 import { formatCurrency } from './utils.js';
 import { emailService } from './emailService.js';
 import { openModal }    from './modal.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -319,8 +320,8 @@ function renderMensal() {
       const autoStyle = ev._auto ? 'border-left:2px dashed ' + cfg.cor + ';opacity:.85;' : '';
       html += `<div class="cal-evento-pill" data-id="${ev.id}"
         style="--pill-cor:${cfg.cor};background:${cfg.cor}22;color:${cfg.cor};${autoStyle}"
-        title="${ev.titulo}${ev._auto?' (automático)':''}">
-        ${cfg.icon} ${ev.titulo}
+        title="${escapeHtml(ev.titulo)}${ev._auto?' (automático)':''}">
+        ${cfg.icon} ${escapeHtml(ev.titulo)}
       </div>`;
     });
 
@@ -392,8 +393,8 @@ function renderSemanal() {
             style="background:${cfg.cor}22;color:${cfg.cor};font-size:10px;
             padding:1px 5px;border-radius:3px;border-left:2px solid ${cfg.cor};${autoStyle}
             cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px;"
-            title="${ev.titulo}${ev._auto?' (automático)':''}">
-            ${cfg.icon} ${ev.titulo}
+            title="${escapeHtml(ev.titulo)}${ev._auto?' (automático)':''}">
+            ${cfg.icon} ${escapeHtml(ev.titulo)}
           </div>`;
         }).join('')}
       </div>`;
@@ -432,8 +433,8 @@ function renderSemanal() {
                   style="background:${cfg.cor}22;color:${cfg.cor};font-size:10px;
                   padding:1px 4px;border-radius:3px;border-left:2px solid ${cfg.cor};
                   cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-                  title="${ev.titulo}">
-                  ${cfg.icon} ${ev.titulo}
+                  title="${escapeHtml(ev.titulo)}">
+                  ${cfg.icon} ${escapeHtml(ev.titulo)}
                 </div>`;
               }).join('')}
             </div>`;
@@ -501,12 +502,12 @@ function renderLista() {
       html += `<div class="cal-lista-item" data-id="${ev.id}">
         <div class="cal-lista-icon">${cfg.icon}</div>
         <div class="cal-lista-info">
-          <div class="cal-lista-titulo">${ev.titulo}</div>
+          <div class="cal-lista-titulo">${escapeHtml(ev.titulo)}</div>
           <div class="cal-lista-sub">
             ${ev.hora ? fmtHora(ev.hora) + ' · ' : ''}
             ${cfg.label}
-            ${ev.local ? ' · <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:2px"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>' + ev.local : ''}
-            ${ev.descricao ? '<br>' + ev.descricao.slice(0,80) + (ev.descricao.length>80?'...':'') : ''}
+            ${ev.local ? ' · <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:2px"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>' + escapeHtml(ev.local) : ''}
+            ${ev.descricao ? '<br>' + escapeHtml(ev.descricao.slice(0,80)) + (ev.descricao.length>80?'...':'') : ''}
           </div>
         </div>
         <div class="cal-lista-status">
@@ -546,7 +547,7 @@ function mostrarEventosDia(iso, evs) {
           return `<div class="fz-modal-item" data-id="${ev.id}" style="cursor:pointer;border-left:3px solid ${cfg.cor};align-items:flex-start;">
             <span style="font-size:18px;flex-shrink:0;">${cfg.icon}</span>
             <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ev.titulo}</div>
+              <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(ev.titulo)}</div>
               <div style="font-size:11px;color:var(--muted);margin-top:2px;">
                 ${ev.hora ? fmtHora(ev.hora) + ' · ' : ''}${cfg.label}${ev._auto ? ' · automático' : ''}
               </div>
@@ -593,7 +594,7 @@ function mostrarInfoAuto(ev) {
         <div style="display:flex;align-items:flex-start;gap:10px;">
           <span style="font-size:24px;">${cfg.icon}</span>
           <div>
-            <h2 style="font-size:14px;">${ev.titulo}</h2>
+            <h2 style="font-size:14px;">${escapeHtml(ev.titulo)}</h2>
             <p>${origemLabel}</p>
           </div>
         </div>
@@ -602,7 +603,7 @@ function mostrarInfoAuto(ev) {
       <div class="fz-modal-body">
         <div style="font-size:13px;color:var(--muted);padding:10px 12px;background:var(--surface-2);border-radius:8px;">
           ${fmtData(ev.data_inicio)}
-          ${ev.descricao ? `<br>${ev.descricao}` : ''}
+          ${ev.descricao ? `<br>${escapeHtml(ev.descricao)}` : ''}
         </div>
         <p style="font-size:11px;color:var(--muted);margin:0;">
           Este evento é gerado automaticamente pelo FinZen. Para editá-lo, acesse a origem.
@@ -823,7 +824,7 @@ function exportarMesICS() {
     linhas.push(`SEQUENCE:${seq}`);
     linhas.push(ev.hora ? `DTSTART:${dtStart}` : `DTSTART;VALUE=DATE:${dtStart}`);
     linhas.push(ev.hora ? `DTEND:${dtEnd}`     : `DTEND;VALUE=DATE:${dtEnd}`);
-    linhas.push(`SUMMARY:${cfg.icon} ${ev.titulo}`);
+    linhas.push(`SUMMARY:${cfg.icon} ${escapeHtml(ev.titulo)}`);
     if (ev.descricao) linhas.push(`DESCRIPTION:${ev.descricao.replace(/\n/g,'\\n')}`);
     if (ev.local)     linhas.push(`LOCATION:${ev.local}`);
     const alarmHoras = (ev.lembrete_dias || 1) * 24;

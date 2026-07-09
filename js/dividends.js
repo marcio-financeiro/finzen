@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { ajustarSaldo } from './services/balanceService.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -318,13 +319,7 @@ window.excluirProvento = async function(id) {
       .eq('id', txId).eq('user_id', user.id).single();
 
     if (tx && tx.status === 'pago' && tx.account_id) {
-      const { data: acc } = await supabase.from('accounts')
-        .select('saldo_atual').eq('id', tx.account_id).single();
-      if (acc) {
-        await supabase.from('accounts')
-          .update({ saldo_atual: Number(acc.saldo_atual) - Number(tx.amount) })
-          .eq('id', tx.account_id).eq('user_id', user.id);
-      }
+      await ajustarSaldo(tx.account_id, -Number(tx.amount));
     }
 
     await supabase.from('transactions').delete().eq('id', txId).eq('user_id', user.id);

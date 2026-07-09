@@ -10,8 +10,9 @@ import { formatCurrency } from './utils.js';
 import { registrarAcao }  from './eventBus.js';
 import { notificarTransacao } from './telegram.js';
 import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
-import { invoiceRef, addMonthsRef } from './services/cardService.js';
+import { invoiceRef, addMonthsRef, novoGrupoCompra, inserirParcelasCartao } from './services/cardService.js';
 import { escapeHtml } from './utils/escapeHtml.js';
+import { ajustarSaldo } from './services/balanceService.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -109,10 +110,8 @@ registrarAcao('pagarFaturaMobile', async (el) => {
       .eq('fatura_referencia', anoMes);
     if(e1) throw e1;
 
-    // Debitar da conta
-    const novoSaldo = Number(contaEscolhida.saldo_atual||0) - total;
-    await supabase.from('accounts').update({ saldo_atual: novoSaldo })
-      .eq('id', contaEscolhida.id).eq('user_id', user.id);
+    // Debitar da conta (delta atômico via balanceService)
+    await ajustarSaldo(contaEscolhida.id, -total);
 
     // Registrar pagamento nas transações
     await supabase.from('transactions').insert({
@@ -146,11 +145,7 @@ registrarAcao('pagarPendenteMobile', async (el) => {
       .eq('id', txId).eq('user_id', user.id);
 
     if(contaId) {
-      const conta = contas.find(c=>c.id===contaId);
-      if(conta) {
-        const novoSaldo = Number(conta.saldo_atual||0) - valor;
-        await supabase.from('accounts').update({ saldo_atual: novoSaldo }).eq('id', contaId);
-      }
+      await ajustarSaldo(contaId, -valor);
     }
 
     document.getElementById(`alerta-${idx}`)?.remove();
@@ -510,6 +505,7 @@ registrarAcao('salvarLancamento', async () => {
       const refBase = invoiceRef(data, Number(cartao?.fechamento_dia || 1), Number(cartao?.vencimento_dia || 0));
 
       const valorParcela = parseFloat((valor/parcelas).toFixed(2));
+      const grupoId = novoGrupoCompra();
       const registros = [];
       for(let i=0;i<parcelas;i++){
         const ref = addMonthsRef(refBase, i);
@@ -518,9 +514,10 @@ registrarAcao('salvarLancamento', async () => {
           descricao:desc, valor_total:valor, parcelas,
           parcela_atual:i+1, valor_parcela:valorParcela,
           data_compra:data, fatura_referencia:ref, status:'aberta',
+          purchase_group_id:grupoId,
         });
       }
-      const {error}=await supabase.from('card_transactions').insert(registros);
+      const {error}=await inserirParcelasCartao(supabase, registros);
       if(error) throw error;
 
     } else {
@@ -535,13 +532,11 @@ registrarAcao('salvarLancamento', async () => {
       });
       if(error) throw error;
 
-      // Atualizar saldo
+      // Atualizar saldo (delta atômico via balanceService)
       const conta = contas.find(c=>c.id===contaId);
-      if(conta){
-        const novoSaldo = Number(conta.saldo_atual||0) + (tipoAtual==='receita' ? valor : -valor);
-        await supabase.from('accounts').update({saldo_atual:novoSaldo}).eq('id',contaId);
-        conta.saldo_atual = novoSaldo;
-      }
+      const delta = tipoAtual==='receita' ? valor : -valor;
+      await ajustarSaldo(contaId, delta);
+      if(conta) conta.saldo_atual = Number(conta.saldo_atual||0) + delta;
 
       notificarTransacao({ tipo:tipoAtual, descricao:desc, valor, conta:conta?.nome||'Conta' }).catch(()=>{});
     }

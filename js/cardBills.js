@@ -5,6 +5,7 @@ import { showChoice } from './modal.js';
 import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { invoiceRef, addMonthsRef } from './services/cardService.js';
+import { ajustarSaldo } from './services/balanceService.js';
 
 // ─── DOM ───────────────────────────────────────
 const userEmail    = document.getElementById('userEmail');
@@ -350,15 +351,29 @@ window.excluirItemFatura = async function(id) {
   if (scope === 'only') {
     query = query.eq('id', item.id);
   } else {
-    query = query
-      .eq('card_id', item.card_id).eq('parcelas', item.parcelas).eq('valor_total', item.valor_total)
-      .gte('parcela_atual', item.parcela_atual);
+    const grupoId = await grupoDaParcela(item.id);
+    query = grupoId
+      // purchase_group_id: identifica com precisão as parcelas irmãs
+      ? query.eq('purchase_group_id', grupoId).gte('parcela_atual', item.parcela_atual)
+      // legado (linhas anteriores à migration): assinatura da compra
+      : query.eq('card_id', item.card_id).eq('parcelas', item.parcelas)
+             .eq('valor_total', item.valor_total).gte('parcela_atual', item.parcela_atual);
   }
 
   const { error } = await query;
   if (error) { alert('Erro ao excluir: ' + error.message); return; }
   await carregarFaturas();
 };
+
+// Lê o purchase_group_id de uma parcela; null se a coluna/valor não existir
+async function grupoDaParcela(id) {
+  try {
+    const { data, error } = await supabase.from('card_transactions')
+      .select('purchase_group_id').eq('id', id).eq('user_id', user.id).single();
+    if (error) return null;
+    return data?.purchase_group_id || null;
+  } catch (_) { return null; }
+}
 
 // ─── EDITAR ITEM ───────────────────────────────
 window.abrirEditarItem = function(id) {
@@ -431,14 +446,16 @@ window.salvarEdicaoItem = async function() {
   const item = itensPorId[editandoId];
   if (faturaRef && atualizarTodas && item && item.parcelas > 1 && item.parcela_atual < item.parcelas) {
     const [anoBase, mesBase] = faturaRef.split('-').map(Number);
-    const { data: futuras } = await supabase
+    const grupoId = await grupoDaParcela(item.id);
+    let qFuturas = supabase
       .from('card_transactions')
       .select('id, parcela_atual')
       .eq('user_id', user.id)
-      .eq('card_id', item.card_id)
-      .eq('parcelas', item.parcelas)
-      .eq('valor_total', item.valor_total)
       .gt('parcela_atual', item.parcela_atual);
+    qFuturas = grupoId
+      ? qFuturas.eq('purchase_group_id', grupoId)
+      : qFuturas.eq('card_id', item.card_id).eq('parcelas', item.parcelas).eq('valor_total', item.valor_total);
+    const { data: futuras } = await qFuturas;
 
     // Agrupa por nova referência e atualiza em lote (antes: 1 UPDATE por parcela)
     const porRef = {};
@@ -505,12 +522,13 @@ async function pagarFatura(key, contaId) {
 
   if (erroTx) { msg('Erro ao registrar pagamento: ' + erroTx.message, 'danger'); return; }
 
-  const novoSaldo = Number(conta.saldo_atual || 0) - Number(fatura.total || 0);
-  const { error: erroSaldo } = await supabase.from('accounts')
-    .update({ saldo_atual: novoSaldo })
-    .eq('id', contaId).eq('user_id', user.id);
-
-  if (erroSaldo) { msg('Pagamento registrado, mas erro ao atualizar saldo: ' + erroSaldo.message, 'danger'); return; }
+  // Ajuste atômico por delta — antes usava conta.saldo_atual de cache em
+  // memória (carregado no load da página), sujeito a saldo desatualizado.
+  try {
+    await ajustarSaldo(contaId, -Number(fatura.total || 0));
+  } catch (e) {
+    msg('Pagamento registrado, mas erro ao atualizar saldo: ' + e.message, 'danger'); return;
+  }
 
   const ids = fatura.itens.map(i => i.id);
   const { error: erroFatura } = await supabase.from('card_transactions')

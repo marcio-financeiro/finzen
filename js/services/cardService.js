@@ -40,3 +40,23 @@ export function currentMonthRef(){
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 }
+
+/** UUID para agrupar parcelas da mesma compra (purchase_group_id). */
+export function novoGrupoCompra(){
+  return crypto?.randomUUID ? crypto.randomUUID()
+    : String(Date.now()) + Math.random().toString(16).slice(2);
+}
+
+/**
+ * Insere as parcelas de uma compra. Se a coluna purchase_group_id ainda não
+ * existir no banco (migration 2026_07_09_purchase_group_id.sql não aplicada),
+ * repete o insert sem o campo — nada quebra antes da migration.
+ */
+export async function inserirParcelasCartao(supabase, registros){
+  let { error } = await supabase.from('card_transactions').insert(registros);
+  if(error && (error.code === 'PGRST204' || /purchase_group_id/i.test(error.message || ''))){
+    const semGrupo = registros.map(({ purchase_group_id, ...resto }) => resto);
+    ({ error } = await supabase.from('card_transactions').insert(semGrupo));
+  }
+  return { error };
+}
