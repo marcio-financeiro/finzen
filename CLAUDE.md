@@ -55,17 +55,27 @@ git push  # → Vercel auto-deploy em ~30s
 ## Arquitetura
 
 ```
-pages/          → 36 HTMLs (uma página por módulo)
+pages/          → HTMLs (uma página por módulo; accounts/cards/categories/
+                  transfers/card-purchases são REDIRECTS para registrations/movements)
 js/             → Módulos ES6 (um .js por página)
 js/version.js   → Controle central de versão de assets (ASSET_VERSION)
 js/eventBus.js  → Delegação de eventos via data-action (preferido ao window.fn)
-js/services/    → financeService, accountService, transferService
-css/            → base.css · layout.css · components.css · navigation.css · mobile.css · editorial.css
+js/toast.js     → toast() global + comTrava() anti-duplo-clique em botões salvar
+js/moneyMask.js → máscara de moeda BR (attachMoneyMask/readMoneyValue/setMoneyValue)
+js/modal.js     → openModal/showChoice/showDetail (Escape + trap de foco + role=dialog)
+js/services/    → financeService, accountService, transferService,
+                  cardService (fonte ÚNICA do cálculo de fatura + purchase_group_id),
+                  balanceService (ajustarSaldo — delta atômico via RPC, com fallback)
+js/utils/       → escapeHtml (usar em TODO dado do usuário interpolado em innerHTML),
+                  dateUtils (hojeISO no fuso LOCAL — nunca toISOString p/ "hoje")
+css/            → variables.css → base.css → layout.css → components.css →
+                  navigation.css → mobile.css · editorial.css (breakpoint mobile: 820px)
 api/quotes.js   → Serverless Function (proxy brapi.dev + Yahoo Finance)
-database/       → Migrations SQL (YYYY_MM_DD_descricao.sql)
+api/_aiRateLimit.js → limite diário nos endpoints de IA (tabela ai_usage)
+database/       → Migrations SQL (YYYY_MM_DD_descricao.sql) — aplicar no SQL Editor
 js/config.js    → SUPABASE_URL, SUPABASE_ANON_KEY, APP_VERSION
-manifest.json   → PWA (theme_color: #f59e0b)
-vercel.json     → {} (Node.js padrão)
+manifest.json   → PWA (start_url: dashboard; shortcuts de lançamento)
+vercel.json     → headers no-store p/ /js/*.js + crons (telegram/cotacao/recurring)
 ```
 
 ## Stack
@@ -101,10 +111,25 @@ Importar nessa ordem em todas as páginas (editorial.css só onde necessário).
 ## Padrões de código obrigatórios
 
 ```js
-// Auth no topo de todo módulo
+// Auth no topo de todo módulo (preferido — helper novo):
+import { requireAuth } from './supabaseClient.js';
+const user = await requireAuth();
+
+// Legado ainda presente em vários módulos:
 const { data: sd } = await supabase.auth.getSession();
 if (!sd.session) navigate('../login.html');
 const user = sd.session.user;
+
+// Saldo de conta: NUNCA fazer SELECT saldo → soma em JS → UPDATE.
+// Usar sempre o delta atômico:
+import { ajustarSaldo } from './services/balanceService.js';
+await ajustarSaldo(accountId, delta); // delta pode ser negativo
+
+// Fatura de cartão: cálculo de referência SÓ via cardService
+import { invoiceRef, addMonthsRef, novoGrupoCompra, inserirParcelasCartao } from './services/cardService.js';
+
+// XSS: TODO dado do usuário interpolado em innerHTML passa por escapeHtml
+import { escapeHtml } from './utils/escapeHtml.js';
 
 // Padrão preferido para eventos em HTML gerado dinamicamente (eventBus.js):
 import { registrarAcao } from './eventBus.js';

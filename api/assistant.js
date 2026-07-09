@@ -1,6 +1,8 @@
 // api/assistant.js — Orquestrador do Assistente Proativo FinZen
 // Coleta contexto financeiro + offshore + calendário e gera insights via Claude
 
+import { checarLimiteIA } from './_aiRateLimit.js';
+
 export default async function handler(req, res) {
 
   res.setHeader('Access-Control-Allow-Origin', 'https://finzen-rho.vercel.app');
@@ -17,6 +19,15 @@ export default async function handler(req, res) {
     headers: { Authorization: `Bearer ${token}`, apikey: process.env.SUPABASE_SERVICE_KEY },
   });
   if (!authRes.ok) return res.status(403).json({ error: 'Forbidden' });
+
+  // Rate limiting: protege o custo da API Anthropic (AI_LIMITE_DIARIO/dia)
+  const usuario = await authRes.json().catch(() => null);
+  if (usuario?.id) {
+    const limite = await checarLimiteIA(usuario.id, 'assistant');
+    if (!limite.permitido) {
+      return res.status(429).json({ error: `Limite diário de IA atingido (${limite.limite} chamadas). Tente novamente amanhã.` });
+    }
+  }
 
   try {
     const { contexto } = req.body;
