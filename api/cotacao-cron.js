@@ -75,8 +75,8 @@ async function executar() {
 
   const agora  = new Date().toISOString();
   const grupos = {};
-  let deltaTotal = 0;
-  let deltaValido = true;
+  let deltaBR = 0, deltaEUA = 0;
+  let deltaValidoBR = true, deltaValidoEUA = true;
 
   for (const a of ativos) {
     const key = a.ticker.toUpperCase();
@@ -89,9 +89,10 @@ async function executar() {
     const qtd       = Number(a.quantidade);
 
     if (changePct !== null && dolar > 0) {
-      deltaTotal += (changePct / 100) * novaCotacao * qtd * fx;
+      const delta = (changePct / 100) * novaCotacao * qtd * fx;
+      if (isEUA(a.tipo)) deltaEUA += delta; else deltaBR += delta;
     } else {
-      deltaValido = false;
+      if (isEUA(a.tipo)) deltaValidoEUA = false; else deltaValidoBR = false;
     }
 
     await sbRpc('cotacao_patch_ativo', {
@@ -124,11 +125,13 @@ async function executar() {
     linhas.push('');
   }
 
-  if (deltaValido && deltaTotal !== 0) {
-    const sinal = deltaTotal >= 0 ? '+' : '';
-    const emoji = deltaTotal > 0 ? '📈' : '📉';
-    linhas.push(`${emoji} <b>Hoje: ${sinal}R$ ${fmt(Math.abs(deltaTotal))}</b>`);
-  }
+  const linhaDelta = (label, delta) => {
+    const sinal = delta >= 0 ? '+' : '';
+    const emoji = delta > 0 ? '📈' : delta < 0 ? '📉' : '➡️';
+    return `${emoji} <b>Hoje ${label}: ${sinal}R$ ${fmt(Math.abs(delta))}</b>`;
+  };
+  if (deltaValidoBR && tickersBR.length)   linhas.push(linhaDelta('Nacional', deltaBR));
+  if (deltaValidoEUA && tickersEUA.length) linhas.push(linhaDelta('EUA', deltaEUA));
 
   await enviarTelegram(linhas.join('\n').trim());
   return { ok: true, ativos: ativos.length };
