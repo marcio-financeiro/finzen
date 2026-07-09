@@ -13,6 +13,7 @@ import {
   validateTransfer
 } from './services/transferService.js';
 import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
+import { comTrava } from './toast.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -87,10 +88,10 @@ btnLogout.addEventListener('click', async () => {
   navigate('../login.html');
 });
 
-btnTransferir.addEventListener('click', criarTransferencia);
+btnTransferir.addEventListener('click', comTrava(btnTransferir, criarTransferencia));
 
 if(btnConverterCambio){
-  btnConverterCambio.addEventListener('click', criarConversaoCambio);
+  btnConverterCambio.addEventListener('click', comTrava(btnConverterCambio, criarConversaoCambio));
 }
 
 [exchangeFromAccount, exchangeToAccount, exchangeAmount, exchangeRate].forEach(element => {

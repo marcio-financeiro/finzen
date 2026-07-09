@@ -3,6 +3,8 @@ import { navigate }  from './router.js';
 import { formatCurrency } from './utils.js';
 import { showChoice } from './modal.js';
 import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
+import { escapeHtml } from './utils/escapeHtml.js';
+import { invoiceRef, addMonthsRef } from './services/cardService.js';
 
 // ─── DOM ───────────────────────────────────────
 const userEmail    = document.getElementById('userEmail');
@@ -67,7 +69,7 @@ async function carregarCartoes() {
   if (error) { msg('Erro ao carregar cartões: ' + error.message, 'danger'); return; }
 
   filtroCartao.innerHTML = '<option value="">Todos os cartões</option>' +
-    (data || []).map(c => `<option value="${c.id}">${c.nome}${c.banco ? ' - ' + c.banco : ''}</option>`).join('');
+    (data || []).map(c => `<option value="${c.id}">${escapeHtml(c.nome)}${c.banco ? ' - ' + escapeHtml(c.banco) : ''}</option>`).join('');
 }
 
 // ─── CARREGAR CONTAS ───────────────────────────
@@ -229,7 +231,7 @@ function ativarInteracoesFatura() {
 
 function billCardHtml(fatura, key, isAtual) {
   const contasOptions = contas.map(c =>
-    `<option value="${c.id}">${c.nome}${c.bank ? ' - ' + c.bank : ''} (${formatCurrency(c.saldo_atual || 0, c.currency || 'BRL')})</option>`
+    `<option value="${c.id}">${escapeHtml(c.nome)}${c.bank ? ' - ' + escapeHtml(c.bank) : ''} (${formatCurrency(c.saldo_atual || 0, c.currency || 'BRL')})</option>`
   ).join('');
 
   const itensOrdenados = [...fatura.itens].sort((a, b) =>
@@ -237,14 +239,14 @@ function billCardHtml(fatura, key, isAtual) {
   );
 
   const itensHtml = itensOrdenados.map(item => {
-    const cat  = item.categories ? `${item.categories.icon || ''} ${item.categories.nome}` : '-';
+    const cat  = item.categories ? `${escapeHtml(item.categories.icon || '')} ${escapeHtml(item.categories.nome)}` : '-';
     const data = item.data_compra
       ? item.data_compra.split('-').reverse().join('/')
       : '-';
     return `
       <tr>
         <td style="white-space:nowrap">${data}</td>
-        <td>${item.descricao}</td>
+        <td>${escapeHtml(item.descricao)}</td>
         <td>${cat}</td>
         <td style="text-align:center">${item.parcela_atual}/${item.parcelas}</td>
         <td class="money negative" style="text-align:right">-${formatCurrency(item.valor_parcela, 'BRL')}</td>
@@ -293,7 +295,7 @@ function billCardHtml(fatura, key, isAtual) {
           <span class="bill-badge-mes${isAtual ? ' atual' : ''}">${formatRef(fatura.referencia)}</span>
           ${pago ? '<span class="bill-badge-paga">✓ Paga</span>' : ''}
           <div>
-            <div class="bill-card-name">${fatura.cartao}${fatura.banco ? ' · ' + fatura.banco : ''}</div>
+            <div class="bill-card-name">${escapeHtml(fatura.cartao)}${fatura.banco ? ' · ' + escapeHtml(fatura.banco) : ''}</div>
             <div class="bill-card-count">${fatura.itens.length} item${fatura.itens.length > 1 ? 's' : ''}</div>
           </div>
         </div>
@@ -382,7 +384,7 @@ window.abrirEditarItem = function(id) {
   sel.innerHTML = '<option value="">Sem categoria</option>' +
     categorias
       .filter(c => c.tipo === 'despesa' || c.tipo === 'investimento')
-      .map(c => `<option value="${c.id}"${c.id === item.category_id ? ' selected' : ''}>${c.nome}</option>`)
+      .map(c => `<option value="${c.id}"${c.id === item.category_id ? ' selected' : ''}>${escapeHtml(c.nome)}</option>`)
       .join('');
 
   document.getElementById('editMensagem').innerText = '';
@@ -438,13 +440,18 @@ window.salvarEdicaoItem = async function() {
       .eq('valor_total', item.valor_total)
       .gt('parcela_atual', item.parcela_atual);
 
+    // Agrupa por nova referência e atualiza em lote (antes: 1 UPDATE por parcela)
+    const porRef = {};
     for (const f of (futuras || [])) {
       const diff = f.parcela_atual - item.parcela_atual;
       const refDate = new Date(anoBase, mesBase - 1 + diff, 1);
       const novaRef = `${refDate.getFullYear()}-${String(refDate.getMonth() + 1).padStart(2, '0')}`;
-      await supabase.from('card_transactions').update({ fatura_referencia: novaRef })
-        .eq('id', f.id).eq('user_id', user.id);
+      (porRef[novaRef] = porRef[novaRef] || []).push(f.id);
     }
+    await Promise.all(Object.entries(porRef).map(([novaRef, ids]) =>
+      supabase.from('card_transactions').update({ fatura_referencia: novaRef })
+        .in('id', ids).eq('user_id', user.id)
+    ));
   }
 
   window.fecharModalItem();

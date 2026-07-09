@@ -118,7 +118,7 @@ async function inicializar() {
 
   // Popular select de conta
   el('selectConta').innerHTML = '<option value="">Selecione a conta</option>' +
-    contas.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+    contas.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
 }
 
 // ── Parsers ───────────────────────────────────────────
@@ -337,7 +337,7 @@ function renderTabela() {
           <option value="">— Sem categoria —</option>
           ${categorias
             .filter(c => c.tipo === tx.tipo || c.tipo === 'despesa')
-            .map(c => `<option value="${c.id}" ${c.id === tx.categoria_id ? 'selected' : ''}>${c.icon||''} ${c.nome}</option>`)
+            .map(c => `<option value="${c.id}" ${c.id === tx.categoria_id ? 'selected' : ''}>${escapeHtml(c.icon||'')} ${escapeHtml(c.nome)}</option>`)
             .join('')}
         </select>
       </td>

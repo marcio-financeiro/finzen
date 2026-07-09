@@ -16,46 +16,60 @@ export default async function handler(req, res) {
 
   const { tickers: tickersRaw, dolar, fundamental, change } = req.query;
   const withChange = change === 'true';
-  const tickers = (tickersRaw || '').split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
+  // Validação estrita + limite: evita fan-out abusivo ao brapi e injeção na URL
+  const tickers = (tickersRaw || '').split(',')
+    .map(t => t.trim().toUpperCase())
+    .filter(t => /^[A-Z0-9.=-]{1,12}$/.test(t))
+    .slice(0, 40);
   const resultado = {};
 
   const BRAPI_TOKEN = process.env.BRAPI_TOKEN;
 
-  // ── Dólar — Yahoo Finance (BRL=X) primário + awesomeapi fallback ─────────
-  if (dolar === 'true') {
-    // Primário: Yahoo Finance BRL=X (funciona no Vercel serverless, sem CORS)
-    for (const base of ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com']) {
-      if (resultado['USD-BRL']) break;
-      try {
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 5000);
-        const r = await fetch(`${base}/v8/finance/chart/BRL=X?interval=1d&range=1d`, {
-          headers: { 'User-Agent': 'Mozilla/5.0' },
-          signal: ctrl.signal,
-        });
-        clearTimeout(t);
-        if (r.ok) {
-          const j = await r.json();
-          const p = parseFloat(j?.chart?.result?.[0]?.meta?.regularMarketPrice || 0);
-          if (p > 0) resultado['USD-BRL'] = p;
-        }
-      } catch (_) {}
+  const fetchTimeout = async (url, opts = {}, ms = 5000) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    try {
+      return await fetch(url, { ...opts, signal: ctrl.signal });
+    } finally {
+      clearTimeout(timer);
     }
+  };
 
-    // Fallback: AwesomeAPI
-    if (!resultado['USD-BRL']) {
-      try {
-        const r = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
-        if (r.ok) {
-          const j = await r.json();
-          const v = parseFloat(j?.USDBRL?.bid || 0);
-          if (v > 0) resultado['USD-BRL'] = v;
-        }
-      } catch (_) {}
-    }
-  }
+  // ── Dólar — Yahoo (query1 ∥ query2 em paralelo) + awesomeapi fallback ────
+  // Roda em paralelo com a busca de tickers e é aguardado no final —
+  // antes eram até 10s sequenciais ANTES dos tickers (risco de timeout).
+  const dolarPromise = dolar !== 'true' ? null : (async () => {
+    const yahoo = async (base) => {
+      const r = await fetchTimeout(`${base}/v8/finance/chart/BRL=X?interval=1d&range=1d`,
+        { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      if (!r.ok) throw new Error('yahoo fail');
+      const j = await r.json();
+      const p = parseFloat(j?.chart?.result?.[0]?.meta?.regularMarketPrice || 0);
+      if (p > 0) return p;
+      throw new Error('sem preço');
+    };
+    try {
+      return await Promise.any([
+        yahoo('https://query1.finance.yahoo.com'),
+        yahoo('https://query2.finance.yahoo.com'),
+      ]);
+    } catch (_) {}
+    try {
+      const r = await fetchTimeout('https://economia.awesomeapi.com.br/json/last/USD-BRL', {}, 4000);
+      if (r.ok) {
+        const j = await r.json();
+        const v = parseFloat(j?.USDBRL?.bid || 0);
+        if (v > 0) return v;
+      }
+    } catch (_) {}
+    return null;
+  })();
 
   if (!tickers.length) {
+    if (dolarPromise) {
+      const v = await dolarPromise;
+      if (v) resultado['USD-BRL'] = v;
+    }
     return res.status(200).json(resultado);
   }
 
@@ -70,8 +84,8 @@ export default async function handler(req, res) {
     const fundParams = fundamental === 'true' ? '&fundamental=true' : '';
     const fetchBR = async (ticker) => {
       try {
-        const r = await fetch(
-          `https://brapi.dev/api/quote/${ticker}?token=${BRAPI_TOKEN}${fundParams}`,
+        const r = await fetchTimeout(
+          `https://brapi.dev/api/quote/${encodeURIComponent(ticker)}?token=${BRAPI_TOKEN}${fundParams}`,
           { headers: { 'User-Agent': 'FinZen/1.0' } }
         );
         if (!r.ok) return null;
@@ -161,8 +175,8 @@ export default async function handler(req, res) {
   const faltando = tickers.filter(t => !resultado[t] && t !== 'USD-BRL');
   if (faltando.length && BRAPI_TOKEN) {
     try {
-      const lista = [...new Set(faltando)].join(',');
-      const r = await fetch(
+      const lista = [...new Set(faltando)].map(encodeURIComponent).join(',');
+      const r = await fetchTimeout(
         `https://brapi.dev/api/quote/${lista}?token=${BRAPI_TOKEN}`,
         { headers: { 'User-Agent': 'FinZen/1.0' } }
       );
@@ -177,6 +191,11 @@ export default async function handler(req, res) {
         });
       }
     } catch (_) {}
+  }
+
+  if (dolarPromise) {
+    const v = await dolarPromise;
+    if (v) resultado['USD-BRL'] = v;
   }
 
   return res.status(200).json(resultado);

@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const el = id => document.getElementById(id);
 attachMoneyMask(el('contaSaldo'));
@@ -45,7 +46,7 @@ async function carregarContas(){
     <div class="reg-item">
       <div class="reg-color-dot" style="background:${c.color||'#4f8ef7'}"></div>
       <div class="reg-item-info">
-        <div class="reg-item-name">${c.icon||'🏦'} ${c.nome}
+        <div class="reg-item-name">${escapeHtml(c.icon||'🏦')} ${escapeHtml(c.nome)}
           <span class="badge ${c.active?'success':'danger'} reg-item-badge">${c.active?'ativa':'inativa'}</span>
           ${c.account_kind==='broker'?'<span class="badge info reg-item-badge">corretora</span>':''}
         </div>
@@ -55,7 +56,7 @@ async function carregarContas(){
       </div>
       <div class="reg-item-actions">
         <button class="btn btn-secondary compact" data-edit-conta="${c.id}">Editar</button>
-        <button class="btn btn-danger compact" data-del-conta="${c.id}" data-nome="${c.nome}">Excluir</button>
+        <button class="btn btn-danger compact" data-del-conta="${c.id}" data-nome="${escapeHtml(c.nome)}">Excluir</button>
       </div>
     </div>
   `).join('');
@@ -249,7 +250,7 @@ async function carregarCartoes(){
     <div class="reg-item">
       <div class="reg-color-dot" style="background:${c.color||'#8b5cf6'}"></div>
       <div class="reg-item-info">
-        <div class="reg-item-name">${c.nome}
+        <div class="reg-item-name">${escapeHtml(c.nome)}
           <span class="badge ${c.ativo?'success':'danger'} reg-item-badge">${c.ativo?'ativo':'inativo'}</span>
         </div>
         <div class="reg-item-detail">
@@ -258,7 +259,7 @@ async function carregarCartoes(){
       </div>
       <div class="reg-item-actions">
         <button class="btn btn-secondary compact" data-edit-cartao="${c.id}">Editar</button>
-        <button class="btn btn-danger compact" data-del-cartao="${c.id}" data-nome="${c.nome}">Excluir</button>
+        <button class="btn btn-danger compact" data-del-cartao="${c.id}" data-nome="${escapeHtml(c.nome)}">Excluir</button>
       </div>
     </div>
   `).join('');
@@ -369,13 +370,13 @@ async function carregarCategorias(){
       html+=`
         <div class="reg-item">
           <div class="reg-item-info">
-            <div class="reg-item-name">${c.icon||'•'} ${c.nome}
+            <div class="reg-item-name">${escapeHtml(c.icon||'•')} ${escapeHtml(c.nome)}
               <span class="badge ${c.ativo?'success':'danger'} reg-item-badge">${c.ativo?'ativa':'inativa'}</span>
             </div>
           </div>
           <div class="reg-item-actions">
             <button class="btn btn-secondary compact" data-edit-cat="${c.id}">Editar</button>
-            <button class="btn btn-danger compact" data-del-cat="${c.id}" data-nome="${c.nome}">Excluir</button>
+            <button class="btn btn-danger compact" data-del-cat="${c.id}" data-nome="${escapeHtml(c.nome)}">Excluir</button>
           </div>
         </div>`;
     });

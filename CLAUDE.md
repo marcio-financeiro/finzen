@@ -28,8 +28,8 @@ Fluxo obrigatório:
 Checks adicionais:
 - Checar que toda função que usa `await` é declarada como `async`
 - Ao alterar JS: **não precisa fazer nada** — `vercel.json` serve todos os `/js/*.js` com `Cache-Control: no-store`, browser sempre busca versão fresca
-- Ao alterar CSS: incrementar `ASSET_VERSION` em `js/version.js` (atual: **1118**) — ele re-aplica `?v=` nos `<link>` CSS forçando re-fetch
-- Ao alterar `sw.js`: incrementar `CACHE_NAME` (atual: `finzen-v11.8`) para o SW reinstalar e buscar HTMLs atualizados
+- Ao alterar CSS: incrementar `ASSET_VERSION` em `js/version.js` (ver valor atual no próprio arquivo) — ele re-aplica `?v=` nos `<link>` CSS forçando re-fetch
+- Ao alterar HTMLs cacheados pelo SW (`login.html`, `pages/dashboard.html`): incrementar `CACHE_NAME` em `sw.js` (ver valor atual no próprio arquivo, formato `vyn-vX.Y`)
 - Nunca deixar quebrar páginas que não foram pedidas para alterar
 
 ## Contexto do projeto

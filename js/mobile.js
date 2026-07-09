@@ -10,6 +10,8 @@ import { formatCurrency } from './utils.js';
 import { registrarAcao }  from './eventBus.js';
 import { notificarTransacao } from './telegram.js';
 import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
+import { invoiceRef, addMonthsRef } from './services/cardService.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -324,7 +326,7 @@ async function carregar() {
       return `
         <div class="mob-orc-item" onclick="location.href='../pages/account-statement.html'">
           <div class="mob-orc-header">
-            <span class="mob-orc-nome">${emoji} ${c.nome}</span>
+            <span class="mob-orc-nome">${escapeHtml(emoji)} ${escapeHtml(c.nome)}</span>
             <span style="font-size:15px;font-weight:800;color:${cor}">
               ${moeda !== 'BRL' ? 'US$ ' : 'R$ '}${Math.abs(saldo).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
             </span>
@@ -392,13 +394,13 @@ function popularModal() {
   // Contas
   el('mobConta').innerHTML = contas
     .filter(c=>(c.currency||'BRL')==='BRL')
-    .map(c=>`<option value="${c.id}">${c.icon||'🏦'} ${c.nome} (${fmt(c.saldo_atual||0)})</option>`).join('');
+    .map(c=>`<option value="${c.id}">${escapeHtml(c.icon||'🏦')} ${escapeHtml(c.nome)} (${fmt(c.saldo_atual||0)})</option>`).join('');
 
   // Cartões
   const cartaoSelect = el('mobCartao');
   if(cartaoSelect){
     cartaoSelect.innerHTML = '<option value="">Selecione...</option>' +
-      (window._cartoesMobile||[]).map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+      (window._cartoesMobile||[]).map(c=>`<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
   }
 
   // Data hoje
@@ -409,7 +411,7 @@ function popularModal() {
 
   // Select completo
   el('mobCatSelect').innerHTML = '<option value="">Selecionar outra...</option>' +
-    categorias.map(c=>`<option value="${c.id}">${c.icon||''} ${c.nome}</option>`).join('');
+    categorias.map(c=>`<option value="${c.id}">${escapeHtml(c.icon||'')} ${escapeHtml(c.nome)}</option>`).join('');
 
   el('mobCatSelect').addEventListener('change', e => {
     if(e.target.value) {
@@ -505,21 +507,12 @@ registrarAcao('salvarLancamento', async () => {
       if(!cartaoId){ alert('Selecione um cartão.'); btn.disabled=false; btn.textContent='✓ Salvar lançamento'; return; }
 
       const cartao = (window._cartoesMobile||[]).find(c=>c.id===cartaoId);
-      const diaFechamento = cartao?.fechamento_dia || 1;
-
-      // Calcular referência da fatura
-      const dataCompra = new Date(data+'T00:00:00');
-      const diaCompra  = dataCompra.getDate();
-      let mesRef = dataCompra.getMonth() + 1;
-      let anoRef = dataCompra.getFullYear();
-      if(diaCompra > diaFechamento){ mesRef++; if(mesRef>12){mesRef=1;anoRef++;} }
+      const refBase = invoiceRef(data, Number(cartao?.fechamento_dia || 1), Number(cartao?.vencimento_dia || 0));
 
       const valorParcela = parseFloat((valor/parcelas).toFixed(2));
       const registros = [];
       for(let i=0;i<parcelas;i++){
-        let m=mesRef+i, a=anoRef;
-        while(m>12){m-=12;a++;}
-        const ref=`${a}-${String(m).padStart(2,'0')}`;
+        const ref = addMonthsRef(refBase, i);
         registros.push({
           user_id:user.id, card_id:cartaoId, category_id:catId,
           descricao:desc, valor_total:valor, parcelas,

@@ -5,6 +5,8 @@ import { notificarTransacao } from './telegram.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { showChoice, showDetail } from './modal.js';
 import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
+import { invoiceRef, addMonthsRef, refName } from './services/cardService.js';
+import { toast, comTrava } from './toast.js';
 
 // ─────────────────────────────────────────────
 // ELEMENTOS DO DOM
@@ -150,30 +152,6 @@ function nextDate(dateISO, frequency){
   return addMonths(dateISO, 1);
 }
 
-function addMonthsRef(ref, months){
-  const [y,m] = ref.split('-').map(Number);
-  const date = new Date(y, m-1+months, 1);
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
-}
-
-function invoiceRef(dateISO, closingDay, dueDay){
-  const [y,m,d] = dateISO.split('-').map(Number);
-  let date = new Date(y, m-1, 1);
-  if(d > Number(closingDay || 1)){
-    date = new Date(y, m, 1);
-  }
-  if(dueDay && Number(dueDay) < Number(closingDay)){
-    date = new Date(date.getFullYear(), date.getMonth() + 1, 1);
-  }
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
-}
-
-function refName(ref){
-  if(!ref) return '-';
-  const [y,m] = ref.split('-').map(Number);
-  return new Date(y, m-1, 1).toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
-}
-
 function uuid(){
   return crypto?.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random().toString(16).slice(2);
 }
@@ -204,6 +182,8 @@ function nextOccurrencesFromModel(model, limit=3){
 function showMessage(text, type='info'){
   movementMessage.className = `message ${type}`;
   movementMessage.innerText = text;
+  // Toast garante visibilidade mesmo com a .message fora da viewport
+  if(type === 'success' || type === 'danger') toast(text, type);
 }
 
 function showChoiceModal({ title, message, options }){
@@ -519,25 +499,37 @@ async function saveTransactionEdit(){
   const { data: targets, error: targetError } = await targetQuery;
   if(targetError){ showMessage('Erro ao buscar lançamentos para edição: '+targetError.message,'danger'); return; }
 
+  // Consolida os ajustes de saldo em 1 delta por conta e atualiza as linhas em
+  // lote — antes eram até 3 round-trips POR ocorrência editada (N+1).
+  const deltas = {};
   for(const old of targets || []){
     if(old.status === 'pago'){
-      const reverted = await applyAccountBalance(old.account_id, old.type, Number(old.amount||0),'revert');
-      if(!reverted) return;
+      const v = Number(old.amount||0);
+      deltas[old.account_id] = (deltas[old.account_id]||0) + (old.type === 'receita' ? -v : v);
     }
     if(status === 'pago'){
-      const applied = await applyAccountBalance(accountId, type, amount,'apply');
-      if(!applied) return;
+      deltas[accountId] = (deltas[accountId]||0) + (type === 'receita' ? amount : -amount);
     }
-    const { error } = await supabase.from('transactions').update({
-      account_id:accountId, category_id:categoryId, type, amount, description,
-      date: scope === 'only' ? date : old.date,
-      status, notes,
-      is_recurring:isRecurring,
-      recurrence_frequency:isRecurring ? recurrence : null,
-      recurrence_until:isRecurring ? until : null,
-    }).eq('id',old.id).eq('user_id',user.id);
-    if(error){ showMessage('Erro ao editar lançamento: '+error.message,'danger'); return; }
   }
+  for(const [accId, delta] of Object.entries(deltas)){
+    if(!delta) continue;
+    // apply+receita soma o delta ao saldo (delta pode ser negativo)
+    const ok = await applyAccountBalance(accId, 'receita', delta, 'apply');
+    if(!ok) return;
+  }
+
+  const payload = {
+    account_id:accountId, category_id:categoryId, type, amount, description,
+    status, notes,
+    is_recurring:isRecurring,
+    recurrence_frequency:isRecurring ? recurrence : null,
+    recurrence_until:isRecurring ? until : null,
+  };
+  const ids = (targets || []).map(t => t.id);
+  const { error } = scope === 'only'
+    ? await supabase.from('transactions').update({ ...payload, date }).eq('id', original.id).eq('user_id', user.id)
+    : await supabase.from('transactions').update(payload).in('id', ids).eq('user_id', user.id);
+  if(error){ showMessage('Erro ao editar lançamento: '+error.message,'danger'); return; }
 
   if(isRecurring) await gerarOcorrenciasRecorrentes();
 
@@ -1294,7 +1286,7 @@ movementAmount.addEventListener('input', updatePreview);
 movementValueType.addEventListener('change', updatePreview);
 movementRecurrence.addEventListener('change', updateFormVisibility);
 movementRecurrenceNoEnd.addEventListener('change', updateRecurrenceUntilState);
-btnSaveMovement.addEventListener('click', saveMovement);
+btnSaveMovement.addEventListener('click', comTrava(btnSaveMovement, saveMovement));
 btnCancelEdit.addEventListener('click', cancelEdit);
 
 filterMonth.addEventListener('change', loadMovements);

@@ -374,9 +374,13 @@ function groupHtml(group, forDrawer = false) {
   const active   = isGroupActive(group);
   const storeKey = `nav_collapsed_v3_${group.label}`;
 
-  // Grupos só abrem se o usuário os abriu manualmente; padrão é fechado
+  // Grupos principais abrem por padrão (menos 1 clique em quase toda navegação);
+  // o usuário ainda pode fechá-los e a escolha fica salva.
+  const ABERTOS_PADRAO = ['Financeiro', 'Investimentos'];
   const savedState = localStorage.getItem(storeKey);
-  const collapsed  = savedState !== 'open';
+  const collapsed  = savedState !== null
+    ? savedState !== 'open'
+    : !ABERTOS_PADRAO.includes(group.label);
 
   const itemsHtml = group.items.map(item => `
     <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">

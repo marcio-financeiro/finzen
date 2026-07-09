@@ -24,8 +24,8 @@
   --success:#3f8f63;
   --success-dim:rgba(63,143,99,0.14);
 
-  --danger:#b1503f;
-  --danger-dim:rgba(177,80,63,0.14);
+  --danger:#cf6a55;
+  --danger-dim:rgba(207,106,85,0.14);
 
   --warning:#c08a3e;
   --warning-dim:rgba(192,138,62,0.14);
@@ -33,7 +33,7 @@
   --info:#3b82f6;
 
   --text:#e8e4d8;
-  --muted:#7a7669;
+  --muted:#94907f;
 
   --radius-sm:8px;
   --radius-md:10px;
@@ -99,6 +99,9 @@ html[data-theme="light"]{
 
   --warning:#533812;
   --warning-dim:rgba(83,56,18,0.12);
+
+  --danger:#a03a28;
+  --danger-dim:rgba(160,58,40,0.12);
 
   --text:#11151C;
   --muted:#6B5E4A;
