@@ -376,7 +376,7 @@ function renderFaturas(cartoes, parcelasMes){
       <div style="text-align:center;padding:24px 16px">
         <div style="font-size:36px;margin-bottom:8px">💳</div>
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhum cartão cadastrado.</p>
-        <a href="./cards.html" class="btn btn-secondary compact" style="font-size:12px">Adicionar cartão</a>
+        <a href="./registrations.html?tab=cartoes" class="btn btn-secondary compact" style="font-size:12px">Adicionar cartão</a>
       </div>`;
     return;
   }

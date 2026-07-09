@@ -1,121 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<script>if(localStorage.getItem("finzen_sidebar_rail")==="collapsed")document.documentElement.classList.add("sidebar-rail");</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Contas - Vyn</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400..700&display=swap">
-<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm">
-<link rel="stylesheet" href="../css/variables.css?v=1200">
-<link rel="stylesheet" href="../css/base.css?v=1200">
-<link rel="stylesheet" href="../css/layout.css?v=1200">
-<link rel="stylesheet" href="../css/components.css?v=1200">
-<link rel="stylesheet" href="../css/mobile.css?v=1200">
-<link rel="stylesheet" href="../css/navigation.css?v=1200">
-<link rel="stylesheet" href="../css/editorial.css?v=1200">
-<link rel="manifest" href="../manifest.json">
-<meta name="theme-color" content="#c08a3e">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Vyn">
-<link rel="apple-touch-icon" href="../icons/icon-192.png">
+<script>window.location.replace("./registrations.html?tab=contas");</script>
 </head>
-
 <body>
-<div class="app-shell">
-  <aside class="sidebar">
-    <div class="sidebar-brand">Vyn</div>
-    <nav class="sidebar-nav"></nav>
-  </aside>
-
-  <main class="content">
-    <header class="topbar">
-      <div>
-        <h1>Contas</h1>
-        <p id="userEmail" class="muted"></p>
-      </div>
-      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
-    </header>
-
-    <section class="panel">
-      <div class="panel-header">
-        <h2>Nova Conta</h2>
-      </div>
-
-      <div class="form-grid">
-        <div class="form-group">
-          <label for="nomeConta">Nome da conta</label>
-          <input type="text" id="nomeConta" placeholder="Ex: Conta Nubank">
-        </div>
-        <div class="form-group">
-          <label for="bancoConta">Banco / Instituição</label>
-          <input type="text" id="bancoConta" placeholder="Ex: Nubank, Itaú, Nomad">
-        </div>
-        <div class="form-group">
-          <label for="accountKindConta">Uso da conta</label>
-          <select id="accountKindConta">
-            <option value="bank">Banco / Carteira</option>
-            <option value="broker">Corretora / Investimento</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="tipoConta">Tipo</label>
-          <select id="tipoConta">
-            <option value="">Selecione</option>
-            <option value="Conta Corrente">Conta Corrente</option>
-            <option value="Poupança">Poupança</option>
-            <option value="Carteira">Carteira</option>
-            <option value="Corretora">Corretora</option>
-            <option value="Conta Internacional">Conta Internacional</option>
-            <option value="Conta Digital">Conta Digital</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="moedaConta">Moeda</label>
-          <select id="moedaConta">
-            <option value="BRL">BRL - Real</option>
-            <option value="USD">USD - Dólar</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="corConta">Cor</label>
-          <input type="color" id="corConta" value="#4f8ef7">
-        </div>
-        <div class="form-group">
-          <label for="saldoInicial">Saldo inicial</label>
-          <input type="text" id="saldoInicial" placeholder="0,00" inputmode="decimal">
-        </div>
-        <div class="form-group">
-          <label for="statusConta">Status</label>
-          <select id="statusConta">
-            <option value="true">Ativa</option>
-            <option value="false">Inativa</option>
-          </select>
-        </div>
-      </div>
-
-      <button type="button" class="btn btn-primary" id="btnSalvarConta">Salvar Conta</button>
-      <div id="mensagemConta" class="message"></div>
-    </section>
-
-    <section class="panel">
-      <div class="panel-header">
-        <h2>Minhas Contas</h2>
-      </div>
-      <div id="listaContas" class="table-wrap"></div>
-    </section>
-  </main>
-</div>
-
-<nav class="mobile-nav"></nav>
-
-<script src="../js/version.js"></script>
-<script type="module" src="../js/navigation.js"></script>
-<script type="module" src="../js/accounts.js"></script>
+<p>Esta tela foi unificada — redirecionando...</p>
 </body>
 </html>

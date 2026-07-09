@@ -520,3 +520,11 @@ el('btnCancelarCategoria').addEventListener('click',limparFormCategoria);
 // INICIALIZAÇÃO
 // ═══════════════════════════════════════════
 await Promise.all([carregarContas(), carregarCartoes(), carregarCategorias()]);
+
+// Abrir aba via URL (?tab=contas|cartoes|categorias) — usado pelos redirects
+// das antigas paginas accounts.html/cards.html/categories.html
+const tabParam = new URLSearchParams(window.location.search).get('tab');
+if(tabParam){
+  document.querySelector(`.reg-tab[data-tab="${CSS.escape(tabParam)}"]`)?.click();
+  window.history.replaceState({}, '', window.location.pathname);
+}

@@ -6,6 +6,7 @@ import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { invoiceRef, addMonthsRef } from './services/cardService.js';
 import { ajustarSaldo } from './services/balanceService.js';
+import { hojeISO } from './utils/dateUtils.js';
 
 // ─── DOM ───────────────────────────────────────
 const userEmail    = document.getElementById('userEmail');
@@ -42,10 +43,6 @@ btnLogout.addEventListener('click', async () => {
 function msg(texto, tipo = 'info') {
   mensagem.className = `message ${tipo}`;
   mensagem.innerText = texto;
-}
-
-function hojeISO() {
-  return new Date().toISOString().split('T')[0];
 }
 
 function mesAtualRef() {
@@ -153,7 +150,7 @@ async function carregarFaturas() {
 
   if (!data.length) {
     msg('');
-    listaFaturas.innerHTML = '<p class="muted" style="padding:18px">Nenhuma fatura em aberto.</p>';
+    listaFaturas.innerHTML = '<p class="muted" style="padding:18px">Nenhuma fatura em aberto. <a href="./movements.html?tipo=cartao" style="color:var(--accent)">Lançar compra no cartão</a></p>';
     return;
   }
 

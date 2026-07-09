@@ -8,6 +8,7 @@ import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 import { invoiceRef, addMonthsRef, refName, novoGrupoCompra, inserirParcelasCartao } from './services/cardService.js';
 import { toast, comTrava } from './toast.js';
 import { ajustarSaldo, deltaTransacao } from './services/balanceService.js';
+import { deleteAccountTransfer } from './services/transferService.js';
 
 // ─────────────────────────────────────────────
 // ELEMENTOS DO DOM
@@ -1075,7 +1076,7 @@ async function loadMovements(){
   }
 
   if(!rows.length){
-    movementList.innerHTML = '<p class="muted" style="padding:18px">Nenhuma movimentação encontrada.</p>';
+    movementList.innerHTML = '<p class="muted" style="padding:18px">Nenhuma movimentação encontrada. <a href="#" onclick="document.getElementById(\'movementType\').focus();window.scrollTo({top:0,behavior:\'smooth\'});return false" style="color:var(--accent)">Lançar a primeira</a></p>';
     return;
   }
 
@@ -1122,6 +1123,12 @@ async function loadMovements(){
                     style="padding:6px 8px" title="Excluir">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>
                   </button>
+                ` : r.source==='transfer' ? `
+                  <button type="button" class="btn btn-danger compact"
+                    onclick="window.deleteTransferFinZen('${r.id}')"
+                    style="padding:6px 8px" title="Excluir transferência">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>
+                  </button>
                 ` : '<span class="muted">-</span>'}
               </td>
             </tr>
@@ -1159,6 +1166,11 @@ async function loadMovements(){
                 onclick="window.editMovementFinZen('${r.id}')">Editar</button>
               <button type="button" class="btn btn-danger compact"
                 onclick="window.deleteMovementFinZen('${r.id}')">Excluir</button>
+            </div>
+          ` : r.source==='transfer' ? `
+            <div class="ff-mobile-card-actions">
+              <button type="button" class="btn btn-danger compact"
+                onclick="window.deleteTransferFinZen('${r.id}')">Excluir</button>
             </div>
           ` : ''}
         </article>
@@ -1217,6 +1229,21 @@ async function refreshAll(){
 // ─────────────────────────────────────────────
 window.editMovementFinZen   = editTransaction;
 window.deleteMovementFinZen = deleteTransaction;
+window.deleteTransferFinZen = async function(id){
+  const ok = await showChoiceModal({
+    title:'Excluir transferência',
+    message:'A exclusão devolve os valores às contas de origem e destino.',
+    options:[{ value:'only', label:'Excluir transferência', danger:true }],
+  });
+  if(!ok) return;
+  try{
+    await deleteAccountTransfer(id);
+    showMessage('Transferência excluída.','success');
+    await refreshAll();
+  }catch(e){
+    showMessage('Erro ao excluir transferência: '+(e.message||e),'danger');
+  }
+};
 
 // ── Dar baixa em lançamento pendente com 1 clique ────
 window.pagarMovimentoFinZen = async function(id) {

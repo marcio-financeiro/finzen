@@ -287,7 +287,7 @@ function renderKpis(metas){
 
 function renderMetas(metas){
   if(!metas.length){
-    el('listaMetas').innerHTML='<p class="muted" style="padding:16px">Nenhuma meta cadastrada.</p>';
+    el('listaMetas').innerHTML='<p class="muted" style="padding:16px">Nenhuma meta cadastrada. <a href="#" onclick="document.getElementById(\'nomeMeta\').focus();window.scrollTo({top:0,behavior:\'smooth\'});return false" style="color:var(--accent)">Criar a primeira meta</a></p>';
     return;
   }
 

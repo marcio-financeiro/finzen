@@ -98,7 +98,6 @@ const NAV_GROUPS = [
     items: [
       { title: 'Movimentações',  icon: 'ic-arrows-updown', href: './movements.html' },
       { title: 'Extrato',        icon: 'ic-receipt', href: './account-statement.html' },
-      { title: 'Cartões',        icon: 'ic-card', href: './cards.html' },
       { title: 'Faturas',        icon: 'ic-file-text', href: './card-bills.html' },
       { title: 'Orçamento',      icon: 'ic-target', href: './budgets.html' },
     ]
@@ -167,7 +166,9 @@ function isActive(href) {
   const aliases = {
     'accounts.html':        'registrations.html',
     'categories.html':      'registrations.html',
-    'card-purchases.html':  'cards.html',
+    'card-purchases.html':  'movements.html',
+    'cards.html':           'registrations.html',
+    'transfers.html':       'movements.html',
     'asset-transactions.html': 'investments.html',
     'dividends.html':       'investments.html',
     'allocation.html':      'investments.html',
