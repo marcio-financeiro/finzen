@@ -1,7 +1,10 @@
 // api/telegram-webhook.js — FinZen Assessor Telegram (multi-usuário)
 // Setup: GET /api/telegram-webhook?setup=1
 
+import { buscarCotacoes, montarResumoCarteira } from './_cotacaoResumo.js';
+
 const BOT_TOKEN       = process.env.TELEGRAM_BOT_TOKEN;
+const VERCEL_URL      = 'https://finzen-rho.vercel.app';
 const SB_URL          = process.env.SUPABASE_URL;
 const SB_KEY          = process.env.SUPABASE_SERVICE_KEY;
 // Fallback para o usuário original (transição transparente)
@@ -564,7 +567,7 @@ async function execAjuda() {
     `📅 <i>"marcar consulta médica amanhã às 14h"</i>\n\n` +
     `<b>Consultas rápidas:</b>\n` +
     `  <code>hoje</code> · <code>agenda</code> · <code>offshore</code>\n` +
-    `  <code>saldo</code> · <code>extrato</code> · <code>resumo</code>`
+    `  <code>saldo</code> · <code>extrato</code> · <code>resumo</code> · <code>carteira</code>`
   );
 }
 
@@ -712,6 +715,28 @@ async function execOffshore() {
   }
 }
 
+async function execFechamento() {
+  const ativos = await sbGet('investments', 'ativo=eq.true&select=id,ticker,tipo,moeda,quantidade,corretora');
+  const negociaveis = (Array.isArray(ativos) ? ativos : []).filter(a => a.tipo !== 'renda_fixa');
+  if (!negociaveis.length) { await enviar('Nenhum ativo negociável na carteira.'); return; }
+
+  const tickers = [...new Set(negociaveis.map(a => a.ticker.toUpperCase()))];
+  let quotes;
+  try {
+    quotes = await buscarCotacoes(VERCEL_URL, tickers);
+  } catch (e) {
+    await enviar('❌ Não consegui buscar as cotações agora. Tente de novo em instantes.');
+    return;
+  }
+  const dolar   = quotes['USD-BRL'] || 0;
+  const dataFmt = new Date().toLocaleDateString('pt-BR', {
+    timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric',
+  });
+
+  const { texto } = montarResumoCarteira({ ativos: negociaveis, quotes, dolar, dataFmt });
+  await enviar(texto);
+}
+
 // ── Callback de botões inline ─────────────────────────────────────────────────
 async function handleCallback(cq) {
   await responderCallback(cq.id);
@@ -754,6 +779,7 @@ async function processar(texto) {
   if (t === 'hoje' || t === 'tarefas' || t === 'agenda hoje' || t === 'compromissos') return execAgendaHoje();
   if (t === 'agenda' || t === 'semana' || t === 'agenda da semana') return execAgendaSemana();
   if (t === 'offshore' || t === 'embarque' || t === 'ciclo') return execOffshore();
+  if (t === 'fechamento' || t === 'carteira' || t === 'cotacao' || t === 'cotação') return execFechamento();
   if (t === 'ajuda' || t === 'help' || t === '/start' || t === '/help') return execAjuda();
 
   const [contas, cartoes, categorias] = await Promise.all([
