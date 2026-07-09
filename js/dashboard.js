@@ -106,6 +106,8 @@ async function carregarDashboard(){
     const ref    = refMesAtual();
     const nextD  = new Date(hoje().getFullYear(), hoje().getMonth()+1, 1);
     const refProximo = `${nextD.getFullYear()}-${String(nextD.getMonth()+1).padStart(2,'0')}`;
+    const nextD2 = new Date(hoje().getFullYear(), hoje().getMonth()+2, 1);
+    const refProx2 = `${nextD2.getFullYear()}-${String(nextD2.getMonth()+1).padStart(2,'0')}`;
 
     try { dolarAtual = await getUsdBrlRate(user.id); } catch(_) {}
 
@@ -129,7 +131,7 @@ async function carregarDashboard(){
     ] = await Promise.all([
       supabase.from('accounts').select('id,nome,currency,saldo_atual,color').eq('user_id',user.id).eq('active',true),                                                                                                          // contas
       supabase.from('transactions').select('type,amount,status,date,category_id,accounts:account_id(currency),categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),                  // transacoesMes
-      supabase.from('card_transactions').select('valor_parcela,fatura_referencia,status,card_id,category_id').eq('user_id',user.id).in('status',['aberta','pendente']).in('fatura_referencia',[ref,refProximo]),               // parcelasMes (atual+próximo, abertas)
+      supabase.from('card_transactions').select('valor_parcela,fatura_referencia,status,card_id,category_id').eq('user_id',user.id).in('status',['aberta','pendente']).in('fatura_referencia',[ref,refProximo,refProx2]),      // parcelasMes (3 meses, abertas — faturas + projeção 90d)
       supabase.from('transactions').select('id,description,amount,date,type,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date', (() => { const d=new Date(hoje()); d.setDate(d.getDate()+7); return d.toISOString().split('T')[0]; })()).order('date',{ascending:true}).limit(5), // transacoesPendentes
       supabase.from('budgets').select('*,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',ref),                                                                                                   // orcamentos
       supabase.from('goals').select('*').eq('user_id',user.id).eq('ativo',true).order('data_alvo',{ascending:true}).limit(5),                                                                                                  // metas
@@ -173,6 +175,19 @@ async function carregarDashboard(){
     const recAnt  = (txMesAnterior||[]).filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
     const despAnt = (txMesAnterior||[]).filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0);
     const despesasRec = (recorrentes||[]).filter(r=>r.type==='despesa').reduce((s,r)=>s+Number(r.amount||0),0);
+    const receitasRec = (recorrentes||[]).filter(r=>r.type==='receita').reduce((s,r)=>s+Number(r.amount||0),0);
+
+    // ── Projeção 90 dias ──────────────────────────────
+    // Estimativa: saldo atual + 3× (receitas − despesas recorrentes)
+    // − todas as faturas de cartão abertas nos próximos 3 meses
+    const faturas90 = (parcelasMes||[]).reduce((s,p)=>s+Number(p.valor_parcela||0),0);
+    const projecao90 = totalSaldo + (receitasRec - despesasRec) * 3 - faturas90;
+    const elProj = el('kpiProjecao90');
+    if(elProj){
+      elProj.innerText = fmt(projecao90);
+      elProj.classList.remove('kpi-loading');
+      aplicarClasse(elProj, projecao90);
+    }
     const refEmerg = despesasRec > 0 ? despesasRec : (despesas > 0 ? despesas : 1);
 
     atualizarRing('ringSaldo','ringSaldoPct','deltaSaldo',

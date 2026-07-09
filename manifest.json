@@ -2,7 +2,7 @@
   "name": "Vyn Finanças",
   "short_name": "Vyn",
   "description": "Controle financeiro pessoal",
-  "start_url": "./login.html",
+  "start_url": "./pages/dashboard.html",
   "display": "standalone",
   "background_color": "#0a0c10",
   "theme_color": "#c08a3e",
@@ -20,6 +20,26 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Lançar despesa",
+      "short_name": "Lançar",
+      "url": "./pages/movements.html?tipo=despesa",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ver faturas",
+      "short_name": "Faturas",
+      "url": "./pages/card-bills.html",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Modo simples",
+      "short_name": "Mobile",
+      "url": "./pages/mobile.html",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

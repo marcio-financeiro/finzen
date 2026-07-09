@@ -108,8 +108,8 @@
       </div>
     </div>
 
-    <!-- KPIs secundários: Resultado + Faturas -->
-    <div class="dash-kpi-grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px;">
+    <!-- KPIs secundários: Resultado + Faturas + Projeção -->
+    <div class="dash-kpi-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:16px;">
       <div class="dash-kpi" onclick="location.href='./movements.html'">
         <span>Resultado do mês</span>
         <strong class="kpi-loading" id="kpiResultado">R$ 0,00</strong>
@@ -117,6 +117,10 @@
       <div class="dash-kpi" onclick="location.href='./card-bills.html'">
         <span>Faturas (mês atual)</span>
         <strong id="kpiFaturas" class="negative kpi-loading">R$ 0,00</strong>
+      </div>
+      <div class="dash-kpi" title="Saldo atual + 3 meses de recorrências − faturas abertas dos próximos 3 meses">
+        <span>Projeção 90 dias</span>
+        <strong class="kpi-loading" id="kpiProjecao90">R$ 0,00</strong>
       </div>
     </div>
 

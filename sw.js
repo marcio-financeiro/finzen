@@ -1,10 +1,14 @@
 // sw.js — Vyn Service Worker
 // Gerencia cache offline e notificações push
 
-const CACHE_NAME = 'vyn-v12.7';
+const CACHE_NAME = 'vyn-v12.8';
 const CACHE_URLS = [
   './login.html',
   './pages/dashboard.html',
+  './pages/movements.html',
+  './pages/mobile.html',
+  './pages/card-bills.html',
+  './pages/registrations.html',
   './css/variables.css',
   './css/base.css',
   './css/layout.css',
@@ -20,6 +24,9 @@ const CACHE_URLS = [
   './icons/icon-192.png',
   './icons/icon-512.png',
 ];
+
+// Hosts de CDN que podem ser cacheados em runtime (supabase-js, Chart.js, fontes)
+const CDN_HOSTS = ['cdn.jsdelivr.net', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 // ── Instalação ────────────────────────────────────────
 self.addEventListener('install', e => {
@@ -50,9 +57,13 @@ self.addEventListener('fetch', e => {
 
   const url = new URL(e.request.url);
   const isHTML = url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname === '';
+  const isJS   = url.pathname.endsWith('.js');
+  const isCDN  = CDN_HOSTS.includes(url.hostname);
 
-  if (isHTML) {
-    // Network-first para HTML: sempre busca versão nova, cai no cache se offline
+  if (isHTML || (isJS && !isCDN)) {
+    // Network-first para HTML e JS próprios: JS é servido com no-store pelo
+    // Vercel — servir cache-first aqui congelava os módulos pré-cacheados
+    // até o próximo bump de CACHE_NAME. Cache vira só fallback offline.
     e.respondWith(
       fetch(e.request)
         .then(res => {
@@ -62,8 +73,20 @@ self.addEventListener('fetch', e => {
         })
         .catch(() => caches.match(e.request))
     );
+  } else if (isCDN) {
+    // CDN (supabase-js pinado, Chart.js versionado, fontes): cache-first com
+    // gravação em runtime — habilita offline real para as libs externas
+    e.respondWith(
+      caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+        }
+        return res;
+      }))
+    );
   } else {
-    // Cache-first para assets estáticos (CSS, ícones)
+    // Cache-first para assets estáticos (CSS com ?v=, ícones)
     e.respondWith(
       caches.match(e.request).then(cached => cached || fetch(e.request))
     );
