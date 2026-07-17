@@ -821,6 +821,7 @@ async function renderCashFlowMonth(){
     const pendingExpense = pendingTransactions.filter(i=>i.type==='despesa').reduce((s,i)=>s+Number(i.amount||0),0);
     const freeBalance    = accountBalance+pendingIncome-pendingExpense-openCards;
     const statusClass    = freeBalance>=0?'positive':'negative';
+    const accountClass   = accountBalance>=0?'positive':'negative';
 
     cashFlowMonthList.innerHTML = `
       <div class="ff-flow-grid">
@@ -831,7 +832,7 @@ async function renderCashFlowMonth(){
         </div>
         <button type="button" class="ff-flow-card clickable" data-flow-detail="accounts">
           <span>Saldo Atual</span>
-          <strong class="positive">${formatCurrency(accountBalance,'BRL')}</strong>
+          <strong class="${accountClass}">${formatCurrency(accountBalance,'BRL')}</strong>
         </button>
         <button type="button" class="ff-flow-card clickable" data-flow-detail="income">
           <span>Receitas Pendentes</span>
