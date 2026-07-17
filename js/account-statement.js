@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { escapeHtml } from './utils/escapeHtml.js';
+import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
 
 const { data: sessionData } = await supabase.auth.getSession();
 if(!sessionData.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
@@ -16,6 +17,9 @@ const el = id => document.getElementById(id);
 const hoje = new Date();
 el('filtroMes').value = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
 
+let dolarAtual = 5.15;
+let contasAtivas = [];
+
 // Carregar contas
 async function carregarContas(){
   const { data } = await supabase
@@ -25,9 +29,9 @@ async function carregarContas(){
     .eq('active', true)
     .order('nome');
 
-  const contas = data || [];
+  contasAtivas = data || [];
   el('filtroConta').innerHTML = '<option value="">Todas as contas</option>' +
-    contas.map(c => `<option value="${c.id}" data-saldo="${c.saldo_atual||0}" data-currency="${c.currency||'BRL'}">${escapeHtml(c.nome)}</option>`).join('');
+    contasAtivas.map(c => `<option value="${c.id}" data-saldo="${c.saldo_atual||0}" data-currency="${c.currency||'BRL'}">${escapeHtml(c.nome)}</option>`).join('');
 }
 
 function formatDate(iso){
@@ -50,8 +54,9 @@ async function carregarExtrato(){
     el('kpiSaldo').innerText = formatCurrency(saldo, currency);
     el('kpiSaldo').className = saldo >= 0 ? 'positive' : 'negative';
   } else {
-    el('kpiSaldo').innerText = '—';
-    el('kpiSaldo').className = '';
+    const totalBRL = contasAtivas.reduce((sum,c) => sum+convertToBRL(c.saldo_atual, c.currency, dolarAtual), 0);
+    el('kpiSaldo').innerText = formatCurrency(totalBRL, 'BRL');
+    el('kpiSaldo').className = totalBRL >= 0 ? 'positive' : 'negative';
   }
 
   let query = supabase
@@ -139,6 +144,7 @@ async function carregarExtrato(){
 }
 
 await carregarContas();
+try { dolarAtual = await getUsdBrlRate(user.id); } catch(_) {}
 
 // Pré-filtrar por conta via URL (clique no dashboard)
 const urlParams = new URLSearchParams(window.location.search);
