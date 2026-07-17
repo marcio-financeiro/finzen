@@ -21,10 +21,21 @@ export function openModal({ bodyHtml, narrow = false, closeOnBackdrop = true }){
   const overlay = document.createElement('div');
   overlay.id = id;
   overlay.className = 'fz-modal-overlay';
-  overlay.innerHTML = `<div class="fz-modal-box${narrow ? ' fz-modal-narrow' : ''}">${bodyHtml}</div>`;
+  overlay.innerHTML = `<div class="fz-modal-box${narrow ? ' fz-modal-narrow' : ''}" role="dialog" aria-modal="true">${bodyHtml}</div>`;
   document.body.appendChild(overlay);
 
-  const close = () => overlay.remove();
+  const close = () => { document.removeEventListener('keydown', onKey); overlay.remove(); };
+  const onKey = (e) => {
+    if(e.key === 'Escape'){ close(); return; }
+    if(e.key !== 'Tab') return;
+    // Trap de foco: Tab circula dentro do modal
+    const focaveis = overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if(!focaveis.length) return;
+    const primeiro = focaveis[0], ultimo = focaveis[focaveis.length-1];
+    if(e.shiftKey && document.activeElement === primeiro){ e.preventDefault(); ultimo.focus(); }
+    else if(!e.shiftKey && document.activeElement === ultimo){ e.preventDefault(); primeiro.focus(); }
+  };
+  document.addEventListener('keydown', onKey);
   if(closeOnBackdrop){
     overlay.addEventListener('click', e => { if(e.target === overlay) close(); });
   }
@@ -42,7 +53,7 @@ export function showChoice({ title, message, options = [], narrow = true }){
     overlay.id = id;
     overlay.className = 'fz-modal-overlay';
     overlay.innerHTML = `
-      <div class="fz-modal-box${narrow ? ' fz-modal-narrow' : ''}">
+      <div class="fz-modal-box${narrow ? ' fz-modal-narrow' : ''}" role="dialog" aria-modal="true">
         <div class="fz-modal-header">
           <div><h2>${title}</h2>${message ? `<p>${message}</p>` : ''}</div>
         </div>
@@ -84,7 +95,7 @@ export function showDetail({ title, subtitle, items = [], total, totalClass = ''
   const empty = !items || !items.length;
 
   overlay.innerHTML = `
-    <div class="fz-modal-box">
+    <div class="fz-modal-box" role="dialog" aria-modal="true">
       <div class="fz-modal-header">
         <div><h2>${title}</h2>${subtitle ? `<p>${subtitle}</p>` : ''}</div>
         <button type="button" class="fz-modal-close" aria-label="Fechar">×</button>
@@ -111,7 +122,9 @@ export function showDetail({ title, subtitle, items = [], total, totalClass = ''
   `;
   document.body.appendChild(overlay);
 
-  const close = () => overlay.remove();
+  const close = () => { document.removeEventListener('keydown', onEsc); overlay.remove(); };
+  const onEsc = (e) => { if(e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onEsc);
   overlay.querySelector('.fz-modal-close').addEventListener('click', close);
   overlay.addEventListener('click', e => { if(e.target === overlay) close(); });
   return close;

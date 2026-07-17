@@ -2,6 +2,7 @@ import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
 import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 // Soma o valor de uma transação já convertido pra BRL, conforme a moeda da conta
 function valorBRL(t){ return convertToBRL(t.amount, t.accounts?.currency || 'BRL', dolarAtual); }
@@ -279,8 +280,8 @@ async function renderCategorias() {
   // Ranking
   document.getElementById('rankingCategorias').innerHTML = top8.map((item, i) => `
     <div class="rpt-rank-item">
-      <span class="rpt-rank-icon">${item.icon}</span>
-      <span class="rpt-rank-nome">${item.nome}</span>
+      <span class="rpt-rank-icon">${escapeHtml(item.icon)}</span>
+      <span class="rpt-rank-nome">${escapeHtml(item.nome)}</span>
       <span class="rpt-rank-valor">${formatCurrency(item.valor, 'BRL')}</span>
       <span class="rpt-rank-pct">${total > 0 ? ((item.valor / total) * 100).toFixed(1) + '%' : ''}</span>
     </div>

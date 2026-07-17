@@ -1,13 +1,18 @@
 // FinZen — Notificações Telegram
 // Todas as funções são fire-and-forget (nunca quebram o fluxo principal)
 
+import { supabase } from './supabaseClient.js';
+
 const API = '/api/telegram';
 
 async function enviar(mensagem) {
   try {
+    const { data: sd } = await supabase.auth.getSession();
+    const token = sd?.session?.access_token;
+    if (!token) return; // endpoint agora exige autenticação
     await fetch(API, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ message: mensagem }),
     });
   } catch (_) {}

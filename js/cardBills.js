@@ -1,6 +1,12 @@
 import { supabase } from './supabaseClient.js';
 import { navigate }  from './router.js';
 import { formatCurrency } from './utils.js';
+import { showChoice } from './modal.js';
+import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
+import { escapeHtml } from './utils/escapeHtml.js';
+import { invoiceRef, addMonthsRef } from './services/cardService.js';
+import { ajustarSaldo } from './services/balanceService.js';
+import { hojeISO } from './utils/dateUtils.js';
 
 // ─── DOM ───────────────────────────────────────
 const userEmail    = document.getElementById('userEmail');
@@ -12,6 +18,7 @@ const btnLimparPesquisa = document.getElementById('btnLimparPesquisa');
 const mensagem     = document.getElementById('mensagemFatura');
 const listaFaturas = document.getElementById('listaFaturas');
 const modalEl      = document.getElementById('modalEditarItem');
+attachMoneyMask(document.getElementById('editValor'));
 
 // ─── ESTADO ────────────────────────────────────
 let user          = null;
@@ -38,10 +45,6 @@ function msg(texto, tipo = 'info') {
   mensagem.innerText = texto;
 }
 
-function hojeISO() {
-  return new Date().toISOString().split('T')[0];
-}
-
 function mesAtualRef() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -64,7 +67,7 @@ async function carregarCartoes() {
   if (error) { msg('Erro ao carregar cartões: ' + error.message, 'danger'); return; }
 
   filtroCartao.innerHTML = '<option value="">Todos os cartões</option>' +
-    (data || []).map(c => `<option value="${c.id}">${c.nome}${c.banco ? ' - ' + c.banco : ''}</option>`).join('');
+    (data || []).map(c => `<option value="${c.id}">${escapeHtml(c.nome)}${c.banco ? ' - ' + escapeHtml(c.banco) : ''}</option>`).join('');
 }
 
 // ─── CARREGAR CONTAS ───────────────────────────
@@ -147,7 +150,7 @@ async function carregarFaturas() {
 
   if (!data.length) {
     msg('');
-    listaFaturas.innerHTML = '<p class="muted" style="padding:18px">Nenhuma fatura em aberto.</p>';
+    listaFaturas.innerHTML = '<p class="muted" style="padding:18px">Nenhuma fatura em aberto. <a href="./movements.html?tipo=cartao" style="color:var(--accent)">Lançar compra no cartão</a></p>';
     return;
   }
 
@@ -226,7 +229,7 @@ function ativarInteracoesFatura() {
 
 function billCardHtml(fatura, key, isAtual) {
   const contasOptions = contas.map(c =>
-    `<option value="${c.id}">${c.nome}${c.bank ? ' - ' + c.bank : ''} (${formatCurrency(c.saldo_atual || 0, c.currency || 'BRL')})</option>`
+    `<option value="${c.id}">${escapeHtml(c.nome)}${c.bank ? ' - ' + escapeHtml(c.bank) : ''} (${formatCurrency(c.saldo_atual || 0, c.currency || 'BRL')})</option>`
   ).join('');
 
   const itensOrdenados = [...fatura.itens].sort((a, b) =>
@@ -234,14 +237,14 @@ function billCardHtml(fatura, key, isAtual) {
   );
 
   const itensHtml = itensOrdenados.map(item => {
-    const cat  = item.categories ? `${item.categories.icon || ''} ${item.categories.nome}` : '-';
+    const cat  = item.categories ? `${escapeHtml(item.categories.icon || '')} ${escapeHtml(item.categories.nome)}` : '-';
     const data = item.data_compra
       ? item.data_compra.split('-').reverse().join('/')
       : '-';
     return `
       <tr>
         <td style="white-space:nowrap">${data}</td>
-        <td>${item.descricao}</td>
+        <td>${escapeHtml(item.descricao)}</td>
         <td>${cat}</td>
         <td style="text-align:center">${item.parcela_atual}/${item.parcelas}</td>
         <td class="money negative" style="text-align:right">-${formatCurrency(item.valor_parcela, 'BRL')}</td>
@@ -290,7 +293,7 @@ function billCardHtml(fatura, key, isAtual) {
           <span class="bill-badge-mes${isAtual ? ' atual' : ''}">${formatRef(fatura.referencia)}</span>
           ${pago ? '<span class="bill-badge-paga">✓ Paga</span>' : ''}
           <div>
-            <div class="bill-card-name">${fatura.cartao}${fatura.banco ? ' · ' + fatura.banco : ''}</div>
+            <div class="bill-card-name">${escapeHtml(fatura.cartao)}${fatura.banco ? ' · ' + escapeHtml(fatura.banco) : ''}</div>
             <div class="bill-card-count">${fatura.itens.length} item${fatura.itens.length > 1 ? 's' : ''}</div>
           </div>
         </div>
@@ -323,15 +326,51 @@ function billCardHtml(fatura, key, isAtual) {
 
 // ─── EXCLUIR ITEM ──────────────────────────────
 window.excluirItemFatura = async function(id) {
-  if (!confirm('Excluir este lançamento do cartão?')) return;
+  const item = itensPorId[id];
+  if (!item) return;
 
-  const { error } = await supabase
-    .from('card_transactions').delete()
-    .eq('id', id).eq('user_id', user.id);
+  let scope = 'only';
+  if (item.parcelas > 1) {
+    scope = await showChoice({
+      title: 'Excluir compra parcelada',
+      message: 'Esta compra tem parcelas futuras. Escolha o alcance da exclusão.',
+      options: [
+        { value: 'only',   label: 'Excluir somente esta parcela', primary: true },
+        { value: 'future', label: 'Excluir esta e as parcelas seguintes', danger: true },
+      ],
+    });
+    if (!scope) return;
+  } else if (!confirm('Excluir este lançamento do cartão?')) {
+    return;
+  }
 
+  let query = supabase.from('card_transactions').delete().eq('user_id', user.id);
+  if (scope === 'only') {
+    query = query.eq('id', item.id);
+  } else {
+    const grupoId = await grupoDaParcela(item.id);
+    query = grupoId
+      // purchase_group_id: identifica com precisão as parcelas irmãs
+      ? query.eq('purchase_group_id', grupoId).gte('parcela_atual', item.parcela_atual)
+      // legado (linhas anteriores à migration): assinatura da compra
+      : query.eq('card_id', item.card_id).eq('parcelas', item.parcelas)
+             .eq('valor_total', item.valor_total).gte('parcela_atual', item.parcela_atual);
+  }
+
+  const { error } = await query;
   if (error) { alert('Erro ao excluir: ' + error.message); return; }
   await carregarFaturas();
 };
+
+// Lê o purchase_group_id de uma parcela; null se a coluna/valor não existir
+async function grupoDaParcela(id) {
+  try {
+    const { data, error } = await supabase.from('card_transactions')
+      .select('purchase_group_id').eq('id', id).eq('user_id', user.id).single();
+    if (error) return null;
+    return data?.purchase_group_id || null;
+  } catch (_) { return null; }
+}
 
 // ─── EDITAR ITEM ───────────────────────────────
 window.abrirEditarItem = function(id) {
@@ -341,7 +380,7 @@ window.abrirEditarItem = function(id) {
   editandoId = id;
 
   document.getElementById('editDescricao').value  = item.descricao || '';
-  document.getElementById('editValor').value      = item.valor_parcela || '';
+  setMoneyValue(document.getElementById('editValor'), item.valor_parcela);
   document.getElementById('editDataCompra').value = item.data_compra || '';
   document.getElementById('editFaturaRef').value  = item.fatura_referencia || '';
 
@@ -357,7 +396,7 @@ window.abrirEditarItem = function(id) {
   sel.innerHTML = '<option value="">Sem categoria</option>' +
     categorias
       .filter(c => c.tipo === 'despesa' || c.tipo === 'investimento')
-      .map(c => `<option value="${c.id}"${c.id === item.category_id ? ' selected' : ''}>${c.nome}</option>`)
+      .map(c => `<option value="${c.id}"${c.id === item.category_id ? ' selected' : ''}>${escapeHtml(c.nome)}</option>`)
       .join('');
 
   document.getElementById('editMensagem').innerText = '';
@@ -373,7 +412,7 @@ window.salvarEdicaoItem = async function() {
   if (!editandoId) return;
 
   const descricao      = document.getElementById('editDescricao').value.trim();
-  const valorParcela   = parseFloat(document.getElementById('editValor').value);
+  const valorParcela   = readMoneyValue(document.getElementById('editValor'));
   const dataCompra     = document.getElementById('editDataCompra').value;
   const categoryId     = document.getElementById('editCategoria').value || null;
   const faturaRef      = document.getElementById('editFaturaRef').value || null;
@@ -404,22 +443,29 @@ window.salvarEdicaoItem = async function() {
   const item = itensPorId[editandoId];
   if (faturaRef && atualizarTodas && item && item.parcelas > 1 && item.parcela_atual < item.parcelas) {
     const [anoBase, mesBase] = faturaRef.split('-').map(Number);
-    const { data: futuras } = await supabase
+    const grupoId = await grupoDaParcela(item.id);
+    let qFuturas = supabase
       .from('card_transactions')
       .select('id, parcela_atual')
       .eq('user_id', user.id)
-      .eq('card_id', item.card_id)
-      .eq('parcelas', item.parcelas)
-      .eq('valor_total', item.valor_total)
       .gt('parcela_atual', item.parcela_atual);
+    qFuturas = grupoId
+      ? qFuturas.eq('purchase_group_id', grupoId)
+      : qFuturas.eq('card_id', item.card_id).eq('parcelas', item.parcelas).eq('valor_total', item.valor_total);
+    const { data: futuras } = await qFuturas;
 
+    // Agrupa por nova referência e atualiza em lote (antes: 1 UPDATE por parcela)
+    const porRef = {};
     for (const f of (futuras || [])) {
       const diff = f.parcela_atual - item.parcela_atual;
       const refDate = new Date(anoBase, mesBase - 1 + diff, 1);
       const novaRef = `${refDate.getFullYear()}-${String(refDate.getMonth() + 1).padStart(2, '0')}`;
-      await supabase.from('card_transactions').update({ fatura_referencia: novaRef })
-        .eq('id', f.id).eq('user_id', user.id);
+      (porRef[novaRef] = porRef[novaRef] || []).push(f.id);
     }
+    await Promise.all(Object.entries(porRef).map(([novaRef, ids]) =>
+      supabase.from('card_transactions').update({ fatura_referencia: novaRef })
+        .in('id', ids).eq('user_id', user.id)
+    ));
   }
 
   window.fecharModalItem();
@@ -473,12 +519,13 @@ async function pagarFatura(key, contaId) {
 
   if (erroTx) { msg('Erro ao registrar pagamento: ' + erroTx.message, 'danger'); return; }
 
-  const novoSaldo = Number(conta.saldo_atual || 0) - Number(fatura.total || 0);
-  const { error: erroSaldo } = await supabase.from('accounts')
-    .update({ saldo_atual: novoSaldo })
-    .eq('id', contaId).eq('user_id', user.id);
-
-  if (erroSaldo) { msg('Pagamento registrado, mas erro ao atualizar saldo: ' + erroSaldo.message, 'danger'); return; }
+  // Ajuste atômico por delta — antes usava conta.saldo_atual de cache em
+  // memória (carregado no load da página), sujeito a saldo desatualizado.
+  try {
+    await ajustarSaldo(contaId, -Number(fatura.total || 0));
+  } catch (e) {
+    msg('Pagamento registrado, mas erro ao atualizar saldo: ' + e.message, 'danger'); return;
+  }
 
   const ids = fatura.itens.map(i => i.id);
   const { error: erroFatura } = await supabase.from('card_transactions')

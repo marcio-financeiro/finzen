@@ -9,6 +9,10 @@ import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
 import { registrarAcao }  from './eventBus.js';
 import { notificarTransacao } from './telegram.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
+import { invoiceRef, addMonthsRef, novoGrupoCompra, inserirParcelasCartao } from './services/cardService.js';
+import { escapeHtml } from './utils/escapeHtml.js';
+import { ajustarSaldo } from './services/balanceService.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -16,6 +20,7 @@ if(!sd.session){ navigate('../login.html'); throw new Error('unauthenticated'); 
 const user = sd.session.user;
 
 const el  = id => document.getElementById(id);
+attachMoneyMask(el('mobValor'));
 const fmt = v  => formatCurrency(v, 'BRL');
 
 // ── Saudação ──────────────────────────────────────────
@@ -105,10 +110,8 @@ registrarAcao('pagarFaturaMobile', async (el) => {
       .eq('fatura_referencia', anoMes);
     if(e1) throw e1;
 
-    // Debitar da conta
-    const novoSaldo = Number(contaEscolhida.saldo_atual||0) - total;
-    await supabase.from('accounts').update({ saldo_atual: novoSaldo })
-      .eq('id', contaEscolhida.id).eq('user_id', user.id);
+    // Debitar da conta (delta atômico via balanceService)
+    await ajustarSaldo(contaEscolhida.id, -total);
 
     // Registrar pagamento nas transações
     await supabase.from('transactions').insert({
@@ -142,11 +145,7 @@ registrarAcao('pagarPendenteMobile', async (el) => {
       .eq('id', txId).eq('user_id', user.id);
 
     if(contaId) {
-      const conta = contas.find(c=>c.id===contaId);
-      if(conta) {
-        const novoSaldo = Number(conta.saldo_atual||0) - valor;
-        await supabase.from('accounts').update({ saldo_atual: novoSaldo }).eq('id', contaId);
-      }
+      await ajustarSaldo(contaId, -valor);
     }
 
     document.getElementById(`alerta-${idx}`)?.remove();
@@ -322,7 +321,7 @@ async function carregar() {
       return `
         <div class="mob-orc-item" onclick="location.href='../pages/account-statement.html'">
           <div class="mob-orc-header">
-            <span class="mob-orc-nome">${emoji} ${c.nome}</span>
+            <span class="mob-orc-nome">${escapeHtml(emoji)} ${escapeHtml(c.nome)}</span>
             <span style="font-size:15px;font-weight:800;color:${cor}">
               ${moeda !== 'BRL' ? 'US$ ' : 'R$ '}${Math.abs(saldo).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
             </span>
@@ -390,13 +389,13 @@ function popularModal() {
   // Contas
   el('mobConta').innerHTML = contas
     .filter(c=>(c.currency||'BRL')==='BRL')
-    .map(c=>`<option value="${c.id}">${c.icon||'🏦'} ${c.nome} (${fmt(c.saldo_atual||0)})</option>`).join('');
+    .map(c=>`<option value="${c.id}">${escapeHtml(c.icon||'🏦')} ${escapeHtml(c.nome)} (${fmt(c.saldo_atual||0)})</option>`).join('');
 
   // Cartões
   const cartaoSelect = el('mobCartao');
   if(cartaoSelect){
     cartaoSelect.innerHTML = '<option value="">Selecione...</option>' +
-      (window._cartoesMobile||[]).map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+      (window._cartoesMobile||[]).map(c=>`<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
   }
 
   // Data hoje
@@ -407,7 +406,7 @@ function popularModal() {
 
   // Select completo
   el('mobCatSelect').innerHTML = '<option value="">Selecionar outra...</option>' +
-    categorias.map(c=>`<option value="${c.id}">${c.icon||''} ${c.nome}</option>`).join('');
+    categorias.map(c=>`<option value="${c.id}">${escapeHtml(c.icon||'')} ${escapeHtml(c.nome)}</option>`).join('');
 
   el('mobCatSelect').addEventListener('change', e => {
     if(e.target.value) {
@@ -483,7 +482,7 @@ function fecharModal() {
 
 // ── Salvar lançamento ─────────────────────────────────
 registrarAcao('salvarLancamento', async () => {
-  const valor   = parseFloat((el('mobValor').value || '0').replace(',', '.'));
+  const valor   = readMoneyValue(el('mobValor'));
   const desc    = el('mobDescricao').value.trim();
   const catId   = catSelecionada || el('mobCatSelect').value || null;
   const data    = el('mobData').value;
@@ -503,29 +502,22 @@ registrarAcao('salvarLancamento', async () => {
       if(!cartaoId){ alert('Selecione um cartão.'); btn.disabled=false; btn.textContent='✓ Salvar lançamento'; return; }
 
       const cartao = (window._cartoesMobile||[]).find(c=>c.id===cartaoId);
-      const diaFechamento = cartao?.fechamento_dia || 1;
-
-      // Calcular referência da fatura
-      const dataCompra = new Date(data+'T00:00:00');
-      const diaCompra  = dataCompra.getDate();
-      let mesRef = dataCompra.getMonth() + 1;
-      let anoRef = dataCompra.getFullYear();
-      if(diaCompra > diaFechamento){ mesRef++; if(mesRef>12){mesRef=1;anoRef++;} }
+      const refBase = invoiceRef(data, Number(cartao?.fechamento_dia || 1), Number(cartao?.vencimento_dia || 0));
 
       const valorParcela = parseFloat((valor/parcelas).toFixed(2));
+      const grupoId = novoGrupoCompra();
       const registros = [];
       for(let i=0;i<parcelas;i++){
-        let m=mesRef+i, a=anoRef;
-        while(m>12){m-=12;a++;}
-        const ref=`${a}-${String(m).padStart(2,'0')}`;
+        const ref = addMonthsRef(refBase, i);
         registros.push({
           user_id:user.id, card_id:cartaoId, category_id:catId,
           descricao:desc, valor_total:valor, parcelas,
           parcela_atual:i+1, valor_parcela:valorParcela,
           data_compra:data, fatura_referencia:ref, status:'aberta',
+          purchase_group_id:grupoId,
         });
       }
-      const {error}=await supabase.from('card_transactions').insert(registros);
+      const {error}=await inserirParcelasCartao(supabase, registros);
       if(error) throw error;
 
     } else {
@@ -540,13 +532,11 @@ registrarAcao('salvarLancamento', async () => {
       });
       if(error) throw error;
 
-      // Atualizar saldo
+      // Atualizar saldo (delta atômico via balanceService)
       const conta = contas.find(c=>c.id===contaId);
-      if(conta){
-        const novoSaldo = Number(conta.saldo_atual||0) + (tipoAtual==='receita' ? valor : -valor);
-        await supabase.from('accounts').update({saldo_atual:novoSaldo}).eq('id',contaId);
-        conta.saldo_atual = novoSaldo;
-      }
+      const delta = tipoAtual==='receita' ? valor : -valor;
+      await ajustarSaldo(contaId, delta);
+      if(conta) conta.saldo_atual = Number(conta.saldo_atual||0) + delta;
 
       notificarTransacao({ tipo:tipoAtual, descricao:desc, valor, conta:conta?.nome||'Conta' }).catch(()=>{});
     }

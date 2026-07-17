@@ -7,6 +7,7 @@
 import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
+import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -17,6 +18,9 @@ document.getElementById('btnLogout').addEventListener('click', async () => {
 });
 
 const el  = id => document.getElementById(id);
+attachMoneyMask(el('patrimonioAtual'));
+attachMoneyMask(el('aporteMensal'));
+attachMoneyMask(el('gastosMensais'));
 const fmt = v  => formatCurrency(v, 'BRL');
 const fmtM = v => {
   if(v >= 1e6) return `R$ ${(v/1e6).toFixed(1)}M`;
@@ -116,9 +120,9 @@ async function carregarDados() {
   const gastosMensais = despesasRec > 0 ? Math.round(despesasRec) : 0;
 
   // Preencher inputs
-  el('patrimonioAtual').value = Math.round(patrimonioTotal);
-  el('aporteMensal').value    = mediaAporte;
-  el('gastosMensais').value   = gastosMensais > 0 ? gastosMensais : '';
+  setMoneyValue(el('patrimonioAtual'), Math.round(patrimonioTotal));
+  setMoneyValue(el('aporteMensal'), mediaAporte);
+  setMoneyValue(el('gastosMensais'), gastosMensais);
 
   el('hintPatrimonio').textContent = `Contas (${fmt(saldoBRL)}) + Investimentos (${fmt(totalInvest)})`;
   el('hintAporte').textContent     = `Média dos últimos 3 meses: ${fmt(mediaAporte)}/mês`;
@@ -128,9 +132,9 @@ async function carregarDados() {
 
 // ── Cálculo FIRE ──────────────────────────────────────
 window.calcular = function() {
-  const patrimonio   = Number(el('patrimonioAtual').value || 0);
-  const aporte       = Number(el('aporteMensal').value    || 0);
-  const gastos       = Number(el('gastosMensais').value   || 0);
+  const patrimonio   = readMoneyValue(el('patrimonioAtual'));
+  const aporte       = readMoneyValue(el('aporteMensal'));
+  const gastos       = readMoneyValue(el('gastosMensais'));
   const rentAnual    = Number(el('rentabilidade').value   || 6) / 100;
   const idade        = Number(el('idadeAtual').value      || 30);
   const tipo         = TIPOS_FIRE[tipoAtual];
@@ -209,6 +213,10 @@ window.calcular = function() {
   renderGrafico(patrimonio, aporte, rentMensal, metaPatrimonio, meses, idade);
   renderInsights(patrimonio, aporte, gastos, metaPatrimonio, meses, idadeIF, rentAnual);
 };
+
+el('patrimonioAtual').addEventListener('input', window.calcular);
+el('aporteMensal').addEventListener('input', window.calcular);
+el('gastosMensais').addEventListener('input', window.calcular);
 
 // ── Gráfico de projeção ───────────────────────────────
 function renderGrafico(patrimonioInicial, aporte, rentMensal, meta, totalMeses, idadeInicial) {

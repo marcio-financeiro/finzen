@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
@@ -82,7 +83,7 @@ function renderResumo(backup){
   el('backupSummary').innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
       <div class="kpi-card"><span>Registros</span><strong>${total}</strong></div>
-      <div class="kpi-card"><span>Versão</span><strong>${backup.version||'-'}</strong></div>
+      <div class="kpi-card"><span>Versão</span><strong>${escapeHtml(backup.version||'-')}</strong></div>
       <div class="kpi-card"><span>Exportado em</span><strong style="font-size:11px">${exportedAt}</strong></div>
     </div>
     <table class="data-table">

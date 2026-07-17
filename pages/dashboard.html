@@ -3,9 +3,13 @@
 <head>
 <script>if(localStorage.getItem("finzen_sidebar_rail")==="collapsed")document.documentElement.classList.add("sidebar-rail");</script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Dashboard - Vyn</title>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400..700&display=swap">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm">
 <link rel="stylesheet" href="../css/variables.css?v=1200">
 <link rel="stylesheet" href="../css/base.css?v=1200">
 <link rel="stylesheet" href="../css/layout.css?v=1200">
@@ -104,8 +108,8 @@
       </div>
     </div>
 
-    <!-- KPIs secundários: Resultado + Faturas -->
-    <div class="dash-kpi-grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px;">
+    <!-- KPIs secundários: Resultado + Faturas + Projeção -->
+    <div class="dash-kpi-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:16px;">
       <div class="dash-kpi" onclick="location.href='./movements.html'">
         <span>Resultado do mês</span>
         <strong class="kpi-loading" id="kpiResultado">R$ 0,00</strong>
@@ -114,6 +118,10 @@
         <span>Faturas (mês atual)</span>
         <strong id="kpiFaturas" class="negative kpi-loading">R$ 0,00</strong>
       </div>
+      <div class="dash-kpi" title="Saldo atual + 3 meses de recorrências − faturas abertas dos próximos 3 meses">
+        <span>Projeção 90 dias</span>
+        <strong class="kpi-loading" id="kpiProjecao90">R$ 0,00</strong>
+      </div>
     </div>
 
     <!-- Saldo das contas -->
@@ -121,7 +129,7 @@
       <div class="dash-block">
         <div class="dash-block-header">
           <h2>Saldo das Contas</h2>
-          <a href="./accounts.html" class="btn btn-secondary compact" style="font-size:11px">Gerenciar</a>
+          <a href="./registrations.html?tab=contas" class="btn btn-secondary compact" style="font-size:11px">Gerenciar</a>
         </div>
         <div class="dash-block-body" id="blocoContas" style="padding:0"></div>
       </div>

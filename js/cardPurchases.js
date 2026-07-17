@@ -1,6 +1,10 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
+import { invoiceRef, addMonthsRef, novoGrupoCompra, inserirParcelasCartao } from './services/cardService.js';
+import { comTrava } from './toast.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -10,6 +14,7 @@ const cartaoCompra = document.getElementById('cartaoCompra');
 const categoriaCompra = document.getElementById('categoriaCompra');
 const descricaoCompra = document.getElementById('descricaoCompra');
 const valorCompra = document.getElementById('valorCompra');
+attachMoneyMask(valorCompra);
 const parcelasCompra = document.getElementById('parcelasCompra');
 const dataCompra = document.getElementById('dataCompra');
 
@@ -33,24 +38,6 @@ function hojeISO(){
   return `${ano}-${mes}-${dia}`;
 }
 
-function addMeses(data, meses){
-  const novaData = new Date(data);
-  novaData.setMonth(novaData.getMonth() + meses);
-  return novaData;
-}
-
-function referenciaFatura(dataCompraObj, fechamentoDia){
-  let referencia = new Date(dataCompraObj.getFullYear(), dataCompraObj.getMonth(), 1);
-
-  if(dataCompraObj.getDate() > fechamentoDia){
-    referencia.setMonth(referencia.getMonth() + 1);
-  }
-
-  const refAno = referencia.getFullYear();
-  const refMes = String(referencia.getMonth() + 1).padStart(2, '0');
-  return `${refAno}-${refMes}`;
-}
-
 function formatarData(dataISO){
   if(!dataISO) return '-';
   const [ano, mes, dia] = dataISO.split('-');
@@ -71,7 +58,7 @@ btnLogout.addEventListener('click', async () => {
   navigate('../login.html');
 });
 
-btnSalvarCompra.addEventListener('click', salvarCompra);
+btnSalvarCompra.addEventListener('click', comTrava(btnSalvarCompra, salvarCompra));
 
 async function iniciar(){
   mostrarMensagem('Carregando dados...');
@@ -150,7 +137,7 @@ async function salvarCompra(){
   const cardId = cartaoCompra.value;
   const categoryId = categoriaCompra.value || null;
   const descricao = descricaoCompra.value.trim();
-  const valorTotal = Number(valorCompra.value || 0);
+  const valorTotal = readMoneyValue(valorCompra);
   const parcelas = Number(parcelasCompra.value || 1);
   const data = dataCompra.value;
 
@@ -177,12 +164,12 @@ async function salvarCompra(){
   }
 
   const valorParcela = Number((valorTotal / parcelas).toFixed(2));
-  const dataBase = new Date(data + 'T00:00:00');
+  const refBase = invoiceRef(data, Number(cartao.fechamento_dia || 1), Number(cartao.vencimento_dia || 0));
+  const grupoId = novoGrupoCompra();
   const registros = [];
 
   for(let i = 0; i < parcelas; i++){
-    const dataParcela = addMeses(dataBase, i);
-    const referencia = referenciaFatura(dataParcela, Number(cartao.fechamento_dia || 1));
+    const referencia = addMonthsRef(refBase, i);
 
     registros.push({
       user_id:user.id,
@@ -195,13 +182,12 @@ async function salvarCompra(){
       valor_parcela:valorParcela,
       data_compra:data,
       fatura_referencia:referencia,
-      status:'aberta'
+      status:'aberta',
+      purchase_group_id:grupoId
     });
   }
 
-  const { error } = await supabase
-    .from('card_transactions')
-    .insert(registros);
+  const { error } = await inserirParcelasCartao(supabase, registros);
 
   if(error){
     mostrarMensagem('Erro ao salvar: ' + error.message, 'danger');
@@ -269,8 +255,8 @@ async function carregarCompras(){
         ${data.map(compra => `
           <tr>
             <td>${compra.fatura_referencia}</td>
-            <td>${compra.descricao}</td>
-            <td>${compra.credit_cards?.nome || '-'}</td>
+            <td>${escapeHtml(compra.descricao)}</td>
+            <td>${escapeHtml(compra.credit_cards?.nome || '-')}</td>
             <td>
               ${compra.categories?.icon || ''}
               ${compra.categories?.nome || '-'}

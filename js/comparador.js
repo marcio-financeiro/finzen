@@ -8,6 +8,8 @@ import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { registrarAcao }  from './eventBus.js';
+import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -18,6 +20,8 @@ document.getElementById('btnLogout').addEventListener('click', async () => {
 });
 
 const el  = id => document.getElementById(id);
+attachMoneyMask(el('valorInicial'));
+setMoneyValue(el('valorInicial'), 10000);
 const fmt = v  => formatCurrency(v, 'BRL');
 const fmtM = v => {
   if(v >= 1e6) return `R$ ${(v/1e6).toFixed(2)}M`;
@@ -198,7 +202,7 @@ function calcularProduto(produto, valorInicial, aporteMensal, anos, cdi, ipca) {
 
 // ── Simular todos os produtos ─────────────────────────
 function simular() {
-  const valorInicial = Number(el('valorInicial').value || 0);
+  const valorInicial = readMoneyValue(el('valorInicial'));
   const aporteMensal = Number(el('aporteMensal').value || 0);
   const ipca         = Number(el('ipca').value || 4.5);
 
@@ -228,9 +232,9 @@ function simular() {
       <tr class="${melhor ? 'melhor' : ''}">
         <td>
           <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${produto.cor};margin-right:6px"></span>
-          <strong>${produto.nome}</strong>
+          <strong>${escapeHtml(produto.nome)}</strong>
           ${melhor ? '<span class="badge-melhor"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 21l5-3 5 3-1.5-8.5"/></svg>Melhor</span>' : ''}
-          <br><span style="font-size:11px;color:var(--muted)">${produto.descricao||''}</span>
+          <br><span style="font-size:11px;color:var(--muted)">${escapeHtml(produto.descricao||'')}</span>
         </td>
         <td style="font-weight:700">${resultado.taxaAnual.toFixed(2)}%</td>
         <td class="money">${fmtM(resultado.valorBruto)}</td>

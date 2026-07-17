@@ -2,8 +2,12 @@ import { confirmarExclusao } from './confirmModal.js';
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const el = id => document.getElementById(id);
+attachMoneyMask(el('contaSaldo'));
+attachMoneyMask(el('cartaoLimite'));
 const { data: sessionData } = await supabase.auth.getSession();
 if(!sessionData.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
 const user = sessionData.session.user;
@@ -42,7 +46,7 @@ async function carregarContas(){
     <div class="reg-item">
       <div class="reg-color-dot" style="background:${c.color||'#4f8ef7'}"></div>
       <div class="reg-item-info">
-        <div class="reg-item-name">${c.icon||'🏦'} ${c.nome}
+        <div class="reg-item-name">${escapeHtml(c.icon||'🏦')} ${escapeHtml(c.nome)}
           <span class="badge ${c.active?'success':'danger'} reg-item-badge">${c.active?'ativa':'inativa'}</span>
           ${c.account_kind==='broker'?'<span class="badge info reg-item-badge">corretora</span>':''}
         </div>
@@ -52,7 +56,7 @@ async function carregarContas(){
       </div>
       <div class="reg-item-actions">
         <button class="btn btn-secondary compact" data-edit-conta="${c.id}">Editar</button>
-        <button class="btn btn-danger compact" data-del-conta="${c.id}" data-nome="${c.nome}">Excluir</button>
+        <button class="btn btn-danger compact" data-del-conta="${c.id}" data-nome="${escapeHtml(c.nome)}">Excluir</button>
       </div>
     </div>
   `).join('');
@@ -70,7 +74,7 @@ function editarConta(c){
   el('contaTipo').value=c.tipo||'';
   el('contaKind').value=c.account_kind||'bank';
   el('contaMoeda').value=c.currency||'BRL';
-  el('contaSaldo').value=c.saldo_atual||0;
+  setMoneyValue(el('contaSaldo'), c.saldo_atual);
   el('contaCor').value=c.color||'#4f8ef7';
   el('contaStatus').value=String(c.active!==false);
   // Ícone
@@ -188,7 +192,7 @@ async function salvarConta(){
   const tipo=el('contaTipo').value;
   const kind=el('contaKind').value;
   const moeda=el('contaMoeda').value;
-  const saldo=Number(el('contaSaldo').value||0);
+  const saldo=readMoneyValue(el('contaSaldo'));
   const cor=el('contaCor').value;
   const ativo=el('contaStatus').value==='true';
   const icone=(el('contaIcone')?.value?.trim()) || document.getElementById('emojiPreviewConta')?.textContent?.trim() || '🏦';
@@ -246,7 +250,7 @@ async function carregarCartoes(){
     <div class="reg-item">
       <div class="reg-color-dot" style="background:${c.color||'#8b5cf6'}"></div>
       <div class="reg-item-info">
-        <div class="reg-item-name">${c.nome}
+        <div class="reg-item-name">${escapeHtml(c.nome)}
           <span class="badge ${c.ativo?'success':'danger'} reg-item-badge">${c.ativo?'ativo':'inativo'}</span>
         </div>
         <div class="reg-item-detail">
@@ -255,7 +259,7 @@ async function carregarCartoes(){
       </div>
       <div class="reg-item-actions">
         <button class="btn btn-secondary compact" data-edit-cartao="${c.id}">Editar</button>
-        <button class="btn btn-danger compact" data-del-cartao="${c.id}" data-nome="${c.nome}">Excluir</button>
+        <button class="btn btn-danger compact" data-del-cartao="${c.id}" data-nome="${escapeHtml(c.nome)}">Excluir</button>
       </div>
     </div>
   `).join('');
@@ -271,7 +275,7 @@ function editarCartao(c){
   el('cartaoNome').value=c.nome||'';
   el('cartaoBanco').value=c.banco||'';
   el('cartaoBandeira').value=c.bandeira||'';
-  el('cartaoLimite').value=c.limite||0;
+  setMoneyValue(el('cartaoLimite'), c.limite);
   el('cartaoFechamento').value=c.fechamento_dia||'';
   el('cartaoVencimento').value=c.vencimento_dia||'';
   el('cartaoCor').value=c.color||'#8b5cf6';
@@ -295,7 +299,7 @@ async function salvarCartao(){
   const nome=el('cartaoNome').value.trim();
   const banco=el('cartaoBanco').value.trim();
   const bandeira=el('cartaoBandeira').value;
-  const limite=Number(el('cartaoLimite').value||0);
+  const limite=readMoneyValue(el('cartaoLimite'));
   const fechamento=Number(el('cartaoFechamento').value)||null;
   const vencimento=Number(el('cartaoVencimento').value)||null;
   const cor=el('cartaoCor').value;
@@ -366,13 +370,13 @@ async function carregarCategorias(){
       html+=`
         <div class="reg-item">
           <div class="reg-item-info">
-            <div class="reg-item-name">${c.icon||'•'} ${c.nome}
+            <div class="reg-item-name">${escapeHtml(c.icon||'•')} ${escapeHtml(c.nome)}
               <span class="badge ${c.ativo?'success':'danger'} reg-item-badge">${c.ativo?'ativa':'inativa'}</span>
             </div>
           </div>
           <div class="reg-item-actions">
             <button class="btn btn-secondary compact" data-edit-cat="${c.id}">Editar</button>
-            <button class="btn btn-danger compact" data-del-cat="${c.id}" data-nome="${c.nome}">Excluir</button>
+            <button class="btn btn-danger compact" data-del-cat="${c.id}" data-nome="${escapeHtml(c.nome)}">Excluir</button>
           </div>
         </div>`;
     });
@@ -516,3 +520,11 @@ el('btnCancelarCategoria').addEventListener('click',limparFormCategoria);
 // INICIALIZAÇÃO
 // ═══════════════════════════════════════════
 await Promise.all([carregarContas(), carregarCartoes(), carregarCategorias()]);
+
+// Abrir aba via URL (?tab=contas|cartoes|categorias) — usado pelos redirects
+// das antigas paginas accounts.html/cards.html/categories.html
+const tabParam = new URLSearchParams(window.location.search).get('tab');
+if(tabParam){
+  document.querySelector(`.reg-tab[data-tab="${CSS.escape(tabParam)}"]`)?.click();
+  window.history.replaceState({}, '', window.location.pathname);
+}

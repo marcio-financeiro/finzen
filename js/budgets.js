@@ -3,6 +3,8 @@ import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { confirmarExclusao } from './confirmModal.js';
 import { notificarOrcamentoEstourado } from './telegram.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const { data: sd } = await supabase.auth.getSession();
 if(!sd.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
@@ -10,6 +12,7 @@ const user = sd.session.user;
 document.getElementById('btnLogout').addEventListener('click', async()=>{ await supabase.auth.signOut(); navigate('../login.html'); throw new Error('unauthenticated'); });
 
 const el = id => document.getElementById(id);
+attachMoneyMask(el('valorPlanejado'));
 const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 let categorias = [], orcamentos = [], gastos = {}, mesHerdado = null;
 
@@ -106,14 +109,14 @@ function renderLista(){
     return `
       <div style="padding:14px 0;border-bottom:1px solid var(--border)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-weight:700;font-size:13px">${icon} ${nome}</span>
+          <span style="font-weight:700;font-size:13px">${escapeHtml(icon)} ${escapeHtml(nome)}</span>
           <div style="display:flex;align-items:center;gap:12px">
             <span class="muted" style="font-size:12px">
               ${formatCurrency(gasto,'BRL')} / ${formatCurrency(planejado,'BRL')}
               <span class="${pct>=100?'negative':pct>=80?'':'positive'}" style="margin-left:4px;font-weight:700">${pct.toFixed(0)}%</span>
             </span>
             <span class="${restante>=0?'positive':'negative'}" style="font-family:var(--font-mono);font-size:13px">${restante>=0?'+':''}${formatCurrency(restante,'BRL')}</span>
-            ${mesHerdado ? '' : `<button class="btn btn-danger compact" onclick="excluir('${o.id}','${nome}')">✕</button>`}
+            ${mesHerdado ? '' : `<button class="btn btn-danger compact" onclick="excluir('${o.id}','${escapeHtml(nome).replace(/'/g,'&#39;')}')">✕</button>`}
           </div>
         </div>
         <div style="height:8px;background:var(--border);border-radius:99px;overflow:hidden">
@@ -129,7 +132,7 @@ function renderLista(){
 async function salvar(){
   const ref      = el('mesReferencia').value;
   const catId    = el('categoriaOrcamento').value;
-  const valor    = Number(el('valorPlanejado').value||0);
+  const valor    = readMoneyValue(el('valorPlanejado'));
 
   if(!ref || !catId || !valor){ msg('Preencha mês, categoria e valor.','warning'); return; }
 

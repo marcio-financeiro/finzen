@@ -1,6 +1,8 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -11,6 +13,7 @@ const tipoCategoria = document.getElementById('tipoCategoria');
 const iconeCategoria = document.getElementById('iconeCategoria');
 const corCategoria = document.getElementById('corCategoria');
 const orcamentoCategoria = document.getElementById('orcamentoCategoria');
+attachMoneyMask(orcamentoCategoria);
 const statusCategoria = document.getElementById('statusCategoria');
 const mensagemCategoria = document.getElementById('mensagemCategoria');
 const listaCategorias = document.getElementById('listaCategorias');
@@ -114,7 +117,7 @@ async function salvarCategoria(){
   const tipo = tipoCategoria.value;
   const icon = iconeCategoria.value.trim() || document.getElementById('emojiPreview')?.textContent?.trim() || '';
   const cor = corCategoria.value || '#4f8ef7';
-  const budget = orcamentoCategoria.value ? Number(orcamentoCategoria.value) : null;
+  const budget = orcamentoCategoria.value ? readMoneyValue(orcamentoCategoria) : null;
   const ativo = statusCategoria.value === 'true';
 
   if(!nome || !tipo){
@@ -214,8 +217,8 @@ async function carregarCategorias(){
         ${categorias.map(categoria => `
           <tr>
             <td><span class="color-dot" style="background:${categoria.cor || '#4f8ef7'}"></span></td>
-            <td>${categoria.icon || '-'}</td>
-            <td>${categoria.nome || ''}</td>
+            <td>${escapeHtml(categoria.icon || '-')}</td>
+            <td>${escapeHtml(categoria.nome || '')}</td>
             <td><span class="badge ${classeTipo(categoria.tipo)}">${categoria.tipo || '-'}</span></td>
             <td class="money">${categoria.budget_amount ? formatCurrency(categoria.budget_amount) : '-'}</td>
             <td><span class="badge ${categoria.ativo ? 'success' : 'danger'}">${categoria.ativo ? 'ativa' : 'inativa'}</span></td>

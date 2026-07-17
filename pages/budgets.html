@@ -3,8 +3,12 @@
 <head>
 <script>if(localStorage.getItem("finzen_sidebar_rail")==="collapsed")document.documentElement.classList.add("sidebar-rail");</script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Orçamento - Vyn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400..700&display=swap">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm">
 <link rel="stylesheet" href="../css/variables.css?v=1200">
 <link rel="stylesheet" href="../css/base.css?v=1200">
 <link rel="stylesheet" href="../css/layout.css?v=1200">
@@ -69,7 +73,7 @@
         </div>
         <div class="form-group">
           <label>Valor planejado (R$)</label>
-          <input type="number" id="valorPlanejado" placeholder="0,00" step="0.01" min="0" inputmode="decimal">
+          <input type="text" id="valorPlanejado" placeholder="0,00" inputmode="decimal">
         </div>
         <div class="form-group" style="display:flex;align-items:flex-end">
           <button id="btnSalvarOrcamento" class="btn btn-primary" style="width:100%">+ Adicionar</button>

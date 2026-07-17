@@ -4,6 +4,7 @@ import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { emailService } from './emailService.js';
 import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
@@ -105,6 +106,8 @@ async function carregarDashboard(){
     const ref    = refMesAtual();
     const nextD  = new Date(hoje().getFullYear(), hoje().getMonth()+1, 1);
     const refProximo = `${nextD.getFullYear()}-${String(nextD.getMonth()+1).padStart(2,'0')}`;
+    const nextD2 = new Date(hoje().getFullYear(), hoje().getMonth()+2, 1);
+    const refProx2 = `${nextD2.getFullYear()}-${String(nextD2.getMonth()+1).padStart(2,'0')}`;
 
     try { dolarAtual = await getUsdBrlRate(user.id); } catch(_) {}
 
@@ -123,10 +126,12 @@ async function carregarDashboard(){
       { data: ultimosCartao },
       { data: txMesAnterior },
       { data: parcelasMesAll },
+      { data: investimentos },
+      { data: orcAnteriores },
     ] = await Promise.all([
       supabase.from('accounts').select('id,nome,currency,saldo_atual,color').eq('user_id',user.id).eq('active',true),                                                                                                          // contas
       supabase.from('transactions').select('type,amount,status,date,category_id,accounts:account_id(currency),categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),                  // transacoesMes
-      supabase.from('card_transactions').select('valor_parcela,fatura_referencia,status,card_id,category_id').eq('user_id',user.id).in('status',['aberta','pendente']).in('fatura_referencia',[ref,refProximo]),               // parcelasMes (atual+próximo, abertas)
+      supabase.from('card_transactions').select('valor_parcela,fatura_referencia,status,card_id,category_id').eq('user_id',user.id).in('status',['aberta','pendente']).in('fatura_referencia',[ref,refProximo,refProx2]),      // parcelasMes (3 meses, abertas — faturas + projeção 90d)
       supabase.from('transactions').select('id,description,amount,date,type,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date', (() => { const d=new Date(hoje()); d.setDate(d.getDate()+7); return d.toISOString().split('T')[0]; })()).order('date',{ascending:true}).limit(5), // transacoesPendentes
       supabase.from('budgets').select('*,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',ref),                                                                                                   // orcamentos
       supabase.from('goals').select('*').eq('user_id',user.id).eq('ativo',true).order('data_alvo',{ascending:true}).limit(5),                                                                                                  // metas
@@ -134,10 +139,12 @@ async function carregarDashboard(){
       supabase.from('transactions').select('id,type,amount,description,date,status,created_at,accounts:account_id(nome,currency),categories:category_id(nome,icon)').eq('user_id',user.id).order('created_at',{ascending:false}).limit(8), // ultimosLanc
       supabase.from('categories').select('id,nome,icon,cor').eq('user_id',user.id),                                                                                                                                            // categorias
       supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date',ultimoDiaMes()),                                 // pendentesRestantesMes
-      supabase.from('credit_cards').select('id,nome,vencimento_dia').eq('user_id',user.id).eq('ativo',true),                                                                                                                   // cartoes
+      supabase.from('credit_cards').select('id,nome,vencimento_dia,limite').eq('user_id',user.id).eq('ativo',true),                                                                                                            // cartoes (limite p/ score)
       supabase.from('card_transactions').select('id,descricao,valor_total,data_compra,status,created_at,credit_cards:card_id(nome),categories:category_id(nome,icon)').eq('user_id',user.id).eq('parcela_atual',1).order('created_at',{ascending:false}).limit(8), // ultimosCartao
       supabase.from('transactions').select('type,amount,status,accounts:account_id(currency)').eq('user_id',user.id).eq('status','pago').gte('date',primeiroDiaMesAnterior()).lte('date',ultimoDiaMesAnterior()),                // txMesAnterior
       supabase.from('card_transactions').select('valor_parcela,category_id,categories:category_id(nome,icon,cor)').eq('user_id',user.id).eq('fatura_referencia',ref),                                                            // parcelasMesAll (todos status, para orçamento + pizza)
+      supabase.from('investments').select('tipo,quantidade,preco_medio,cotacao_atual').eq('user_id',user.id).eq('ativo',true),                                                                                                  // investimentos (score)
+      supabase.from('budgets').select('*,categories:category_id(nome,icon),mes_referencia').eq('user_id',user.id).lt('mes_referencia',ref).order('mes_referencia',{ascending:false}).limit(50),                                  // orcAnteriores (herança de orçamento)
     ]);
 
     // ── KPIs ─────────────────────────────────────────
@@ -168,6 +175,19 @@ async function carregarDashboard(){
     const recAnt  = (txMesAnterior||[]).filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
     const despAnt = (txMesAnterior||[]).filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0);
     const despesasRec = (recorrentes||[]).filter(r=>r.type==='despesa').reduce((s,r)=>s+Number(r.amount||0),0);
+    const receitasRec = (recorrentes||[]).filter(r=>r.type==='receita').reduce((s,r)=>s+Number(r.amount||0),0);
+
+    // ── Projeção 90 dias ──────────────────────────────
+    // Estimativa: saldo atual + 3× (receitas − despesas recorrentes)
+    // − todas as faturas de cartão abertas nos próximos 3 meses
+    const faturas90 = (parcelasMes||[]).reduce((s,p)=>s+Number(p.valor_parcela||0),0);
+    const projecao90 = totalSaldo + (receitasRec - despesasRec) * 3 - faturas90;
+    const elProj = el('kpiProjecao90');
+    if(elProj){
+      elProj.innerText = fmt(projecao90);
+      elProj.classList.remove('kpi-loading');
+      aplicarClasse(elProj, projecao90);
+    }
     const refEmerg = despesasRec > 0 ? despesasRec : (despesas > 0 ? despesas : 1);
 
     atualizarRing('ringSaldo','ringSaldoPct','deltaSaldo',
@@ -195,15 +215,9 @@ async function carregarDashboard(){
     // ── Saúde do orçamento (herda do mês anterior se este mês ainda não tem nada configurado) ──
     let orcamentosEfetivos = orcamentos||[];
     let orcamentoMesHerdado = null;
-    if(!orcamentosEfetivos.length){
-      const { data: orcAnteriores } = await supabase.from('budgets')
-        .select('*,categories:category_id(nome,icon),mes_referencia')
-        .eq('user_id',user.id).lt('mes_referencia',ref)
-        .order('mes_referencia',{ascending:false}).limit(50);
-      if(orcAnteriores?.length){
-        orcamentoMesHerdado = orcAnteriores[0].mes_referencia;
-        orcamentosEfetivos  = orcAnteriores.filter(o=>o.mes_referencia===orcamentoMesHerdado);
-      }
+    if(!orcamentosEfetivos.length && orcAnteriores?.length){
+      orcamentoMesHerdado = orcAnteriores[0].mes_referencia;
+      orcamentosEfetivos  = orcAnteriores.filter(o=>o.mes_referencia===orcamentoMesHerdado);
     }
     renderOrcamento(orcamentosEfetivos, pagas.filter(t=>t.type==='despesa'), parcelasMesAll||[], orcamentoMesHerdado);
 
@@ -220,16 +234,8 @@ async function carregarDashboard(){
     renderUltimos(ultimosLanc||[], ultimosCartao||[]);
 
     // ── Score de Saúde Financeira ────────────────────
-    // Buscar investimentos para o score (query separada para não travar o dashboard)
-    const { data: investimentos } = await supabase
-      .from('investments')
-      .select('tipo,quantidade,preco_medio,cotacao_atual')
-      .eq('user_id', user.id).eq('ativo', true);
-
-    const { data: cartaoLimites } = await supabase
-      .from('credit_cards')
-      .select('limite,nome')
-      .eq('user_id', user.id).eq('ativo', true);
+    // investimentos e limites de cartão já vieram no Promise.all inicial
+    const cartaoLimites = cartoes || [];
 
     renderScore({
       totalSaldo,
@@ -304,7 +310,7 @@ function renderContas(contas) {
       <div style="display:flex;align-items:center;justify-content:space-between;
         padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer"
         onclick="location.href='./account-statement.html?conta=${c.id}'">
-        <span style="display:flex;align-items:center;font-size:13px;font-weight:600">${icon}${c.nome}</span>
+        <span style="display:flex;align-items:center;font-size:13px;font-weight:600">${icon}${escapeHtml(c.nome)}</span>
         <span style="font-size:13px;font-weight:800;color:${cor}">${val}</span>
       </div>`;
   }).join('');
@@ -385,7 +391,7 @@ function renderFaturas(cartoes, parcelasMes){
       <div style="text-align:center;padding:24px 16px">
         <div style="font-size:36px;margin-bottom:8px">💳</div>
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhum cartão cadastrado.</p>
-        <a href="./cards.html" class="btn btn-secondary compact" style="font-size:12px">Adicionar cartão</a>
+        <a href="./registrations.html?tab=cartoes" class="btn btn-secondary compact" style="font-size:12px">Adicionar cartão</a>
       </div>`;
     return;
   }
@@ -398,7 +404,7 @@ function renderFaturas(cartoes, parcelasMes){
         <svg><use href="#db-credit-card"/></svg>
       </div>
       <div class="invoice-meta">
-        <b>${f.nome}</b>
+        <b>${escapeHtml(f.nome)}</b>
         <span>Vence dia ${f.diaVenc} · ${formatData(f.dataVenc)}</span>
       </div>
       <div class="invoice-amount">
@@ -448,7 +454,7 @@ function renderPizza(despesasMes, parcelasCartaoMes){
     const cor = item.cor || corParaCategoria(item.nome);
     const conteudo = `
       <div class="categoria-row">
-        <span class="categoria-label">${item.icon} ${item.nome}</span>
+        <span class="categoria-label">${escapeHtml(item.icon)} ${escapeHtml(item.nome)}</span>
         <span class="categoria-valor">${fmt(item.total)} <span class="categoria-pct">(${pct.toFixed(1)}%)</span></span>
       </div>
       <div class="categoria-bar-wrap">
@@ -501,7 +507,7 @@ function renderOrcamento(orcamentos, despesasMes, parcelasMes, mesHerdado){
 
     html += `<div class="orcamento-item">
       <div class="orcamento-row">
-        <span class="orcamento-label">${icon} ${nome}</span>
+        <span class="orcamento-label">${escapeHtml(icon)} ${escapeHtml(nome)}</span>
         <span class="muted" style="font-size:11px">${fmt(gasto)} / ${fmt(planejado)} (${pctDisplay}%)</span>
       </div>
       <div class="orcamento-bar-wrap">
@@ -539,7 +545,7 @@ function renderMetas(metas){
 
     html += `<div class="meta-item">
       <div class="meta-row">
-        <span class="meta-label">${meta.nome} ${prazo}</span>
+        <span class="meta-label">${escapeHtml(meta.nome)} ${prazo}</span>
         <span class="muted" style="font-size:11px">${pct.toFixed(0)}% · falta ${fmt(falta)}</span>
       </div>
       <div class="meta-bar-wrap">
@@ -844,9 +850,9 @@ function renderUltimos(lancamentos, cartaoLanc){
           <tr>
             <td style="white-space:nowrap">${item.date?.split('-').reverse().join('/')}</td>
             <td><span class="badge ${item.type==='receita'?'success':'danger'}">${item.type}</span></td>
-            <td>${item.description||'-'}</td>
-            <td>${item.accounts?.nome||'-'}</td>
-            <td>${item.categories?.icon||''} ${item.categories?.nome||'-'}</td>
+            <td>${escapeHtml(item.description||'-')}</td>
+            <td>${escapeHtml(item.accounts?.nome||'-')}</td>
+            <td>${escapeHtml(item.categories?.icon||'')} ${escapeHtml(item.categories?.nome||'-')}</td>
             <td class="money ${item.type==='receita'?'positive':'negative'}">
               ${item.type==='receita'?'+':'-'}${fmt(item.amount, item.accounts?.currency||'BRL')}
             </td>

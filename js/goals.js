@@ -5,6 +5,8 @@ import { confirmarExclusao} from './confirmModal.js';
 import { registrarAcao }    from './eventBus.js';
 import { notificarMetaAtingida } from './telegram.js';
 import { openModal }        from './modal.js';
+import { escapeHtml }       from './utils/escapeHtml.js';
+import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 
 const { data: sd } = await supabase.auth.getSession();
 if(!sd.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
@@ -13,6 +15,8 @@ document.getElementById('btnLogout').addEventListener('click', async()=>{ await 
 
 const el  = id => document.getElementById(id);
 const fmt = v  => formatCurrency(v, 'BRL');
+attachMoneyMask(el('valorAlvo'));
+attachMoneyMask(el('valorAtual'));
 
 let editandoId   = null;
 let saldoContas  = 0;   // saldo disponível atual
@@ -138,7 +142,7 @@ registrarAcao('abrirModalAporte', (el) => {
     narrow: true,
     bodyHtml: `
       <div class="fz-modal-header">
-        <div><h2 style="font-size:15px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><path d="M9 15.5c.5 1 1.7 1.5 3 1.5 2 0 3.2-1 3.2-2.3 0-3-6-1.4-6-4.2 0-1.3 1.2-2.3 3-2.3 1.3 0 2.4.5 3 1.4"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>Aportar para meta</h2><p>${nome}</p></div>
+        <div><h2 style="font-size:15px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="9"/><path d="M9 15.5c.5 1 1.7 1.5 3 1.5 2 0 3.2-1 3.2-2.3 0-3-6-1.4-6-4.2 0-1.3 1.2-2.3 3-2.3 1.3 0 2.4.5 3 1.4"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>Aportar para meta</h2><p>${escapeHtml(nome)}</p></div>
       </div>
       <div class="fz-modal-body">
         <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px">
@@ -158,28 +162,30 @@ registrarAcao('abrirModalAporte', (el) => {
         </div>
 
         <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">Valor a aportar (R$)</label>
-        <input type="number" id="inputAporte" placeholder="0,00" step="0.01" min="0"
-          value="${sugestao ? sugestao.toFixed(2) : ''}" inputmode="decimal">
+        <input type="text" id="inputAporte" placeholder="0,00" inputmode="decimal">
       </div>
       <div class="fz-modal-actions" style="flex-direction:row">
         <button type="button" class="btn btn-secondary" id="cancelarAporte" style="flex:1">Cancelar</button>
-        <button class="btn btn-primary" data-action="confirmarAporte" data-meta-id="${id}" data-meta-nome="${nome.replace(/"/g,'&quot;')}" style="flex:2">
+        <button class="btn btn-primary" data-action="confirmarAporte" data-meta-id="${id}" data-meta-nome="${escapeHtml(nome)}" style="flex:2">
           ✓ Confirmar aporte
         </button>
       </div>
     `,
   });
   overlay.id = 'modalAporte';
+  const inputAporteEl = overlay.querySelector('#inputAporte');
+  attachMoneyMask(inputAporteEl);
+  if(sugestao) setMoneyValue(inputAporteEl, sugestao);
   overlay.querySelector('#cancelarAporte').addEventListener('click', () => overlay.remove());
-  overlay.querySelector('#inputAporte').focus();
-  overlay.querySelector('#inputAporte').select();
+  inputAporteEl.focus();
+  inputAporteEl.select();
 });
 
 registrarAcao('confirmarAporte', async (el) => {
   const id   = el.dataset.metaId;
   const nome = el.dataset.metaNome;
-  const valor = parseFloat((document.getElementById('inputAporte')?.value||'0').replace(',','.'));
-  if(isNaN(valor) || valor <= 0){ alert('Informe um valor válido.'); return; }
+  const valor = readMoneyValue(document.getElementById('inputAporte'));
+  if(valor <= 0){ alert('Informe um valor válido.'); return; }
 
   const { data: meta } = await supabase.from('goals').select('valor_atual,valor_alvo').eq('id',id).single();
   if(!meta) return;
@@ -200,8 +206,8 @@ registrarAcao('confirmarAporte', async (el) => {
 async function salvar(){
   const nome      = el('nomeMeta').value.trim();
   const descricao = el('descricaoMeta').value.trim();
-  const alvo      = Number(el('valorAlvo').value||0);
-  const atual     = Number(el('valorAtual').value||0);
+  const alvo      = readMoneyValue(el('valorAlvo'));
+  const atual     = readMoneyValue(el('valorAtual'));
   const dataAlvo  = el('dataAlvo').value||null;
   const categoria = el('categoriaMeta').value||'geral';
   const cor       = el('corMeta').value||'#22c55e';
@@ -239,8 +245,8 @@ registrarAcao('editarMeta', async (el) => {
   editandoId = id;
   el('nomeMeta').value      = data.nome||'';
   el('descricaoMeta').value = data.descricao||'';
-  el('valorAlvo').value     = data.valor_alvo||'';
-  el('valorAtual').value    = data.valor_atual||'';
+  setMoneyValue(el('valorAlvo'), data.valor_alvo);
+  setMoneyValue(el('valorAtual'), data.valor_atual);
   el('dataAlvo').value      = data.data_alvo||'';
   el('categoriaMeta').value = data.categoria||'geral';
   el('corMeta').value       = data.cor||'#22c55e';
@@ -253,7 +259,7 @@ registrarAcao('editarMeta', async (el) => {
 registrarAcao('excluirMeta', async (el) => {
   const id   = el.dataset.metaId;
   const nome = el.dataset.metaNome;
-  if(!await confirmarExclusao(`Excluir a meta <strong>${nome}</strong>?`)) return;
+  if(!await confirmarExclusao(`Excluir a meta <strong>${escapeHtml(nome)}</strong>?`)) return;
   await supabase.from('goals').update({ativo:false}).eq('id',id).eq('user_id',user.id);
   await carregar();
 });
@@ -281,7 +287,7 @@ function renderKpis(metas){
 
 function renderMetas(metas){
   if(!metas.length){
-    el('listaMetas').innerHTML='<p class="muted" style="padding:16px">Nenhuma meta cadastrada.</p>';
+    el('listaMetas').innerHTML='<p class="muted" style="padding:16px">Nenhuma meta cadastrada. <a href="#" onclick="document.getElementById(\'nomeMeta\').focus();window.scrollTo({top:0,behavior:\'smooth\'});return false" style="color:var(--accent)">Criar a primeira meta</a></p>';
     return;
   }
 
@@ -344,17 +350,17 @@ function renderMetas(metas){
           <div style="flex:1">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
               <span style="width:12px;height:12px;border-radius:50%;background:${m.cor||'#22c55e'};display:inline-block;flex-shrink:0"></span>
-              <strong style="font-size:14px">${m.nome}</strong>
+              <strong style="font-size:14px">${escapeHtml(m.nome)}</strong>
               <span class="badge ${status.classe}" style="font-size:10px">${status.texto}</span>
             </div>
-            ${m.descricao?`<p class="muted" style="font-size:12px;margin:2px 0 0 20px">${m.descricao}</p>`:''}
+            ${m.descricao?`<p class="muted" style="font-size:12px;margin:2px 0 0 20px">${escapeHtml(m.descricao)}</p>`:''}
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0">
             ${falta>0?`<button class="btn btn-primary compact"
-              data-action="abrirModalAporte" data-meta-id="${m.id}" data-meta-nome="${m.nome.replace(/"/g,'&quot;')}" data-falta="${falta}" data-sugestao="${analise?.sugestaoAporte||0}">
+              data-action="abrirModalAporte" data-meta-id="${m.id}" data-meta-nome="${escapeHtml(m.nome)}" data-falta="${falta}" data-sugestao="${analise?.sugestaoAporte||0}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="9"/><path d="M9 15.5c.5 1 1.7 1.5 3 1.5 2 0 3.2-1 3.2-2.3 0-3-6-1.4-6-4.2 0-1.3 1.2-2.3 3-2.3 1.3 0 2.4.5 3 1.4"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>Aportar</button>`:''}
             <button class="btn btn-secondary compact" data-action="editarMeta" data-meta-id="${m.id}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
-            <button class="btn btn-danger compact" data-action="excluirMeta" data-meta-id="${m.id}" data-meta-nome="${m.nome.replace(/"/g,'&quot;')}">✕</button>
+            <button class="btn btn-danger compact" data-action="excluirMeta" data-meta-id="${m.id}" data-meta-nome="${escapeHtml(m.nome)}">✕</button>
           </div>
         </div>
 

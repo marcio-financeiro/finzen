@@ -98,7 +98,6 @@ const NAV_GROUPS = [
     items: [
       { title: 'Movimentações',  icon: 'ic-arrows-updown', href: './movements.html' },
       { title: 'Extrato',        icon: 'ic-receipt', href: './account-statement.html' },
-      { title: 'Cartões',        icon: 'ic-card', href: './cards.html' },
       { title: 'Faturas',        icon: 'ic-file-text', href: './card-bills.html' },
       { title: 'Orçamento',      icon: 'ic-target', href: './budgets.html' },
     ]
@@ -167,7 +166,9 @@ function isActive(href) {
   const aliases = {
     'accounts.html':        'registrations.html',
     'categories.html':      'registrations.html',
-    'card-purchases.html':  'cards.html',
+    'card-purchases.html':  'movements.html',
+    'cards.html':           'registrations.html',
+    'transfers.html':       'movements.html',
     'asset-transactions.html': 'investments.html',
     'dividends.html':       'investments.html',
     'allocation.html':      'investments.html',
@@ -374,9 +375,13 @@ function groupHtml(group, forDrawer = false) {
   const active   = isGroupActive(group);
   const storeKey = `nav_collapsed_v3_${group.label}`;
 
-  // Grupos só abrem se o usuário os abriu manualmente; padrão é fechado
+  // Grupos principais abrem por padrão (menos 1 clique em quase toda navegação);
+  // o usuário ainda pode fechá-los e a escolha fica salva.
+  const ABERTOS_PADRAO = ['Financeiro', 'Investimentos'];
   const savedState = localStorage.getItem(storeKey);
-  const collapsed  = savedState !== 'open';
+  const collapsed  = savedState !== null
+    ? savedState !== 'open'
+    : !ABERTOS_PADRAO.includes(group.label);
 
   const itemsHtml = group.items.map(item => `
     <a class="${isActive(item.href) ? 'active' : ''}" href="${item.href}">

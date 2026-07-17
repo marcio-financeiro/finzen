@@ -1,6 +1,8 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -11,6 +13,7 @@ const tipoMovimento = document.getElementById('tipoMovimento');
 const quantidadeMovimento = document.getElementById('quantidadeMovimento');
 const precoMovimento = document.getElementById('precoMovimento');
 const valorTotalMovimento = document.getElementById('valorTotalMovimento');
+attachMoneyMask(valorTotalMovimento);
 const exchangeRateMovimento = document.getElementById('exchangeRateMovimento');
 const dataMovimento = document.getElementById('dataMovimento');
 const observacaoMovimento = document.getElementById('observacaoMovimento');
@@ -45,7 +48,7 @@ function calcularValorTotal(){
   const preco = Number(precoMovimento.value || 0);
 
   if(quantidade && preco){
-    valorTotalMovimento.value = (quantidade * preco).toFixed(2);
+    setMoneyValue(valorTotalMovimento, quantidade * preco);
   }
 }
 
@@ -108,7 +111,7 @@ async function carregarAtivos(){
     <option value="">Selecione o ativo</option>
     ${ativos.map(ativo => `
       <option value="${ativo.id}">
-        ${ativo.ticker} ${ativo.nome ? '- ' + ativo.nome : ''}
+        ${escapeHtml(ativo.ticker)} ${ativo.nome ? '- ' + escapeHtml(ativo.nome) : ''}
       </option>
     `).join('')}
   `;
@@ -121,7 +124,7 @@ async function salvarMovimento(){
   const tipo = tipoMovimento.value;
   const quantidade = quantidadeMovimento.value ? Number(quantidadeMovimento.value) : null;
   const preco = precoMovimento.value ? Number(precoMovimento.value) : null;
-  const valorTotal = Number(valorTotalMovimento.value || 0);
+  const valorTotal = readMoneyValue(valorTotalMovimento);
   const exchangeRate = exchangeRateMovimento?.value ? Number(exchangeRateMovimento.value) : null;
   const dataMov = dataMovimento.value;
   const observacao = observacaoMovimento.value.trim();
@@ -236,12 +239,12 @@ async function carregarMovimentos(){
           return `
             <tr>
               <td>${formatarData(item.data_movimento)}</td>
-              <td><strong>${item.investments?.ticker || '-'}</strong><br><span class="muted">${item.investments?.nome || ''}</span></td>
+              <td><strong>${escapeHtml(item.investments?.ticker || '-')}</strong><br><span class="muted">${escapeHtml(item.investments?.nome || '')}</span></td>
               <td><span class="badge ${classeTipo(item.tipo)}">${item.tipo}</span></td>
               <td class="money">${item.quantidade ? Number(item.quantidade).toLocaleString('pt-BR') : '-'}</td>
               <td class="money">${item.preco ? formatCurrency(item.preco, moeda) : '-'}</td>
               <td class="money">${formatCurrency(item.valor_total || 0, moeda)}</td>
-              <td>${item.observacao || '-'}</td>
+              <td>${escapeHtml(item.observacao || '-')}</td>
             </tr>
           `;
         }).join('')}

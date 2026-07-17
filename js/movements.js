@@ -5,6 +5,11 @@ import { notificarTransacao } from './telegram.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { showChoice, showDetail } from './modal.js';
 import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
+import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
+import { invoiceRef, addMonthsRef, refName, novoGrupoCompra, inserirParcelasCartao } from './services/cardService.js';
+import { toast, comTrava } from './toast.js';
+import { ajustarSaldo, deltaTransacao } from './services/balanceService.js';
+import { deleteAccountTransfer } from './services/transferService.js';
 
 let dolarAtual = 5.15;
 
@@ -25,6 +30,7 @@ const movementCard     = el('movementCard');
 const movementCategory = el('movementCategory');
 const movementDescription = el('movementDescription');
 const movementAmount   = el('movementAmount');
+attachMoneyMask(movementAmount);
 const movementInstallments = el('movementInstallments');
 const movementValueType = el('movementValueType');
 const movementValuePreview = el('movementValuePreview');
@@ -151,30 +157,6 @@ function nextDate(dateISO, frequency){
   return addMonths(dateISO, 1);
 }
 
-function addMonthsRef(ref, months){
-  const [y,m] = ref.split('-').map(Number);
-  const date = new Date(y, m-1+months, 1);
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
-}
-
-function invoiceRef(dateISO, closingDay, dueDay){
-  const [y,m,d] = dateISO.split('-').map(Number);
-  let date = new Date(y, m-1, 1);
-  if(d > Number(closingDay || 1)){
-    date = new Date(y, m, 1);
-  }
-  if(dueDay && Number(dueDay) < Number(closingDay)){
-    date = new Date(date.getFullYear(), date.getMonth() + 1, 1);
-  }
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
-}
-
-function refName(ref){
-  if(!ref) return '-';
-  const [y,m] = ref.split('-').map(Number);
-  return new Date(y, m-1, 1).toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
-}
-
 function uuid(){
   return crypto?.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random().toString(16).slice(2);
 }
@@ -205,6 +187,8 @@ function nextOccurrencesFromModel(model, limit=3){
 function showMessage(text, type='info'){
   movementMessage.className = `message ${type}`;
   movementMessage.innerText = text;
+  // Toast garante visibilidade mesmo com a .message fora da viewport
+  if(type === 'success' || type === 'danger') toast(text, type);
 }
 
 function showChoiceModal({ title, message, options }){
@@ -292,7 +276,7 @@ function updateFormVisibility(){
 }
 
 function calculateCardValues(){
-  const value        = Number(movementAmount.value || 0);
+  const value        = readMoneyValue(movementAmount);
   const installments = Number(movementInstallments.value || 1);
   const type         = movementValueType.value || 'total';
 
@@ -400,26 +384,13 @@ async function loadData(){
 // SALDO DE CONTA
 // ─────────────────────────────────────────────
 async function applyAccountBalance(accountId, type, amount, mode='apply'){
-  const { data, error } = await supabase
-    .from('accounts').select('saldo_atual')
-    .eq('id',accountId).eq('user_id',user.id).single();
-
-  if(error){ showMessage('Erro ao ler saldo: '+error.message,'danger'); return false; }
-
-  const current = Number(data.saldo_atual || 0);
-  let next = current;
-
-  if(mode === 'apply'){
-    next = type === 'receita' ? current + amount : current - amount;
-  }else{
-    next = type === 'receita' ? current - amount : current + amount;
+  try{
+    await ajustarSaldo(accountId, deltaTransacao(type, amount, mode));
+    return true;
+  }catch(e){
+    showMessage('Erro ao atualizar saldo: '+e.message,'danger');
+    return false;
   }
-
-  const upd = await supabase.from('accounts')
-    .update({ saldo_atual:next }).eq('id',accountId).eq('user_id',user.id);
-
-  if(upd.error){ showMessage('Erro ao atualizar saldo: '+upd.error.message,'danger'); return false; }
-  return true;
 }
 
 // ─────────────────────────────────────────────
@@ -431,7 +402,7 @@ async function saveMovement(){
   const type        = movementType.value;
   const method      = paymentMethod.value;
   const description = movementDescription.value.trim();
-  const amount      = Number(movementAmount.value || 0);
+  const amount      = readMoneyValue(movementAmount);
   const date        = movementDate.value;
   const notes       = movementNotes.value.trim();
 
@@ -497,7 +468,7 @@ async function saveTransactionEdit(){
   const accountId   = movementAccount.value;
   const categoryId  = movementCategory.value || null;
   const description = movementDescription.value.trim();
-  const amount      = Number(movementAmount.value || 0);
+  const amount      = readMoneyValue(movementAmount);
   const date        = movementDate.value;
   const status      = movementStatus.value;
   const notes       = movementNotes.value.trim();
@@ -520,25 +491,37 @@ async function saveTransactionEdit(){
   const { data: targets, error: targetError } = await targetQuery;
   if(targetError){ showMessage('Erro ao buscar lançamentos para edição: '+targetError.message,'danger'); return; }
 
+  // Consolida os ajustes de saldo em 1 delta por conta e atualiza as linhas em
+  // lote — antes eram até 3 round-trips POR ocorrência editada (N+1).
+  const deltas = {};
   for(const old of targets || []){
     if(old.status === 'pago'){
-      const reverted = await applyAccountBalance(old.account_id, old.type, Number(old.amount||0),'revert');
-      if(!reverted) return;
+      const v = Number(old.amount||0);
+      deltas[old.account_id] = (deltas[old.account_id]||0) + (old.type === 'receita' ? -v : v);
     }
     if(status === 'pago'){
-      const applied = await applyAccountBalance(accountId, type, amount,'apply');
-      if(!applied) return;
+      deltas[accountId] = (deltas[accountId]||0) + (type === 'receita' ? amount : -amount);
     }
-    const { error } = await supabase.from('transactions').update({
-      account_id:accountId, category_id:categoryId, type, amount, description,
-      date: scope === 'only' ? date : old.date,
-      status, notes,
-      is_recurring:isRecurring,
-      recurrence_frequency:isRecurring ? recurrence : null,
-      recurrence_until:isRecurring ? until : null,
-    }).eq('id',old.id).eq('user_id',user.id);
-    if(error){ showMessage('Erro ao editar lançamento: '+error.message,'danger'); return; }
   }
+  for(const [accId, delta] of Object.entries(deltas)){
+    if(!delta) continue;
+    // apply+receita soma o delta ao saldo (delta pode ser negativo)
+    const ok = await applyAccountBalance(accId, 'receita', delta, 'apply');
+    if(!ok) return;
+  }
+
+  const payload = {
+    account_id:accountId, category_id:categoryId, type, amount, description,
+    status, notes,
+    is_recurring:isRecurring,
+    recurrence_frequency:isRecurring ? recurrence : null,
+    recurrence_until:isRecurring ? until : null,
+  };
+  const ids = (targets || []).map(t => t.id);
+  const { error } = scope === 'only'
+    ? await supabase.from('transactions').update({ ...payload, date }).eq('id', original.id).eq('user_id', user.id)
+    : await supabase.from('transactions').update(payload).in('id', ids).eq('user_id', user.id);
+  if(error){ showMessage('Erro ao editar lançamento: '+error.message,'danger'); return; }
 
   if(isRecurring) await gerarOcorrenciasRecorrentes();
 
@@ -568,7 +551,7 @@ async function saveTransfer(description, amount, date){
 
 function updateExchangePreview(){
   if(movementType.value !== 'cambio') return;
-  const amount = Number(movementAmount.value || 0);
+  const amount = readMoneyValue(movementAmount);
   const rate   = Number(exchangeRateInput.value || 0);
   if(!amount || !rate){ exchangePreview.value = 'Preencha valor e taxa'; return; }
 
@@ -625,6 +608,7 @@ async function saveCardPurchase(description, date){
 
   if(!cardId || !invoice){ showMessage('Selecione cartão e fatura inicial.','warning'); return; }
 
+  const grupoId = novoGrupoCompra();
   const registros = [];
   for(let i=0; i<calc.installments; i++){
     registros.push({
@@ -633,10 +617,11 @@ async function saveCardPurchase(description, date){
       parcelas:calc.installments, parcela_atual:i+1,
       valor_parcela:calc.installment, data_compra:date,
       fatura_referencia:addMonthsRef(invoice, i), status:'aberta',
+      purchase_group_id:grupoId,
     });
   }
 
-  const { error } = await supabase.from('card_transactions').insert(registros);
+  const { error } = await inserirParcelasCartao(supabase, registros);
   if(error){ showMessage('Erro ao salvar compra no cartão: '+error.message,'danger'); return; }
 
   showMessage(`Compra salva: ${calc.installments}x de ${formatCurrency(calc.installment,'BRL')}.`,'success');
@@ -659,7 +644,7 @@ async function editTransaction(id){
   movementAccount.value = data.account_id || '';
   movementCategory.value = data.category_id || '';
   movementDescription.value = data.description || '';
-  movementAmount.value = data.amount || '';
+  setMoneyValue(movementAmount, data.amount);
   movementDate.value = data.date || todayISO();
   movementStatus.value = data.status || 'pendente';
   movementRecurrence.value = data.is_recurring ? (data.recurrence_frequency || 'mensal') : 'nao';
@@ -1094,7 +1079,7 @@ async function loadMovements(){
   }
 
   if(!rows.length){
-    movementList.innerHTML = '<p class="muted" style="padding:18px">Nenhuma movimentação encontrada.</p>';
+    movementList.innerHTML = '<p class="muted" style="padding:18px">Nenhuma movimentação encontrada. <a href="#" onclick="document.getElementById(\'movementType\').focus();window.scrollTo({top:0,behavior:\'smooth\'});return false" style="color:var(--accent)">Lançar a primeira</a></p>';
     return;
   }
 
@@ -1141,6 +1126,12 @@ async function loadMovements(){
                     style="padding:6px 8px" title="Excluir">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>
                   </button>
+                ` : r.source==='transfer' ? `
+                  <button type="button" class="btn btn-danger compact"
+                    onclick="window.deleteTransferFinZen('${r.id}')"
+                    style="padding:6px 8px" title="Excluir transferência">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>
+                  </button>
                 ` : '<span class="muted">-</span>'}
               </td>
             </tr>
@@ -1178,6 +1169,11 @@ async function loadMovements(){
                 onclick="window.editMovementFinZen('${r.id}')">Editar</button>
               <button type="button" class="btn btn-danger compact"
                 onclick="window.deleteMovementFinZen('${r.id}')">Excluir</button>
+            </div>
+          ` : r.source==='transfer' ? `
+            <div class="ff-mobile-card-actions">
+              <button type="button" class="btn btn-danger compact"
+                onclick="window.deleteTransferFinZen('${r.id}')">Excluir</button>
             </div>
           ` : ''}
         </article>
@@ -1236,6 +1232,21 @@ async function refreshAll(){
 // ─────────────────────────────────────────────
 window.editMovementFinZen   = editTransaction;
 window.deleteMovementFinZen = deleteTransaction;
+window.deleteTransferFinZen = async function(id){
+  const ok = await showChoiceModal({
+    title:'Excluir transferência',
+    message:'A exclusão devolve os valores às contas de origem e destino.',
+    options:[{ value:'only', label:'Excluir transferência', danger:true }],
+  });
+  if(!ok) return;
+  try{
+    await deleteAccountTransfer(id);
+    showMessage('Transferência excluída.','success');
+    await refreshAll();
+  }catch(e){
+    showMessage('Erro ao excluir transferência: '+(e.message||e),'danger');
+  }
+};
 
 // ── Dar baixa em lançamento pendente com 1 clique ────
 window.pagarMovimentoFinZen = async function(id) {
@@ -1295,7 +1306,7 @@ movementAmount.addEventListener('input', updatePreview);
 movementValueType.addEventListener('change', updatePreview);
 movementRecurrence.addEventListener('change', updateFormVisibility);
 movementRecurrenceNoEnd.addEventListener('change', updateRecurrenceUntilState);
-btnSaveMovement.addEventListener('click', saveMovement);
+btnSaveMovement.addEventListener('click', comTrava(btnSaveMovement, saveMovement));
 btnCancelEdit.addEventListener('click', cancelEdit);
 
 filterMonth.addEventListener('change', loadMovements);

@@ -1,6 +1,8 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -9,6 +11,7 @@ const btnSalvarCartao = document.getElementById('btnSalvarCartao');
 const nomeCartao = document.getElementById('nomeCartao');
 const bancoCartao = document.getElementById('bancoCartao');
 const limiteCartao = document.getElementById('limiteCartao');
+attachMoneyMask(limiteCartao);
 const fechamentoCartao = document.getElementById('fechamentoCartao');
 const vencimentoCartao = document.getElementById('vencimentoCartao');
 const bandeiraCartao = document.getElementById('bandeiraCartao');
@@ -43,7 +46,7 @@ async function salvarCartao(){
 
   const nome = nomeCartao.value.trim();
   const banco = bancoCartao.value.trim();
-  const limite = Number(limiteCartao.value || 0);
+  const limite = readMoneyValue(limiteCartao);
   const fechamento = Number(fechamentoCartao.value || 0);
   const vencimento = Number(vencimentoCartao.value || 0);
   const bandeira = bandeiraCartao.value;
@@ -120,9 +123,9 @@ async function carregarCartoes(){
         ${cartoes.map(cartao => `
           <tr>
             <td><span class="color-dot" style="background:${cartao.cor || '#7c5cfc'}"></span></td>
-            <td>${cartao.nome || ''}</td>
-            <td>${cartao.banco || '-'}</td>
-            <td>${cartao.bandeira || '-'}</td>
+            <td>${escapeHtml(cartao.nome || '')}</td>
+            <td>${escapeHtml(cartao.banco || '-')}</td>
+            <td>${escapeHtml(cartao.bandeira || '-')}</td>
             <td class="money">${formatCurrency(cartao.limite || 0, 'BRL')}</td>
             <td>Dia ${cartao.fechamento_dia}</td>
             <td>Dia ${cartao.vencimento_dia}</td>

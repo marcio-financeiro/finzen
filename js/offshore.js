@@ -7,6 +7,8 @@ import { supabase }   from './supabaseClient.js';
 import { navigate }   from './router.js';
 import { emailService } from './emailService.js';
 import { registrarAcao } from './eventBus.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -15,6 +17,7 @@ const user = sd.session.user;
 document.getElementById('btnVoltar').addEventListener('click', () => navigate('./dashboard.html'));
 
 const el  = id => document.getElementById(id);
+attachMoneyMask(el('heValorHora'));
 const fmt = v  => Number(v).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
 
 let editandoCicloId = null;
@@ -184,11 +187,11 @@ function renderCerts() {
     return `<div class="cert-card" data-id="${c.id}">
       <div class="cert-status-bar" style="background:${cor};"></div>
       <div class="cert-info">
-        <div class="cert-nome">${c.nome}</div>
+        <div class="cert-nome">${escapeHtml(c.nome)}</div>
         <div class="cert-sub">
-          ${c.entidade ? c.entidade + ' · ' : ''}
+          ${c.entidade ? escapeHtml(c.entidade) + ' · ' : ''}
           Emissão: ${fmtData(c.data_emissao)} · Vence: ${fmtData(c.data_vencimento)}
-          ${c.numero ? ' · Nº ' + c.numero : ''}
+          ${c.numero ? ' · Nº ' + escapeHtml(c.numero) : ''}
         </div>
       </div>
       <div class="cert-dias" style="color:${cor};">${label}</div>
@@ -235,7 +238,7 @@ function renderHE() {
           <td>${h.sobreaviso ? 'Sim' : '—'}</td>
           <td>${h.valor_hora ? fmt(h.valor_hora) : '—'}</td>
           <td>${h.valor_hora ? fmt(Number(h.horas_extras||0)*Number(h.valor_hora)) : '—'}</td>
-          <td>${h.descricao || '—'}</td>
+          <td>${escapeHtml(h.descricao || '—')}</td>
         </tr>`).join('')}
       </tbody>
     </table></div>
@@ -464,7 +467,7 @@ el('btnSalvarHE').addEventListener('click', async () => {
     cycle_id    : el('heCiclo').value || null,
     data,
     horas_extras: parseFloat(el('heHoras').value)     || 0,
-    valor_hora  : parseFloat(el('heValorHora').value) || null,
+    valor_hora  : readMoneyValue(el('heValorHora')) || null,
     sobreaviso  : el('heSobreaviso').checked,
     descricao   : el('heDesc').value.trim() || null,
   };

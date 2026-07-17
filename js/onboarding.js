@@ -6,6 +6,7 @@
 
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
+import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -16,6 +17,7 @@ const user = sd.session.user;
 document.getElementById('obEmail').value = user.email || '';
 
 const el  = id => document.getElementById(id);
+attachMoneyMask(el('obContaSaldo'));
 const msg = (txt, tipo='warning') => {
   el('obMsg').className = `message ${tipo}`;
   el('obMsg').textContent = txt;
@@ -130,7 +132,7 @@ el('btnOb2').addEventListener('click', async () => {
   const nome   = el('obContaNome').value.trim();
   const tipo   = el('obContaTipo').value;
   const moeda  = el('obContaMoeda').value;
-  const saldo  = parseFloat(el('obContaSaldo').value) || 0;
+  const saldo  = readMoneyValue(el('obContaSaldo'));
 
   if (!nome) { msg('Informe o nome da conta.'); return; }
 

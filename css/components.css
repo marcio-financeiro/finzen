@@ -427,7 +427,7 @@ input:-webkit-autofill:active{
   gap:16px;
   margin-bottom:16px;
 }
-@media(max-width:800px){ .dash-grid{ grid-template-columns:1fr; } }
+@media(max-width:820px){ .dash-grid{ grid-template-columns:1fr; } }
 
 /* ── Bloco genérico ── */
 .dash-block{
@@ -895,7 +895,7 @@ input:-webkit-autofill:active{
   font-weight:800;
 }
 
-@media(max-width:720px){
+@media(max-width:820px){
   .fz-modal-overlay{ align-items:flex-end; padding:0; }
   .fz-modal-box{
     width:100%;

@@ -7,6 +7,7 @@
 import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
+import { ajustarSaldo } from './services/balanceService.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -118,7 +119,7 @@ async function inicializar() {
 
   // Popular select de conta
   el('selectConta').innerHTML = '<option value="">Selecione a conta</option>' +
-    contas.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+    contas.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
 }
 
 // ── Parsers ───────────────────────────────────────────
@@ -337,7 +338,7 @@ function renderTabela() {
           <option value="">— Sem categoria —</option>
           ${categorias
             .filter(c => c.tipo === tx.tipo || c.tipo === 'despesa')
-            .map(c => `<option value="${c.id}" ${c.id === tx.categoria_id ? 'selected' : ''}>${c.icon||''} ${c.nome}</option>`)
+            .map(c => `<option value="${c.id}" ${c.id === tx.categoria_id ? 'selected' : ''}>${escapeHtml(c.icon||'')} ${escapeHtml(c.nome)}</option>`)
             .join('')}
         </select>
       </td>
@@ -428,15 +429,10 @@ el('btnImportar').addEventListener('click', async () => {
       novasRegras.forEach(r => { regrasUsuario[r.pattern] = r.category_id; });
     }
 
-    // 3. Atualizar saldo da conta
-    const { data: conta } = await supabase.from('accounts').select('saldo_atual').eq('id', contaId).single();
-    if(conta) {
-      const delta = selecionadas.reduce((s, tx) =>
-        s + (tx.tipo === 'receita' ? tx.valor : -tx.valor), 0);
-      await supabase.from('accounts').update({
-        saldo_atual: Number(conta.saldo_atual||0) + delta
-      }).eq('id', contaId);
-    }
+    // 3. Atualizar saldo da conta (delta atômico via balanceService)
+    const delta = selecionadas.reduce((s, tx) =>
+      s + (tx.tipo === 'receita' ? tx.valor : -tx.valor), 0);
+    await ajustarSaldo(contaId, delta);
 
     mostrarMsg(`${selecionadas.length} transações importadas com sucesso! ${novasRegras.length} regras aprendidas.`, 'success');
     el('secaoRevisao').style.display = 'none';

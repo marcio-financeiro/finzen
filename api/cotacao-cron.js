@@ -1,15 +1,13 @@
 // api/cotacao-cron.js — Cotações de fechamento diário via Vercel Cron
 // Vercel Cron: 0 22 * * 1-5 (22h UTC = 19h BRT, seg-sex)
 
+import { isBR, isEUA, buscarCotacoes, montarResumoCarteira } from './_cotacaoResumo.js';
+
 const SUPABASE_URL = 'https://qgamphwnlrriwalcbhbl.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnYW1waHdubHJyaXdhbGNiaGJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNTkzMzUsImV4cCI6MjA5NjYzNTMzNX0.AV0mCZqYlNyqz9XVWeHImMljnpt4klxpUjBa1HHlYkM';
 const VERCEL_URL   = 'https://finzen-rho.vercel.app';
 
-const TIPOS_BR  = ['acao_br', 'fii', 'etf_br'];
-const TIPOS_EUA = ['acao_eua', 'etf_eua'];
-function isBR(tipo)  { return TIPOS_BR.includes(tipo); }
-function isEUA(tipo) { return TIPOS_EUA.includes(tipo); }
-function isRF(tipo)  { return tipo === 'renda_fixa'; }
+function isRF(tipo) { return tipo === 'renda_fixa'; }
 
 async function sbRpc(fn, params) {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
@@ -24,25 +22,6 @@ async function sbRpc(fn, params) {
   if (!r.ok) throw new Error(`Supabase RPC ${fn} ${r.status}: ${await r.text()}`);
   const text = await r.text();
   return text ? JSON.parse(text) : null;
-}
-
-async function buscarCotacoes(tickers) {
-  const params = new URLSearchParams({ tickers: tickers.join(','), dolar: 'true', change: 'true' });
-  const r = await fetch(`${VERCEL_URL}/api/quotes?${params}`, {
-    headers: { 'User-Agent': 'FinZen-Cron/1.0' },
-  });
-  if (!r.ok) throw new Error(`Proxy cotações ${r.status}`);
-  return r.json();
-}
-
-function fmt(v, dec = 2) {
-  return Number(v).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
-}
-
-function varEmoji(pct) {
-  if (pct > 0.05)  return '📈';
-  if (pct < -0.05) return '📉';
-  return '➡️';
 }
 
 async function enviarTelegram(mensagem) {
@@ -70,29 +49,20 @@ async function executar() {
   const allTickers = [...tickersBR, ...tickersEUA];
   if (!allTickers.length) return { ok: true, msg: 'Sem tickers' };
 
-  const quotes = await buscarCotacoes(allTickers);
+  const quotes = await buscarCotacoes(VERCEL_URL, allTickers);
   const dolar  = quotes['USD-BRL'] || 0;
 
-  const agora  = new Date().toISOString();
-  const grupos = {};
-  let deltaTotal = 0;
-  let deltaValido = true;
-
+  // Persiste a cotação do dia em cada ativo (exclusivo do cron — o comando
+  // interativo "fechamento" só consulta, não grava)
+  const agora = new Date().toISOString();
   for (const a of ativos) {
     const key = a.ticker.toUpperCase();
     const novaCotacao = quotes[key];
     if (!novaCotacao) continue;
 
-    const changePct = quotes[`${key}_chg`] ?? null;
-    const moeda     = a.moeda || 'BRL';
-    const fx        = moeda === 'USD' ? (dolar || 1) : 1;
-    const qtd       = Number(a.quantidade);
-
-    if (changePct !== null && dolar > 0) {
-      deltaTotal += (changePct / 100) * novaCotacao * qtd * fx;
-    } else {
-      deltaValido = false;
-    }
+    const moeda = a.moeda || 'BRL';
+    const fx    = moeda === 'USD' ? (dolar || 1) : 1;
+    const qtd   = Number(a.quantidade);
 
     await sbRpc('cotacao_patch_ativo', {
       p_id:            a.id,
@@ -101,36 +71,10 @@ async function executar() {
       p_exchange_rate: moeda === 'USD' && dolar > 0 ? dolar : 0,
       p_atualizado_em: agora,
     });
-
-    const corretora = a.corretora || 'Outros';
-    if (!grupos[corretora]) grupos[corretora] = [];
-    grupos[corretora].push({ ticker: key, cotacao: novaCotacao, moeda, changePct });
   }
 
-  const linhas = [`📊 <b>Carteira — ${dataFmt}</b>`];
-  if (dolar > 0) linhas.push(`💵 USD/BRL: R$ ${fmt(dolar, 4)}`);
-  linhas.push('');
-
-  for (const corretora of Object.keys(grupos).sort()) {
-    linhas.push(`<b>${corretora}</b>`);
-    for (const a of grupos[corretora].sort((x, y) => x.ticker.localeCompare(y.ticker))) {
-      const simbolo = a.moeda === 'USD' ? 'US$' : 'R$';
-      const cotStr  = `${simbolo} ${fmt(a.cotacao)}`;
-      const varStr  = a.changePct !== null
-        ? `${varEmoji(a.changePct)} ${a.changePct >= 0 ? '+' : ''}${fmt(a.changePct)}%`
-        : '➡️ —';
-      linhas.push(`• ${a.ticker}  ${cotStr}  ${varStr}`);
-    }
-    linhas.push('');
-  }
-
-  if (deltaValido && deltaTotal !== 0) {
-    const sinal = deltaTotal >= 0 ? '+' : '';
-    const emoji = deltaTotal > 0 ? '📈' : '📉';
-    linhas.push(`${emoji} <b>Hoje: ${sinal}R$ ${fmt(Math.abs(deltaTotal))}</b>`);
-  }
-
-  await enviarTelegram(linhas.join('\n').trim());
+  const { texto } = montarResumoCarteira({ ativos, quotes, dolar, dataFmt });
+  await enviarTelegram(texto);
   return { ok: true, ativos: ativos.length };
 }
 
