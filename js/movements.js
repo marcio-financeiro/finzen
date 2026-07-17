@@ -4,6 +4,9 @@ import { formatCurrency } from './utils.js';
 import { notificarTransacao } from './telegram.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { showChoice, showDetail } from './modal.js';
+import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
+
+let dolarAtual = 5.15;
 
 // ─────────────────────────────────────────────
 // ELEMENTOS DO DOM
@@ -727,9 +730,9 @@ async function deleteTransaction(id){
 // ─────────────────────────────────────────────
 async function sumCurrentAccountBalances(){
   const { data, error } = await supabase.from('accounts')
-    .select('saldo_atual').eq('user_id',user.id).eq('active',true);
+    .select('saldo_atual,currency').eq('user_id',user.id).eq('active',true);
   if(error) throw new Error('Erro ao calcular saldo em contas: '+error.message);
-  return (data||[]).reduce((sum,item) => sum+Number(item.saldo_atual||0),0);
+  return (data||[]).reduce((sum,item) => sum+convertToBRL(item.saldo_atual,item.currency,dolarAtual),0);
 }
 
 async function getPendingTransactionsUntilMonthEnd(){
@@ -771,7 +774,7 @@ async function openFlowAccountsDetail(){
     valueText:formatCurrency(Number(item.saldo_atual||0),item.currency||'BRL'),
     valueClass:Number(item.saldo_atual||0)>=0?'positive':'negative',
   }));
-  const total = (data||[]).reduce((sum,item) => sum+Number(item.saldo_atual||0),0);
+  const total = (data||[]).reduce((sum,item) => sum+convertToBRL(item.saldo_atual,item.currency,dolarAtual),0);
   showFlowDetailModal('Saldo Atual','Saldos das contas ativas',items,total,total>=0?'positive':'negative');
 }
 
@@ -1320,6 +1323,7 @@ if(filterRecorrencia){
 // ─────────────────────────────────────────────
 await loadData();
 updateFormVisibility();
+try { dolarAtual = await getUsdBrlRate(user.id); } catch(_) {}
 await renderCashFlowMonth();
 await loadUpcomingRecurring();
 await loadMovements();
