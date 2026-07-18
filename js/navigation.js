@@ -121,6 +121,7 @@ const NAV_GROUPS = [
     items: [
       { title: 'Calendário',     icon: 'ic-calendar', href: './calendar.html' },
       { title: 'Offshore',       icon: 'ic-droplet', href: './offshore.html' },
+      { title: 'Viagens',        icon: 'ic-plane', href: './viagens.html' },
     ]
   },
   {

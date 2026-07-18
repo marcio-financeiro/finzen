@@ -35,4 +35,5 @@ export const ICON_SPRITE_MARKUP = `
     <symbol id="ic-bell"          viewBox="0 0 24 24"><path d="M12 3a5 5 0 0 0-5 5v3c0 1-.5 2-1.5 3h13c-1-1-1.5-2-1.5-3V8a5 5 0 0 0-5-5z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/></symbol>
     <symbol id="ic-archive"       viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><line x1="10" y1="13" x2="14" y2="13"/></symbol>
     <symbol id="ic-rotate-ccw"    viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M4.5 13a8 8 0 1 0 2.5-6.5L4 10"/></symbol>
+    <symbol id="ic-plane"         viewBox="0 0 24 24"><path d="M2 16l20-8-8 20-2-8-8-2z"/><path d="M22 8L10 14"/></symbol>
   `;
