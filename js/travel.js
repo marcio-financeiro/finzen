@@ -64,20 +64,23 @@ const CLS = { eco:1, pre:1.9, exe:3.4 };
 const CLS_LABEL = { eco:'Econômica', pre:'Premium', exe:'Executiva' };
 
 // ---------- Links externos para comprar (buscadores reais, não afiliados) ----------
-function googleFlightsUrl(o,d,dep,ret){
-  return `https://www.google.com/travel/flights?q=${encodeURIComponent(`voos de ${o} para ${d} em ${dep} volta ${ret}`)}`;
+// Kayak usa path fixo por código IATA + data (sem depender de interpretação de texto
+// livre, ao contrário do parâmetro "q=" do Google Flights, que se mostrou pouco
+// confiável — não preenchia destino/datas de forma consistente).
+function kayakUrl(o,d,dep,ret){
+  return `https://www.kayak.com.br/flights/${o}-${d}/${dep}/${ret}`;
 }
 function providerUrl(name,o,d,dep,ret,pax){
   switch(name){
-    case 'Google Flights': return googleFlightsUrl(o,d,dep,ret);
     case 'Skyscanner':     return `https://www.skyscanner.com.br/transport/flights/${o.toLowerCase()}/${d.toLowerCase()}/${dep.replace(/-/g,'').slice(2)}/${ret.replace(/-/g,'').slice(2)}/`;
-    case 'Kayak':           return `https://www.kayak.com.br/flights/${o}-${d}/${dep}/${ret}`;
+    case 'Kayak':
+    case 'Google Flights': return kayakUrl(o,d,dep,ret);
     case 'Momondo':         return `https://www.momondo.com.br/flight-search/${o}-${d}/${dep}/${ret}`;
     case 'Decolar':         return `https://www.decolar.com/passagens-aereas/${o}/${d}`;
     case 'Booking':         return `https://www.booking.com/flights/index.html?type=ROUNDTRIP&adults=${pax}&from=${o}&to=${d}&depart=${dep}&return=${ret}`;
     case 'Expedia':         return `https://www.expedia.com.br/Flights-Search?trip=roundtrip&leg1=from:${o},to:${d},departure:${dep}&leg2=from:${d},to:${o},departure:${ret}&passengers=adults:${pax}&mode=search`;
-    case 'Site da companhia': return AIRLINE_SITES[LAST?.airline] || googleFlightsUrl(o,d,dep,ret);
-    default: return googleFlightsUrl(o,d,dep,ret);
+    case 'Site da companhia': return AIRLINE_SITES[LAST?.airline] || kayakUrl(o,d,dep,ret);
+    default: return kayakUrl(o,d,dep,ret);
   }
 }
 
@@ -231,7 +234,7 @@ function renderResults(win,best,hist){
     L.score>=45?`${L.score}/100 — preço dentro da média para a rota. Vale monitorar com um alerta.`:
     `${L.score}/100 — acima da média histórica. Considere as estratégias abaixo ou espere uma queda.`;
 
-  $('#tvBuyLink').href=googleFlightsUrl(L.o,L.d,L.bestDate,L.ret);
+  $('#tvBuyLink').href=kayakUrl(L.o,L.d,L.bestDate,L.ret);
 
   const txt=encodeURIComponent(`✈ FinZen Viagens: ${L.o}→${L.d} ${fmtD(new Date(L.bestDate+'T12:00'))} por ${BRL(L.total)} (score ${L.score}/100)`);
   $('#tvShWa').href=`https://wa.me/?text=${txt}`;
