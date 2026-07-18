@@ -576,7 +576,9 @@ async function renderFavs(){
 }
 
 // =====================================================================
-// CONSULTOR IA — via /api/stay-ai (ANTHROPIC_API_KEY na Vercel)
+// CONSULTOR IA — via /api/travel-ai (module:'stay') — ANTHROPIC_API_KEY na Vercel.
+// Endpoint compartilhado com o módulo Viagens (limite de 12 Serverless
+// Functions no plano Hobby da Vercel).
 // =====================================================================
 function bubble(t,cls){
   const div=document.createElement('div');
@@ -603,9 +605,14 @@ async function ask(q){
   }:null;
   chatHist.push({role:'user',content:q});
   try{
-    const r=await fetch('/api/stay-ai',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ question:q, context:ctx, history:chatHist })
+    const { data:sd }=await supabase.auth.getSession();
+    const r=await fetch('/api/travel-ai',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':`Bearer ${sd.session?.access_token}`
+      },
+      body:JSON.stringify({ module:'stay', question:q, context:ctx, history:chatHist })
     });
     const data=await r.json();
     const txt=data.text||data.error||'Não consegui responder agora.';

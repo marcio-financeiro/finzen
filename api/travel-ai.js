@@ -1,9 +1,37 @@
-// api/travel-ai.js — Assistente de viagem do módulo VYNHunter
+// api/travel-ai.js — Assistente de viagem (VYNHunter) e de hospedagem (StayHunter)
 // Node.js serverless (não Edge — Edge bloqueia chamadas externas)
 // Mesmo padrão de api/analyze.js: auth JWT Supabase + rate limiting diário,
 // ANTHROPIC_API_KEY fica só no servidor (variável de ambiente da Vercel).
+//
+// Endpoint compartilhado entre Viagens e Hospedagens (req.body.module) porque
+// o plano Hobby da Vercel limita 12 Serverless Functions por deploy — criar
+// um api/stay-ai.js separado estourava esse limite.
 
 import { checarLimiteIA } from './_aiRateLimit.js';
+
+const PROMPTS = {
+  travel: (context, history, question) => `Você é o assistente de viagens do FinZen (módulo VYNHunter), app de caça a passagens aéreas baratas.
+Responda em português do Brasil, curto e prático (máx. 6 frases), sem markdown pesado.
+SEMPRE: (1) indique o grau de confiança (baixo/médio/alto); (2) deixe claro que previsões são estimativas estatísticas, não garantias; (3) baseie-se APENAS nos dados fornecidos. Os preços deste módulo são simulados (modo demonstração).
+
+DADOS DA BUSCA ATUAL: ${context ? JSON.stringify(context) : 'nenhuma busca feita ainda — peça para o usuário buscar primeiro.'}
+
+HISTÓRICO DA CONVERSA: ${JSON.stringify((history || []).slice(-6))}
+
+PERGUNTA: ${question}`,
+
+  stay: (context, history, question) => `Você é o consultor de hospedagem do FinZen (módulo StayHunter). Não é só um comparador de preços: avalia custo-benefício real (preço + localização + avaliações + taxas ocultas + comodidades) conforme o perfil do viajante.
+
+Responda em português do Brasil, curto e prático (máx. 7 frases), sem markdown pesado.
+
+SEMPRE: (1) justifique a recomendação em linguagem simples; (2) indique grau de confiança (baixo/médio/alto); (3) deixe claro que previsões de preço são estimativas, não garantias; (4) alerte sobre taxas ocultas quando os dados mostrarem; (5) baseie-se APENAS nos dados fornecidos. Os preços deste módulo são simulados (modo demonstração).
+
+DADOS DA BUSCA ATUAL: ${context ? JSON.stringify(context) : 'nenhuma busca feita ainda — peça para o usuário buscar primeiro.'}
+
+HISTÓRICO DA CONVERSA: ${JSON.stringify((history || []).slice(-6))}
+
+PERGUNTA: ${question}`
+};
 
 export default async function handler(req, res) {
 
@@ -23,10 +51,13 @@ export default async function handler(req, res) {
   });
   if (!authRes.ok) return res.status(403).json({ error: 'Forbidden' });
 
+  const { question, context, history, module } = req.body || {};
+  const mod = module === 'stay' ? 'stay' : 'travel';
+
   // Rate limiting: protege o custo da API Anthropic (AI_LIMITE_DIARIO/dia)
   const usuario = await authRes.json().catch(() => null);
   if (usuario?.id) {
-    const limite = await checarLimiteIA(usuario.id, 'travel-ai');
+    const limite = await checarLimiteIA(usuario.id, mod === 'stay' ? 'stay-ai' : 'travel-ai');
     if (!limite.permitido) {
       return res.status(429).json({ error: `Limite diário de IA atingido (${limite.limite} chamadas). Tente novamente amanhã.` });
     }
@@ -36,18 +67,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'ANTHROPIC_API_KEY não configurada na Vercel' });
   }
 
-  const { question, context, history } = req.body || {};
   if (!question) return res.status(400).json({ error: 'Pergunta vazia' });
 
-  const prompt = `Você é o assistente de viagens do FinZen (módulo VYNHunter), app de caça a passagens aéreas baratas.
-Responda em português do Brasil, curto e prático (máx. 6 frases), sem markdown pesado.
-SEMPRE: (1) indique o grau de confiança (baixo/médio/alto); (2) deixe claro que previsões são estimativas estatísticas, não garantias; (3) baseie-se APENAS nos dados fornecidos. Os preços deste módulo são simulados (modo demonstração).
-
-DADOS DA BUSCA ATUAL: ${context ? JSON.stringify(context) : 'nenhuma busca feita ainda — peça para o usuário buscar primeiro.'}
-
-HISTÓRICO DA CONVERSA: ${JSON.stringify((history || []).slice(-6))}
-
-PERGUNTA: ${question}`;
+  const prompt = PROMPTS[mod](context, history, question);
 
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
