@@ -49,6 +49,12 @@ const AIRPORTS = {
   CUN:{n:'Cancún',lat:21.04,lon:-86.87,reg:'EUA & Caribe',int:1}
 };
 const AIRLINES  = ['LATAM','GOL','Azul','Avianca','Copa','TAP','Aerolíneas'];
+const AIRLINE_SITES = {
+  LATAM:'https://www.latamairlines.com/br/pt', GOL:'https://www.voegol.com.br',
+  Azul:'https://www.voeazul.com.br', Avianca:'https://www.avianca.com',
+  Copa:'https://www.copaair.com', TAP:'https://www.flytap.com',
+  Aerolíneas:'https://www.aerolineas.com.ar'
+};
 const PROVIDERS = [
   {n:'Google Flights',k:1.00},{n:'Skyscanner',k:1.005},{n:'Kayak',k:1.012},
   {n:'Momondo',k:0.998},{n:'Decolar',k:1.03},{n:'Booking',k:1.025},
@@ -56,6 +62,24 @@ const PROVIDERS = [
 ];
 const CLS = { eco:1, pre:1.9, exe:3.4 };
 const CLS_LABEL = { eco:'Econômica', pre:'Premium', exe:'Executiva' };
+
+// ---------- Links externos para comprar (buscadores reais, não afiliados) ----------
+function googleFlightsUrl(o,d,dep,ret){
+  return `https://www.google.com/travel/flights?q=${encodeURIComponent(`voos de ${o} para ${d} em ${dep} volta ${ret}`)}`;
+}
+function providerUrl(name,o,d,dep,ret,pax){
+  switch(name){
+    case 'Google Flights': return googleFlightsUrl(o,d,dep,ret);
+    case 'Skyscanner':     return `https://www.skyscanner.com.br/transport/flights/${o.toLowerCase()}/${d.toLowerCase()}/${dep.replace(/-/g,'').slice(2)}/${ret.replace(/-/g,'').slice(2)}/`;
+    case 'Kayak':           return `https://www.kayak.com.br/flights/${o}-${d}/${dep}/${ret}`;
+    case 'Momondo':         return `https://www.momondo.com.br/flight-search/${o}-${d}/${dep}/${ret}`;
+    case 'Decolar':         return `https://www.decolar.com/passagens-aereas/${o}/${d}`;
+    case 'Booking':         return `https://www.booking.com/flights/index.html?type=ROUNDTRIP&adults=${pax}&from=${o}&to=${d}&depart=${dep}&return=${ret}`;
+    case 'Expedia':         return `https://www.expedia.com.br/Flights-Search?trip=roundtrip&leg1=from:${o},to:${d},departure:${dep}&leg2=from:${d},to:${o},departure:${ret}&passengers=adults:${pax}&mode=search`;
+    case 'Site da companhia': return AIRLINE_SITES[LAST?.airline] || googleFlightsUrl(o,d,dep,ret);
+    default: return googleFlightsUrl(o,d,dep,ret);
+  }
+}
 
 // ---------- Utilidades ----------
 const $  = s => document.querySelector(s);
@@ -207,6 +231,8 @@ function renderResults(win,best,hist){
     L.score>=45?`${L.score}/100 — preço dentro da média para a rota. Vale monitorar com um alerta.`:
     `${L.score}/100 — acima da média histórica. Considere as estratégias abaixo ou espere uma queda.`;
 
+  $('#tvBuyLink').href=googleFlightsUrl(L.o,L.d,L.bestDate,L.ret);
+
   const txt=encodeURIComponent(`✈ FinZen Viagens: ${L.o}→${L.d} ${fmtD(new Date(L.bestDate+'T12:00'))} por ${BRL(L.total)} (score ${L.score}/100)`);
   $('#tvShWa').href=`https://wa.me/?text=${txt}`;
   $('#tvShTg').href=`https://t.me/share/url?url=finzen&text=${txt}`;
@@ -263,10 +289,11 @@ function renderCompare(){
   const rows=PROVIDERS.map(p=>{
     const price=Math.round(base*p.k*(0.985+r()*0.05));
     const st=stopsFor(L.o,L.d,L.bestDate+p.n);
-    return { n:p.n, price, st, dur:durFor(L.o,L.d,st), bag:r()<0.6 };
+    const url=providerUrl(p.n,L.o,L.d,L.bestDate,L.ret,L.pax);
+    return { n:p.n, price, st, dur:durFor(L.o,L.d,st), bag:r()<0.6, url };
   }).sort((a,b)=>a.price-b.price);
   $('#tvCmp tbody').innerHTML=rows.map((x,i)=>`<tr>
-    <td>${x.n} ${i===0?'<span class="tv-badge">MELHOR</span>':''}</td>
+    <td><a href="${x.url}" target="_blank" rel="noopener">${x.n}</a> ${i===0?'<span class="tv-badge">MELHOR</span>':''}</td>
     <td class="p">${BRL(x.price)}</td><td>${x.st===0?'Direto':x.st}</td>
     <td>${x.dur}</td><td>${x.bag?'🧳 23kg':'🎒 mão'}</td></tr>`).join('');
 }

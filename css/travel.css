@@ -98,6 +98,8 @@
 .tv-table td{padding:9px 4px;border-bottom:1px solid rgba(255,255,255,.06)}
 .tv-table tr:last-child td{border:none}
 .tv-table td.p{font-family:ui-monospace,monospace;font-weight:700;white-space:nowrap}
+.tv-table td a{color:var(--text,#e8ecf4);text-decoration:none;border-bottom:1px dotted rgba(255,255,255,.35)}
+.tv-table td a:hover{color:var(--accent,#f59e0b);border-bottom-color:var(--accent,#f59e0b)}
 .tv-badge{font-size:10px;border-radius:6px;padding:2px 6px;font-weight:700;
   background:rgba(52,211,153,.15);color:#34d399}
 .tv-item{display:flex;justify-content:space-between;align-items:center;gap:10px;
