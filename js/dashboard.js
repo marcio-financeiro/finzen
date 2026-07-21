@@ -170,6 +170,7 @@ async function carregarDashboard(){
     el('kpiFaturas').innerText   = fmt(totalFaturas);
     ['kpiSaldo','kpiReceitas','kpiDespesas','kpiResultado','kpiFaturas'].forEach(id => el(id).classList.remove('kpi-loading'));
     aplicarClasse(el('kpiResultado'), resultado);
+    aplicarClasse(el('kpiSaldo'), totalSaldo);
 
     // ── Ring cards (Stage 2) ─────────────────────────
     const recAnt  = (txMesAnterior||[]).filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
