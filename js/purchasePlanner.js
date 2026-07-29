@@ -43,13 +43,44 @@ let dolarAtual = 5.15;
 let receitasRec = 0;
 let despesasRec = 0;
 let faturasAbertas = []; // { card_id, fatura_referencia, valor_parcela }
-let receitasFuturasPorMes = {}; // { 'YYYY-MM': valor } — lançamentos pendentes reais já agendados
+let recorrentesTemplates = []; // { type, valor(BRL), date, frequency } — pra projetar meses futuros por ocorrência
+let receitasFuturasPorMes = {}; // { 'YYYY-MM': valor } — só o mês atual: o que falta acontecer de verdade
 let despesasFuturasPorMes = {};
 
-function addMesesISO(dataISO, meses){
+function parseISO(dataISO){
   const [y, m, d] = dataISO.split('-').map(Number);
-  const alvo = new Date(y, m - 1 + meses, d);
-  return `${alvo.getFullYear()}-${String(alvo.getMonth()+1).padStart(2,'0')}-${String(alvo.getDate()).padStart(2,'0')}`;
+  return new Date(y, m - 1, d);
+}
+
+function fimDoMesISO(dataISO){
+  const [y, m] = dataISO.split('-').map(Number);
+  const ultimo = new Date(y, m, 0);
+  return `${ultimo.getFullYear()}-${String(ultimo.getMonth()+1).padStart(2,'0')}-${String(ultimo.getDate()).padStart(2,'0')}`;
+}
+
+// Quantas vezes uma recorrência (mensal/semanal/anual) cai dentro do mês `ref`
+// (YYYY-MM) — mesmas 3 frequências que api/recurring-cron.js suporta.
+function ocorrenciasNoMes(dataISO, frequency, ref){
+  const inicio = parseISO(dataISO);
+  const [ry, rm] = ref.split('-').map(Number);
+  if(ry < inicio.getFullYear() || (ry === inicio.getFullYear() && rm < inicio.getMonth() + 1)) return 0;
+
+  if(frequency === 'anual'){
+    return inicio.getMonth() === rm - 1 ? 1 : 0;
+  }
+
+  if(frequency === 'semanal'){
+    const primeiroDia = new Date(ry, rm - 1, 1);
+    const ultimoDia   = new Date(ry, rm, 0);
+    let count = 0;
+    for(let d = new Date(primeiroDia); d <= ultimoDia; d.setDate(d.getDate() + 1)){
+      const diffDias = Math.round((d - inicio) / 86400000);
+      if(diffDias >= 0 && diffDias % 7 === 0) count++;
+    }
+    return count;
+  }
+
+  return 1; // mensal (padrão)
 }
 
 function mostrarMensagem(texto, tipo = 'info'){
@@ -66,11 +97,6 @@ function atualizarVisibilidadeCampos(){
 formaPagamento.addEventListener('change', atualizarVisibilidadeCampos);
 atualizarVisibilidadeCampos();
 
-// Mesmo horizonte do cron de recorrentes (api/recurring-cron.js) — só existem
-// lançamentos pendentes reais gerados até 6 meses à frente, igual à Tendência
-// de Gastos do dashboard.
-const HORIZONTE_MESES = 6;
-
 async function carregarDados(){
   try { dolarAtual = await getUsdBrlRate(user.id); } catch(_) {}
 
@@ -80,16 +106,17 @@ async function carregarDados(){
     { data: cartoesData },
     { data: recorrentes },
     { data: faturas },
-    { data: pendentesFuturos },
+    { data: pendentesMesAtual },
   ] = await Promise.all([
     supabase.from('accounts').select('id,nome,currency,saldo_atual').eq('user_id', user.id).eq('active', true).order('nome'),
     supabase.from('credit_cards').select('id,nome,limite,fechamento_dia,vencimento_dia').eq('user_id', user.id).eq('ativo', true).order('nome'),
-    supabase.from('transactions').select('type,amount,accounts:account_id(currency)').eq('user_id', user.id).eq('is_recurring', true).eq('recurrence_active', true),
+    supabase.from('transactions').select('type,amount,date,recurrence_frequency,accounts:account_id(currency)').eq('user_id', user.id).eq('is_recurring', true).eq('recurrence_active', true),
     supabase.from('card_transactions').select('card_id,fatura_referencia,valor_parcela').eq('user_id', user.id).in('status', ['aberta', 'pendente']),
-    // Lançamentos já agendados (recorrentes já materializados + qualquer outro pendente)
-    // com data real — mesma fonte que a Tendência de Gastos do dashboard usa pra
-    // projetar meses futuros, em vez de repetir a média de recorrentes todo mês.
-    supabase.from('transactions').select('type,amount,date,accounts:account_id(currency)').eq('user_id', user.id).eq('status', 'pendente').gte('date', hoje).lte('date', addMesesISO(hoje, HORIZONTE_MESES)),
+    // Só o que falta acontecer no mês corrente (o restante do mês já está refletido
+    // no saldo atual das contas) — os meses seguintes são projetados a partir da
+    // frequência de cada recorrência (ocorrenciasNoMes), não de lançamentos já
+    // gerados por cron, que podem não cobrir todo o horizonte da simulação.
+    supabase.from('transactions').select('type,amount,date,accounts:account_id(currency)').eq('user_id', user.id).eq('status', 'pendente').gte('date', hoje).lte('date', fimDoMesISO(hoje)),
   ]);
 
   contas  = contasData  || [];
@@ -100,9 +127,16 @@ async function carregarDados(){
   receitasRec = (recorrentes || []).filter(r => r.type === 'receita').reduce((s, r) => s + valorBRL(r), 0);
   despesasRec = (recorrentes || []).filter(r => r.type === 'despesa').reduce((s, r) => s + valorBRL(r), 0);
 
+  recorrentesTemplates = (recorrentes || []).map(r => ({
+    type: r.type,
+    valor: valorBRL(r),
+    date: r.date,
+    frequency: r.recurrence_frequency || 'mensal',
+  }));
+
   receitasFuturasPorMes = {};
   despesasFuturasPorMes = {};
-  (pendentesFuturos || []).forEach(t => {
+  (pendentesMesAtual || []).forEach(t => {
     const ref = String(t.date).slice(0, 7);
     const alvo = t.type === 'despesa' ? despesasFuturasPorMes : receitasFuturasPorMes;
     alvo[ref] = (alvo[ref] || 0) + valorBRL(t);
@@ -174,15 +208,16 @@ function simularCartao(valorTotal, parcelas, cardId, dataISO){
     const faturaTotalCartao = faturaExistenteCartao + novaParcela;
     const faturasOutrosCartoes = faturaExistenteTodosCartoes(ref) - faturaExistenteCartao;
 
-    // Usa lançamentos já agendados de verdade (mesma fonte da Tendência de Gastos
-    // do dashboard) sempre que existirem pra esse mês. O saldo atual das contas já
-    // reflete tudo que aconteceu até agora — por isso o mês corrente só soma o que
-    // ainda falta acontecer (pendente), nunca um mês inteiro do zero. Além do
-    // horizonte de 6 meses (onde não há lançamento real gerado ainda), cai pra
-    // média de recorrentes como aproximação.
-    const temDadosReais = (ref in receitasFuturasPorMes) || (ref in despesasFuturasPorMes);
-    const receitasMes = temDadosReais ? (receitasFuturasPorMes[ref] || 0) : (m === 0 ? 0 : receitasRec);
-    const despesasMes = temDadosReais ? (despesasFuturasPorMes[ref] || 0) : (m === 0 ? 0 : despesasRec);
+    // Mês atual: o saldo das contas já reflete tudo que já aconteceu, então só
+    // soma o que falta de verdade (lançamentos pendentes com data dentro do mês).
+    // Meses seguintes: projeta cada recorrência pela própria frequência (mensal/
+    // semanal/anual) — não depende de o cron já ter gerado os lançamentos.
+    const receitasMes = m === 0
+      ? (receitasFuturasPorMes[ref] || 0)
+      : recorrentesTemplates.filter(r => r.type === 'receita').reduce((s, r) => s + r.valor * ocorrenciasNoMes(r.date, r.frequency, ref), 0);
+    const despesasMes = m === 0
+      ? (despesasFuturasPorMes[ref] || 0)
+      : recorrentesTemplates.filter(r => r.type === 'despesa').reduce((s, r) => s + r.valor * ocorrenciasNoMes(r.date, r.frequency, ref), 0);
 
     // Dinheiro disponível no mês ANTES de pagar a fatura deste cartão —
     // é essa sobra que precisa cobrir a fatura pra ela não ficar em aberto/atrasada.
