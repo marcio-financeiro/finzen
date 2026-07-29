@@ -100,6 +100,7 @@ const NAV_GROUPS = [
       { title: 'Extrato',        icon: 'ic-receipt', href: './account-statement.html' },
       { title: 'Faturas',        icon: 'ic-file-text', href: './card-bills.html' },
       { title: 'Orçamento',      icon: 'ic-target', href: './budgets.html' },
+      { title: 'Planejador de Compras', icon: 'ic-card', href: './purchase-planner.html' },
     ]
   },
   {
