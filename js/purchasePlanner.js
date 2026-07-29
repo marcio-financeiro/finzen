@@ -147,13 +147,19 @@ function simularCartao(valorTotal, parcelas, cardId, dataISO){
     const faturaTotalCartao = faturaExistenteCartao + novaParcela;
     const faturasOutrosCartoes = faturaExistenteTodosCartoes(ref) - faturaExistenteCartao;
 
+    // O saldo atual das contas já reflete tudo que aconteceu no mês corrente
+    // (receitas recebidas, contas já pagas) — somar receita/despesa recorrente
+    // de novo nesse mês duplicaria valores que já estão no saldo. Só a partir
+    // do próximo mês é que a projeção de recorrentes entra na conta.
+    const projecaoRecorrente = m === 0 ? 0 : (receitasRec - despesasRec);
+
     // Dinheiro disponível no mês ANTES de pagar a fatura deste cartão —
     // é essa sobra que precisa cobrir a fatura pra ela não ficar em aberto/atrasada.
-    const disponivelParaFatura = saldoAcumulado + receitasRec - despesasRec - faturasOutrosCartoes;
+    const disponivelParaFatura = saldoAcumulado + projecaoRecorrente - faturasOutrosCartoes;
     const sobraAposFatura = disponivelParaFatura - faturaTotalCartao;
     saldoAcumulado = sobraAposFatura;
 
-    const comprometidoMes = despesasRec + faturasOutrosCartoes + faturaTotalCartao;
+    const comprometidoMes = (m === 0 ? 0 : despesasRec) + faturasOutrosCartoes + faturaTotalCartao;
     const limite = Number(cartao.limite || 0);
     const limiteEstourado = limite > 0 && faturaTotalCartao > limite;
     const faturaNaoPaga = disponivelParaFatura < faturaTotalCartao;
