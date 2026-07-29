@@ -82,7 +82,7 @@ export function montarResumoCarteira({ ativos, quotes, dolar, dataFmt }) {
   }
 
   const linhaDelta = (label, delta) => {
-    const sinal = delta >= 0 ? '+' : '';
+    const sinal = delta >= 0 ? '+' : '-';
     const emoji = delta > 0 ? '📈' : delta < 0 ? '📉' : '➡️';
     return `${emoji} <b>Hoje ${label}: ${sinal}R$ ${fmt(Math.abs(delta))}</b>`;
   };
