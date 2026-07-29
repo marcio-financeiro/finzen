@@ -143,23 +143,30 @@ function simularCartao(valorTotal, parcelas, cardId, dataISO){
     const ehMesDaCompra = refsParcelas.includes(ref);
     const novaParcela = ehMesDaCompra ? valorParcela : 0;
 
-    const faturasExistentesTodas = faturaExistenteTodosCartoes(ref);
-    const comprometidoMes = despesasRec + faturasExistentesTodas + novaParcela;
-    saldoAcumulado += receitasRec - comprometidoMes;
-
     const faturaExistenteCartao = faturaExistente(cardId, ref);
     const faturaTotalCartao = faturaExistenteCartao + novaParcela;
-    const limiteEstourado = Number(cartao.limite || 0) > 0 && faturaTotalCartao > Number(cartao.limite);
+    const faturasOutrosCartoes = faturaExistenteTodosCartoes(ref) - faturaExistenteCartao;
+
+    // Dinheiro disponível no mês ANTES de pagar a fatura deste cartão —
+    // é essa sobra que precisa cobrir a fatura pra ela não ficar em aberto/atrasada.
+    const disponivelParaFatura = saldoAcumulado + receitasRec - despesasRec - faturasOutrosCartoes;
+    const sobraAposFatura = disponivelParaFatura - faturaTotalCartao;
+    saldoAcumulado = sobraAposFatura;
+
+    const comprometidoMes = despesasRec + faturasOutrosCartoes + faturaTotalCartao;
+    const limite = Number(cartao.limite || 0);
+    const limiteEstourado = limite > 0 && faturaTotalCartao > limite;
+    const faturaNaoPaga = disponivelParaFatura < faturaTotalCartao;
 
     let status = 'cabe';
-    if(saldoAcumulado < 0 || limiteEstourado) status = 'estoura';
-    else if(receitasRec > 0 ? (comprometidoMes / receitasRec) > 0.8 : saldoAcumulado < despesasRec) status = 'aperta';
+    if(faturaNaoPaga || limiteEstourado) status = 'estoura';
+    else if(receitasRec > 0 ? (comprometidoMes / receitasRec) > 0.8 : sobraAposFatura < despesasRec) status = 'aperta';
 
     if(ehMesDaCompra || linhas.length === 0 || m === totalMesesSimulados - 1){
       linhas.push({
         ref, ehMesDaCompra, novaParcela, faturaTotalCartao,
-        limite: Number(cartao.limite || 0), limiteEstourado,
-        comprometidoMes, saldoAcumulado, status,
+        limite, limiteEstourado, disponivelParaFatura, faturaNaoPaga,
+        comprometidoMes, saldoAcumulado: sobraAposFatura, status,
       });
     }
   }
@@ -213,14 +220,23 @@ function renderResultadoCartao(resultado){
   painelResultado.style.display = '';
   const { linhas } = resultado;
 
+  const mesSemDinheiro = linhas.find(l => l.faturaNaoPaga);
+  const mesLimiteEstourado = linhas.find(l => l.limiteEstourado);
   const piorStatus = linhas.some(l => l.status === 'estoura') ? 'estoura'
     : linhas.some(l => l.status === 'aperta') ? 'aperta' : 'cabe';
 
-  const vereditoTexto = {
-    cabe:    '✅ Cabe tranquilamente no fluxo de caixa dos próximos meses.',
-    aperta:  '⚠️ Cabe, mas aperta o orçamento em algum mês.',
-    estoura: '🔴 Não recomendado — compromete o fluxo de caixa ou estoura o limite do cartão em algum mês.',
+  let vereditoTexto = {
+    cabe:   '✅ Cabe tranquilamente no fluxo de caixa dos próximos meses — sobra dinheiro pra pagar a fatura em todos os meses.',
+    aperta: '⚠️ Dá pra pagar a fatura, mas o orçamento fica apertado em algum mês.',
   }[piorStatus];
+
+  if(piorStatus === 'estoura'){
+    if(mesSemDinheiro){
+      vereditoTexto = `🔴 Não vai sobrar dinheiro suficiente pra pagar a fatura de ${refName(mesSemDinheiro.ref)} — faltariam ${fmt(mesSemDinheiro.faturaTotalCartao - mesSemDinheiro.disponivelParaFatura)}.`;
+    } else if(mesLimiteEstourado){
+      vereditoTexto = `🔴 A fatura de ${refName(mesLimiteEstourado.ref)} passaria do limite do cartão em ${fmt(mesLimiteEstourado.faturaTotalCartao - mesLimiteEstourado.limite)}.`;
+    }
+  }
 
   veredito.innerHTML = `${tituloCompra()}<p style="font-size:15px;margin:0 0 8px">${vereditoTexto}</p>`;
 
@@ -229,7 +245,7 @@ function renderResultadoCartao(resultado){
       <thead>
         <tr>
           <th>Fatura</th><th>Parcela desta compra</th><th>Fatura total do cartão</th>
-          <th>Limite</th><th>Comprometido no mês</th><th>Saldo projetado</th><th>Status</th>
+          <th>Limite</th><th>Disponível p/ pagar a fatura</th><th>Sobra após pagar</th><th>Status</th>
         </tr>
       </thead>
       <tbody>
@@ -239,7 +255,7 @@ function renderResultadoCartao(resultado){
             <td>${l.ehMesDaCompra ? fmt(l.novaParcela) : '-'}</td>
             <td class="${l.limiteEstourado ? 'negative' : ''}">${fmt(l.faturaTotalCartao)}</td>
             <td>${l.limite > 0 ? fmt(l.limite) : '-'}</td>
-            <td>${fmt(l.comprometidoMes)}</td>
+            <td class="${l.faturaNaoPaga ? 'negative' : ''}">${fmt(l.disponivelParaFatura)}</td>
             <td class="${l.saldoAcumulado < 0 ? 'negative' : ''}">${fmt(l.saldoAcumulado)}</td>
             <td>${badgeStatus(l.status)}</td>
           </tr>
