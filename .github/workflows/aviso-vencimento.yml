@@ -17,3 +17,5 @@ jobs:
 
       - name: Verificar e enviar vencimentos
         run: node scripts/aviso-vencimento.js
+        env:
+          TELEGRAM_CRON_SECRET: ${{ secrets.TELEGRAM_CRON_SECRET }}
