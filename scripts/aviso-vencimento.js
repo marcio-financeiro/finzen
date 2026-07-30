@@ -6,6 +6,7 @@
 const SUPABASE_URL = 'https://qgamphwnlrriwalcbhbl.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnYW1waHdubHJyaXdhbGNiaGJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNTkzMzUsImV4cCI6MjA5NjYzNTMzNX0.AV0mCZqYlNyqz9XVWeHImMljnpt4klxpUjBa1HHlYkM';
 const VERCEL_URL   = 'https://finzen-rho.vercel.app';
+const CRON_SECRET  = process.env.TELEGRAM_CRON_SECRET;
 
 // ── Utilitários ────────────────────────────────────────────────────────────────
 
@@ -66,7 +67,11 @@ async function buscarFaturas(dia, ref) {
 async function enviarTelegram(mensagem) {
   const r = await fetch(`${VERCEL_URL}/api/telegram`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'User-Agent': 'FinZen-GH-Actions/1.0' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'FinZen-GH-Actions/1.0',
+      'X-Cron-Secret': CRON_SECRET || '',
+    },
     body: JSON.stringify({ message: mensagem }),
   });
   if (!r.ok) throw new Error(`Telegram proxy ${r.status}: ${await r.text()}`);

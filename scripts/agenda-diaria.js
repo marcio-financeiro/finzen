@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const SERVICE_ACCOUNT = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
 const CALENDAR_ID     = process.env.GOOGLE_CALENDAR_ID;
 const VERCEL_URL      = 'https://finzen-rho.vercel.app';
+const CRON_SECRET     = process.env.TELEGRAM_CRON_SECRET;
 
 // ── JWT RS256 para Google Service Account ─────────────────────────────────────
 
@@ -109,7 +110,11 @@ function formatDiaLabel(dateStr) {
 async function enviarTelegram(mensagem) {
   const r = await fetch(`${VERCEL_URL}/api/telegram`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'User-Agent': 'FinZen-GH-Actions/1.0' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'FinZen-GH-Actions/1.0',
+      'X-Cron-Secret': CRON_SECRET || '',
+    },
     body: JSON.stringify({ message: mensagem }),
   });
   if (!r.ok) throw new Error(`Telegram proxy ${r.status}: ${await r.text()}`);

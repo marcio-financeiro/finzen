@@ -7,14 +7,24 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   // Antes este endpoint era público: qualquer um podia mandar mensagens ao chat.
-  // Agora exige o JWT Supabase do usuário, como os endpoints de IA.
-  const auth = req.headers['authorization'];
-  if (!auth?.startsWith('Bearer ')) return res.status(403).json({ error: 'Forbidden' });
-  const jwt = auth.slice(7);
-  const authRes = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
-    headers: { Authorization: `Bearer ${jwt}`, apikey: process.env.SUPABASE_SERVICE_KEY },
-  });
-  if (!authRes.ok) return res.status(403).json({ error: 'Forbidden' });
+  // Agora exige uma de duas coisas:
+  // 1) JWT Supabase do usuário logado (chamadas do app, via browser)
+  // 2) Segredo compartilhado (scripts do GitHub Actions — aviso-vencimento.js e
+  //    agenda-diaria.js — que rodam fora do app e não têm sessão de usuário)
+  const cronSecret = req.headers['x-cron-secret'];
+  const autorizadoPorSegredo = Boolean(
+    cronSecret && process.env.TELEGRAM_CRON_SECRET && cronSecret === process.env.TELEGRAM_CRON_SECRET
+  );
+
+  if (!autorizadoPorSegredo) {
+    const auth = req.headers['authorization'];
+    if (!auth?.startsWith('Bearer ')) return res.status(403).json({ error: 'Forbidden' });
+    const jwt = auth.slice(7);
+    const authRes = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${jwt}`, apikey: process.env.SUPABASE_SERVICE_KEY },
+    });
+    if (!authRes.ok) return res.status(403).json({ error: 'Forbidden' });
+  }
 
   const { message } = req.body || {};
   if (!message) return res.status(400).json({ error: 'message required' });

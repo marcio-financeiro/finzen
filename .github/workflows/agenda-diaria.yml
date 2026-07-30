@@ -20,3 +20,4 @@ jobs:
         env:
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
           GOOGLE_CALENDAR_ID:         ${{ secrets.GOOGLE_CALENDAR_ID }}
+          TELEGRAM_CRON_SECRET:      ${{ secrets.TELEGRAM_CRON_SECRET }}
