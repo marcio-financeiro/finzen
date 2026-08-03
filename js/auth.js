@@ -50,7 +50,11 @@ btnCadastro.addEventListener('click', async () => {
     return;
   }
 
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: 'https://finzen-rho.vercel.app/login.html' }
+  });
 
   showMessage(
     error ? error.message : 'Cadastro realizado. Verifique seu e-mail, se necessário.',
