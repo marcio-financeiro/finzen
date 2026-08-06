@@ -44,36 +44,29 @@ $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 1b. cotacao_* — usadas por api/cotacao-cron.js. Não estavam versionadas no
--- repo (existiam só no banco); recriadas aqui como fonte de verdade.
+-- repo (existiam só no banco); recriadas aqui com a definição REAL já em
+-- produção como fonte de verdade (confirmada via pg_get_functiondef antes de
+-- aplicar — a suposição inicial, com user_id, estava errada).
 -- ─────────────────────────────────────────────────────────────────────────────
 
-CREATE OR REPLACE FUNCTION cotacao_get_ativos()
-RETURNS TABLE(
-  id uuid, user_id uuid, ticker text, tipo text,
-  moeda text, quantidade numeric, corretora text
-)
-LANGUAGE sql SECURITY DEFINER SET search_path = public
+CREATE OR REPLACE FUNCTION public.cotacao_get_ativos()
+RETURNS TABLE(id uuid, ticker text, tipo text, moeda text, quantidade numeric, cotacao_atual numeric, corretora text, exchange_rate numeric)
+LANGUAGE sql SECURITY DEFINER SET search_path TO 'public'
 AS $$
-  SELECT id, user_id, ticker, tipo, moeda, quantidade, corretora
+  SELECT id, ticker, tipo, moeda, quantidade, cotacao_atual, corretora, exchange_rate
   FROM investments
   WHERE ativo = true;
 $$;
 
-CREATE OR REPLACE FUNCTION cotacao_patch_ativo(
-  p_id uuid,
-  p_cotacao numeric,
-  p_valor_brl numeric,
-  p_exchange_rate numeric,
-  p_atualizado_em timestamptz
-)
+CREATE OR REPLACE FUNCTION public.cotacao_patch_ativo(p_id uuid, p_cotacao numeric, p_valor_brl numeric, p_exchange_rate numeric, p_atualizado_em timestamp with time zone)
 RETURNS void
-LANGUAGE sql SECURITY DEFINER SET search_path = public
+LANGUAGE sql SECURITY DEFINER SET search_path TO 'public'
 AS $$
-  UPDATE investments
-  SET cotacao_atual   = p_cotacao,
-      valor_atual_brl = p_valor_brl,
-      exchange_rate   = NULLIF(p_exchange_rate, 0),
-      atualizado_em   = p_atualizado_em
+  UPDATE investments SET
+    cotacao_atual   = p_cotacao,
+    valor_atual_brl = p_valor_brl,
+    exchange_rate   = CASE WHEN p_exchange_rate > 0 THEN p_exchange_rate ELSE exchange_rate END,
+    atualizado_em   = p_atualizado_em
   WHERE id = p_id;
 $$;
 
