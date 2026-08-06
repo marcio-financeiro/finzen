@@ -14,9 +14,9 @@
 .panel,
 .kpi-card{
   background:var(--surface);
-  border:1px solid var(--border);
+  border:1px solid color-mix(in srgb, var(--border) 55%, var(--text) 45%);
   border-radius:var(--radius-lg);
-  box-shadow:var(--shadow);
+  box-shadow:none;
 }
 
 .auth-card{
@@ -281,11 +281,10 @@ textarea:focus{
 
 .kpi-clickable{
   cursor:pointer;
-  transition:transform .15s, box-shadow .15s;
+  transition:border-color .15s;
 }
 .kpi-clickable:hover{
-  transform:translateY(-2px);
-  box-shadow:0 4px 16px rgba(192,138,62,.15);
+  border-color:var(--accent);
 }
 
 .table-wrap{
@@ -408,14 +407,14 @@ input:-webkit-autofill:active{
 }
 .dash-kpi{
   padding:16px 18px;
-  border:1px solid var(--border);
+  border:1px solid color-mix(in srgb, var(--border) 55%, var(--text) 45%);
   border-radius:16px;
   background:var(--surface-2);
   cursor:pointer;
   transition:transform var(--transition-fast),box-shadow var(--transition-fast);
   animation:fadeInUp .3s ease both;
 }
-.dash-kpi:hover{ transform:translateY(-2px);box-shadow:0 4px 16px rgba(192,138,62,.18); }
+.dash-kpi:hover{ transform:none;box-shadow:none;border-color:var(--accent); }
 .dash-kpi:active{ transform:scale(.93); background:var(--surface-3); transition:transform .12s ease,background .12s ease; }
 .dash-kpi span{ font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px; }
 .dash-kpi strong{ font-size:20px;font-family:var(--font-mono);display:block;letter-spacing:-.03em; }
@@ -431,7 +430,7 @@ input:-webkit-autofill:active{
 
 /* ── Bloco genérico ── */
 .dash-block{
-  border:1px solid var(--border);
+  border:1px solid color-mix(in srgb, var(--border) 55%, var(--text) 45%);
   border-radius:16px;
   background:var(--surface-2);
   overflow:hidden;
