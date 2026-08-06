@@ -26,6 +26,40 @@
 <meta name="apple-mobile-web-app-title" content="Vyn">
 <link rel="apple-touch-icon" href="../icons/icon-192.png">
 
+<style>
+  /* Conceito "Ledger" (mesma linguagem do login redesenhado): grade fina de
+     papel atrás do conteúdo + cards hairline sem sombra difusa. */
+  .content{ position:relative; }
+  .content::before{
+    content:'';
+    position:absolute;
+    top:0; left:0; right:0; height:420px;
+    background-image:
+      linear-gradient(to right, var(--border) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+    background-size:40px 40px;
+    -webkit-mask-image:linear-gradient(to bottom, #000, transparent);
+    mask-image:linear-gradient(to bottom, #000, transparent);
+    opacity:.4;
+    pointer-events:none;
+  }
+
+  .dash-block,
+  .dash-kpi{
+    box-shadow:none;
+  }
+  .dash-kpi:hover,
+  .kpi-clickable:hover{
+    transform:none;
+    box-shadow:none;
+    border-color:var(--accent);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .content::before{ display:none; }
+  }
+</style>
+
 </head>
 
 <body>
