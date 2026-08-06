@@ -1,0 +1,61 @@
+body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
+
+  .ob-card {
+    width:100%; max-width:480px;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:20px; padding:36px 32px;
+    box-shadow:var(--shadow);
+  }
+
+  /* Progress steps */
+  .ob-steps {
+    display:flex; align-items:center; gap:0; margin-bottom:32px;
+  }
+  .ob-step {
+    width:28px; height:28px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:800; flex-shrink:0;
+    background:var(--surface-2); color:var(--muted);
+    border:2px solid var(--border); transition:all .2s;
+  }
+  .ob-step.active {
+    background:var(--gold-gradient); color:#000; border-color:transparent;
+    box-shadow:var(--gold-glow);
+  }
+  .ob-step.done { background:#1ec86a; color:#fff; border-color:transparent; }
+  .ob-step-line { flex:1; height:2px; background:var(--border); }
+  .ob-step-line.done { background:#1ec86a; }
+
+  /* Conteúdo dos steps */
+  .ob-step-content { display:none; }
+  .ob-step-content.active { display:block; }
+
+  .ob-icon { margin-bottom:16px; color:var(--accent); }
+  .ob-icon svg { width:42px; height:42px; }
+  .ob-title { font-size:22px; font-weight:900; margin-bottom:8px; }
+  .ob-sub { font-size:14px; color:var(--muted); margin-bottom:24px; line-height:1.6; }
+
+  /* Categorias sugeridas */
+  .cat-grid {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px;
+  }
+  .cat-chip {
+    padding:8px 6px; border-radius:8px; text-align:center;
+    border:1px solid var(--border); cursor:pointer;
+    font-size:12px; font-weight:600; color:var(--muted);
+    background:var(--surface-2); transition:all .15s; user-select:none;
+  }
+  .cat-chip.selected {
+    border-color:var(--accent); color:var(--accent);
+    background:var(--accent-dim);
+  }
+  .cat-chip .cat-icon { font-size:20px; display:block; margin-bottom:3px; }
+
+  .ob-nav { display:flex; gap:10px; margin-top:24px; }
+  .ob-nav button { flex:1; }
+
+  .ob-skip {
+    text-align:center; margin-top:16px;
+    font-size:12px; color:var(--muted); cursor:pointer;
+    text-decoration:underline;
+  }

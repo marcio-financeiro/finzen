@@ -1,0 +1,51 @@
+/* ── Abas ── */
+.off-tabs{display:flex;gap:4px;padding:14px 18px 0;border-bottom:1px solid var(--border);}
+.off-tab{padding:10px 18px;border:none;background:transparent;color:var(--muted);
+  font-weight:800;font-size:13px;cursor:pointer;border-bottom:3px solid transparent;
+  transition:color .15s,border-color .15s;margin-bottom:-1px;}
+.off-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.off-tab-content{display:none;padding:20px;}
+.off-tab-content.active{display:block;}
+
+/* ── KPIs ── */
+.off-kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+.off-kpi{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;}
+.off-kpi span{font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:4px;}
+.off-kpi strong{font-size:20px;font-weight:900;display:block;}
+
+/* ── Timeline de ciclos ── */
+.off-ciclo-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:16px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start;
+  transition:border-color .15s;cursor:pointer;
+}
+.off-ciclo-card:hover{border-color:var(--accent);}
+.off-ciclo-status{
+  width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px;
+}
+.off-ciclo-info{flex:1;}
+.off-ciclo-plat{font-size:14px;font-weight:800;}
+.off-ciclo-datas{font-size:12px;color:var(--muted);margin-top:3px;}
+.off-ciclo-badges{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+
+/* ── Certificações ── */
+.cert-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;
+  cursor:pointer;transition:border-color .15s;
+}
+.cert-card:hover{border-color:var(--accent);}
+.cert-status-bar{width:4px;border-radius:2px;align-self:stretch;flex-shrink:0;}
+.cert-info{flex:1;}
+.cert-nome{font-size:14px;font-weight:800;}
+.cert-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.cert-dias{font-size:13px;font-weight:800;flex-shrink:0;text-align:right;}
+
+/* Status cores */
+.status-valida   {background:#1ec86a;}
+.status-avencer  {background:#f5a623;}
+.status-vencida  {background:#f04e4e;}
+.status-planejado{background:#4b84f3;}
+.status-embarcado{background:#f5a623;}
+.status-concluido{background:#1ec86a;}
+.status-cancelado{background:#6b7094;}

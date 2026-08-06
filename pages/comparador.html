@@ -16,115 +16,11 @@
 <link rel="stylesheet" href="../css/mobile.css">
 <link rel="stylesheet" href="../css/navigation.css">
 <link rel="stylesheet" href="../css/editorial.css">
+<link rel="stylesheet" href="../css/pages/comparador.css">
 <script src="../js/version.js"></script>
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#c08a3e">
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<style>
-/* ── Layout ── */
-.comp-grid {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 16px;
-  align-items: start;
-}
-@media(max-width: 860px){ .comp-grid{ grid-template-columns: 1fr; } }
-
-.comp-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 20px;
-  margin-bottom: 16px;
-}
-.comp-panel h2 { font-size: 14px; font-weight: 800; margin-bottom: 16px; }
-
-/* ── Inputs ── */
-.comp-input-group { margin-bottom: 12px; }
-.comp-input-group label {
-  display: block; font-size: 12px; color: var(--muted);
-  margin-bottom: 4px; font-weight: 600;
-}
-.comp-input-group input, .comp-input-group select {
-  width: 100%; padding: 9px 12px;
-  border: 1px solid var(--border); border-radius: 8px;
-  background: var(--surface); color: var(--text);
-  font-size: 14px; font-family: inherit;
-}
-.comp-input-group input:focus, .comp-input-group select:focus {
-  outline: none; border-color: var(--accent);
-}
-
-/* ── Produtos ── */
-.comp-produtos { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-.comp-produto {
-  display: flex; align-items: center; gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid var(--border); border-radius: 10px;
-  background: var(--surface);
-}
-.comp-produto-cor {
-  width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
-}
-.comp-produto-nome { flex: 1; font-size: 13px; font-weight: 600; }
-.comp-produto-taxa { font-size: 12px; color: var(--muted); }
-.comp-produto input[type="checkbox"] {
-  width: 16px; height: 16px; cursor: pointer; flex-shrink: 0;
-  accent-color: var(--accent);
-}
-
-/* ── Produto customizado ── */
-.comp-custom {
-  display: grid; grid-template-columns: 1fr 80px;
-  gap: 8px; margin-top: 8px;
-}
-
-/* ── Tabela resultados ── */
-.comp-tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
-.comp-tabela th {
-  text-align: left; padding: 8px 12px;
-  font-size: 11px; font-weight: 700; color: var(--muted);
-  text-transform: uppercase; letter-spacing: .05em;
-  border-bottom: 1px solid var(--border);
-}
-.comp-tabela td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.04); }
-.comp-tabela tr:hover td { background: rgba(255,255,255,.02); }
-.comp-tabela tr.melhor td { background: rgba(34,197,94,.06); }
-.comp-tabela tr.melhor td:first-child { border-left: 3px solid var(--success); }
-
-/* ── Gráfico ── */
-.comp-chart-wrap { position: relative; height: 320px; }
-
-/* ── Período tabs ── */
-.comp-periodos {
-  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;
-}
-.comp-periodo-btn {
-  padding: 5px 14px; border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--surface); color: var(--muted);
-  font-size: 12px; cursor: pointer; font-family: inherit;
-  transition: all .15s;
-}
-.comp-periodo-btn.ativo {
-  border-color: var(--accent); background: rgba(79,132,243,.12);
-  color: var(--text); font-weight: 700;
-}
-
-/* ── Badge melhor ── */
-.badge-melhor {
-  background: rgba(34,197,94,.15); color: var(--success);
-  font-size: 10px; font-weight: 700; padding: 2px 8px;
-  border-radius: 99px; margin-left: 6px;
-}
-
-/* ── CDI info ── */
-.comp-cdi-info {
-  font-size: 11px; color: var(--muted);
-  margin-top: 4px; padding: 6px 10px;
-  background: rgba(255,255,255,.03); border-radius: 6px;
-}
-</style>
 </head>
 <body>
 <div class="app-shell">

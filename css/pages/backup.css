@@ -1,0 +1,15 @@
+.backup-options{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;
+}
+@media(max-width:600px){ .backup-options{ grid-template-columns:1fr; } }
+.backup-option{
+  border:1px solid var(--border);border-radius:16px;padding:20px;
+  background:var(--surface-2);text-align:center;
+}
+.backup-option h3{ font-size:14px;margin:10px 0 6px; }
+.backup-option p{ font-size:12px;color:var(--muted);margin-bottom:14px; }
+.backup-option .icon{ color:var(--accent); }
+.backup-option .icon svg{ width:30px; height:30px; }
+.drive-status{
+  font-size:12px;color:var(--muted);margin-top:8px;min-height:18px;
+}
