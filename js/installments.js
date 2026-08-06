@@ -25,6 +25,7 @@ const listaCompras       = el('listaCompras');
 let cartoes = [];
 let linhas  = [];   // todas as linhas de card_transactions com parcelas > 1
 let grupos  = [];   // compras agrupadas
+let mesSelecionado = null; // ref (YYYY-MM) do mês clicado na projeção, ou null
 
 function msg(texto, tipo = 'info'){
   mensagem.className = `message ${tipo}`;
@@ -136,11 +137,57 @@ function renderProjecao(gruposFiltrados){
     total: abertas.filter(i => i.fatura_referencia === ref).reduce((s, i) => s + Number(i.valor_parcela || 0), 0),
   })).filter((m, idx) => m.total > 0 || idx === 0);
 
+  const th = m => `<th class="mes-projecao${m.ref === mesSelecionado ? ' selecionado' : ''}" data-action="filtrarMesProjecao" data-ref="${m.ref}" style="cursor:pointer;${m.ref === mesSelecionado ? 'color:var(--accent)' : ''}">${refName(m.ref)}</th>`;
+  const td = m => `<td class="mes-projecao${m.ref === mesSelecionado ? ' selecionado' : ''}" data-action="filtrarMesProjecao" data-ref="${m.ref}" style="cursor:pointer;${m.ref === mesSelecionado ? 'color:var(--accent);font-weight:800' : ''}">${m.total > 0 ? fmt(m.total) : '-'}</td>`;
+
   tabelaProjecao.innerHTML = `
     <table class="data-table" style="width:100%">
-      <thead><tr>${porMes.map(m => `<th>${refName(m.ref)}</th>`).join('')}</tr></thead>
-      <tbody><tr>${porMes.map(m => `<td>${m.total > 0 ? fmt(m.total) : '-'}</td>`).join('')}</tr></tbody>
-    </table>`;
+      <thead><tr>${porMes.map(th).join('')}</tr></thead>
+      <tbody><tr>${porMes.map(td).join('')}</tr></tbody>
+    </table>
+    <p class="muted" style="margin:8px 0 0;font-size:12px">Clique em um mês pra ver só as parcelas abertas dele.</p>
+    <div id="mesDetalhe" style="margin-top:12px"></div>`;
+
+  renderMesDetalhe(gruposFiltrados);
+}
+
+function renderMesDetalhe(gruposFiltrados){
+  const container = el('mesDetalhe');
+  if(!container) return;
+
+  if(!mesSelecionado){
+    container.innerHTML = '';
+    return;
+  }
+
+  const itens = gruposFiltrados
+    .flatMap(g => g.itens
+      .filter(i => i.status !== 'paga' && i.fatura_referencia === mesSelecionado)
+      .map(i => ({ ...i, descricao: g.descricao, cartaoNome: g.cartaoNome })))
+    .sort((a, b) => (b.valor_parcela || 0) - (a.valor_parcela || 0));
+
+  const total = itens.reduce((s, i) => s + Number(i.valor_parcela || 0), 0);
+
+  container.innerHTML = `
+    <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <h3 style="margin:0;font-size:.95rem">Parcelas abertas em ${refName(mesSelecionado)}</h3>
+      <button type="button" class="btn compact" data-action="limparFiltroMes">Limpar</button>
+    </div>
+    ${itens.length ? `
+      <table class="data-table" style="width:100%">
+        <thead><tr><th>Compra</th><th>Cartão</th><th>Parcela</th><th>Valor</th></tr></thead>
+        <tbody>
+          ${itens.map(i => `
+            <tr>
+              <td>${escapeHtml(i.descricao || '(sem descrição)')}</td>
+              <td>${escapeHtml(i.cartaoNome)}</td>
+              <td>${i.parcela_atual}/${i.parcelas}</td>
+              <td>${fmt(i.valor_parcela)}</td>
+            </tr>`).join('')}
+        </tbody>
+        <tfoot><tr><td colspan="3" style="text-align:right;font-weight:800">Total</td><td style="font-weight:800">${fmt(total)}</td></tr></tfoot>
+      </table>`
+      : '<p class="muted" style="padding:8px 0">Nenhuma parcela aberta neste mês.</p>'}`;
 }
 
 function renderLista(gruposFiltrados){
@@ -209,6 +256,17 @@ registrarAcao('toggleParcelamento', (elClicado) => {
   const chave = elClicado.dataset.chave;
   const detalhe = listaCompras.querySelector(`[data-chave-detail="${CSS.escape(chave)}"]`);
   if(detalhe) detalhe.style.display = detalhe.style.display === 'none' ? '' : 'none';
+});
+
+registrarAcao('filtrarMesProjecao', (elClicado) => {
+  const ref = elClicado.dataset.ref;
+  mesSelecionado = mesSelecionado === ref ? null : ref;
+  renderProjecao(gruposFiltradosAtuais());
+});
+
+registrarAcao('limparFiltroMes', () => {
+  mesSelecionado = null;
+  renderProjecao(gruposFiltradosAtuais());
 });
 
 filtroCartao.addEventListener('change', render);
