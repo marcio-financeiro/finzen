@@ -47,12 +47,22 @@
   .dash-block,
   .dash-kpi{
     box-shadow:none;
+    border-color:color-mix(in srgb, var(--border) 55%, var(--text) 45%);
   }
   .dash-kpi:hover,
   .kpi-clickable:hover{
     transform:none;
     box-shadow:none;
     border-color:var(--accent);
+  }
+
+  /* ── Header no estilo do login: hairline mais marcada + meta em mono ── */
+  .topbar{
+    border-bottom-color:color-mix(in srgb, var(--border) 55%, var(--text) 45%);
+  }
+  .topbar .muted{
+    font-family:var(--font-mono);
+    letter-spacing:.02em;
   }
 
   @media (prefers-reduced-motion: reduce){
