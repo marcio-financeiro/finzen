@@ -61,10 +61,9 @@
 
 <body>
 <div class="app-shell">
-  <aside class="sidebar">
-    <div class="sidebar-brand">Vyn</div>
-    <nav class="sidebar-nav"></nav>
-  </aside>
+  <!-- Conteúdo interno é montado por navigation.js (ensureDesktopSidebar) —
+       aside vazio só reserva o espaço, evita layout shift até o JS rodar -->
+  <aside class="sidebar"></aside>
 
   <main class="content">
     <header class="topbar">

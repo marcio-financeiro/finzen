@@ -24,23 +24,9 @@
 
 <div class="app-shell">
 
-  <aside class="sidebar">
-    <div class="sidebar-brand">Vyn</div>
-
-    <nav class="sidebar-nav">
-      <a href="./dashboard.html">Dashboard</a>
-      <a href="./registrations.html?tab=contas">Contas</a>
-      <a href="./registrations.html?tab=categorias">Categorias</a>
-      <a href="./transactions.html">Lançamentos</a>
-      <a href="./registrations.html?tab=cartoes">Cartões</a>
-      <a href="./movements.html?tipo=cartao">Compras no Cartão</a>
-      <a href="./card-bills.html">Faturas</a>
-      <a href="./budgets.html">Orçamento</a>
-      <a href="./goals.html">Metas</a>
-      <a href="./investments.html">Investimentos</a>
-      <a class="active" href="./asset-transactions.html">Movimentações</a>
-    </nav>
-  </aside>
+  <!-- Conteúdo interno é montado por navigation.js (ensureDesktopSidebar) —
+       aside vazio só reserva o espaço, evita layout shift até o JS rodar -->
+  <aside class="sidebar"></aside>
 
   <main class="content">
 
