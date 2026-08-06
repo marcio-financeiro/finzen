@@ -27,9 +27,9 @@ Fluxo obrigatório:
 
 Checks adicionais:
 - Checar que toda função que usa `await` é declarada como `async`
-- Ao alterar JS: **não precisa fazer nada** — `vercel.json` serve todos os `/js/*.js` com `Cache-Control: no-store`, browser sempre busca versão fresca
-- Ao alterar CSS: incrementar `ASSET_VERSION` em `js/version.js` (ver valor atual no próprio arquivo) — ele re-aplica `?v=` nos `<link>` CSS forçando re-fetch
-- Ao alterar HTMLs cacheados pelo SW (`login.html`, `pages/dashboard.html`): incrementar `CACHE_NAME` em `sw.js` (ver valor atual no próprio arquivo, formato `vyn-vX.Y`)
+- Ao alterar JS: **não precisa fazer nada** — `vercel.json` serve `/js/*.js` com `Cache-Control: public, max-age=0, must-revalidate` (ETag), o browser sempre revalida no servidor
+- Ao alterar CSS: incrementar `ASSET_VERSION` em `js/version.js` (ver valor atual no próprio arquivo) — ele reaplica `?v=` nos `<link>` CSS. `js/version.js` roda no `<head>`, logo após os `<link>` de CSS (não no fim do `<body>`) — se criar uma página nova, mantenha essa ordem
+- Ao alterar HTMLs cacheados pelo SW (`login.html`, `pages/dashboard.html`, `pages/movements.html`, `pages/mobile.html`, `pages/card-bills.html`, `pages/registrations.html` — ver `CACHE_URLS` em `sw.js`): incrementar `CACHE_NAME` em `sw.js` (formato `vyn-vX.Y`)
 - Nunca deixar quebrar páginas que não foram pedidas para alterar
 
 ## Contexto do projeto
@@ -72,10 +72,11 @@ css/            → variables.css → base.css → layout.css → components.css
                   navigation.css → mobile.css · editorial.css (breakpoint mobile: 820px)
 api/quotes.js   → Serverless Function (proxy brapi.dev + Yahoo Finance)
 api/_aiRateLimit.js → limite diário nos endpoints de IA (tabela ai_usage)
-database/       → Migrations SQL (YYYY_MM_DD_descricao.sql) — aplicar no SQL Editor
+database/       → Migrations SQL (YYYY_MM_DD_descricao.sql) — aplicar no SQL Editor.
+                  database/schema.sql = fonte de verdade do schema atual (extraída do banco)
 js/config.js    → SUPABASE_URL, SUPABASE_ANON_KEY, APP_VERSION
 manifest.json   → PWA (start_url: dashboard; shortcuts de lançamento)
-vercel.json     → headers no-store p/ /js/*.js + crons (telegram/cotacao/recurring)
+vercel.json     → security headers (CSP etc.) + cache de /js e /css + crons (telegram/cotacao/recurring)
 ```
 
 ## Stack
@@ -91,21 +92,32 @@ vercel.json     → headers no-store p/ /js/*.js + crons (telegram/cotacao/recur
 | Câmbio       | AwesomeAPI + brapi fallback                   |
 | E-mail       | EmailJS                                       |
 
-## Design system (v12.0 — Midnight Vault)
+## Design system
+
+Tokens reais em `css/variables.css` (única fonte de verdade — este bloco é só um resumo, conferir o arquivo antes de usar cor "de cabeça"):
 
 ```css
---accent:      #f59e0b   /* dourado FinZen */
---bg-root:     #07080f   /* fundo raiz */
---bg-surface:  #0f1018   /* topbar, sidebar */
---bg-card:     #161821   /* cards */
---color-income:  #10b981
---color-expense: #ef4444
---color-transfer:#3b82f6
---font-ui:     'Inter', sans-serif
---font-mono:   'DM Mono', monospace
+--bg:            #0a0c10
+--surface:       #12151c
+--surface-2:     #181c24
+--surface-3:     #20242e
+--border:        #232732
+--accent:        #c08a3e   /* dourado */
+--accent-bright: #dcb067
+--success:       #3f8f63
+--danger:        #cf6a55
+--warning:       #c08a3e
+--info:          #3b82f6
+--text:          #e8e4d8
+--muted:         #94907f
+--radius-sm/md/lg: 8px/10px/12px
 ```
 
-Arquivos CSS em `css/`: base.css → layout.css → components.css → navigation.css → mobile.css → editorial.css.
+Existe também `html[data-theme="light"]` (tema claro) definido no mesmo arquivo — não usar `prefers-color-scheme`, a troca é manual via atributo.
+
+Tokens de espaçamento (`--space-1`..`--space-8`) e tipografia (`--text-xs`..`--text-3xl`) também existem em `variables.css` mas **hoje quase não são usados** em `components.css` (valores mágicos em px direto) — ao escrever CSS novo, preferir os tokens.
+
+Arquivos CSS em `css/`: variables.css → base.css → layout.css → components.css → navigation.css → mobile.css → editorial.css.
 Importar nessa ordem em todas as páginas (editorial.css só onde necessário).
 
 ## Padrões de código obrigatórios
@@ -145,13 +157,11 @@ async function carregarDados() { ... }
 
 ## Banco de dados (Supabase)
 
-Tabelas (todas com RLS `auth.uid() = user_id`):
-`accounts` · `transactions` · `credit_cards` · `card_transactions`
-`investments` · `investment_transactions` · `dividends`
-`account_transfers` · `exchange_transactions` · `categories` · `budgets`
-`goals` · `allocation_targets` · `category_rules` · `user_settings`
-`recurring_transactions` · `calendar_events` · `offshore_cycles`
-`offshore_overtime` · `certifications` · `patrimony_history`
+29 tabelas, todas com RLS (`auth.uid() = user_id`, exceto `stay_*`/`travel_*`/`category_rules` que usam `FOR ALL`). Schema completo e atualizado: **`database/schema.sql`** (extraído do banco, é a fonte de verdade — não confiar de cabeça numa lista fixa aqui, ela fica desatualizada).
+
+Grupos: financeiro (`accounts`, `transactions`, `credit_cards`, `card_transactions`, `categories`, `category_rules`, `budgets`, `goals`, `account_transfers`, `exchange_transactions`, `recurring_transactions`) · investimentos (`investments`, `investment_transactions`, `dividends`, `allocation_targets`, `patrimony_history`) · gestão pessoal (`calendar_events`, `offshore_cycles`, `offshore_overtime`, `certifications`) · viagens (`travel_favorites`, `travel_alerts`, `stay_favorites`, `stay_alerts`) · sistema (`user_settings`, `ai_usage`, `telegram_links`, `telegram_pending`, `profiles` — órfã, sem uso no código).
+
+RPCs `SECURITY DEFINER` (`aviso_*`, `cotacao_*`) só podem ser chamadas com `service_role` desde a migration `2026_08_06_fase0_seguranca.sql` — nunca com a anon key.
 
 ## Proxy de cotações (api/quotes.js)
 
@@ -167,11 +177,11 @@ Regra: tickers com dígito = BR; só letras = EUA.
 ## Áreas de risco
 
 - **ES Modules + onclick:** funções de módulos não ficam no escopo global automaticamente — usar `data-action` + `registrarAcao` (preferido) ou `window.fn = fn` (legado)
-- **Cache JS:** `vercel.json` já garante `no-store` para todos os `.js` — não adicionar `?v=` em `<script>` tags, o browser sempre busca do servidor
-- **Cache CSS:** `version.js` aplica `?v=XXXX` nos `<link>` CSS em runtime — funciona porque mudar `href` de um `<link>` força re-fetch imediato
-- **Cache HTML:** o SW cacheia `login.html` e `dashboard.html` — ao mudar estrutura desses HTMLs, incrementar `CACHE_NAME` em `sw.js`
-- **`version.js` não faz cache-bust de JS:** o speculative preloader do browser busca scripts antes de `version.js` executar; por isso a abordagem `no-store` no servidor
+- **Cache JS:** `vercel.json` serve `/js/*.js` com `Cache-Control: public, max-age=0, must-revalidate` — não adicionar `?v=` em `<script>` tags, o servidor sempre revalida (ETag/304) e o browser não reusa versão antiga
+- **Cache CSS:** `js/version.js` roda no `<head>`, logo após os `<link>` de CSS — aplica `?v=XXXX` antes do browser terminar de parsear o `<head>`. Se mover esse `<script>` pro fim do `<body>` de novo, volta o bug de CSS baixado 2x (uma vez com o `?v=` "cru" do HTML, outra com o `?v=` corrigido tarde)
+- **Cache HTML:** o SW cacheia `login.html`, `pages/dashboard.html`, `pages/movements.html`, `pages/mobile.html`, `pages/card-bills.html`, `pages/registrations.html` (ver `CACHE_URLS` em `sw.js`) — ao mudar estrutura de qualquer um desses, incrementar `CACHE_NAME`
 - **Edge Functions Vercel:** bloqueiam APIs externas — usar Serverless Node.js (`vercel.json: {}`)
 - **Yahoo Finance:** pode ser instável em IPs Vercel
 - **BCB API:** bloqueia Vercel e CORS — inviável, não usar
 - **Promise.all:** alinhar queries e variáveis com comentários para evitar desalinhamento silencioso
+- **RPCs SECURITY DEFINER:** as RPCs de leitura/escrita em massa (`aviso_*`, `cotacao_*`, usadas por crons) exigem `service_role` — nunca chamar com a anon key do client

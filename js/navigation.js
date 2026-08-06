@@ -175,7 +175,6 @@ function isActive(href) {
     'asset-transactions.html': 'investments.html',
     'dividends.html':       'investments.html',
     'allocation.html':      'investments.html',
-    'transfers.html':       'account-statement.html',
   };
   if (aliases[file] === target) return true;
 
@@ -697,11 +696,6 @@ function ensureFAB() {
   });
 }
 
-// ─── Remove nav inferior legada ───────────────────────────────────────────────
-function removeOldBottomNav() {
-  document.querySelectorAll('nav.mobile-nav').forEach(nav => nav.remove());
-}
-
 // ─── Init ─────────────────────────────────────────────────────────────────────
 function initNavigation() {
   // Primeiro acesso: redirecionar para o Dashboard
@@ -735,7 +729,6 @@ function initNavigation() {
   } catch(_) {}
 
   carregarProfileCard().catch(() => {});
-  removeOldBottomNav();
   ensureMobileDrawer();
   ensureMenuButton();
   ensureMobilePrivacyBtn();
