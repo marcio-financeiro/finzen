@@ -2,6 +2,7 @@ import { APP_VERSION } from './config.js';
 import { supabase } from './supabaseClient.js';
 import { registrarAcao } from './eventBus.js';
 import { ICON_SPRITE_MARKUP } from './iconSprite.js';
+import { getActiveAccounts } from './services/dataService.js';
 
 // ─── Sidebar rail: aplicar antes do primeiro paint (anti-flash) ───────────────
 const SIDEBAR_RAIL_KEY = 'finzen_sidebar_rail';
@@ -269,11 +270,11 @@ async function carregarProfileCard() {
 
     // Stats: saldo / cartões / metas
     const [
-      { data: contas },
+      contas,
       { count: numCartoes },
       { count: numMetas },
     ] = await Promise.all([
-      supabase.from('accounts').select('saldo_atual,currency').eq('user_id', user.id).eq('active', true),
+      getActiveAccounts(supabase, user.id), // compartilhado com dashboard.js/assistantBar.js na mesma página
       supabase.from('credit_cards').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('ativo', true),
       supabase.from('goals').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('ativo', true),
     ]);

@@ -517,10 +517,12 @@ async function execLancar(tipo, valor, descricao, nomeConta, todasContas, catego
 
   await sbPost('transactions', payload);
 
-  // Delta atômico via RPC (mesma função usada pelo client em balanceService.js)
-  // em vez de SELECT saldo → soma em JS → UPDATE, que tem race condition.
+  // Delta atômico via RPC. increment_account_balance (usada pelo client) checa
+  // auth.uid(), que é NULL numa chamada com service_role — por isso aqui usa a
+  // variante fz_increment_saldo_service, que recebe o user_id explícito
+  // (a autorização já foi feita por resolveUser(), que liga chat_id -> user_id).
   const delta = tipo === 'receita' ? valor : -valor;
-  await sbRpc('increment_account_balance', { p_account_id: conta.id, p_delta: delta });
+  await sbRpc('fz_increment_saldo_service', { p_account_id: conta.id, p_user_id: ctx().userId, p_delta: delta });
   const novoSaldo = Number(conta.saldo_atual || 0) + delta;
 
   const emoji = tipo === 'receita' ? '💰' : '💸';

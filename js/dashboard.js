@@ -4,6 +4,7 @@ import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { emailService } from './emailService.js';
 import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
+import { getActiveAccounts } from './services/dataService.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 
 // ── Auth ──────────────────────────────────────────────
@@ -129,7 +130,7 @@ async function carregarDashboard(){
       { data: investimentos },
       { data: orcAnteriores },
     ] = await Promise.all([
-      supabase.from('accounts').select('id,nome,currency,saldo_atual,color').eq('user_id',user.id).eq('active',true),                                                                                                          // contas
+      getActiveAccounts(supabase,user.id).then(data=>({data})),                                                                                                                                                                    // contas (dataService — compartilhado com navigation.js/assistantBar.js na mesma página)
       supabase.from('transactions').select('type,amount,status,date,category_id,accounts:account_id(currency),categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),                  // transacoesMes
       supabase.from('card_transactions').select('valor_parcela,fatura_referencia,status,card_id,category_id').eq('user_id',user.id).in('status',['aberta','pendente']).in('fatura_referencia',[ref,refProximo,refProx2]),      // parcelasMes (3 meses, abertas — faturas + projeção 90d)
       supabase.from('transactions').select('id,description,amount,date,type,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date', (() => { const d=new Date(hoje()); d.setDate(d.getDate()+7); return d.toISOString().split('T')[0]; })()).order('date',{ascending:true}).limit(5), // transacoesPendentes

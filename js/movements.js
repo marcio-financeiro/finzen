@@ -429,22 +429,21 @@ async function saveAccountTransaction(description, amount, date, notes){
 
   if(!accountId){ showMessage('Selecione a conta.','warning'); return; }
 
-  const { error } = await supabase.from('transactions').insert({
-    user_id:user.id, account_id:accountId, category_id:categoryId,
-    type, amount, description, date, status, notes,
-    is_recurring:isRecurring,
-    recurrence_frequency:isRecurring ? recurrence : null,
-    recurrence_until:isRecurring ? until : null,
-    recurrence_group_id:groupId,
-    parent_transaction_id:null,
+  // Insert da transação + ajuste de saldo (se status=pago) na mesma transação
+  // do banco via RPC — antes eram 2 chamadas separadas (insert + ajustarSaldo),
+  // com risco de transação gravada e saldo não ajustado se a 2ª falhasse.
+  const { error } = await supabase.rpc('fz_lancar_transacao', {
+    p: {
+      account_id:accountId, category_id:categoryId,
+      type, amount, description, date, status, notes,
+      is_recurring:isRecurring,
+      recurrence_frequency:isRecurring ? recurrence : null,
+      recurrence_until:isRecurring ? until : null,
+      recurrence_group_id:groupId,
+    },
   });
 
   if(error){ showMessage('Erro ao salvar: '+error.message,'danger'); return; }
-
-  if(status === 'pago'){
-    const ok = await applyAccountBalance(accountId, type, amount, 'apply');
-    if(!ok) return;
-  }
 
   if(isRecurring) await gerarOcorrenciasRecorrentes();
 
@@ -1252,28 +1251,13 @@ window.deleteTransferFinZen = async function(id){
 // ── Dar baixa em lançamento pendente com 1 clique ────
 window.pagarMovimentoFinZen = async function(id) {
   try {
-    // Buscar transação
-    const { data: tx, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('id', id).eq('user_id', user.id).single();
+    // Marca como pago + ajusta saldo na mesma transação do banco (RPC) — o
+    // que antes eram 3 passos separados (select, update status, ajustarSaldo)
+    // agora é atômico: nunca fica pago sem saldo ajustado nem vice-versa.
+    const { error } = await supabase.rpc('fz_marcar_pago', { p_transaction_id: id });
+    if(error){ showMessage(error.message.includes('já está pago') ? 'Lançamento já está pago.' : 'Erro ao dar baixa: '+error.message, error.message.includes('já está pago') ? 'info' : 'danger'); return; }
 
-    if(error || !tx) { showMessage('Lançamento não encontrado.', 'danger'); return; }
-    if(tx.status === 'pago') { showMessage('Lançamento já está pago.', 'info'); return; }
-
-    // Marcar como pago
-    await supabase.from('transactions')
-      .update({ status: 'pago' })
-      .eq('id', id).eq('user_id', user.id);
-
-    // Delta atômico via RPC (mesmo caminho do lançamento normal) — antes fazia
-    // SELECT saldo → soma em JS → UPDATE, sujeito a race condition entre abas.
-    if(tx.account_id){
-      const ok = await applyAccountBalance(tx.account_id, tx.type, tx.amount, 'apply');
-      if(!ok) return;
-    }
-
-    showMessage(`✓ "${tx.description}" marcado como pago!`, 'success');
+    showMessage('✓ Lançamento marcado como pago!', 'success');
     await loadMovements();
   } catch(e) {
     showMessage('Erro ao dar baixa: ' + e.message, 'danger');

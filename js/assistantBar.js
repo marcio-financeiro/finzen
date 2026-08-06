@@ -10,6 +10,7 @@
  */
 
 import { supabase } from './supabaseClient.js';
+import { getActiveAccounts } from './services/dataService.js';
 
 const CACHE_KEY = 'finzen_assistant_panel_v1';
 const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 horas
@@ -48,7 +49,7 @@ async function coletarContexto(userId) {
   const inicio  = `${ref}-01`;
 
   const queries = [
-    supabase.from('accounts').select('saldo_atual,currency').eq('user_id', userId).eq('active', true),
+    getActiveAccounts(supabase, userId).then(data => ({ data })), // compartilhado com dashboard.js/navigation.js
     supabase.from('transactions').select('type,amount,status').eq('user_id', userId).gte('date', inicio).lte('date', hojeISO),
     supabase.from('card_transactions').select('valor_parcela').eq('user_id', userId).eq('status', 'aberta').eq('fatura_referencia', ref),
     supabase.from('transactions').select('id').eq('user_id', userId).eq('status', 'pendente').gte('date', hojeISO).lte('date', em7),
