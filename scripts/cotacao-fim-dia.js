@@ -1,13 +1,13 @@
 // scripts/cotacao-fim-dia.js — Cotações de fechamento + atualização do banco
-// Roda no GitHub Actions (Node 20, fetch nativo). Sem dependências externas.
-// Chama o proxy Vercel (já tem BRAPI_TOKEN) — sem novos secrets necessários.
-// Usa anon key + funções RPC SECURITY DEFINER (sem service key necessária).
-
-// Credenciais públicas — mesmas de js/config.js
-const SUPABASE_URL = 'https://qgamphwnlrriwalcbhbl.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnYW1waHdubHJyaXdhbGNiaGJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNTkzMzUsImV4cCI6MjA5NjYzNTMzNX0.AV0mCZqYlNyqz9XVWeHImMljnpt4klxpUjBa1HHlYkM';
+// NÃO está agendado por nenhum workflow do GitHub Actions no momento (ver
+// .github/workflows/) — api/cotacao-cron.js (Vercel Cron) já cobre esse job.
+// Mantido só como referência/uso manual.
+// As RPCs cotacao_* agora exigem service_role (migration de segurança da
+// Fase 0) — configurar SUPABASE_SERVICE_KEY nos GitHub Secrets se for usar.
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 // Telegram token fica no Vercel (env var) — script chama /api/telegram em vez de Telegram direto
-const VERCEL_URL   = 'https://finzen-rho.vercel.app';
+const VERCEL_URL    = 'https://finzen-rho.vercel.app';
 
 // Mesma classificação de investments.js
 const TIPOS_BR  = ['acao_br', 'fii', 'etf_br'];

@@ -3,9 +3,12 @@
 
 import { isBR, isEUA, buscarCotacoes, montarResumoCarteira } from './_cotacaoResumo.js';
 
-const SUPABASE_URL = 'https://qgamphwnlrriwalcbhbl.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnYW1waHdubHJyaXdhbGNiaGJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNTkzMzUsImV4cCI6MjA5NjYzNTMzNX0.AV0mCZqYlNyqz9XVWeHImMljnpt4klxpUjBa1HHlYkM';
-const VERCEL_URL   = 'https://finzen-rho.vercel.app';
+// SUPABASE_URL/SUPABASE_KEY: nunca hardcode aqui — as RPCs cotacao_get_ativos/
+// cotacao_patch_ativo passam a exigir service_role (migration de segurança da
+// Fase 0), então a anon key não teria mais acesso de qualquer forma.
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const VERCEL_URL    = 'https://finzen-rho.vercel.app';
 
 function isRF(tipo) { return tipo === 'renda_fixa'; }
 
@@ -80,7 +83,8 @@ async function executar() {
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.authorization !== `Bearer ${secret}`) {
+  if (!secret) return res.status(500).json({ error: 'CRON_SECRET não configurado' });
+  if (req.headers.authorization !== `Bearer ${secret}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -89,6 +93,6 @@ export default async function handler(req, res) {
     res.status(200).json(result);
   } catch (e) {
     console.error('cotacao-cron:', e.message);
-    res.status(200).json({ ok: false, error: e.message });
+    res.status(500).json({ ok: false, error: e.message });
   }
 }

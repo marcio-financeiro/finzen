@@ -1,6 +1,7 @@
 // api/telegram-webhook.js — FinZen Assessor Telegram (multi-usuário)
 // Setup: GET /api/telegram-webhook?setup=1
 
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { buscarCotacoes, montarResumoCarteira } from './_cotacaoResumo.js';
 
 const BOT_TOKEN       = process.env.TELEGRAM_BOT_TOKEN;
@@ -18,9 +19,16 @@ const sbHeaders = {
   'Content-Type': 'application/json',
 };
 
-// Contexto da requisição atual (resolvido no handler, usado pelas funções)
-let CHAT_ID = null;
-let USER_ID = null;
+// Contexto da requisição atual (chatId/userId) — antes eram `let` de módulo,
+// o que vaza dados entre requisições concorrentes na mesma instância Lambda
+// (a segunda sobrescrevia USER_ID antes da primeira terminar de usá-lo).
+// AsyncLocalStorage isola o contexto por cadeia de await, sem essa race.
+const requestCtx = new AsyncLocalStorage();
+function ctx() {
+  const store = requestCtx.getStore();
+  if (!store) throw new Error('Contexto de requisição não inicializado');
+  return store;
+}
 
 async function resolveUser(chatId) {
   // 1. Buscar na tabela de vínculos
@@ -92,7 +100,7 @@ async function vincularBot(chatId, code) {
 
 async function sbGet(table, qs = '') {
   const r = await fetch(
-    `${SB_URL}/rest/v1/${table}?user_id=eq.${USER_ID}${qs ? '&' + qs : ''}`,
+    `${SB_URL}/rest/v1/${table}?user_id=eq.${ctx().userId}${qs ? '&' + qs : ''}`,
     { headers: sbHeaders }
   );
   return r.json();
@@ -106,8 +114,17 @@ async function sbPost(table, body) {
   });
 }
 
+async function sbRpc(fnName, params) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fnName}`, {
+    method: 'POST',
+    headers: sbHeaders,
+    body: JSON.stringify(params),
+  });
+  if (!r.ok) throw new Error(`rpc ${fnName}: ${r.status} ${await r.text()}`);
+}
+
 async function sbPatch(table, id, body) {
-  await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}&user_id=eq.${USER_ID}`, {
+  await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}&user_id=eq.${ctx().userId}`, {
     method: 'PATCH',
     headers: sbHeaders,
     body: JSON.stringify(body),
@@ -124,7 +141,7 @@ async function enviarPara(chatId, texto) {
 }
 
 async function enviar(texto) {
-  await enviarPara(CHAT_ID, texto);
+  await enviarPara(ctx().chatId, texto);
 }
 
 async function responderCallback(id) {
@@ -153,7 +170,7 @@ async function enviarBotoesContas(tipo, valor, descricao, categoriaNome, contas)
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      chat_id: CHAT_ID,
+      chat_id: ctx().chatId,
       text: `${emoji} <b>R$ ${fmt(valor)} — ${descricao}</b>${categoriaNome ? `\n🏷️ ${categoriaNome}` : ''}\n\nQual conta?`,
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: linhas },
@@ -182,7 +199,7 @@ async function enviarBotoesCartoes(tipo, valor, descricao, categoriaNome, dataCo
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      chat_id: CHAT_ID,
+      chat_id: ctx().chatId,
       text: `${emoji} <b>R$ ${fmt(valor)} — ${descricao}</b>${parcLabel}${categoriaNome ? `\n🏷️ ${categoriaNome}` : ''}\n\nQual cartão?`,
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: linhas },
@@ -224,7 +241,7 @@ async function enviarBotoesContasECartoes(tipo, valor, descricao, categoriaNome,
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      chat_id: CHAT_ID,
+      chat_id: ctx().chatId,
       text: `📸 <b>Comprovante detectado</b>\n\n💵 R$ ${fmt(valor)} — ${descricao}${categoriaNome ? `\n🏷️ ${categoriaNome}` : ''}${dataCompra ? `\n📅 ${dataCompra}` : ''}\n\nLançar em:`,
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: linhas },
@@ -492,7 +509,7 @@ async function execLancar(tipo, valor, descricao, nomeConta, todasContas, catego
   const categoria = buscarCategoria(categoriaNome, todasCategorias);
 
   const payload = {
-    user_id: USER_ID, account_id: conta.id,
+    user_id: ctx().userId, account_id: conta.id,
     type: tipo, amount: valor, description: descricao,
     date: hoje(), status: 'pago',
   };
@@ -500,8 +517,11 @@ async function execLancar(tipo, valor, descricao, nomeConta, todasContas, catego
 
   await sbPost('transactions', payload);
 
-  const novoSaldo = Number(conta.saldo_atual || 0) + (tipo === 'receita' ? valor : -valor);
-  await sbPatch('accounts', conta.id, { saldo_atual: novoSaldo });
+  // Delta atômico via RPC (mesma função usada pelo client em balanceService.js)
+  // em vez de SELECT saldo → soma em JS → UPDATE, que tem race condition.
+  const delta = tipo === 'receita' ? valor : -valor;
+  await sbRpc('increment_account_balance', { p_account_id: conta.id, p_delta: delta });
+  const novoSaldo = Number(conta.saldo_atual || 0) + delta;
 
   const emoji = tipo === 'receita' ? '💰' : '💸';
   const sinal = tipo === 'receita' ? '+' : '-';
@@ -532,7 +552,7 @@ async function execLancarCartao(valor, descricao, nomeCartao, categoriaNome, dat
     const fRef = `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}`;
     const desc = nParcelas > 1 ? `${descricao} (${i + 1}/${nParcelas})` : descricao;
     const payload = {
-      user_id: USER_ID, card_id: cartao.id,
+      user_id: ctx().userId, card_id: cartao.id,
       descricao: desc, valor_total: valor,
       parcelas: nParcelas, parcela_atual: i + 1, valor_parcela: valorParcela,
       data_compra: dataStr, fatura_referencia: fRef, status: 'aberta',
@@ -664,7 +684,7 @@ async function execMarcarEvento(titulo, data, hora, tipo) {
   const tipoEvento = tipo || 'compromisso';
 
   await sbPost('calendar_events', {
-    user_id: USER_ID,
+    user_id: ctx().userId,
     titulo,
     tipo: tipoEvento,
     status: 'pendente',
@@ -869,16 +889,17 @@ export default async function handler(req, res) {
   if (!incomingChatId) return res.status(200).json({ ok: true });
 
   // Resolver usuário dinamicamente
-  USER_ID = await resolveUser(incomingChatId);
-  CHAT_ID = incomingChatId;
+  const userId = await resolveUser(incomingChatId);
 
   // Botão inline
   if (body.callback_query) {
     const cq = body.callback_query;
-    if (!USER_ID) return res.status(200).json({ ok: true }); // ignora não vinculados
-    try { await handleCallback(cq); } catch (e) {
-      await enviar('⚠️ Erro: ' + e.message).catch(() => {});
-    }
+    if (!userId) return res.status(200).json({ ok: true }); // ignora não vinculados
+    await requestCtx.run({ chatId: incomingChatId, userId }, async () => {
+      try { await handleCallback(cq); } catch (e) {
+        await enviar('⚠️ Erro: ' + e.message).catch(() => {});
+      }
+    });
     return res.status(200).json({ ok: true });
   }
 
@@ -886,7 +907,7 @@ export default async function handler(req, res) {
   if (!message) return res.status(200).json({ ok: true });
 
   // Usuário não vinculado — só aceita /vincular CÓDIGO
-  if (!USER_ID) {
+  if (!userId) {
     const txt = (message.text || '').trim();
     const codigoMatch = txt.match(/^(?:\/vincular\s+)?(FZ-\d{6})$/i);
     if (codigoMatch) {
@@ -903,6 +924,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
+  await requestCtx.run({ chatId: incomingChatId, userId }, async () => {
   try {
     // Foto / comprovante
     if (message.photo) {
@@ -960,4 +982,5 @@ export default async function handler(req, res) {
   }
 
   res.status(200).json({ ok: true });
+  });
 }

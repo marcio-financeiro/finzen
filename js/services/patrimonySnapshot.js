@@ -39,7 +39,7 @@ async function sumInvestmentsSafe(supabase, userId){
     .from('user_settings')
     .select('setting_value')
     .eq('user_id', userId)
-    .eq('setting_key', 'usd_brl_rate')
+    .eq('setting_key', 'usd_brl')
     .maybeSingle();
 
   const usdBrl = settings ? Number(settings.setting_value) || 5.15 : 5.15;

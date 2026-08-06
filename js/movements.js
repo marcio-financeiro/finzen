@@ -1255,7 +1255,7 @@ window.pagarMovimentoFinZen = async function(id) {
     // Buscar transação
     const { data: tx, error } = await supabase
       .from('transactions')
-      .select('*,accounts:account_id(saldo_atual,currency)')
+      .select('*')
       .eq('id', id).eq('user_id', user.id).single();
 
     if(error || !tx) { showMessage('Lançamento não encontrado.', 'danger'); return; }
@@ -1266,17 +1266,11 @@ window.pagarMovimentoFinZen = async function(id) {
       .update({ status: 'pago' })
       .eq('id', id).eq('user_id', user.id);
 
-    // Atualizar saldo da conta
-    if(tx.account_id && tx.accounts) {
-      const saldoAtual = Number(tx.accounts.saldo_atual || 0);
-      const valor      = Number(tx.amount || 0);
-      const novoSaldo  = tx.type === 'receita'
-        ? saldoAtual + valor
-        : saldoAtual - valor;
-
-      await supabase.from('accounts')
-        .update({ saldo_atual: novoSaldo })
-        .eq('id', tx.account_id).eq('user_id', user.id);
+    // Delta atômico via RPC (mesmo caminho do lançamento normal) — antes fazia
+    // SELECT saldo → soma em JS → UPDATE, sujeito a race condition entre abas.
+    if(tx.account_id){
+      const ok = await applyAccountBalance(tx.account_id, tx.type, tx.amount, 'apply');
+      if(!ok) return;
     }
 
     showMessage(`✓ "${tx.description}" marcado como pago!`, 'success');

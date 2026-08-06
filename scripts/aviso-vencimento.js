@@ -1,12 +1,13 @@
 // scripts/aviso-vencimento.js — Aviso diário de vencimentos via Telegram
 // Roda no GitHub Actions (Node 20, fetch nativo). Sem dependências externas.
-// Usa anon key + funções RPC SECURITY DEFINER (sem service key necessária).
+// As RPCs aviso_* agora exigem service_role (migration de segurança da
+// Fase 0) — configurar SUPABASE_SERVICE_KEY nos GitHub Secrets.
 // Telegram via proxy Vercel (token fica no env var do Vercel, não no GitHub).
 
-const SUPABASE_URL = 'https://qgamphwnlrriwalcbhbl.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnYW1waHdubHJyaXdhbGNiaGJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNTkzMzUsImV4cCI6MjA5NjYzNTMzNX0.AV0mCZqYlNyqz9XVWeHImMljnpt4klxpUjBa1HHlYkM';
-const VERCEL_URL   = 'https://finzen-rho.vercel.app';
-const CRON_SECRET  = process.env.TELEGRAM_CRON_SECRET;
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const VERCEL_URL    = 'https://finzen-rho.vercel.app';
+const CRON_SECRET   = process.env.TELEGRAM_CRON_SECRET;
 
 // ── Utilitários ────────────────────────────────────────────────────────────────
 

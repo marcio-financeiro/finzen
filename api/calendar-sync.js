@@ -97,6 +97,14 @@ export default async function handler(req, res) {
   });
   if (!authRes.ok) return res.status(403).json({ error: 'Forbidden' });
 
+  // O calendário do Google é único (pessoal, do dono do app) — com cadastro
+  // aberto, qualquer outro usuário autenticado poderia escrever nele. Restringe
+  // ao dono (mesmo FINZEN_USER_ID usado pelo bot do Telegram).
+  const usuario = await authRes.json();
+  if (process.env.FINZEN_USER_ID && usuario.id !== process.env.FINZEN_USER_ID) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   try {
     const { action, evento, google_event_id } = req.body;
     if (!action) return res.status(400).json({ error: 'action obrigatório' });

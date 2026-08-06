@@ -114,15 +114,17 @@ async function gerarOcorrencias() {
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.authorization !== `Bearer ${secret}`) {
+  if (!secret) return res.status(500).json({ error: 'CRON_SECRET não configurado' });
+  if (req.headers.authorization !== `Bearer ${secret}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
   try {
     const resultado = await gerarOcorrencias();
+    if (resultado.erros?.length) return res.status(500).json({ ok: false, ...resultado });
     res.status(200).json({ ok: true, ...resultado });
   } catch (e) {
     console.error('recurring-cron:', e.message);
-    res.status(200).json({ ok: true, fatal: e.message });
+    res.status(500).json({ ok: false, fatal: e.message });
   }
 }

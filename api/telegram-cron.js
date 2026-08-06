@@ -190,18 +190,20 @@ async function resumoMensal() {
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.authorization !== `Bearer ${secret}`) {
+  // Fail-closed: sem CRON_SECRET configurado, o endpoint fica público — não
+  // permitir. Ver vercel.json (cron) e configurar CRON_SECRET na Vercel.
+  if (!secret) return res.status(500).json({ error: 'CRON_SECRET não configurado' });
+  if (req.headers.authorization !== `Bearer ${secret}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  try {
-    // Cada bloco é independente — falha em um não derruba os demais
-    await lembretesDiarios().catch(e => console.error('lembretes:', e.message));
-    await radarFinanceiro().catch(e => console.error('radar:', e.message));
-    await resumoMensal().catch(e => console.error('resumo:', e.message));
-    res.status(200).json({ ok: true });
-  } catch (e) {
-    console.error('telegram-cron:', e.message);
-    res.status(200).json({ ok: true });
-  }
+  const erros = [];
+  // Cada bloco é independente — falha em um não derruba os demais
+  await lembretesDiarios().catch(e => { console.error('lembretes:', e.message); erros.push('lembretes'); });
+  await radarFinanceiro().catch(e => { console.error('radar:', e.message); erros.push('radar'); });
+  await resumoMensal().catch(e => { console.error('resumo:', e.message); erros.push('resumo'); });
+
+  // Status ≠ 200 em falha real → Vercel registra a execução como erro (retry/alerta)
+  if (erros.length) return res.status(500).json({ ok: false, erros });
+  res.status(200).json({ ok: true });
 }

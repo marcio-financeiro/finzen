@@ -16,7 +16,9 @@ export async function checarLimiteIA(userId, endpoint) {
   };
 
   try {
-    const hoje = new Date().toISOString().split('T')[0];
+    // Data no fuso de Brasília — em UTC a janela diária "zera" às 21h BRT
+    // (meia-noite UTC), soltando 2 cotas extras por dia perto da virada.
+    const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
     const r = await fetch(
       `${SB_URL}/rest/v1/ai_usage?user_id=eq.${userId}&created_at=gte.${hoje}T00:00:00Z&select=id`,
       { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }

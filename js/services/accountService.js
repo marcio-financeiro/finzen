@@ -90,46 +90,6 @@ export function validateSufficientBalance(account, amount){
   return true;
 }
 
-export async function updateAccountBalance(userId, accountId, newBalance){
-  const { error } = await supabase
-    .from('accounts')
-    .update({ saldo_atual:toNumber(newBalance) })
-    .eq('id', accountId)
-    .eq('user_id', userId);
-
-  if(error){
-    throw error;
-  }
-
-  return true;
-}
-
-export async function debitAccount(userId, accountId, amount){
-  const account = await getAccount(userId, accountId);
-
-  if(!account){
-    throw new Error('Conta não encontrada.');
-  }
-
-  const value = validateAmount(amount);
-  validateSufficientBalance(account, value);
-
-  const newBalance = toNumber(account.saldo_atual) - value;
-  await updateAccountBalance(userId, accountId, newBalance);
-
-  return newBalance;
-}
-
-export async function creditAccount(userId, accountId, amount){
-  const account = await getAccount(userId, accountId);
-
-  if(!account){
-    throw new Error('Conta não encontrada.');
-  }
-
-  const value = validateAmount(amount);
-  const newBalance = toNumber(account.saldo_atual) + value;
-  await updateAccountBalance(userId, accountId, newBalance);
-
-  return newBalance;
-}
+// Ajuste de saldo (débito/crédito) é responsabilidade exclusiva de
+// balanceService.ajustarSaldo — delta atômico via RPC. Este arquivo não deve
+// reimplementar SELECT→UPDATE manual (ver CLAUDE.md, "Padrões de código").

@@ -1,6 +1,9 @@
 // api/quotes.js — Proxy de cotações
 // Node.js serverless (não Edge — Edge bloqueia chamadas externas)
 // GET /api/quotes?tickers=PETR4,AAPL&dolar=true
+// Endpoint público (sem auth) — rate limit por IP evita fan-out abusivo.
+
+import { checarLimiteIP } from './_ipRateLimit.js';
 
 export default async function handler(req, res) {
 
@@ -12,6 +15,11 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
+  }
+
+  const { permitido } = checarLimiteIP(req, { limite: 30, janelaMs: 60_000 });
+  if (!permitido) {
+    return res.status(429).json({ error: 'Muitas requisições, tente novamente em instantes.' });
   }
 
   const { tickers: tickersRaw, dolar, fundamental, change } = req.query;

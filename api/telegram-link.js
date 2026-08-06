@@ -1,7 +1,9 @@
 // api/telegram-link.js — Vinculação Telegram ↔ FinZen
-// POST { action:'generate', user_id } → gera código
-// POST { action:'unlink',   user_id } → desvincula
-// GET  ?user_id=xxx                   → status do vínculo
+// user_id sempre extraído do JWT (Authorization: Bearer) — nunca do body/query,
+// pra evitar que um usuário vincule/desvincule a conta de outro (IDOR).
+// POST { action:'generate' } → gera código
+// POST { action:'unlink'   } → desvincula
+// GET                        → status do vínculo
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -31,12 +33,11 @@ export default async function handler(req, res) {
     headers: { Authorization: `Bearer ${token}`, apikey: process.env.SUPABASE_SERVICE_KEY },
   });
   if (!authRes.ok) return res.status(403).json({ error: 'Forbidden' });
+  const usuario = await authRes.json();
+  const userId = usuario.id;
 
   // GET — verificar se usuário já está vinculado
   if (req.method === 'GET') {
-    const userId = req.query.user_id;
-    if (!userId) return res.status(400).json({ error: 'user_id obrigatório' });
-
     const r = await fetch(`${SB_URL}/rest/v1/telegram_links?user_id=eq.${userId}&select=chat_id,linked_at`, { headers: sbH });
     const data = await r.json();
     const link = data[0] || null;
@@ -45,13 +46,12 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { action, user_id } = req.body || {};
-  if (!user_id) return res.status(400).json({ error: 'user_id obrigatório' });
+  const { action } = req.body || {};
 
   // POST action=generate — gerar código de vinculação
   if (action === 'generate') {
     // Apagar códigos antigos do usuário
-    await fetch(`${SB_URL}/rest/v1/telegram_pending?user_id=eq.${user_id}`, {
+    await fetch(`${SB_URL}/rest/v1/telegram_pending?user_id=eq.${userId}`, {
       method: 'DELETE', headers: sbH,
     });
 
@@ -61,7 +61,7 @@ export default async function handler(req, res) {
     await fetch(`${SB_URL}/rest/v1/telegram_pending`, {
       method: 'POST',
       headers: { ...sbH, Prefer: 'return=minimal' },
-      body: JSON.stringify({ code, user_id, expires_at: expires }),
+      body: JSON.stringify({ code, user_id: userId, expires_at: expires }),
     });
 
     return res.status(200).json({ code, expires_at: expires });
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
 
   // POST action=unlink — desvincular
   if (action === 'unlink') {
-    await fetch(`${SB_URL}/rest/v1/telegram_links?user_id=eq.${user_id}`, {
+    await fetch(`${SB_URL}/rest/v1/telegram_links?user_id=eq.${userId}`, {
       method: 'DELETE', headers: sbH,
     });
     return res.status(200).json({ ok: true });
