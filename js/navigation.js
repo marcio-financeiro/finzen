@@ -101,6 +101,7 @@ const NAV_GROUPS = [
       { title: 'Faturas',        icon: 'ic-file-text', href: './card-bills.html' },
       { title: 'Orçamento',      icon: 'ic-target', href: './budgets.html' },
       { title: 'Planejador de Compras', icon: 'ic-card', href: './purchase-planner.html' },
+      { title: 'Parcelamentos',  icon: 'ic-archive', href: './installments.html' },
     ]
   },
   {

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script>if(localStorage.getItem("finzen_sidebar_rail")==="collapsed")document.documentElement.classList.add("sidebar-rail");</script>
+<meta charset="UTF-8">
+<style>html,body{background:#07080f}</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Parcelamentos - Vyn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400..700&display=swap">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm">
+<link rel="stylesheet" href="../css/variables.css?v=1200">
+<link rel="stylesheet" href="../css/base.css?v=1200">
+<link rel="stylesheet" href="../css/layout.css?v=1200">
+<link rel="stylesheet" href="../css/components.css?v=1200">
+<link rel="stylesheet" href="../css/mobile.css?v=1200">
+<link rel="stylesheet" href="../css/navigation.css?v=1200">
+<link rel="stylesheet" href="../css/editorial.css?v=1200">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#c08a3e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vyn">
+<link rel="apple-touch-icon" href="../icons/icon-192.png">
+
+<style>
+  .installments-filter{
+    display:flex;
+    gap:16px;
+    align-items:center;
+    flex-wrap:wrap;
+    padding:14px 18px;
+  }
+  .installments-filter select{
+    width:auto;
+    padding:9px 12px;
+    font-size:13px;
+  }
+  .installments-filter label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    margin:0;
+    cursor:pointer;
+  }
+  #resumoCards{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:12px;
+    margin-bottom:16px;
+  }
+  .installment-card-header:hover{ background:rgba(255,255,255,.025); }
+  @media(max-width:820px){
+    #resumoCards{ grid-template-columns:repeat(2, 1fr); }
+  }
+</style>
+</head>
+
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">Vyn</div>
+    <nav class="sidebar-nav"></nav>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1>Parcelamentos</h1>
+        <p id="userEmail" class="muted"></p>
+      </div>
+      <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
+    </header>
+
+    <div id="mensagemParcelamentos" class="message" style="margin-bottom:12px"></div>
+
+    <div id="resumoCards"></div>
+
+    <section class="panel" style="margin-bottom:16px">
+      <div class="installments-filter">
+        <label style="color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;cursor:default">Filtrar cartão</label>
+        <select id="filtroCartao">
+          <option value="">Todos os cartões</option>
+        </select>
+        <label>
+          <input type="checkbox" id="chkMostrarQuitadas">
+          Mostrar quitadas
+        </label>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-bottom:16px">
+      <div class="panel-header"><h2>Projeção mensal (parcelas em aberto)</h2></div>
+      <div id="tabelaProjecao" style="padding:0 20px 16px;overflow-x:auto"></div>
+    </section>
+
+    <section>
+      <div id="listaCompras"></div>
+    </section>
+
+  </main>
+</div>
+
+<nav class="mobile-nav"></nav>
+<script src="../js/version.js"></script>
+<script type="module" src="../js/navigation.js"></script>
+<script type="module" src="../js/installments.js"></script>
+</body>
+</html>
