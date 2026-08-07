@@ -235,7 +235,8 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
   background: var(--surface2); cursor: pointer; transition: all .15s;
 }
 .mob-cat-btn.ativo { border-color: var(--accent); background: var(--accent-dim); }
-.mob-cat-btn-icon { font-size: 22px; }
+.mob-cat-btn-icon { display: flex; }
+.mob-cat-btn-icon svg { width: 17px; height: 17px; }
 .mob-cat-btn-label { font-size: 10px; color: var(--muted); text-align: center; font-weight: 600; }
 .mob-cat-btn.ativo .mob-cat-btn-label { color: var(--accent); }
 

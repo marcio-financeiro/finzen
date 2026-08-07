@@ -48,6 +48,30 @@ let catSelecionada = null;
 let contas       = [];
 let categorias   = [];
 
+// ── Ícone de linha por categoria (nome) ───────────────
+// Mapeamento por palavra-chave — cobre as categorias mais comuns. Sem
+// correspondência cai no ícone genérico (ic-wallet).
+function categoriaIcone(nome) {
+  const n = (nome||'').toLowerCase();
+  if(/mercado|supermerc|compra/.test(n))                 return 'ic-bag';
+  if(/aliment|comida|restaur|lanche|padaria/.test(n))    return 'ic-food';
+  if(/transport|uber|carro|combust|gasolina|estacion/.test(n)) return 'ic-car';
+  if(/moradia|casa|aluguel|condom/.test(n))               return 'ic-home';
+  if(/sa[uú]de|farm[aá]cia|m[eé]dico|plano/.test(n))      return 'ic-heart';
+  if(/educa[çc][aã]o|curso|escola|faculdade/.test(n))     return 'ic-book';
+  if(/lazer|entreten|cinema|streaming|viagem/.test(n))    return 'ic-film';
+  if(/pet|animal/.test(n))                                return 'ic-paw';
+  if(/assinatur|internet|telefone|celular/.test(n))       return 'ic-wifi';
+  if(/sal[aá]rio|renda|receita/.test(n))                  return 'ic-coin';
+  if(/investi/.test(n))                                   return 'ic-trend';
+  return 'ic-wallet';
+}
+
+function iconeCategoriaSvg(nome, size) {
+  const s = size || 17;
+  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#${categoriaIcone(nome)}"/></svg>`;
+}
+
 // ── Emoji por tipo de conta ───────────────────────────
 function tipoContaEmoji(tipo) {
   const t = (tipo||'').toLowerCase();
@@ -356,9 +380,9 @@ async function carregar() {
   if(todosLanc.length){
     lancList.innerHTML = todosLanc.map(t=>{
       const isRec = t.type==='receita';
-      const catIcon = t.categories?.icon;
-      const iconHtml = catIcon
-        ? escapeHtml(catIcon)
+      const catNome = t.categories?.nome;
+      const iconHtml = catNome
+        ? iconeCategoriaSvg(catNome, 16)
         : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><use href="#${isRec?'ic-arrow-up':'ic-arrow-down'}"/></svg>`;
       return `
         <div class="mob-lanc-item" onclick="location.href='../pages/movements.html'">
@@ -417,7 +441,7 @@ function popularModal() {
 
   // Select completo
   el('mobCatSelect').innerHTML = '<option value="">Selecionar outra...</option>' +
-    categorias.map(c=>`<option value="${c.id}">${escapeHtml(c.icon||'')} ${escapeHtml(c.nome)}</option>`).join('');
+    categorias.map(c=>`<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
 
   el('mobCatSelect').addEventListener('change', e => {
     if(e.target.value) {
@@ -432,8 +456,8 @@ function renderCategorias(tipo) {
   el('mobCatsGrid').innerHTML = lista.map(c=>`
     <button class="mob-cat-btn ${catSelecionada===c.id?'ativo':''}"
       data-action="selecionarCat" data-cat-id="${c.id}">
-      <span class="mob-cat-btn-icon">${c.icon||'📌'}</span>
-      <span class="mob-cat-btn-label">${c.nome.slice(0,8)}</span>
+      <span class="mob-cat-btn-icon">${iconeCategoriaSvg(c.nome)}</span>
+      <span class="mob-cat-btn-label">${escapeHtml(c.nome.slice(0,8))}</span>
     </button>`).join('');
 }
 
