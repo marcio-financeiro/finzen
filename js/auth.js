@@ -73,11 +73,19 @@ btnCadastro.addEventListener('click', async () => {
   }
 
   btnCadastro.disabled = true;
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.signUp({ email, password });
   btnCadastro.disabled = false;
 
-  showMessage(
-    error ? error.message : 'Cadastro realizado. Verifique seu e-mail, se necessário.',
-    error ? 'danger' : 'success'
-  );
+  if(error){
+    showMessage(error.message, 'danger');
+    return;
+  }
+
+  if(data.session){
+    // Confirmação de e-mail desativada: já entra logado, segue pro onboarding
+    navigate('./pages/onboarding.html');
+    return;
+  }
+
+  showMessage('Cadastro realizado. Verifique seu e-mail para confirmar a conta.', 'success');
 });
