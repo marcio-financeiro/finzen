@@ -479,7 +479,8 @@ input:-webkit-autofill:active{
   display:flex;justify-content:space-between;align-items:center;
   margin-bottom:4px;font-size:12px;
 }
-.orcamento-label{ font-weight:700; }
+.orcamento-label{ font-weight:700;display:inline-flex;align-items:center;gap:6px; }
+.orcamento-label svg{ flex-shrink:0;color:var(--muted); }
 .orcamento-bar-wrap{
   height:6px;background:var(--border);border-radius:99px;overflow:hidden;
 }
