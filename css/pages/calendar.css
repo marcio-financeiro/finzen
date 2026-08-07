@@ -6,7 +6,7 @@
 }
 .cal-nav{display:flex;align-items:center;gap:8px;margin-right:auto;}
 .cal-nav button{
-  background:var(--surface-2);border:1px solid var(--border);
+  background:var(--surface-2);border:1px solid color-mix(in srgb, var(--border) 55%, var(--text) 45%);
   color:var(--text);padding:6px 12px;border-radius:8px;cursor:pointer;
   font-size:13px;transition:background .15s;
 }
@@ -124,7 +124,7 @@
 .cal-lista-item{
   display:flex;align-items:flex-start;gap:12px;
   padding:10px 12px;background:var(--surface);
-  border:1px solid var(--border);border-radius:10px;
+  border:1px solid color-mix(in srgb, var(--border) 55%, var(--text) 45%);border-radius:10px;
   margin-bottom:6px;cursor:pointer;transition:border-color .15s;
 }
 .cal-lista-item:hover{border-color:var(--accent);}

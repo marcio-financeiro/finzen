@@ -7,8 +7,8 @@
     background:var(--surface);
   }
   .bill-card.mes-atual{
-    border-color:rgba(245,158,11,.5);
-    box-shadow:0 0 0 1px rgba(245,158,11,.2);
+    border-color:var(--accent);
+    box-shadow:0 0 0 1px var(--accent-dim);
   }
   .bill-card-header{
     display:flex;

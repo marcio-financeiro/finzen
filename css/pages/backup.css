@@ -3,7 +3,7 @@
 }
 @media(max-width:600px){ .backup-options{ grid-template-columns:1fr; } }
 .backup-option{
-  border:1px solid var(--border);border-radius:16px;padding:20px;
+  border:1px solid color-mix(in srgb, var(--border) 55%, var(--text) 45%);border-radius:16px;padding:20px;
   background:var(--surface-2);text-align:center;
 }
 .backup-option h3{ font-size:14px;margin:10px 0 6px; }

@@ -2,9 +2,9 @@ body { display:flex; align-items:center; justify-content:center; min-height:100v
 
   .ob-card {
     width:100%; max-width:480px;
-    background:var(--surface); border:1px solid var(--border);
+    background:var(--surface); border:1px solid color-mix(in srgb, var(--border) 55%, var(--text) 45%);
     border-radius:20px; padding:36px 32px;
-    box-shadow:var(--shadow);
+    box-shadow:none;
   }
 
   /* Progress steps */
@@ -19,8 +19,7 @@ body { display:flex; align-items:center; justify-content:center; min-height:100v
     border:2px solid var(--border); transition:all .2s;
   }
   .ob-step.active {
-    background:var(--gold-gradient); color:#000; border-color:transparent;
-    box-shadow:var(--gold-glow);
+    background:var(--gold-gradient); color:var(--text-on-accent); border-color:transparent;
   }
   .ob-step.done { background:#1ec86a; color:#fff; border-color:transparent; }
   .ob-step-line { flex:1; height:2px; background:var(--border); }

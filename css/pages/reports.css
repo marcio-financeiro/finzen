@@ -1,5 +1,5 @@
 /* ── Blocos ── */
-.rpt-block{border:1px solid var(--border);border-radius:16px;background:var(--bg-card);overflow:hidden;margin-bottom:16px;}
+.rpt-block{border:1px solid color-mix(in srgb, var(--border) 55%, var(--text) 45%);border-radius:16px;background:var(--surface-2);overflow:hidden;margin-bottom:16px;}
 .rpt-block-header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);}
 .rpt-block-header h2{font-size:13px;font-weight:800;margin:0;letter-spacing:.3px;}
 .rpt-block-body{padding:16px 18px;}
@@ -8,11 +8,11 @@
 /* ── Controles ── */
 .rpt-controls{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
 .rpt-month-nav{display:flex;align-items:center;gap:6px;flex-shrink:0;}
-.rpt-controls input[type=month]{padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);font-size:14px;}
+.rpt-controls input[type=month]{padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);font-size:14px;}
 
 /* ── KPI grid ── */
 .rpt-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;}
-.rpt-kpi{border:2px solid var(--border);border-radius:12px;background:var(--bg-card);padding:14px 16px;display:flex;flex-direction:column;gap:4px;transition:border-color .2s;}
+.rpt-kpi{border:2px solid color-mix(in srgb, var(--border) 55%, var(--text) 45%);border-radius:12px;background:var(--surface-2);padding:14px 16px;display:flex;flex-direction:column;gap:4px;transition:border-color .2s;}
 .rpt-kpi.verde{border-color:var(--success);}
 .rpt-kpi.amarelo{border-color:var(--warning);}
 .rpt-kpi.vermelho{border-color:var(--danger);}

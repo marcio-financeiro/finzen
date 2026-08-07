@@ -1,7 +1,7 @@
 /* ── Abas: regra base em components.css (.reg-tabs/.reg-tab/.reg-tab-content) ── */
 .reg-tabs{ flex-wrap:wrap; }
 
-.reg-form{border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;
+.reg-form{border:1px solid color-mix(in srgb, var(--border) 55%, var(--text) 45%);border-radius:14px;padding:16px;margin-bottom:16px;
   background:rgba(255,255,255,.02);}
 .reg-form h3{margin:0 0 14px;font-size:14px;}
 

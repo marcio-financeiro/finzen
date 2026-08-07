@@ -4,7 +4,7 @@
 /* ── KPI ── */
 .inv-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
 @media(max-width:720px){.inv-kpi-row{grid-template-columns:1fr 1fr;}}
-.inv-kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;}
+.inv-kpi{background:var(--surface);border:1px solid color-mix(in srgb, var(--border) 55%, var(--text) 45%);border-radius:12px;padding:14px;}
 .inv-kpi span{color:var(--muted);font-size:11px;font-weight:700;display:block;margin-bottom:6px;}
 .inv-kpi strong{font-family:var(--font-mono);font-size:1.2rem;display:block;}
 .inv-kpi small{color:var(--muted);font-size:11px;}
@@ -38,7 +38,7 @@
 
 /* ── Mobile cards ── */
 .inv-mobile-list{display:none;flex-direction:column;gap:10px;}
-.inv-mobile-card{border:1px solid var(--border);border-radius:14px;padding:14px;background:rgba(255,255,255,.02);}
+.inv-mobile-card{border:1px solid color-mix(in srgb, var(--border) 55%, var(--text) 45%);border-radius:14px;padding:14px;background:rgba(255,255,255,.02);}
 .inv-mobile-top{display:flex;justify-content:space-between;gap:8px;margin-bottom:10px;}
 .inv-ticker{font-weight:900;font-size:1rem;}
 .inv-nome{color:var(--muted);font-size:.8rem;margin-top:2px;}
@@ -187,7 +187,7 @@
 [data-quote-status="offline"]{ background:rgba(107,106,96,.12) !important; color:var(--muted)   !important; }
 
 /* ── Card Variação + Rentabilidade ── */
-.desemp-card{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);
+.desemp-card{display:grid;grid-template-columns:1fr 1fr;border:1px solid color-mix(in srgb, var(--border) 55%, var(--text) 45%);
   border-radius:12px;overflow:hidden;margin-top:12px;}
 .desemp-lado{padding:16px;}
 .desemp-lado+.desemp-lado{border-left:1px solid var(--border);}
