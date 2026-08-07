@@ -68,16 +68,17 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><use href="#db-smartphone"/></svg>Modo Simples
       </button>
       <div class="topbar-actions">
+        <a href="./notifications.html" class="topbar-icon-btn" title="Notificações" aria-label="Notificações">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#db-bell"/></svg>
+        </a>
         <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
       </div>
     </header>
 
-    <div class="assistant-panel">
-  <div class="assistant-panel-head"><span class="dot"></span> Assistente</div>
-  <div class="assistant-grid" id="assistantGrid">
-    <div class="assistant-loading">Carregando insights…</div>
-  </div>
-</div>
+    <div class="assistant-banner">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="assistant-banner-icon"><use href="#db-sparkle"/></svg>
+      <span id="assistantGrid" class="assistant-banner-text">Carregando insights…</span>
+    </div>
 
 
     <!-- KPIs ring-cards (Stage 2) -->

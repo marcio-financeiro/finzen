@@ -166,7 +166,7 @@ function renderPanel(insights) {
   if (!grid) return;
 
   const textos = insights.length ? insights : ['Tudo em ordem por hoje'];
-  grid.innerHTML = textos.map(t => `<div class="assistant-item">${t}</div>`).join('');
+  grid.textContent = textos.join('  ·  ');
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
@@ -182,6 +182,6 @@ export async function initAssistantBar(userId) {
     renderPanel(insights);
   } catch (err) {
     console.error('[assistantBar] erro fatal:', err);
-    grid.innerHTML = '<div class="assistant-item">Tudo em ordem por hoje</div>';
+    grid.textContent = 'Tudo em ordem por hoje';
   }
 }
