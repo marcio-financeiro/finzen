@@ -13,6 +13,16 @@ import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
 import { invoiceRef, addMonthsRef, novoGrupoCompra, inserirParcelasCartao } from './services/cardService.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { ajustarSaldo } from './services/balanceService.js';
+import { ICON_SPRITE_MARKUP } from './iconSprite.js';
+
+// ── Sprite SVG (ícones de linha do bottom nav / modal) ────
+(function injectSprite(){
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.id = 'finzen-svg-sprite';
+  svg.setAttribute('style', 'display:none');
+  svg.innerHTML = ICON_SPRITE_MARKUP;
+  document.body.insertBefore(svg, document.body.firstChild);
+})();
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -159,7 +169,6 @@ registrarAcao('pagarPendenteMobile', async (el) => {
 function renderizarDados(c) {
   // Saldo
   el('mobSaldo').textContent = fmt(c.saldoBRL||0);
-  el('mobSaldo').style.color = (c.saldoBRL||0) >= 0 ? 'var(--green)' : 'var(--red)';
   el('mobSaldoSub').textContent = `${c.nContas||0} conta${(c.nContas||0)!==1?'s':''} ativas`;
   // KPIs
   el('mobReceitas').textContent  = fmt(c.receitas||0);
@@ -224,7 +233,6 @@ async function carregar() {
   const saldoBRL = contas.filter(c=>(c.currency||'BRL')==='BRL').reduce((s,c)=>s+Number(c.saldo_atual||0),0);
   const nContas  = contas.length;
   el('mobSaldo').textContent = fmt(saldoBRL);
-  el('mobSaldo').style.color = saldoBRL >= 0 ? 'var(--green)' : 'var(--red)';
   el('mobSaldoSub').textContent = `${nContas} conta${nContas!==1?'s':''} ativas`;
 
   // ── KPIs ──────────────────────────────────────────
@@ -255,7 +263,7 @@ async function carregar() {
     if(dias<=3 && totalCartao>0){
       alertas.push({
         tipo: dias<=0?'vermelho':'amarelo',
-        icon: '💳',
+        icon: 'ic-card',
         titulo: dias<=0?`Fatura ${c.nome} vence HOJE`:`Fatura ${c.nome} vence em ${dias} dia${dias>1?'s':''}`,
         sub: fmt(totalCartao),
         href: '../pages/card-bills.html',
@@ -272,7 +280,7 @@ async function carregar() {
     const dias = Math.round((new Date(p.date+'T00:00:00')-hoje2)/864e5);
     alertas.push({
       tipo: dias<=0?'vermelho':'amarelo',
-      icon: '⏰',
+      icon: 'ic-bell',
       titulo: `${p.description}`,
       sub: `${dias<=0?'Hoje':dias===1?'Amanhã':`Em ${dias} dias`} • ${fmt(p.amount)}`,
       href: '../pages/movements.html',
@@ -287,7 +295,7 @@ async function carregar() {
   if(alertas.length){
     alertasList.innerHTML = alertas.map((a,i)=>`
       <div class="mob-alerta ${a.tipo}" id="alerta-${i}">
-        <span class="mob-alerta-icon">${a.icon}</span>
+        <svg class="mob-alerta-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#${a.icon}"/></svg>
         <div class="mob-alerta-info" onclick="location.href='${a.href}'">
           <div class="mob-alerta-titulo">${a.titulo}</div>
           <div class="mob-alerta-sub">${a.sub}</div>
@@ -295,16 +303,16 @@ async function carregar() {
         ${a.isFatura ? `
           <button class="mob-pagar-btn" data-action="pagarFaturaMobile"
             data-idx="${i}" data-cartao-id="${a.cartaoId}" data-cartao-nome="${a.cartaoNome}" data-total="${a.totalCartao}"
-            style="padding:6px 12px;border-radius:8px;border:none;background:#22c55e;color:#fff;
+            style="padding:6px 12px;border-radius:8px;border:none;background:var(--success);color:#fff;
               font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
-            ✓ Pagar
+            Pagar
           </button>` : ''}
         ${a.isPendente ? `
           <button class="mob-pagar-btn" data-action="pagarPendenteMobile"
             data-idx="${i}" data-tx-id="${a.txId}" data-valor="${a.txValor}" data-conta-id="${a.txConta||''}"
-            style="padding:6px 12px;border-radius:8px;border:none;background:#22c55e;color:#fff;
+            style="padding:6px 12px;border-radius:8px;border:none;background:var(--success);color:#fff;
               font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
-            ✓ Pagar
+            Pagar
           </button>` : ''}
       </div>`).join('');
     el('mobAlertas').style.display = 'block';
@@ -348,11 +356,14 @@ async function carregar() {
   if(todosLanc.length){
     lancList.innerHTML = todosLanc.map(t=>{
       const isRec = t.type==='receita';
-      const icon  = t.categories?.icon || (isRec?'💚':'🔴');
+      const catIcon = t.categories?.icon;
+      const iconHtml = catIcon
+        ? escapeHtml(catIcon)
+        : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><use href="#${isRec?'ic-arrow-up':'ic-arrow-down'}"/></svg>`;
       return `
         <div class="mob-lanc-item" onclick="location.href='../pages/movements.html'">
-          <div class="mob-lanc-icon" style="background:${isRec?'rgba(34,197,94,.1)':'rgba(239,68,68,.1)'}">
-            ${icon}
+          <div class="mob-lanc-icon" style="background:${isRec?'var(--success-dim)':'var(--danger-dim)'};color:${isRec?'var(--success)':'var(--danger)'}">
+            ${iconHtml}
           </div>
           <div class="mob-lanc-info">
             <div class="mob-lanc-desc">${t.description}</div>
@@ -499,7 +510,7 @@ registrarAcao('salvarLancamento', async () => {
       // Lançamento no cartão
       const cartaoId = el('mobCartao')?.value;
       const parcelas = parseInt(el('mobParcelas')?.value||'1');
-      if(!cartaoId){ alert('Selecione um cartão.'); btn.disabled=false; btn.textContent='✓ Salvar lançamento'; return; }
+      if(!cartaoId){ alert('Selecione um cartão.'); btn.disabled=false; btn.textContent='Salvar lançamento'; return; }
 
       const cartao = (window._cartoesMobile||[]).find(c=>c.id===cartaoId);
       const refBase = invoiceRef(data, Number(cartao?.fechamento_dia || 1), Number(cartao?.vencimento_dia || 0));
@@ -523,7 +534,7 @@ registrarAcao('salvarLancamento', async () => {
     } else {
       // Lançamento normal
       const contaId = el('mobConta').value;
-      if(!contaId){ alert('Selecione uma conta.'); btn.disabled=false; btn.textContent='✓ Salvar lançamento'; return; }
+      if(!contaId){ alert('Selecione uma conta.'); btn.disabled=false; btn.textContent='Salvar lançamento'; return; }
 
       const {error}=await supabase.from('transactions').insert({
         user_id:user.id, account_id:contaId, category_id:catId,
@@ -547,7 +558,7 @@ registrarAcao('salvarLancamento', async () => {
     alert('Erro ao salvar: ' + e.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = '✓ Salvar lançamento';
+    btn.textContent = 'Salvar lançamento';
   }
 });
 
