@@ -44,9 +44,9 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .mob-greeting { font-size: 12px; color: var(--muted); }
 .mob-avatar {
   width: 34px; height: 34px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), #7c5cfc);
+  background: var(--gold-gradient);
   display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 800; color: #fff;
+  font-size: 14px; font-weight: 800; color: var(--text-on-accent);
   cursor: pointer;
 }
 
@@ -61,16 +61,14 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 
 /* ── Card de saldo ── */
 .mob-saldo-card {
-  background: linear-gradient(135deg, rgba(245,158,11,.2), rgba(251,191,36,.10));
-  border: 1px solid rgba(245,158,11,.3);
+  background: var(--gold-gradient);
   border-radius: 20px;
-  padding: 20px;
+  padding: 22px;
   margin-bottom: 16px;
-  text-align: center;
 }
-.mob-saldo-label { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
-.mob-saldo-valor { font-size: 36px; font-weight: 900; margin: 6px 0 2px; }
-.mob-saldo-sub { font-size: 12px; color: var(--muted); }
+.mob-saldo-label { font-size: 11px; color: var(--text-on-accent); opacity: .75; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.mob-saldo-valor { font-size: 32px; font-weight: 800; margin: 6px 0 4px; font-family: var(--font-mono); letter-spacing: -.02em; color: var(--text-on-accent); }
+.mob-saldo-sub { font-size: 12px; color: var(--text-on-accent); opacity: .8; }
 
 /* ── KPIs rápidos ── */
 .mob-kpis {
@@ -79,27 +77,30 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 }
 .mob-kpi {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 14px; padding: 14px;
+  border-radius: 16px; padding: 14px;
 }
-.mob-kpi-label { font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
-.mob-kpi-valor { font-size: 18px; font-weight: 800; }
+.mob-kpi-label { font-size: 11px; color: var(--muted); font-weight: 700; margin-bottom: 8px; }
+.mob-kpi-valor { font-size: 17px; font-weight: 800; font-family: var(--font-mono); }
 
 /* ── Alertas ── */
 .mob-alertas { margin-bottom: 16px; }
 .mob-alerta {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 14px; border-radius: 12px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px; border-radius: 16px; margin-bottom: 8px;
   font-size: 13px; cursor: pointer;
   transition: opacity .15s;
 }
 .mob-alerta:active { opacity: .7; }
-.mob-alerta.vermelho { background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.2); }
-.mob-alerta.amarelo  { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.2); }
-.mob-alerta-icon { font-size: 18px; flex-shrink: 0; }
+.mob-alerta.vermelho { background: var(--danger-dim); border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent); }
+.mob-alerta.amarelo  { background: var(--warning-dim); border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent); }
+.mob-alerta-icon,
+.mob-alerta-svg { width: 18px; height: 18px; flex-shrink: 0; }
+.mob-alerta.vermelho .mob-alerta-svg { color: var(--danger); }
+.mob-alerta.amarelo .mob-alerta-svg { color: var(--warning); }
 .mob-alerta-info { flex: 1; }
 .mob-alerta-titulo { font-weight: 700; }
 .mob-alerta-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
-.mob-alerta-valor { font-weight: 800; font-size: 13px; white-space: nowrap; }
+.mob-alerta-valor { font-weight: 800; font-size: 13px; white-space: nowrap; font-family: var(--font-mono); }
 
 /* ── Orçamentos ── */
 .mob-section-title {
@@ -134,7 +135,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .mob-lanc-info { flex: 1; min-width: 0; }
 .mob-lanc-desc { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mob-lanc-sub  { font-size: 11px; color: var(--muted); margin-top: 1px; }
-.mob-lanc-valor { font-size: 14px; font-weight: 800; white-space: nowrap; }
+.mob-lanc-valor { font-size: 14px; font-weight: 800; white-space: nowrap; font-family: var(--font-mono); }
 
 /* ── Bottom Nav ── */
 .mob-bottom-nav {
@@ -154,21 +155,22 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
   transition: color .15s;
   text-decoration: none;
 }
-.mob-nav-item.ativo { color: var(--accent); }
-.mob-nav-item-icon { font-size: 22px; line-height: 1; }
+.mob-nav-item.ativo { color: var(--accent-bright); }
+.mob-nav-icon { width: 20px; height: 20px; }
 
 /* ── FAB central ── */
 .mob-fab {
-  width: 56px; height: 56px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), #7c5cfc);
-  border: none; box-shadow: 0 4px 20px rgba(245,158,11,.5);
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--gold-gradient);
+  border: none; box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 45%, transparent);
   display: flex; align-items: center; justify-content: center;
-  font-size: 28px; color: #fff; cursor: pointer;
-  margin-top: -24px;
+  cursor: pointer;
+  margin-top: -22px;
   transition: transform .15s, box-shadow .15s;
   flex-shrink: 0;
 }
-.mob-fab:active { transform: scale(.92); box-shadow: 0 2px 10px rgba(245,158,11,.4); }
+.mob-fab svg { stroke: var(--text-on-accent); }
+.mob-fab:active { transform: scale(.92); box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 40%, transparent); }
 
 /* ── Modal de lançamento rápido ── */
 .mob-modal-overlay {
@@ -195,13 +197,15 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .mob-tipo-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
 .mob-tipo-btn {
   flex: 1; padding: 10px; border-radius: 10px; border: none;
-  font-size: 14px; font-weight: 700; cursor: pointer;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
   transition: all .15s; font-family: inherit;
+  background: transparent; color: var(--muted);
 }
-.mob-tipo-btn.receita { background: rgba(34,197,94,.15); color: var(--green); }
-.mob-tipo-btn.receita.ativo { background: var(--green); color: #fff; }
-.mob-tipo-btn.despesa { background: rgba(239,68,68,.15); color: var(--red); }
-.mob-tipo-btn.despesa.ativo { background: var(--red); color: #fff; }
+.mob-tipo-btn svg { width: 14px; height: 14px; }
+.mob-tipo-btn.receita.ativo { background: var(--success-dim); color: var(--success); }
+.mob-tipo-btn.despesa.ativo { background: var(--danger-dim); color: var(--danger); }
+.mob-tipo-btn.cartao.ativo  { background: var(--accent-dim); color: var(--accent); }
 
 /* Campos do modal */
 .mob-field { margin-bottom: 14px; }
@@ -230,15 +234,16 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
   padding: 10px 4px; border-radius: 10px; border: 1px solid var(--border);
   background: var(--surface2); cursor: pointer; transition: all .15s;
 }
-.mob-cat-btn.ativo { border-color: var(--accent); background: rgba(245,158,11,.12); }
-.mob-cat-btn-icon { font-size: 22px; }
+.mob-cat-btn.ativo { border-color: var(--accent); background: var(--accent-dim); }
+.mob-cat-btn-icon { display: flex; }
+.mob-cat-btn-icon svg { width: 17px; height: 17px; }
 .mob-cat-btn-label { font-size: 10px; color: var(--muted); text-align: center; font-weight: 600; }
 .mob-cat-btn.ativo .mob-cat-btn-label { color: var(--accent); }
 
 .mob-btn-salvar {
   width: 100%; padding: 16px; border-radius: 14px; border: none;
-  background: linear-gradient(135deg, var(--accent), #7c5cfc);
-  color: #fff; font-size: 16px; font-weight: 800;
+  background: var(--gold-gradient);
+  color: var(--text-on-accent); font-size: 15px; font-weight: 800;
   cursor: pointer; transition: opacity .15s; font-family: inherit;
 }
 .mob-btn-salvar:active { opacity: .85; }

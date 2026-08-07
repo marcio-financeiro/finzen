@@ -13,6 +13,14 @@
 /* Topbar actions: esconde em mobile (botões ficam nos fixed buttons) */
 .topbar-actions { display: flex; gap: 8px; align-items: center; }
 
+.topbar-icon-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); transition: color .15s, border-color .15s;
+}
+.topbar-icon-btn:hover { color: var(--accent); border-color: var(--accent); }
+
 @media (max-width: 820px) {
   .topbar-actions { display: none; }
 

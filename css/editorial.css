@@ -61,36 +61,9 @@ h1.display,
   font-weight: 600;
 }
 
-/* ── Painel do assistente com a nova paleta ── */
-.assistant-panel {
+/* ── Banner do assistente com a nova paleta ── */
+.assistant-banner {
   border-radius: 4px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  position: relative;
-}
-
-.assistant-panel::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, var(--accent), transparent);
-}
-
-.assistant-panel-head {
-  color: var(--accent);
-  opacity: 0.85;
-}
-
-.assistant-panel-head .dot {
-  background: var(--accent);
-}
-
-.assistant-item {
-  background: rgba(0,0,0,.18);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  font-family: var(--font-main);
 }
 
 /* ── Score de Saúde Financeira — número grande em display ── */

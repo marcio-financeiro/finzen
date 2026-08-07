@@ -103,6 +103,9 @@ html[data-theme="light"]{
   --danger:#a03a28;
   --danger-dim:rgba(160,58,40,0.12);
 
+  --success:#2f7a53;
+  --success-dim:rgba(47,122,83,0.12);
+
   --text:#11151C;
   --muted:#6B5E4A;
 

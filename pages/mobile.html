@@ -68,25 +68,25 @@
 
     <!-- Alertas -->
     <div class="mob-alertas" id="mobAlertas" style="display:none">
-      <div class="mob-section-title">⚠️ Alertas</div>
+      <div class="mob-section-title">Alertas</div>
       <div id="mobAlertasList"></div>
     </div>
 
     <!-- Contas -->
     <div class="mob-orcamentos" id="mobOrcamentos" style="display:none">
-      <div class="mob-section-title">🏦 Saldo das contas</div>
+      <div class="mob-section-title">Contas</div>
       <div id="mobContasList"></div>
     </div>
 
     <!-- Últimos lançamentos -->
     <div class="mob-lancamentos" id="mobLancamentos" style="display:none">
-      <div class="mob-section-title">💸 Últimos lançamentos</div>
+      <div class="mob-section-title">Últimos lançamentos</div>
       <div id="mobLancamentosList"></div>
     </div>
 
     <!-- Botão modo avançado -->
     <button class="mob-advanced-btn" data-action="ativarModoAvancado">
-      🖥️ Abrir modo avançado (desktop)
+      Abrir modo avançado (desktop)
     </button>
 
   </div>
@@ -94,20 +94,22 @@
   <!-- Bottom Nav -->
   <nav class="mob-bottom-nav">
     <a class="mob-nav-item ativo" data-action="scrollTop">
-      <span class="mob-nav-item-icon">🏠</span>
+      <svg class="mob-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-home"/></svg>
       <span>Início</span>
     </a>
     <a class="mob-nav-item" href="./analytics.html">
-      <span class="mob-nav-item-icon">📊</span>
+      <svg class="mob-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-bar-chart"/></svg>
       <span>Analytics</span>
     </a>
-    <button class="mob-fab" id="mobFab" data-action="abrirModal">＋</button>
+    <button class="mob-fab" id="mobFab" data-action="abrirModal">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-plus"/></svg>
+    </button>
     <a class="mob-nav-item" href="./budgets.html">
-      <span class="mob-nav-item-icon">🎯</span>
+      <svg class="mob-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-target"/></svg>
       <span>Orçamento</span>
     </a>
     <a class="mob-nav-item" href="./notifications.html">
-      <span class="mob-nav-item-icon">🔔</span>
+      <svg class="mob-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-bell"/></svg>
       <span>Alertas</span>
     </a>
   </nav>
@@ -118,19 +120,18 @@
 <div class="mob-modal-overlay" id="mobModalOverlay" data-action="fecharModalFora">
   <div class="mob-modal" id="mobModal">
     <div class="mob-modal-handle"></div>
-    <div class="mob-modal-title">⚡ Lançamento rápido</div>
+    <div class="mob-modal-title">Lançamento rápido</div>
 
     <!-- Tipo -->
     <div class="mob-tipo-tabs">
       <button class="mob-tipo-btn despesa ativo" id="btnTipoDespesa" data-action="selecionarTipo" data-tipo="despesa">
-        ↓ Despesa
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-arrow-down"/></svg> Despesa
       </button>
       <button class="mob-tipo-btn receita" id="btnTipoReceita" data-action="selecionarTipo" data-tipo="receita">
-        ↑ Receita
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-arrow-up"/></svg> Receita
       </button>
-      <button class="mob-tipo-btn" id="btnTipoCartao" data-action="selecionarTipo" data-tipo="cartao"
-        style="background:rgba(79,132,243,.15);color:var(--accent)">
-        💳 Cartão
+      <button class="mob-tipo-btn cartao" id="btnTipoCartao" data-action="selecionarTipo" data-tipo="cartao">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-card"/></svg> Cartão
       </button>
     </div>
 
@@ -190,7 +191,7 @@
     </div>
 
     <button class="mob-btn-salvar" id="mobBtnSalvar" data-action="salvarLancamento">
-      ✓ Salvar lançamento
+      Salvar lançamento
     </button>
   </div>
 </div>

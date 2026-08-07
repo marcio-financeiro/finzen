@@ -6,6 +6,7 @@ import { emailService } from './emailService.js';
 import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
 import { getActiveAccounts } from './services/dataService.js';
 import { escapeHtml } from './utils/escapeHtml.js';
+import { iconeCategoriaSvg } from './utils/categoryIcon.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
@@ -391,7 +392,7 @@ function renderFaturas(cartoes, parcelasMes){
   if(!faturas.length){
     el('blocoFaturas').innerHTML = `
       <div style="text-align:center;padding:24px 16px">
-        <div style="font-size:36px;margin-bottom:8px">💳</div>
+        <div style="margin-bottom:8px;color:var(--muted)"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#db-credit-card"/></svg></div>
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhum cartão cadastrado.</p>
         <a href="./registrations.html?tab=cartoes" class="btn btn-secondary compact" style="font-size:12px">Adicionar cartão</a>
       </div>`;
@@ -422,7 +423,7 @@ function renderPizza(despesasMes, parcelasCartaoMes){
   if(!despesasMes.length && !(parcelasCartaoMes||[]).length){
     el('blocoPizza').innerHTML = `
       <div style="text-align:center;padding:24px 16px">
-        <div style="font-size:36px;margin-bottom:8px">📊</div>
+        <div style="margin-bottom:8px;color:var(--muted)"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#db-pie-chart"/></svg></div>
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhuma despesa registrada este mês.</p>
         <a href="./movements.html?tipo=despesa" class="btn btn-secondary compact" style="font-size:12px">Lançar despesa</a>
       </div>`;
@@ -456,7 +457,7 @@ function renderPizza(despesasMes, parcelasCartaoMes){
     const cor = item.cor || corParaCategoria(item.nome);
     const conteudo = `
       <div class="categoria-row">
-        <span class="categoria-label">${escapeHtml(item.icon)} ${escapeHtml(item.nome)}</span>
+        <span class="categoria-label">${iconeCategoriaSvg(item.nome, 15)} ${escapeHtml(item.nome)}</span>
         <span class="categoria-valor">${fmt(item.total)} <span class="categoria-pct">(${pct.toFixed(1)}%)</span></span>
       </div>
       <div class="categoria-bar-wrap">
@@ -477,7 +478,7 @@ function renderOrcamento(orcamentos, despesasMes, parcelasMes, mesHerdado){
   if(!orcamentos.length){
     el('blocoOrcamento').innerHTML = `
       <div style="text-align:center;padding:24px 16px">
-        <div style="font-size:36px;margin-bottom:8px">📊</div>
+        <div style="margin-bottom:8px;color:var(--muted)"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#db-pie-chart"/></svg></div>
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhum orçamento configurado ainda.</p>
         <a href="./budgets.html" class="btn btn-secondary compact" style="font-size:12px">Configurar orçamento</a>
       </div>`;
@@ -526,7 +527,7 @@ function renderMetas(metas){
   if(!metas.length){
     el('blocoMetas').innerHTML = `
       <div style="text-align:center;padding:24px 16px">
-        <div style="font-size:36px;margin-bottom:8px">🎯</div>
+        <div style="margin-bottom:8px;color:var(--muted)"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#db-target"/></svg></div>
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhuma meta ativa.</p>
         <a href="./goals.html" class="btn btn-secondary compact" style="font-size:12px">Criar primeira meta</a>
       </div>`;
@@ -571,7 +572,7 @@ function renderReceitaLiquida(recorrentes){
   if(!recorrentes.length){
     el('blocoReceitaLiquida').innerHTML = `
       <div style="text-align:center;padding:24px 16px">
-        <div style="font-size:36px;margin-bottom:8px">💼</div>
+        <div style="margin-bottom:8px;color:var(--muted)"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#db-briefcase"/></svg></div>
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhuma transação recorrente cadastrada.</p>
         <a href="./movements.html" class="btn btn-secondary compact" style="font-size:12px">Adicionar recorrência</a>
       </div>`;
@@ -834,7 +835,7 @@ function renderUltimos(lancamentos, cartaoLanc){
   if(!todos.length){
     el('ultimosLancamentos').innerHTML = `
       <div style="text-align:center;padding:28px 16px">
-        <div style="font-size:36px;margin-bottom:8px">💸</div>
+        <div style="margin-bottom:8px;color:var(--muted)"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#db-receipt"/></svg></div>
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Nenhum lançamento cadastrado ainda.</p>
         <a href="./movements.html" class="btn btn-primary compact" style="font-size:12px">Registrar primeiro lançamento</a>
       </div>`;

@@ -280,12 +280,4 @@ html[data-theme="light"] .anai-btn {
   background: linear-gradient(135deg, #ef4444, #533812);
 }
 
-/* Painel do assistente */
-html[data-theme="light"] .assistant-panel {
-  border-color: rgba(83,56,18,.22);
-  background: linear-gradient(135deg, rgba(83,56,18,.07), rgba(83,56,18,.02));
-}
-html[data-theme="light"] .assistant-item {
-  border-color: rgba(83,56,18,.10);
-  background: rgba(83,56,18,.04);
-}
+/* Banner do assistente — já usa --accent-dim/--accent (tokens do tema claro) */
