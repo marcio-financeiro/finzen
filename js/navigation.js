@@ -443,6 +443,22 @@ registrarAcao('toggleNavGroup', (el) => {
   }
 });
 
+// ─── Skip link (acessibilidade: pular direto pro conteúdo, sem passar pelo menu) ──
+function ensureSkipLink() {
+  if (document.querySelector('.skip-link')) return;
+
+  const content = document.querySelector('.content');
+  if (!content) return;
+  if (!content.id) content.id = 'conteudo-principal';
+  if (!content.hasAttribute('tabindex')) content.setAttribute('tabindex', '-1');
+
+  const link = document.createElement('a');
+  link.className = 'skip-link';
+  link.href = `#${content.id}`;
+  link.textContent = 'Pular para o conteúdo';
+  document.body.prepend(link);
+}
+
 // ─── Sidebar desktop ──────────────────────────────────────────────────────────
 function ensureDesktopSidebar() {
   const shell = document.querySelector('.app-shell');
@@ -719,6 +735,7 @@ function initNavigation() {
   oldKeys.forEach(k => localStorage.removeItem(k));
 
   injectSvgSprite();
+  ensureSkipLink();
   ensureDesktopSidebar();
 
   // Aplicar nome correto imediatamente (sem esperar query async)

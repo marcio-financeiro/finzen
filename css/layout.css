@@ -4,6 +4,24 @@
   background:var(--bg);
 }
 
+.skip-link{
+  position:fixed;
+  top:-100px;
+  left:8px;
+  z-index:10000;
+  background:var(--accent);
+  color:var(--text-on-accent);
+  padding:10px 16px;
+  border-radius:6px;
+  font-size:13px;
+  font-weight:700;
+  text-decoration:none;
+  transition:top .15s ease;
+}
+.skip-link:focus{
+  top:8px;
+}
+
 .sidebar{
   flex-shrink:0;
   background:rgba(14,15,24,.62);
