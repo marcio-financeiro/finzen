@@ -1,6 +1,6 @@
 {
-  "name": "Vyn Finanças",
-  "short_name": "Vyn",
+  "name": "FinZen",
+  "short_name": "FinZen",
   "description": "Controle financeiro pessoal",
   "start_url": "./pages/dashboard.html",
   "display": "standalone",

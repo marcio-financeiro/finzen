@@ -1,5 +1,5 @@
 /**
- * Vyn — Controle Central de Versão de Assets
+ * FinZen — Controle Central de Versão de Assets
  *
  * Altere apenas o número abaixo quando houver atualização de JS ou CSS.
  * Todos os HTMLs carregam este arquivo primeiro e a versão é aplicada

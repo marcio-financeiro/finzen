@@ -462,9 +462,9 @@ function ensureDesktopSidebar() {
     sidebar.prepend(brand);
   }
   brand.innerHTML = `
-    <div class="sidebar-logo-mark">VY</div>
+    <div class="sidebar-logo-mark">FZ</div>
     <div class="sidebar-logo-text">
-      <span class="sidebar-logo-name">VYN</span>
+      <span class="sidebar-logo-name">FINZEN</span>
       <span class="sidebar-logo-sub">ASSESSOR PESSOAL</span>
     </div>
   `;
@@ -568,7 +568,7 @@ function ensureMobileDrawer() {
   drawer.className = 'mobile-drawer';
   drawer.innerHTML = `
     <div class="drawer-header">
-      <div class="drawer-avatar">VY</div>
+      <div class="drawer-avatar">FZ</div>
       <div class="drawer-user">
         <div class="drawer-name" id="drawerUserName">Vyn</div>
         <div class="drawer-sub" id="drawerUserSub">Assessor Pessoal</div>
