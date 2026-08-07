@@ -211,6 +211,12 @@ h3{
   to{   opacity:1; transform:translateY(0); }
 }
 
+/* ── Spinner: rotação compartilhada por todas as variantes de spinner
+   (.mob-spinner, .an-spinner, .inv-spinner, .spin, .cfai-spinner) ── */
+@keyframes spin{
+  to{ transform:rotate(360deg); }
+}
+
 .panel,
 .kpi-card,
 .auth-card{

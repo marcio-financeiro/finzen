@@ -100,7 +100,6 @@
 /* ── Spinner ── */
 .inv-spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.25);
   border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
-@keyframes spin{to{transform:rotate(360deg);}}
 
 /* ── Update bar ── */
 .inv-update-bar{display:flex;align-items:center;gap:12px;padding:12px 18px;flex-wrap:wrap;

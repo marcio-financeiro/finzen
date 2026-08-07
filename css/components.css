@@ -681,10 +681,9 @@ input:-webkit-autofill:active{
 .cfai-spinner{
   width:14px;height:14px;border:2px solid rgba(255,255,255,.3);
   border-top-color:#fff;border-radius:50%;
-  animation:cfai-spin .7s linear infinite;
+  animation:spin .7s linear infinite;
   display:inline-block;
 }
-@keyframes cfai-spin{ to{transform:rotate(360deg)} }
 .cfai-output{ font-size:13px;line-height:1.7;color:var(--text); }
 .cfai-h4{ font-size:13px;font-weight:800;margin:16px 0 8px;color:var(--text); }
 .cfai-h4:first-child{ margin-top:0; }
