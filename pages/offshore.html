@@ -104,15 +104,15 @@
     <h2 id="modalCicloTitulo" style="font-size:16px;font-weight:800;margin:0 0 20px;">Novo Ciclo</h2>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="form-group"><label>Embarque *</label><input type="date" id="cEmbarque"></div>
-      <div class="form-group"><label>Desembarque</label><input type="date" id="cDesembarque"></div>
+      <div class="form-group"><label for="cEmbarque">Embarque *</label><input type="date" id="cEmbarque"></div>
+      <div class="form-group"><label for="cDesembarque">Desembarque</label><input type="date" id="cDesembarque"></div>
     </div>
-    <div class="form-group"><label>Plataforma / Local</label><input type="text" id="cPlataforma" placeholder="Ex: P-51, FPSO Cidade de Paraty..."></div>
-    <div class="form-group"><label>Empresa</label><input type="text" id="cEmpresa" placeholder="Ex: Petrobras, SBM..."></div>
-    <div class="form-group"><label>Contrato / OS</label><input type="text" id="cContrato" placeholder="Número do contrato"></div>
+    <div class="form-group"><label for="cPlataforma">Plataforma / Local</label><input type="text" id="cPlataforma" placeholder="Ex: P-51, FPSO Cidade de Paraty..."></div>
+    <div class="form-group"><label for="cEmpresa">Empresa</label><input type="text" id="cEmpresa" placeholder="Ex: Petrobras, SBM..."></div>
+    <div class="form-group"><label for="cContrato">Contrato / OS</label><input type="text" id="cContrato" placeholder="Número do contrato"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div class="form-group">
-        <label>Regime</label>
+        <label for="cRegime">Regime</label>
         <select id="cRegime">
           <option value="14x14">14x14</option>
           <option value="14x21" selected>14x21</option>
@@ -122,7 +122,7 @@
         </select>
       </div>
       <div class="form-group">
-        <label>Status</label>
+        <label for="cStatus">Status</label>
         <select id="cStatus">
           <option value="planejado">Planejado</option>
           <option value="embarcado">Embarcado</option>
@@ -131,7 +131,7 @@
         </select>
       </div>
     </div>
-    <div class="form-group"><label>Observações</label><textarea id="cObs" rows="2"></textarea></div>
+    <div class="form-group"><label for="cObs">Observações</label><textarea id="cObs" rows="2"></textarea></div>
     <div id="msgCiclo" class="message" style="min-height:0;"></div>
     <div style="display:flex;gap:8px;margin-top:16px;">
       <button type="button" class="btn btn-primary" id="btnSalvarCiclo" data-action="salvarCiclo"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>Salvar</button>
@@ -151,7 +151,7 @@
     <h2 id="modalCertTitulo" style="font-size:16px;font-weight:800;margin:0 0 20px;">Nova Certificação</h2>
 
     <div class="form-group">
-      <label>Certificação *</label>
+      <label for="certNomeSel">Certificação *</label>
       <select id="certNomeSel" onchange="window._offCertNomeChange(this.value)">
         <option value="">Selecione ou digite abaixo</option>
         <option value="HUET">HUET (Helicopter Underwater Escape Training)</option>
@@ -167,17 +167,17 @@
       </select>
     </div>
     <div class="form-group" id="certNomeOutroDiv" style="display:none;">
-      <label>Nome da certificação</label>
+      <label for="certNomeOutro">Nome da certificação</label>
       <input type="text" id="certNomeOutro" placeholder="Digite o nome">
     </div>
-    <div class="form-group"><label>Número / Código</label><input type="text" id="certNumero" placeholder="Ex: BR-12345"></div>
-    <div class="form-group"><label>Entidade emissora</label><input type="text" id="certEntidade" placeholder="Ex: OPITO, SENAI, Det Norske Veritas..."></div>
+    <div class="form-group"><label for="certNumero">Número / Código</label><input type="text" id="certNumero" placeholder="Ex: BR-12345"></div>
+    <div class="form-group"><label for="certEntidade">Entidade emissora</label><input type="text" id="certEntidade" placeholder="Ex: OPITO, SENAI, Det Norske Veritas..."></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="form-group"><label>Data de emissão</label><input type="date" id="certEmissao"></div>
-      <div class="form-group"><label>Data de vencimento *</label><input type="date" id="certVencimento"></div>
+      <div class="form-group"><label for="certEmissao">Data de emissão</label><input type="date" id="certEmissao"></div>
+      <div class="form-group"><label for="certVencimento">Data de vencimento *</label><input type="date" id="certVencimento"></div>
     </div>
     <div class="form-group">
-      <label>Alertar com quantos dias de antecedência</label>
+      <label for="certAlertaDias">Alertar com quantos dias de antecedência</label>
       <select id="certAlertaDias">
         <option value="30">30 dias</option>
         <option value="60">60 dias</option>
@@ -191,7 +191,7 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Receber alerta por e-mail
       </label>
     </div>
-    <div class="form-group"><label>Observações</label><textarea id="certObs" rows="2"></textarea></div>
+    <div class="form-group"><label for="certObs">Observações</label><textarea id="certObs" rows="2"></textarea></div>
     <div id="msgCert" class="message" style="min-height:0;"></div>
     <div style="display:flex;gap:8px;margin-top:16px;">
       <button class="btn btn-primary" id="btnSalvarCert"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>Salvar</button>
@@ -209,19 +209,19 @@
     padding:24px;width:90%;max-width:420px;
     box-shadow:0 24px 64px rgba(0,0,0,.5);">
     <h2 style="font-size:16px;font-weight:800;margin:0 0 20px;">Registrar Horas</h2>
-    <div class="form-group"><label>Ciclo</label><select id="heCiclo"></select></div>
+    <div class="form-group"><label for="heCiclo">Ciclo</label><select id="heCiclo"></select></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="form-group"><label>Data *</label><input type="date" id="heData"></div>
-      <div class="form-group"><label>Horas extras</label><input type="number" id="heHoras" step="0.5" min="0" placeholder="0"></div>
+      <div class="form-group"><label for="heData">Data *</label><input type="date" id="heData"></div>
+      <div class="form-group"><label for="heHoras">Horas extras</label><input type="number" id="heHoras" step="0.5" min="0" placeholder="0"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="form-group"><label>Valor/hora (R$)</label><input type="text" id="heValorHora" inputmode="decimal" placeholder="0,00"></div>
+      <div class="form-group"><label for="heValorHora">Valor/hora (R$)</label><input type="text" id="heValorHora" inputmode="decimal" placeholder="0,00"></div>
       <div style="display:flex;align-items:center;gap:8px;padding-top:28px;">
         <input type="checkbox" id="heSobreaviso" style="width:16px;height:16px;">
         <label for="heSobreaviso" style="margin:0;font-size:13px;font-weight:700;cursor:pointer;">Sobreaviso</label>
       </div>
     </div>
-    <div class="form-group"><label>Descrição</label><input type="text" id="heDesc" placeholder="Ex: Trabalho noturno, emergência..."></div>
+    <div class="form-group"><label for="heDesc">Descrição</label><input type="text" id="heDesc" placeholder="Ex: Trabalho noturno, emergência..."></div>
     <div id="msgHE" class="message" style="min-height:0;"></div>
     <div style="display:flex;gap:8px;margin-top:16px;">
       <button class="btn btn-primary" id="btnSalvarHE"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>Salvar</button>

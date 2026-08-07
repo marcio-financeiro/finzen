@@ -44,17 +44,17 @@
           <h2><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><circle cx="12" cy="12" r="9"/><path d="M9 15.5c.5 1 1.7 1.5 3 1.5 2 0 3.2-1 3.2-2.3 0-3-6-1.4-6-4.2 0-1.3 1.2-2.3 3-2.3 1.3 0 2.4.5 3 1.4"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>Simulação</h2>
 
           <div class="comp-input-group">
-            <label>Valor inicial (R$)</label>
+            <label for="valorInicial">Valor inicial (R$)</label>
             <input type="text" id="valorInicial" inputmode="decimal" data-action-input="simular">
           </div>
 
           <div class="comp-input-group">
-            <label>Aporte mensal (R$)</label>
+            <label for="aporteMensal">Aporte mensal (R$)</label>
             <input type="number" id="aporteMensal" value="500" min="0" step="100" inputmode="decimal" data-action-input="simular">
           </div>
 
           <div class="comp-input-group">
-            <label>IPCA anual estimado (%)</label>
+            <label for="ipca">IPCA anual estimado (%)</label>
             <input type="number" id="ipca" value="4.5" min="0" max="30" step="0.1" inputmode="decimal" data-action-input="simular">
             <div class="comp-cdi-info" id="infoCDI">CDI atual: carregando...</div>
           </div>

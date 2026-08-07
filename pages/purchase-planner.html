@@ -42,19 +42,19 @@
       <div class="panel-header"><h2>Simular compra</h2></div>
       <div class="form-grid" style="padding:16px 20px">
         <div class="form-group">
-          <label>Descrição (opcional)</label>
+          <label for="descricaoCompra">Descrição (opcional)</label>
           <input type="text" id="descricaoCompra" placeholder="Ex: Notebook">
         </div>
         <div class="form-group">
-          <label>Valor total (R$)</label>
+          <label for="valorCompra">Valor total (R$)</label>
           <input type="text" id="valorCompra" placeholder="0,00" inputmode="decimal">
         </div>
         <div class="form-group">
-          <label>Data da compra</label>
+          <label for="dataCompra">Data da compra</label>
           <input type="date" id="dataCompra">
         </div>
         <div class="form-group">
-          <label>Forma de pagamento</label>
+          <label for="formaPagamento">Forma de pagamento</label>
           <select id="formaPagamento">
             <option value="conta">Débito da conta (à vista)</option>
             <option value="cartao_vista">Cartão à vista (1x)</option>
@@ -62,15 +62,15 @@
           </select>
         </div>
         <div class="form-group" id="grupoConta">
-          <label>Conta</label>
+          <label for="contaCompra">Conta</label>
           <select id="contaCompra"><option value="">Carregando...</option></select>
         </div>
         <div class="form-group" id="grupoCartao" style="display:none">
-          <label>Cartão</label>
+          <label for="cartaoCompra">Cartão</label>
           <select id="cartaoCompra"><option value="">Carregando...</option></select>
         </div>
         <div class="form-group" id="grupoParcelas" style="display:none">
-          <label>Parcelas</label>
+          <label for="parcelasCompra">Parcelas</label>
           <input type="number" id="parcelasCompra" min="2" max="60" value="2">
         </div>
         <div class="form-group" style="display:flex;align-items:flex-end">

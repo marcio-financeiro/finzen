@@ -46,7 +46,7 @@
         <div class="reg-form" id="formConta">
           <h3 id="formContaTitulo">Nova Conta</h3>
           <div class="form-grid">
-            <div class="form-group"><label>Nome</label>
+            <div class="form-group"><label for="contaNome">Nome</label>
               <input type="text" id="contaNome" placeholder="Ex: Itaú, Mercado Pago" oninput="sugerirIconeConta()"></div>
             <div class="form-group"><label>Ícone (emoji)</label>
               <div style="position:relative">
@@ -72,9 +72,9 @@
                 </div>
               </div>
             </div>
-            <div class="form-group"><label>Banco / Instituição</label>
+            <div class="form-group"><label for="contaBanco">Banco / Instituição</label>
               <input type="text" id="contaBanco" placeholder="Ex: Itaú, Nubank"></div>
-            <div class="form-group"><label>Tipo</label>
+            <div class="form-group"><label for="contaTipo">Tipo</label>
               <select id="contaTipo">
                 <option value="">Selecione</option>
                 <option value="Conta Corrente">Conta Corrente</option>
@@ -84,21 +84,21 @@
                 <option value="Corretora">Corretora</option>
                 <option value="Carteira">Carteira</option>
               </select></div>
-            <div class="form-group"><label>Classificação</label>
+            <div class="form-group"><label for="contaKind">Classificação</label>
               <select id="contaKind">
                 <option value="bank">Banco / Conta</option>
                 <option value="broker">Corretora</option>
               </select></div>
-            <div class="form-group"><label>Moeda</label>
+            <div class="form-group"><label for="contaMoeda">Moeda</label>
               <select id="contaMoeda">
                 <option value="BRL">BRL — Real</option>
                 <option value="USD">USD — Dólar</option>
               </select></div>
-            <div class="form-group"><label>Saldo atual</label>
+            <div class="form-group"><label for="contaSaldo">Saldo atual</label>
               <input type="text" id="contaSaldo" placeholder="0,00" inputmode="decimal"></div>
-            <div class="form-group"><label>Cor</label>
+            <div class="form-group"><label for="contaCor">Cor</label>
               <input type="color" id="contaCor" value="#4f8ef7"></div>
-            <div class="form-group"><label>Status</label>
+            <div class="form-group"><label for="contaStatus">Status</label>
               <select id="contaStatus">
                 <option value="true">Ativa</option>
                 <option value="false">Inativa</option>
@@ -116,11 +116,11 @@
         <div class="reg-form" id="formCartao">
           <h3 id="formCartaoTitulo">Novo Cartão</h3>
           <div class="form-grid">
-            <div class="form-group"><label>Nome do cartão</label>
+            <div class="form-group"><label for="cartaoNome">Nome do cartão</label>
               <input type="text" id="cartaoNome" placeholder="Ex: Nubank Platinum"></div>
-            <div class="form-group"><label>Banco / Instituição</label>
+            <div class="form-group"><label for="cartaoBanco">Banco / Instituição</label>
               <input type="text" id="cartaoBanco" placeholder="Ex: Nubank"></div>
-            <div class="form-group"><label>Bandeira</label>
+            <div class="form-group"><label for="cartaoBandeira">Bandeira</label>
               <select id="cartaoBandeira">
                 <option value="">Selecione</option>
                 <option value="Visa">Visa</option>
@@ -129,15 +129,15 @@
                 <option value="Amex">Amex</option>
                 <option value="Hipercard">Hipercard</option>
               </select></div>
-            <div class="form-group"><label>Limite</label>
+            <div class="form-group"><label for="cartaoLimite">Limite</label>
               <input type="text" id="cartaoLimite" placeholder="0,00" inputmode="decimal"></div>
-            <div class="form-group"><label>Dia de fechamento</label>
+            <div class="form-group"><label for="cartaoFechamento">Dia de fechamento</label>
               <input type="number" id="cartaoFechamento" placeholder="Ex: 20" min="1" max="31" inputmode="numeric"></div>
-            <div class="form-group"><label>Dia de vencimento</label>
+            <div class="form-group"><label for="cartaoVencimento">Dia de vencimento</label>
               <input type="number" id="cartaoVencimento" placeholder="Ex: 10" min="1" max="31" inputmode="numeric"></div>
-            <div class="form-group"><label>Cor</label>
+            <div class="form-group"><label for="cartaoCor">Cor</label>
               <input type="color" id="cartaoCor" value="#8b5cf6"></div>
-            <div class="form-group"><label>Status</label>
+            <div class="form-group"><label for="cartaoAtivo">Status</label>
               <select id="cartaoAtivo">
                 <option value="true">Ativo</option>
                 <option value="false">Inativo</option>
@@ -155,9 +155,9 @@
         <div class="reg-form" id="formCategoria">
           <h3 id="formCategoriaTitulo">Nova Categoria</h3>
           <div class="form-grid">
-            <div class="form-group"><label>Nome</label>
+            <div class="form-group"><label for="categoriaNome">Nome</label>
               <input type="text" id="categoriaNome" placeholder="Ex: Alimentação"></div>
-            <div class="form-group"><label>Tipo</label>
+            <div class="form-group"><label for="categoriaTipo">Tipo</label>
               <select id="categoriaTipo">
                 <option value="">Selecione</option>
                 <option value="receita">Receita</option>
@@ -191,7 +191,7 @@
                 </div>
               </div>
             </div>
-            <div class="form-group"><label>Status</label>
+            <div class="form-group"><label for="categoriaAtivo">Status</label>
               <select id="categoriaAtivo">
                 <option value="true">Ativa</option>
                 <option value="false">Inativa</option>

@@ -38,11 +38,11 @@
     <div class="ob-sub">Seu assessor pessoal. Vamos configurar sua conta em poucos passos.</div>
 
     <div class="form-group">
-      <label>Como quer ser chamado?</label>
+      <label for="obNome">Como quer ser chamado?</label>
       <input type="text" id="obNome" placeholder="Seu nome">
     </div>
     <div class="form-group">
-      <label>E-mail para lembretes</label>
+      <label for="obEmail">E-mail para lembretes</label>
       <input type="email" id="obEmail" placeholder="seu@email.com">
       <small style="color:var(--muted);font-size:11px;margin-top:4px;display:block;">
         Usado para lembretes de compromissos e vencimentos
@@ -62,12 +62,12 @@
     <div class="ob-sub">Adicione uma conta bancária para começar a registrar seus lançamentos.</div>
 
     <div class="form-group">
-      <label>Nome da conta *</label>
+      <label for="obContaNome">Nome da conta *</label>
       <input type="text" id="obContaNome" placeholder="Ex: Nubank, Itaú, Bradesco...">
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div class="form-group">
-        <label>Tipo</label>
+        <label for="obContaTipo">Tipo</label>
         <select id="obContaTipo">
           <option value="corrente">Conta Corrente</option>
           <option value="poupanca">Poupança</option>
@@ -77,7 +77,7 @@
         </select>
       </div>
       <div class="form-group">
-        <label>Moeda</label>
+        <label for="obContaMoeda">Moeda</label>
         <select id="obContaMoeda">
           <option value="BRL">R$ Real</option>
           <option value="USD">$ Dólar</option>
@@ -85,7 +85,7 @@
       </div>
     </div>
     <div class="form-group">
-      <label>Saldo inicial (R$)</label>
+      <label for="obContaSaldo">Saldo inicial (R$)</label>
       <input type="text" id="obContaSaldo" placeholder="0,00" inputmode="decimal">
     </div>
 

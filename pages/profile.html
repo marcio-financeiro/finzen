@@ -69,12 +69,12 @@
         <h2 style="font-size:14px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px;">Dados Pessoais</h2>
 
         <div class="form-group">
-          <label>Nome</label>
+          <label for="pfNome">Nome</label>
           <input type="text" id="pfNome" placeholder="Como quer ser chamado">
         </div>
 
         <div class="form-group">
-          <label>E-mail de login</label>
+          <label for="pfEmailLogin">E-mail de login</label>
           <input type="email" id="pfEmailLogin" disabled style="opacity:.5;cursor:not-allowed;">
           <small class="muted" style="font-size:11px;">Não pode ser alterado aqui</small>
         </div>
@@ -83,7 +83,7 @@
         <h2 style="font-size:14px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:24px 0 16px;">Notificações</h2>
 
         <div class="form-group">
-          <label>E-mail para lembretes</label>
+          <label for="pfEmailNotif">E-mail para lembretes</label>
           <input type="email" id="pfEmailNotif" placeholder="seu@email.com">
           <small class="muted" style="font-size:11px;margin-top:4px;display:block;">
             Usado para lembretes de compromissos, vencimentos e certificações
@@ -95,7 +95,7 @@
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div class="form-group">
-            <label>Regime padrão</label>
+            <label for="pfRegime">Regime padrão</label>
             <select id="pfRegime">
               <option value="14x21">14x21</option>
               <option value="14x14">14x14</option>
@@ -105,7 +105,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Empresa atual</label>
+            <label for="pfEmpresa">Empresa atual</label>
             <input type="text" id="pfEmpresa" placeholder="Ex: Petrobras, SBM...">
           </div>
         </div>
@@ -146,11 +146,11 @@
         <h2 style="font-size:14px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:28px 0 16px;">Segurança</h2>
 
         <div class="form-group">
-          <label>Nova senha</label>
+          <label for="pfSenha">Nova senha</label>
           <input type="password" id="pfSenha" placeholder="Deixe em branco para não alterar">
         </div>
         <div class="form-group">
-          <label>Confirmar nova senha</label>
+          <label for="pfSenhaConf">Confirmar nova senha</label>
           <input type="password" id="pfSenhaConf" placeholder="Repita a nova senha">
         </div>
 

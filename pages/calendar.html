@@ -69,13 +69,13 @@
     <h2 id="calModalTitulo">Novo Evento</h2>
 
     <div class="form-group">
-      <label>Título *</label>
+      <label for="evTitulo">Título *</label>
       <input type="text" id="evTitulo" placeholder="Ex: Consulta médica, Embarque...">
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div class="form-group">
-        <label>Tipo *</label>
+        <label for="evTipo">Tipo *</label>
         <select id="evTipo">
           <option value="compromisso">🎯 Compromisso</option>
           <option value="tarefa">📋 Tarefa</option>
@@ -87,7 +87,7 @@
         </select>
       </div>
       <div class="form-group">
-        <label>Status</label>
+        <label for="evStatus">Status</label>
         <select id="evStatus">
           <option value="pendente">Pendente</option>
           <option value="concluido">Concluído</option>
@@ -98,26 +98,26 @@
 
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
       <div class="form-group">
-        <label>Data início *</label>
+        <label for="evDataInicio">Data início *</label>
         <input type="date" id="evDataInicio">
       </div>
       <div class="form-group">
-        <label>Data fim</label>
+        <label for="evDataFim">Data fim</label>
         <input type="date" id="evDataFim">
       </div>
       <div class="form-group">
-        <label>Hora</label>
+        <label for="evHora">Hora</label>
         <input type="time" id="evHora">
       </div>
     </div>
 
     <div class="form-group">
-      <label>Local</label>
+      <label for="evLocal">Local</label>
       <input type="text" id="evLocal" placeholder="Ex: Hospital, Plataforma P-51...">
     </div>
 
     <div class="form-group">
-      <label>Descrição / Observações</label>
+      <label for="evDescricao">Descrição / Observações</label>
       <textarea id="evDescricao" rows="3" placeholder="Detalhes do evento..."></textarea>
     </div>
 
@@ -132,7 +132,7 @@
       <div id="evNotifOpcoes" style="display:none;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div class="form-group" style="margin:0;">
-            <label>Avisar quantos dias antes</label>
+            <label for="evLembreteDias">Avisar quantos dias antes</label>
             <select id="evLembreteDias">
               <option value="0">No dia</option>
               <option value="1" selected>1 dia antes</option>
@@ -143,7 +143,7 @@
             </select>
           </div>
           <div class="form-group" style="margin:0;">
-            <label>E-mail destino</label>
+            <label for="evEmail">E-mail destino</label>
             <input type="email" id="evEmail" placeholder="seu@email.com">
           </div>
         </div>

@@ -68,7 +68,7 @@
       <div class="inv-update-bar">
         <button type="button" class="btn btn-secondary compact" id="btnAtualizar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M4 4v6h6"/><path d="M4.5 13a8 8 0 1 0 2.5-6.5L4 10"/></svg>Atualizar cotações</button>
         <div class="inv-dolar-group">
-          <label style="margin:0;color:var(--muted);font-size:12px;font-weight:700;">USD/BRL</label>
+          <label for="dolarReferencia" style="margin:0;color:var(--muted);font-size:12px;font-weight:700;">USD/BRL</label>
           <input type="number" id="dolarReferencia" step="0.0001" placeholder="5,15" inputmode="decimal">
           <button type="button" class="btn btn-secondary compact" id="btnSalvarDolar" style="margin:0">Salvar</button>
         </div>
@@ -120,15 +120,15 @@
         </p>
         <div class="form-grid">
           <div class="form-group">
-            <label>Ticker / Código</label>
+            <label for="tickerAtivo">Ticker / Código</label>
             <input type="text" id="tickerAtivo" placeholder="Ex: BBAS3, VOO">
           </div>
           <div class="form-group">
-            <label>Nome (opcional)</label>
+            <label for="nomeAtivo">Nome (opcional)</label>
             <input type="text" id="nomeAtivo" placeholder="Ex: Banco do Brasil">
           </div>
           <div class="form-group">
-            <label>Tipo</label>
+            <label for="tipoAtivo">Tipo</label>
             <select id="tipoAtivo">
               <option value="">Selecione</option>
               <option value="acao_br">Ação BR</option>
@@ -140,41 +140,41 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Corretora (conta)</label>
+            <label for="corretoraAtivo">Corretora (conta)</label>
             <select id="corretoraAtivo"><option value="">Carregando...</option></select>
           </div>
           <div class="form-group">
-            <label>Operação</label>
+            <label for="operacaoAtivo">Operação</label>
             <select id="operacaoAtivo">
               <option value="compra">Compra</option>
               <option value="venda">Venda</option>
             </select>
           </div>
           <div class="form-group">
-            <label>Quantidade</label>
+            <label for="quantidadeAtivo">Quantidade</label>
             <input type="number" id="quantidadeAtivo" placeholder="0" step="0.000001" min="0" inputmode="decimal">
           </div>
           <div class="form-group">
-            <label>Preço unitário (ou deixe vazio)</label>
+            <label for="precoAtivo">Preço unitário (ou deixe vazio)</label>
             <input type="number" id="precoAtivo" placeholder="Se não souber, informe o total" step="0.000001" min="0" inputmode="decimal">
           </div>
           <div class="form-group">
-            <label>Valor total investido</label>
+            <label for="valorTotalAtivo">Valor total investido</label>
             <input type="text" id="valorTotalAtivo" placeholder="Ou informe aqui se não souber o unitário" inputmode="decimal">
           </div>
           <div class="form-group">
-            <label>Moeda</label>
+            <label for="moedaAtivo">Moeda</label>
             <select id="moedaAtivo">
               <option value="BRL">BRL — Real</option>
               <option value="USD">USD — Dólar</option>
             </select>
           </div>
           <div class="form-group">
-            <label>Data</label>
+            <label for="dataAtivo">Data</label>
             <input type="date" id="dataAtivo">
           </div>
           <div class="form-group full">
-            <label>Observação (opcional)</label>
+            <label for="obsAtivo">Observação (opcional)</label>
             <input type="text" id="obsAtivo" placeholder="Ex: aporte mensal">
           </div>
         </div>
@@ -202,11 +202,11 @@
         </p>
         <div class="form-grid">
           <div class="form-group">
-            <label>Ativo</label>
+            <label for="divAtivo">Ativo</label>
             <select id="divAtivo"><option value="">Selecione o ativo</option></select>
           </div>
           <div class="form-group">
-            <label>Tipo</label>
+            <label for="divTipo">Tipo</label>
             <select id="divTipo">
               <option value="dividendo">Dividendo</option>
               <option value="jcp">JCP</option>
@@ -215,35 +215,35 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Valor por cota</label>
+            <label for="divValorCota">Valor por cota</label>
             <input type="number" id="divValorCota" placeholder="0,00" step="0.000001" min="0" inputmode="decimal">
           </div>
           <div class="form-group">
-            <label>Qtd cotas na data</label>
+            <label for="divQtdCotas">Qtd cotas na data</label>
             <input type="number" id="divQtdCotas" placeholder="Preenchido automaticamente" step="0.000001" min="0" inputmode="decimal">
           </div>
           <div class="form-group">
-            <label>Moeda do recebimento</label>
+            <label for="divMoeda">Moeda do recebimento</label>
             <select id="divMoeda">
               <option value="BRL">🇧🇷 Real (BRL)</option>
               <option value="USD">🇺🇸 Dólar (USD)</option>
             </select>
           </div>
           <div class="form-group">
-            <label id="labelDivTotal">Valor total recebido</label>
+            <label for="divValorTotal" id="labelDivTotal">Valor total recebido</label>
             <input type="text" id="divValorTotal" placeholder="0,00" inputmode="decimal">
             <small id="divConversao" class="muted" style="display:none;margin-top:4px;display:block"></small>
           </div>
           <div class="form-group">
-            <label>Conta de destino</label>
+            <label for="divConta">Conta de destino</label>
             <select id="divConta"><option value="">Selecione a conta</option></select>
           </div>
           <div class="form-group">
-            <label>Data de pagamento</label>
+            <label for="divData">Data de pagamento</label>
             <input type="date" id="divData">
           </div>
           <div class="form-group">
-            <label>Observação (opcional)</label>
+            <label for="divObs">Observação (opcional)</label>
             <input type="text" id="divObs" placeholder="">
           </div>
         </div>
@@ -269,7 +269,7 @@
 
         <div style="display:flex;gap:10px;align-items:flex-end;margin-top:20px;flex-wrap:wrap;">
           <div class="form-group" style="margin:0;">
-            <label>Valor do aporte (R$)</label>
+            <label for="balValorAporte">Valor do aporte (R$)</label>
             <input type="text" id="balValorAporte" placeholder="0,00" inputmode="decimal" style="width:180px;">
           </div>
           <button type="button" class="btn btn-primary" id="btnCalcularBal" style="margin:0">Calcular</button>

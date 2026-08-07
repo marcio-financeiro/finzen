@@ -46,13 +46,13 @@
     <!-- Filtro de cartão -->
     <section class="panel">
       <div class="bills-filter">
-        <label style="margin:0;color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap">Filtrar cartão</label>
+        <label for="filtroCartao" style="margin:0;color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap">Filtrar cartão</label>
         <select id="filtroCartao">
           <option value="">Todos os cartões</option>
         </select>
       </div>
       <div class="bills-filter" style="padding-top:0">
-        <label style="margin:0;color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap">Pesquisar fatura de um mês</label>
+        <label for="filtroMesPesquisa" style="margin:0;color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap">Pesquisar fatura de um mês</label>
         <input type="month" id="filtroMesPesquisa">
         <button type="button" class="btn btn-secondary compact" id="btnPesquisarMes">Pesquisar</button>
         <button type="button" class="btn compact" id="btnLimparPesquisa" style="display:none">Voltar</button>
@@ -71,25 +71,25 @@
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:420px">
     <h3 style="margin:0 0 16px;font-size:1rem">Editar lançamento</h3>
     <div class="form-group">
-      <label>Descrição</label>
+      <label for="editDescricao">Descrição</label>
       <input type="text" id="editDescricao" class="form-control">
     </div>
     <div class="form-group">
-      <label>Valor da parcela (R$)</label>
+      <label for="editValor">Valor da parcela (R$)</label>
       <input type="text" id="editValor" inputmode="decimal" class="form-control">
     </div>
     <div class="form-group">
-      <label>Categoria</label>
+      <label for="editCategoria">Categoria</label>
       <select id="editCategoria" class="form-control">
         <option value="">Sem categoria</option>
       </select>
     </div>
     <div class="form-group">
-      <label>Data da compra</label>
+      <label for="editDataCompra">Data da compra</label>
       <input type="date" id="editDataCompra" class="form-control">
     </div>
     <div class="form-group">
-      <label>Fatura (mês de referência)</label>
+      <label for="editFaturaRef">Fatura (mês de referência)</label>
       <input type="month" id="editFaturaRef" class="form-control">
     </div>
     <div id="editAtualizarParcelas" style="display:none;margin-top:4px">

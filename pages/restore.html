@@ -43,11 +43,11 @@
       <div class="panel-header"><h2>1. Carregar backup</h2></div>
       <div style="padding:20px">
         <div class="form-group">
-          <label>Selecionar arquivo JSON</label>
+          <label for="backupFile">Selecionar arquivo JSON</label>
           <input type="file" id="backupFile" accept=".json" style="padding:8px">
         </div>
         <div class="form-group">
-          <label>Ou cole o conteúdo do JSON aqui</label>
+          <label for="backupText">Ou cole o conteúdo do JSON aqui</label>
           <textarea id="backupText" rows="5" style="width:100%;font-size:12px;font-family:monospace"
             placeholder='{"app":"FinZen","version":"..."}'></textarea>
         </div>
@@ -70,7 +70,7 @@
       <div style="padding:20px">
 
         <div class="form-group">
-          <label>Modo de restauração</label>
+          <label for="restoreMode">Modo de restauração</label>
           <select id="restoreMode">
             <option value="merge">Mesclar — adiciona dados sem apagar os existentes</option>
             <option value="replace">Substituir tudo — apaga todos os dados e reimporta</option>
@@ -82,7 +82,7 @@
 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M12 4 3 19h18z"/><line x1="12" y1="10" x2="12" y2="14.5"/><circle cx="12" cy="17" r=".7" fill="currentColor" stroke="none"/></svg>Atenção: esta ação apagará TODOS os seus dados atuais antes de importar o backup.
           </p>
           <div class="form-group" style="margin:0">
-            <label style="color:var(--danger)">Digite RESTAURAR para confirmar</label>
+            <label for="replaceConfirm" style="color:var(--danger)">Digite RESTAURAR para confirmar</label>
             <input type="text" id="replaceConfirm" placeholder="RESTAURAR" style="border-color:var(--danger)">
           </div>
         </div>
