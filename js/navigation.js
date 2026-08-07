@@ -497,7 +497,7 @@ function ensureDesktopSidebar() {
         <div class="sidebar-avatar" id="sidebarAvatarInitial">?</div>
       </div>
       <div class="sidebar-profile-info">
-        <div class="sidebar-profile-name" id="sidebarUserName">Vyn</div>
+        <div class="sidebar-profile-name" id="sidebarUserName">FinZen</div>
         <div class="sidebar-profile-sub">Assessor Pessoal</div>
       </div>
       <div class="sidebar-profile-stats" id="sidebarProfileStats">
@@ -587,7 +587,7 @@ function ensureMobileDrawer() {
     <div class="drawer-header">
       <div class="drawer-avatar">FZ</div>
       <div class="drawer-user">
-        <div class="drawer-name" id="drawerUserName">Vyn</div>
+        <div class="drawer-name" id="drawerUserName">FinZen</div>
         <div class="drawer-sub" id="drawerUserSub">Assessor Pessoal</div>
       </div>
       <button class="drawer-close" type="button" aria-label="Fechar menu">×</button>
@@ -672,23 +672,23 @@ function ensureFAB() {
   wrap.className = 'finzen-fab-wrap';
   wrap.innerHTML = `
     <div class="finzen-fab-menu" id="finzenFabMenu">
-      <a class="finzen-fab-option" href="${base}?tipo=receita">
+      <a class="finzen-fab-option" href="${base}?quick=1&tipo=receita">
         <span class="finzen-fab-icon" style="background:var(--success)">+</span>
         <span>Receita</span>
       </a>
-      <a class="finzen-fab-option" href="${base}?tipo=despesa">
+      <a class="finzen-fab-option" href="${base}?quick=1&tipo=despesa">
         <span class="finzen-fab-icon" style="background:var(--danger)">−</span>
         <span>Despesa</span>
       </a>
-      <a class="finzen-fab-option" href="${base}?tipo=cartao">
+      <a class="finzen-fab-option" href="${base}?quick=1&tipo=cartao">
         <span class="finzen-fab-icon" style="background:var(--accent)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="13" rx="2.5"/><path d="M2.5 10.5h19"/></svg></span>
         <span>Cartão</span>
       </a>
-      <a class="finzen-fab-option" href="${base}?tipo=transferencia">
+      <a class="finzen-fab-option" href="${base}?quick=1&tipo=transferencia">
         <span class="finzen-fab-icon" style="background:var(--info)">⇄</span>
         <span>Transferência</span>
       </a>
-      <a class="finzen-fab-option" href="${base}?tipo=cambio">
+      <a class="finzen-fab-option" href="${base}?quick=1&tipo=cambio">
         <span class="finzen-fab-icon" style="background:#e67e22"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v14M7 17l-3-3M7 17l3-3"/><path d="M17 21V7M17 7l3 3M17 7l-3 3"/></svg></span>
         <span>Câmbio</span>
       </a>

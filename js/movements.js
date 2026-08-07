@@ -1329,7 +1329,9 @@ await loadMovements();
 
 // Pré-selecionar tipo via URL (FAB do mobile)
 const urlParams = new URLSearchParams(window.location.search);
+const quickLaunch = urlParams.get('quick') === '1';
 const tipoParam = urlParams.get('tipo');
+if (quickLaunch) document.body.classList.add('quick-launch');
 if(tipoParam){
   if(tipoParam === 'cartao'){
     movementType.value = 'despesa';
@@ -1340,8 +1342,8 @@ if(tipoParam){
     movementType.value = tipoParam;
     updateFormVisibility();
   }
-  // Foca no campo descrição para lançamento rápido
-  movementDescription.focus();
+  // No lançamento rápido, o valor vem antes dos detalhes.
+  (quickLaunch ? movementAmount : movementDescription).focus();
   // Limpa o param da URL sem recarregar
   window.history.replaceState({}, '', window.location.pathname);
 }

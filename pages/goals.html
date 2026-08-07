@@ -7,7 +7,7 @@
 <title>Metas - FinZen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap">
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm">
 <link rel="stylesheet" href="../css/variables.css">
 <link rel="stylesheet" href="../css/base.css">
@@ -16,21 +16,24 @@
 <link rel="stylesheet" href="../css/mobile.css">
 <link rel="stylesheet" href="../css/navigation.css">
 <link rel="stylesheet" href="../css/editorial.css">
+<link rel="stylesheet" href="../css/modern-wealth.css">
 <script src="../js/version.js"></script>
+
 <link rel="manifest" href="../manifest.json">
-<meta name="theme-color" content="#c08a3e">
+<meta name="theme-color" content="#176c70">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
-<body>
+<body class="planning-page goals-page">
 <div class="app-shell">
   <!-- Conteúdo interno é montado por navigation.js (ensureDesktopSidebar) —
        aside vazio só reserva o espaço, evita layout shift até o JS rodar -->
   <aside class="sidebar"></aside>
 
+
   <main class="content">
     <header class="topbar">
-      <div><h1>Metas Financeiras</h1><p id="userEmail" class="muted"></p></div>
+      <div><h1>Metas</h1><p id="userEmail" class="muted">Transforme intenção em um plano que cabe no seu mês.</p></div>
       <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
     </header>
 
