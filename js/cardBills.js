@@ -7,6 +7,7 @@ import { escapeHtml } from './utils/escapeHtml.js';
 import { invoiceRef, addMonthsRef } from './services/cardService.js';
 import { ajustarSaldo } from './services/balanceService.js';
 import { hojeISO } from './utils/dateUtils.js';
+import { iconeCategoriaSvg } from './utils/categoryIcon.js';
 
 // ─── DOM ───────────────────────────────────────
 const userEmail    = document.getElementById('userEmail');
@@ -237,7 +238,7 @@ function billCardHtml(fatura, key, isAtual) {
   );
 
   const itensHtml = itensOrdenados.map(item => {
-    const cat  = item.categories ? `${escapeHtml(item.categories.icon || '')} ${escapeHtml(item.categories.nome)}` : '-';
+    const cat  = item.categories ? `${iconeCategoriaSvg(item.categories.nome,13)}${escapeHtml(item.categories.nome)}` : '-';
     const data = item.data_compra
       ? item.data_compra.split('-').reverse().join('/')
       : '-';

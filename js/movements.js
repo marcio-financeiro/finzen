@@ -10,6 +10,7 @@ import { invoiceRef, addMonthsRef, refName, novoGrupoCompra, inserirParcelasCart
 import { toast, comTrava } from './toast.js';
 import { ajustarSaldo, deltaTransacao } from './services/balanceService.js';
 import { deleteAccountTransfer } from './services/transferService.js';
+import { iconeCategoriaSvg } from './utils/categoryIcon.js';
 
 let dolarAtual = 5.15;
 
@@ -891,7 +892,8 @@ async function loadUpcomingRecurring(){
         amount:Number(model.amount||0),
         account:model.accounts?.nome||'-',
         currency:model.accounts?.currency||'BRL',
-        category:`${model.categories?.icon||''} ${model.categories?.nome||'-'}`.trim(),
+        category:model.categories?.nome||'-',
+        categoryIcon:model.categories?.nome ? iconeCategoriaSvg(model.categories.nome,13) : '',
         frequency:model.recurrence_frequency||'mensal',
       });
     });
@@ -929,7 +931,7 @@ async function loadUpcomingRecurring(){
               <td>${shortDateBR(item.date)}</td>
               <td>${escapeHtml(item.description)}</td>
               <td>${escapeHtml(item.account)}</td>
-              <td>${escapeHtml(item.category)||'-'}</td>
+              <td>${item.categoryIcon}${escapeHtml(item.category)}</td>
               <td><span class="badge neutral">${item.frequency}</span></td>
               <td class="money ${item.type==='receita'?'positive':'negative'}">
                 ${item.type==='receita'?'+':'-'}${formatCurrency(item.amount,item.currency)}
@@ -951,7 +953,7 @@ async function loadUpcomingRecurring(){
           <div class="ff-mobile-card-meta">
             <div><span>Data</span><br>${shortDateBR(item.date)}</div>
             <div><span>Conta</span><br>${escapeHtml(item.account)}</div>
-            <div><span>Categoria</span><br>${escapeHtml(item.category)||'-'}</div>
+            <div><span>Categoria</span><br>${item.categoryIcon}${escapeHtml(item.category)}</div>
             <div><span>Frequência</span><br><span class="badge neutral">${item.frequency}</span></div>
           </div>
         </article>
@@ -1025,7 +1027,8 @@ async function loadMovements(){
   (transactions.data||[]).forEach(t => rows.push({
     source:'transaction', id:t.id, date:t.date, kind:t.type,
     desc:t.description, account:t.accounts?.nome||'-',
-    category:`${t.categories?.icon||''} ${t.categories?.nome||'-'}`,
+    category:t.categories?.nome||'-',
+    categoryIcon:t.categories?.nome ? iconeCategoriaSvg(t.categories.nome,13) : '',
     value:t.amount,
     sign:t.type==='receita'?'+':'-',
     status:t.status,
@@ -1037,19 +1040,24 @@ async function loadMovements(){
     source:'transfer', id:t.id, date:t.date, kind:'transferência',
     desc:t.description||'Transferência',
     account:`${t.from_account?.nome||'-'} → ${t.to_account?.nome||'-'}`,
-    category:'🔁 Transferência',
+    category:'Transferência',
+    categoryIcon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-arrows-updown"/></svg>',
     value:t.amount, sign:'', status:'concluída',
     isRecurring:false,
   }));
 
   (cardTx.data||[]).forEach(c => {
     const isRefund = Number(c.valor_total||0) < 0;
+    const catIcon = isRefund
+      ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-rotate-ccw"/></svg>'
+      : (c.categories?.nome ? iconeCategoriaSvg(c.categories.nome,13) : '');
     if(monthFilter){
       // Uma linha por parcela que vence neste mês (não só a 1ª parcela da compra)
       rows.push({
         source:'card', id:c.id, date:`${c.fatura_referencia}-01`, kind:'cartão',
         desc:c.descricao, account:c.credit_cards?.nome||'-',
-        category:isRefund?'↩️ Estorno':`${c.categories?.icon||''} ${c.categories?.nome||'-'}`,
+        category:isRefund?'Estorno':(c.categories?.nome||'-'),
+        categoryIcon:catIcon,
         value:Math.abs(c.valor_parcela||0), sign:isRefund?'+':'-',
         status:c.parcelas>1?`parcela ${c.parcela_atual}/${c.parcelas}`:'à vista',
         isRecurring:false,
@@ -1059,7 +1067,8 @@ async function loadMovements(){
       rows.push({
         source:'card', id:c.id, date:c.data_compra, kind:'cartão',
         desc:c.descricao, account:c.credit_cards?.nome||'-',
-        category:isRefund?'↩️ Estorno':`${c.categories?.icon||''} ${c.categories?.nome||'-'}`,
+        category:isRefund?'Estorno':(c.categories?.nome||'-'),
+        categoryIcon:catIcon,
         value:Math.abs(c.valor_total||0), sign:isRefund?'+':'-',
         status:`${c.parcelas}x · ${refName(c.fatura_referencia)}`,
         isRecurring:false,
@@ -1104,7 +1113,7 @@ async function loadMovements(){
               <td><span class="badge neutral">${r.kind}</span></td>
               <td>${escapeHtml(r.desc)}</td>
               <td>${escapeHtml(r.account)}</td>
-              <td>${escapeHtml(r.category)}</td>
+              <td>${r.categoryIcon}${escapeHtml(r.category)}</td>
               <td>${badgeStatus(r)}</td>
               <td class="money ${r.sign==='+'?'positive':r.sign==='-'?'negative':''}">
                 ${r.sign}${formatCurrency(r.value,'BRL')}
@@ -1154,7 +1163,7 @@ async function loadMovements(){
           </div>
           <div class="ff-mobile-card-meta">
             <div><span>Conta/Cartão</span><br>${escapeHtml(r.account)}</div>
-            <div><span>Categoria</span><br>${escapeHtml(r.category)}</div>
+            <div><span>Categoria</span><br>${r.categoryIcon}${escapeHtml(r.category)}</div>
             <div><span>Status</span><br>${badgeStatus(r)}</div>
             <div><span>Tipo</span><br><span class="badge neutral">${r.kind}</span></div>
           </div>
