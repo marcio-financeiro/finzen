@@ -139,7 +139,7 @@ textarea:focus{
   background:var(--accent);
   color:var(--text-on-accent);
   font-weight:800;
-  box-shadow:0 10px 24px rgba(192,138,62,.20);
+  box-shadow:none;
 }
 
 .btn-secondary{
