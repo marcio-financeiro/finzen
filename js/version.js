@@ -7,7 +7,7 @@
  *
  * Como incrementar: 1201 → 1202 → 1203 ...
  */
-const ASSET_VERSION = '1236';
+const ASSET_VERSION = '1237';
 
 (function () {
   // Aplica ?v= em todos os link[rel=stylesheet] e script[src] que apontam
