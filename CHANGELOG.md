@@ -16,6 +16,21 @@
 
 ---
 
+## [11.6] — 2026-08-07 — Redesign visual "Ledger" + Fase 3 (parte 1)
+
+### Redesign visual
+- Conceito "Ledger": grade fina de papel de razão atrás do conteúdo, cards com hairline em vez de sombra difusa, header em mono — aplicado em `login.html`, `pages/dashboard.html` e, via `css/layout.css`/`css/components.css`, em todas as páginas que usam o shell padrão
+- Login redesenhado (form real com Enter, toggle de senha, correção de contraste do texto digitado no tema claro)
+- Remove sombra suave (glow) de botões primários e KPI cards nos dois temas
+
+### Fase 3 (parte 1) — Shell e design system
+- Extrai ~1.9k linhas de `<style>` inline de 19 páginas para `css/pages/*.css` (mesmo CSS, sem mudança visual)
+- Unifica marca: `Vyn`/`VYN`/`VY` → `FinZen`/`FZ` em títulos, manifest, sidebar e drawer mobile
+
+### Pendente da Fase 3
+- Unificação de fato dos 13 variantes de card / 7 de aba / 4 spinners em componentes únicos (requer merge de regras entre páginas, verificação visual manual)
+- `navigation.js` → `shell.js`
+
 ## [11.5] — 2026-08-06 — Auditoria: Fase 0 (segurança) + Fase 1 (limpeza)
 
 ### Fase 0 — Segurança e integridade financeira
