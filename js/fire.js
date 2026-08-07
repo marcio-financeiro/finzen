@@ -8,6 +8,7 @@ import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
 import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
+import { loadChart } from './utils/loadChart.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -219,7 +220,7 @@ el('aporteMensal').addEventListener('input', window.calcular);
 el('gastosMensais').addEventListener('input', window.calcular);
 
 // ── Gráfico de projeção ───────────────────────────────
-function renderGrafico(patrimonioInicial, aporte, rentMensal, meta, totalMeses, idadeInicial) {
+async function renderGrafico(patrimonioInicial, aporte, rentMensal, meta, totalMeses, idadeInicial) {
   const anos    = Math.min(Math.ceil(totalMeses / 12) + 5, 60);
   const labels  = [];
   const semAporte  = [];
@@ -239,6 +240,7 @@ function renderGrafico(patrimonioInicial, aporte, rentMensal, meta, totalMeses, 
     }
   }
 
+  const Chart = await loadChart();
   if(chartInstance) { chartInstance.destroy(); }
 
   chartInstance = new Chart(el('chartFire'), {

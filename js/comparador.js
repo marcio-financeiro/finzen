@@ -10,6 +10,7 @@ import { formatCurrency } from './utils.js';
 import { registrarAcao }  from './eventBus.js';
 import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 import { escapeHtml } from './utils/escapeHtml.js';
+import { loadChart } from './utils/loadChart.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -254,9 +255,10 @@ function simular() {
 registrarAcao('simular', () => simular());
 
 // ── Gráfico de evolução ───────────────────────────────
-function renderGrafico(resultados, anos) {
+async function renderGrafico(resultados, anos) {
   const labels = Array.from({ length: anos + 1 }, (_, i) => `Ano ${i}`);
 
+  const Chart = await loadChart();
   if(chartInstance) chartInstance.destroy();
 
   chartInstance = new Chart(el('chartComparador'), {

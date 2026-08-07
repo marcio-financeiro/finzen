@@ -10,6 +10,7 @@ import { ensureDailySnapshot } from './services/patrimonySnapshot.js';
 import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 import { ajustarSaldo } from './services/balanceService.js';
 import { escapeHtml } from './utils/escapeHtml.js';
+import { loadChart } from './utils/loadChart.js';
 
 // ─────────────────────────────────────────────
 // AUTH
@@ -610,6 +611,7 @@ async function renderizarGraficoEvolucao(){
   const ctx=el('chartEvolucao');
   if(!ctx) return;
 
+  const Chart = await loadChart();
   chartEvolucao=new Chart(ctx,{
     type:'bar',
     data:{

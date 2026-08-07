@@ -7,6 +7,7 @@
 import { supabase }       from './supabaseClient.js';
 import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
+import { loadChart } from './utils/loadChart.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -167,6 +168,7 @@ async function carregar() {
     el('kpiMaiorGasto').textContent = maiorGasto ? `${maiorGasto[0]}: ${fmt(maiorGasto[1])}` : '-';
 
     // ── Gráfico 1: Receitas vs Despesas ───────────────
+    const Chart = await loadChart();
     destroyChart('chartRecDes');
     charts['chartRecDes'] = new Chart(el('chartRecDes'), {
       type: 'bar',

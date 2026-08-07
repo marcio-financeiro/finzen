@@ -3,6 +3,7 @@ import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
 import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
 import { escapeHtml } from './utils/escapeHtml.js';
+import { loadChart } from './utils/loadChart.js';
 
 // Soma o valor de uma transação já convertido pra BRL, conforme a moeda da conta
 function valorBRL(t){ return convertToBRL(t.amount, t.accounts?.currency || 'BRL', dolarAtual); }
@@ -192,6 +193,7 @@ async function renderGrafico12Meses() {
               .reduce((s, t) => s + Number(t.amount || 0), 0)
   );
 
+  const Chart = await loadChart();
   destroyChart('recdes');
   charts['recdes'] = new Chart(document.getElementById('chartRecDes'), {
     type: 'bar',
@@ -260,6 +262,7 @@ async function renderCategorias() {
   }
 
   // Doughnut
+  const Chart = await loadChart();
   destroyChart('cat');
   charts['cat'] = new Chart(document.getElementById('chartCategorias'), {
     type: 'doughnut',
@@ -323,6 +326,7 @@ async function renderEvolucaoPatrimonio() {
   grad.addColorStop(0, 'rgba(245,158,11,.35)');
   grad.addColorStop(1, 'rgba(245,158,11,.02)');
 
+  const Chart = await loadChart();
   charts['patrim'] = new Chart(canvas, {
     type: 'line',
     data: {
@@ -400,6 +404,7 @@ async function renderInvestimentos() {
 
   destroyChart('cart');
   if (top8.length > 0) {
+    const Chart = await loadChart();
     charts['cart'] = new Chart(document.getElementById('chartCarteira'), {
       type: 'doughnut',
       data: {
@@ -468,6 +473,7 @@ async function renderOrcamento() {
 
   wrap.style.height = altura + 'px';
 
+  const Chart = await loadChart();
   destroyChart('orc');
   charts['orc'] = new Chart(document.getElementById('chartOrcamento'), {
     type: 'bar',
