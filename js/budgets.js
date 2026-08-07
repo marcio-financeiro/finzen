@@ -5,6 +5,7 @@ import { confirmarExclusao } from './confirmModal.js';
 import { notificarOrcamentoEstourado } from './telegram.js';
 import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
 import { escapeHtml } from './utils/escapeHtml.js';
+import { iconeCategoriaSvg } from './utils/categoryIcon.js';
 
 const { data: sd } = await supabase.auth.getSession();
 if(!sd.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
@@ -103,13 +104,12 @@ function renderLista(){
     const restante  = planejado - gasto;
     const pct       = planejado>0 ? Math.min(gasto/planejado*100,100) : 0;
     const classe    = pct>=100?'over':pct>=80?'warn':'';
-    const icon      = o.categories?.icon||'';
     const nome      = o.categories?.nome||'Categoria';
 
     return `
       <div style="padding:14px 0;border-bottom:1px solid var(--border)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-weight:700;font-size:13px">${escapeHtml(icon)} ${escapeHtml(nome)}</span>
+          <span style="font-weight:700;font-size:13px">${iconeCategoriaSvg(nome,14)} ${escapeHtml(nome)}</span>
           <div style="display:flex;align-items:center;gap:12px">
             <span class="muted" style="font-size:12px">
               ${formatCurrency(gasto,'BRL')} / ${formatCurrency(planejado,'BRL')}

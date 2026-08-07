@@ -4,6 +4,7 @@ import { formatCurrency } from './utils.js';
 import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { loadChart } from './utils/loadChart.js';
+import { iconeCategoriaSvg } from './utils/categoryIcon.js';
 
 // Soma o valor de uma transação já convertido pra BRL, conforme a moeda da conta
 function valorBRL(t){ return convertToBRL(t.amount, t.accounts?.currency || 'BRL', dolarAtual); }
@@ -234,23 +235,21 @@ async function renderCategorias() {
   const mapa = {};
   (tx || []).forEach(t => {
     const nome = t.categories?.nome || 'Outros';
-    const icon = t.categories?.icon || '💸';
     const key  = nome;
-    if (!mapa[key]) mapa[key] = { nome, icon, valor: 0 };
+    if (!mapa[key]) mapa[key] = { nome, valor: 0 };
     mapa[key].valor += Number(t.amount || 0);
   });
   (cardTx || []).forEach(t => {
     const nome = t.categories?.nome || 'Cartão';
-    const icon = t.categories?.icon || '💳';
     const key  = nome;
-    if (!mapa[key]) mapa[key] = { nome, icon, valor: 0 };
+    if (!mapa[key]) mapa[key] = { nome, valor: 0 };
     mapa[key].valor += Number(t.valor_parcela || 0);
   });
 
   const itens = Object.values(mapa).sort((a, b) => b.valor - a.valor);
   const top8  = itens.slice(0, 8);
   const outros = itens.slice(8).reduce((s, i) => s + i.valor, 0);
-  if (outros > 0) top8.push({ nome: 'Outros', icon: '📦', valor: outros });
+  if (outros > 0) top8.push({ nome: 'Outros', valor: outros });
 
   const total = top8.reduce((s, i) => s + i.valor, 0);
 
@@ -283,7 +282,7 @@ async function renderCategorias() {
   // Ranking
   document.getElementById('rankingCategorias').innerHTML = top8.map((item, i) => `
     <div class="rpt-rank-item">
-      <span class="rpt-rank-icon">${escapeHtml(item.icon)}</span>
+      <span class="rpt-rank-icon">${iconeCategoriaSvg(item.nome,14)}</span>
       <span class="rpt-rank-nome">${escapeHtml(item.nome)}</span>
       <span class="rpt-rank-valor">${formatCurrency(item.valor, 'BRL')}</span>
       <span class="rpt-rank-pct">${total > 0 ? ((item.valor / total) * 100).toFixed(1) + '%' : ''}</span>
