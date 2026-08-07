@@ -434,16 +434,14 @@ function renderPizza(despesasMes, parcelasCartaoMes){
   const grupos = {};
   despesasMes.forEach(t => {
     const nome = t.categories?.nome || 'Sem categoria';
-    const icon = t.categories?.icon || '';
     const cor  = t.categories?.cor;
-    if(!grupos[nome]) grupos[nome] = { nome, icon, cor, categoryId: t.category_id, total: 0 };
+    if(!grupos[nome]) grupos[nome] = { nome, cor, categoryId: t.category_id, total: 0 };
     grupos[nome].total += Number(t.amount||0);
   });
   (parcelasCartaoMes||[]).forEach(p => {
     const nome = p.categories?.nome || 'Sem categoria';
-    const icon = p.categories?.icon || '';
     const cor  = p.categories?.cor;
-    if(!grupos[nome]) grupos[nome] = { nome, icon, cor, categoryId: p.category_id, total: 0 };
+    if(!grupos[nome]) grupos[nome] = { nome, cor, categoryId: p.category_id, total: 0 };
     grupos[nome].total += Number(p.valor_parcela||0);
   });
 
@@ -505,12 +503,11 @@ function renderOrcamento(orcamentos, despesasMes, parcelasMes, mesHerdado){
     const pct = planejado>0 ? Math.min(gasto/planejado*100,200) : 0;
     const pctDisplay = planejado>0 ? (gasto/planejado*100).toFixed(0) : 0;
     const classe = pct>=100?'over':pct>=80?'warn':'';
-    const icon = orc.categories?.icon||'';
     const nome = orc.categories?.nome||'Categoria';
 
     html += `<div class="orcamento-item">
       <div class="orcamento-row">
-        <span class="orcamento-label">${escapeHtml(icon)} ${escapeHtml(nome)}</span>
+        <span class="orcamento-label">${iconeCategoriaSvg(nome,14)} ${escapeHtml(nome)}</span>
         <span class="muted" style="font-size:11px">${fmt(gasto)} / ${fmt(planejado)} (${pctDisplay}%)</span>
       </div>
       <div class="orcamento-bar-wrap">
@@ -855,7 +852,7 @@ function renderUltimos(lancamentos, cartaoLanc){
             <td><span class="badge ${item.type==='receita'?'success':'danger'}">${item.type}</span></td>
             <td>${escapeHtml(item.description||'-')}</td>
             <td>${escapeHtml(item.accounts?.nome||'-')}</td>
-            <td>${escapeHtml(item.categories?.icon||'')} ${escapeHtml(item.categories?.nome||'-')}</td>
+            <td>${item.categories?.nome ? iconeCategoriaSvg(item.categories.nome,13) : ''} ${escapeHtml(item.categories?.nome||'-')}</td>
             <td class="money ${item.type==='receita'?'positive':'negative'}">
               ${item.type==='receita'?'+':'-'}${fmt(item.amount, item.accounts?.currency||'BRL')}
             </td>
