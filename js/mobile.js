@@ -15,6 +15,7 @@ import { escapeHtml } from './utils/escapeHtml.js';
 import { ajustarSaldo } from './services/balanceService.js';
 import { ICON_SPRITE_MARKUP } from './iconSprite.js';
 import { iconeCategoriaSvg } from './utils/categoryIcon.js';
+import { getDescricoesRecentes, popularDatalist, encontrarSugestao } from './services/autocompleteService.js';
 
 // ── Sprite SVG (ícones de linha do bottom nav / modal) ────
 (function injectSprite(){
@@ -48,6 +49,7 @@ let tipoAtual    = 'despesa';
 let catSelecionada = null;
 let contas       = [];
 let categorias   = [];
+let descricoesRecentes = [];
 
 // ── Emoji por tipo de conta ───────────────────────────
 function tipoContaEmoji(tipo) {
@@ -428,6 +430,28 @@ function popularModal() {
   });
 }
 
+// ── Autocompletar descrição (com base em lançamentos anteriores) ─────
+async function carregarDescricoesRecentes(){
+  try{
+    descricoesRecentes = await getDescricoesRecentes(supabase, user.id);
+    popularDatalist(el('mobDescList'), descricoesRecentes);
+  }catch(_){}
+}
+
+el('mobDescricao').addEventListener('blur', () => {
+  const sugestao = encontrarSugestao(descricoesRecentes, el('mobDescricao').value);
+  if(!sugestao) return;
+
+  if(!catSelecionada && sugestao.categoryId && categorias.some(c=>c.id===sugestao.categoryId)){
+    catSelecionada = sugestao.categoryId;
+    el('mobCatSelect').value = sugestao.categoryId;
+    renderCategorias(tipoAtual);
+  }
+  if(!el('mobConta').value && sugestao.source==='conta' && sugestao.accountId && contas.some(c=>c.id===sugestao.accountId)){
+    el('mobConta').value = sugestao.accountId;
+  }
+});
+
 function renderCategorias(tipo) {
   const lista = categorias.filter(c=>c.tipo===tipo).slice(0,8);
   el('mobCatsGrid').innerHTML = lista.map(c=>`
@@ -578,6 +602,8 @@ registrarAcao('ativarModoAvancado', () => {
 });
 
 // ── Inicializar ───────────────────────────────────────
+carregarDescricoesRecentes();
+
 try {
   await carregar();
 } catch(e) {
