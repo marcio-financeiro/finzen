@@ -11,6 +11,7 @@ import { toast, comTrava } from './toast.js';
 import { ajustarSaldo, deltaTransacao } from './services/balanceService.js';
 import { deleteAccountTransfer } from './services/transferService.js';
 import { iconeCategoriaSvg } from './utils/categoryIcon.js';
+import { getDescricoesRecentes, popularDatalist, encontrarSugestao } from './services/autocompleteService.js';
 
 let dolarAtual = 5.15;
 
@@ -97,6 +98,7 @@ let accounts = [];
 let cards = [];
 let categories = [];
 let editingTransaction = null;
+let descricoesRecentes = [];
 
 // ─────────────────────────────────────────────
 // UTILITÁRIOS DE DATA
@@ -380,6 +382,32 @@ async function loadData(){
   fillCategories();
   fillInvoices();
 }
+
+// ─────────────────────────────────────────────
+// AUTOCOMPLETAR DESCRIÇÃO (com base em lançamentos anteriores)
+// ─────────────────────────────────────────────
+async function loadDescricoesRecentes(){
+  try{
+    descricoesRecentes = await getDescricoesRecentes(supabase, user.id);
+    popularDatalist(el('movementDescList'), descricoesRecentes);
+  }catch(_){}
+}
+
+movementDescription.addEventListener('blur', () => {
+  const sugestao = encontrarSugestao(descricoesRecentes, movementDescription.value);
+  if(!sugestao) return;
+
+  let preencheu = false;
+  if(!movementCategory.value && sugestao.categoryId && categories.some(c => c.id === sugestao.categoryId)){
+    movementCategory.value = sugestao.categoryId;
+    preencheu = true;
+  }
+  if(!movementAccount.value && sugestao.source === 'conta' && sugestao.accountId && accounts.some(a => a.id === sugestao.accountId)){
+    movementAccount.value = sugestao.accountId;
+    preencheu = true;
+  }
+  if(preencheu) toast('Categoria/conta preenchidas com base no último lançamento parecido', 'info');
+});
 
 // ─────────────────────────────────────────────
 // SALDO DE CONTA
@@ -1322,6 +1350,7 @@ if(filterRecorrencia){
 // ─────────────────────────────────────────────
 await loadData();
 updateFormVisibility();
+loadDescricoesRecentes();
 try { dolarAtual = await getUsdBrlRate(user.id); } catch(_) {}
 await renderCashFlowMonth();
 await loadUpcomingRecurring();

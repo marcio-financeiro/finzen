@@ -1,7 +1,7 @@
 // sw.js — FinZen Service Worker
 // Gerencia cache offline e notificações push
 
-const CACHE_NAME = 'vyn-v14.9';
+const CACHE_NAME = 'vyn-v14.10';
 const CACHE_URLS = [
   './login.html',
   './pages/dashboard.html',
