@@ -34,14 +34,13 @@ html[data-theme="light"] .nav-group+.nav-group{
   border-top-color:var(--border);
 }
 
-html[data-theme="light"] .mobile-menu-button,
 html[data-theme="light"] .mobile-privacy-btn,
 html[data-theme="light"] .mobile-theme-btn{
   background:rgba(255,255,255,.92);
   color:var(--text);
 }
 
-html[data-theme="light"] .mobile-nav{
+html[data-theme="light"] .bottom-nav{
   box-shadow:0 -20px 50px rgba(0,0,0,.08);
 }
 

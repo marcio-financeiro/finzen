@@ -628,18 +628,6 @@ function ensureMobileDrawer() {
   }).catch(() => {});
 }
 
-// ─── Botão hamburguer mobile ──────────────────────────────────────────────────
-function ensureMenuButton() {
-  if (document.querySelector('.mobile-menu-button')) return;
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'mobile-menu-button';
-  btn.setAttribute('aria-label', 'Abrir menu');
-  btn.innerHTML = navIcon('ic-menu');
-  btn.addEventListener('click', openDrawer);
-  document.body.appendChild(btn);
-}
-
 // ─── Botão privacidade mobile (canto superior direito) ────────────────────────
 function ensureMobilePrivacyBtn() {
   if (document.querySelector('.mobile-privacy-btn')) return;
@@ -660,6 +648,49 @@ function openDrawer() {
   document.body.classList.add('drawer-open');
 }
 function closeDrawer() { document.body.classList.remove('drawer-open'); }
+
+// ─── Bottom tab bar mobile (substitui hambúrguer solto + drawer trigger) ──────
+const BOTTOM_NAV_ITEMS = [
+  { title: 'Início',         icon: 'ic-dashboard',    href: './dashboard.html' },
+  { title: 'Movimentações',  icon: 'ic-arrows-updown', href: './movements.html' },
+  { title: 'Faturas',        icon: 'ic-file-text',     href: './card-bills.html' },
+];
+
+function ensureMobileBottomNav() {
+  if (document.querySelector('.bottom-nav')) return;
+
+  const isInPages = window.location.pathname.includes('/pages/');
+  const base = href => isInPages ? href : './pages/' + href.replace('./', '');
+
+  const nav = document.createElement('nav');
+  nav.className = 'bottom-nav';
+  nav.setAttribute('aria-label', 'Navegação principal');
+
+  const firstHalf  = BOTTOM_NAV_ITEMS.slice(0, 2);
+  const secondHalf = BOTTOM_NAV_ITEMS.slice(2);
+
+  const itemHtml = item => `
+    <a class="bottom-nav-item${isActive(item.href) ? ' active' : ''}" href="${base(item.href)}">
+      ${navIcon(item.icon)}
+      <span>${item.title}</span>
+    </a>
+  `;
+
+  nav.innerHTML = `
+    ${firstHalf.map(itemHtml).join('')}
+    <div class="bottom-nav-fab-spacer" aria-hidden="true"></div>
+    ${secondHalf.map(itemHtml).join('')}
+    <button type="button" class="bottom-nav-item" id="bottomNavMore">
+      ${navIcon('ic-dots')}
+      <span>Mais</span>
+    </button>
+  `;
+
+  document.body.appendChild(nav);
+  nav.querySelector('#bottomNavMore').addEventListener('click', openDrawer);
+
+  ensureFAB();
+}
 
 // ─── FAB ──────────────────────────────────────────────────────────────────────
 function ensureFAB() {
@@ -749,9 +780,8 @@ function initNavigation() {
 
   carregarProfileCard().catch(() => {});
   ensureMobileDrawer();
-  ensureMenuButton();
   ensureMobilePrivacyBtn();
-  ensureFAB();
+  ensureMobileBottomNav();
 
   // Aplicar tema imediatamente
   applyTheme(getTheme());
