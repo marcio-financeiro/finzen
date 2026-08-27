@@ -4,7 +4,7 @@
 <script>(function(){var t=localStorage.getItem('finzen_theme')||'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.style.background=t==='light'?'#f3f7f4':'#0a0f0d';if(localStorage.getItem('finzen_sidebar_rail')==='collapsed')document.documentElement.classList.add('sidebar-rail');})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Relatório Mensal - FinZen</title>
+<title>Relatórios - FinZen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400..700&display=swap">
@@ -32,15 +32,15 @@
   <main class="content">
     <header class="topbar">
       <div>
-        <h1>Relatório Mensal</h1>
+        <h1>Relatórios</h1>
         <p id="userEmail" class="muted"></p>
       </div>
       <button type="button" class="btn btn-danger compact" id="btnLogout">Sair</button>
     </header>
 
-    <!-- Controles -->
-    <div class="rpt-controls">
-      <div class="rpt-month-nav">
+    <!-- Barra de filtros -->
+    <div class="bi-filterbar">
+      <div class="bi-month-nav">
         <button id="btnMesAnterior" class="btn btn-secondary compact" type="button">◀</button>
         <input type="month" id="filtroMes">
         <button id="btnMesSeguinte" class="btn btn-secondary compact" type="button">▶</button>
@@ -48,46 +48,54 @@
       <button id="btnExportarPDF" class="btn btn-secondary" type="button"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M6 3h9l5 5v13H6z"/><path d="M15 3v5h5"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg>Exportar PDF</button>
       <p id="periodoLabel" class="muted" style="font-size:13px;margin:0"></p>
     </div>
+    <div class="bi-chip-bar" id="chipBar"></div>
 
     <!-- KPIs -->
-    <div class="rpt-kpi-grid" id="secKPIs"></div>
+    <div class="dash-kpi-grid" id="secKPIs"></div>
 
     <!-- Receita vs Despesa 12 meses -->
-    <div class="rpt-block">
-      <div class="rpt-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><line x1="3" y1="20" x2="21" y2="20"/><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="4"/></svg>Receita vs Despesa — últimos 12 meses</h2></div>
-      <div class="rpt-block-body" style="height:260px">
+    <div class="dash-block bi-block-clickable" style="margin-bottom:16px">
+      <div class="dash-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><line x1="3" y1="20" x2="21" y2="20"/><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="4"/></svg>Receita vs Despesa — últimos 12 meses <span class="muted" style="font-weight:400;font-size:11px">(clique numa barra para focar o mês)</span></h2></div>
+      <div class="dash-block-body" style="height:260px">
         <canvas id="chartRecDes"></canvas>
       </div>
     </div>
 
+    <!-- Taxa de Poupança Mensal -->
+    <div class="dash-block bi-block-clickable" style="margin-bottom:16px">
+      <div class="dash-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M3 17l6-6 4 4 8-9"/></svg>Taxa de Poupança Mensal</h2></div>
+      <div class="dash-block-body" style="height:200px">
+        <canvas id="chartPoupanca"></canvas>
+      </div>
+    </div>
+
     <!-- Categorias -->
-    <div class="rpt-grid-2">
-      <div class="rpt-block" style="margin-bottom:0">
-        <div class="rpt-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>Despesas por Categoria</h2></div>
-        <div class="rpt-block-body" style="height:260px">
+    <div class="dash-grid">
+      <div class="dash-block bi-block-clickable" style="margin-bottom:0">
+        <div class="dash-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>Despesas por Categoria <span class="muted" style="font-weight:400;font-size:11px">(clique numa fatia para filtrar)</span></h2></div>
+        <div class="dash-block-body" style="height:260px">
           <canvas id="chartCategorias"></canvas>
         </div>
       </div>
-      <div class="rpt-block" style="margin-bottom:0">
-        <div class="rpt-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M6 3h9l5 5v13H6z"/><path d="M15 3v5h5"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg>Ranking de Categorias</h2></div>
-        <div class="rpt-no-pad" id="rankingCategorias"></div>
+      <div class="dash-block" style="margin-bottom:0">
+        <div class="dash-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M6 3h9l5 5v13H6z"/><path d="M15 3v5h5"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg>Ranking de Categorias</h2></div>
+        <div class="bi-no-pad" id="rankingCategorias"></div>
       </div>
     </div>
-    <div style="margin-bottom:16px"></div>
 
     <!-- Evolução do Patrimônio -->
-    <div class="rpt-block">
-      <div class="rpt-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M2 9h20M9 3l-3 6 6 12 6-12-3-6z"/></svg>Evolução do Patrimônio</h2></div>
-      <div class="rpt-block-body" style="height:220px">
+    <div class="dash-block bi-block-clickable" style="margin-bottom:16px">
+      <div class="dash-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M2 9h20M9 3l-3 6 6 12 6-12-3-6z"/></svg>Evolução do Patrimônio</h2></div>
+      <div class="dash-block-body" style="height:220px">
         <canvas id="chartPatrimonio"></canvas>
       </div>
     </div>
 
     <!-- Investimentos -->
-    <div class="rpt-block">
-      <div class="rpt-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><polyline points="3,17 9,11 13,15 21,6"/><polyline points="15,6 21,6 21,12"/></svg>Investimentos</h2></div>
-      <div class="rpt-block-body">
-        <div class="rpt-kpi-sub" id="kpisInvest"></div>
+    <div class="dash-block" style="margin-bottom:16px">
+      <div class="dash-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><polyline points="3,17 9,11 13,15 21,6"/><polyline points="15,6 21,6 21,12"/></svg>Investimentos</h2></div>
+      <div class="dash-block-body">
+        <div class="dash-kpi-grid bi-kpi-sub" id="kpisInvest"></div>
         <div style="height:220px;margin-top:16px">
           <canvas id="chartCarteira"></canvas>
         </div>
@@ -95,17 +103,17 @@
     </div>
 
     <!-- Orçamento vs Realizado -->
-    <div class="rpt-block">
-      <div class="rpt-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>Orçamento vs Realizado</h2></div>
-      <div class="rpt-block-body" id="wrapOrcamento">
+    <div class="dash-block" style="margin-bottom:16px">
+      <div class="dash-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>Orçamento vs Realizado</h2></div>
+      <div class="dash-block-body" id="wrapOrcamento">
         <canvas id="chartOrcamento"></canvas>
       </div>
     </div>
 
     <!-- Insights -->
-    <div class="rpt-block">
-      <div class="rpt-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.05V17h6v-2.25c0-.85.4-1.55 1-2.05A7 7 0 0 0 12 2z"/></svg>Insights do Mês</h2></div>
-      <div class="rpt-block-body" id="listaInsights"></div>
+    <div class="dash-block" style="margin-bottom:16px">
+      <div class="dash-block-header"><h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.05V17h6v-2.25c0-.85.4-1.55 1-2.05A7 7 0 0 0 12 2z"/></svg>Insights do Mês</h2></div>
+      <div class="dash-block-body" id="listaInsights"></div>
     </div>
 
   </main>

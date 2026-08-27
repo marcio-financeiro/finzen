@@ -133,8 +133,7 @@ const NAV_GROUPS = [
     icon: 'ic-chat',
     items: [
       { title: 'Chat IA',        icon: 'ic-chat', href: './chat.html' },
-      { title: 'Relatório',      icon: 'ic-bar-chart', href: './reports.html' },
-      { title: 'Analytics',      icon: 'ic-activity', href: './analytics.html' },
+      { title: 'Relatórios',     icon: 'ic-bar-chart', href: './reports.html' },
     ]
   },
   {
@@ -177,6 +176,7 @@ function isActive(href) {
     'asset-transactions.html': 'investments.html',
     'dividends.html':       'investments.html',
     'allocation.html':      'investments.html',
+    'analytics.html':       'reports.html',
   };
   if (aliases[file] === target) return true;
 
