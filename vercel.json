@@ -36,6 +36,16 @@
     {
       "path": "/api/recurring-cron",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/summary-cron",
+      "schedule": "0 23 * * *"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/telegram",
+      "destination": "/api/telegram-link"
     }
   ]
 }
