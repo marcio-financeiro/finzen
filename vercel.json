@@ -38,12 +38,14 @@
       "schedule": "0 8 * * *"
     },
     {
-      "path": "/api/weekly-summary-cron",
-      "schedule": "0 23 * * 5"
-    },
+      "path": "/api/summary-cron",
+      "schedule": "0 23 * * *"
+    }
+  ],
+  "rewrites": [
     {
-      "path": "/api/monthly-summary-cron",
-      "schedule": "0 23 28-31 * *"
+      "source": "/api/telegram",
+      "destination": "/api/telegram-link"
     }
   ]
 }

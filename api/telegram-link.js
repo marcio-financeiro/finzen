@@ -1,9 +1,12 @@
-// api/telegram-link.js — Vinculação Telegram ↔ FinZen
+// api/telegram-link.js — Vinculação Telegram ↔ FinZen + envio de mensagem
 // user_id sempre extraído do JWT (Authorization: Bearer) — nunca do body/query,
 // pra evitar que um usuário vincule/desvincule a conta de outro (IDOR).
+// GET                        → status do vínculo
 // POST { action:'generate' } → gera código
 // POST { action:'unlink'   } → desvincula
-// GET                        → status do vínculo
+// POST { message }           → envia mensagem ao chat do bot (rota /api/telegram
+//   original, absorvida aqui via rewrite em vercel.json pra caber no limite de
+//   funções serverless do plano Hobby — mesma URL/contrato de antes)
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -19,6 +22,46 @@ function gerarCodigo() {
   return `FZ-${n}`;
 }
 
+// ── POST { message } — envio direto ao chat do bot (ex-api/telegram.js) ──────
+// Autoriza por JWT Supabase do usuário logado OU por segredo compartilhado
+// (scripts do GitHub Actions — aviso-vencimento.js e agenda-diaria.js — que
+// rodam fora do app e não têm sessão de usuário).
+async function enviarMensagem(req, res) {
+  const cronSecret = req.headers['x-cron-secret'];
+  const autorizadoPorSegredo = Boolean(
+    cronSecret && process.env.TELEGRAM_CRON_SECRET && cronSecret === process.env.TELEGRAM_CRON_SECRET
+  );
+
+  if (!autorizadoPorSegredo) {
+    const auth = req.headers['authorization'];
+    if (!auth?.startsWith('Bearer ')) return res.status(403).json({ error: 'Forbidden' });
+    const jwt = auth.slice(7);
+    const authRes = await fetch(`${SB_URL}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${jwt}`, apikey: SB_KEY },
+    });
+    if (!authRes.ok) return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const { message } = req.body || {};
+  if (!message) return res.status(400).json({ error: 'message required' });
+
+  const token  = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return res.status(500).json({ error: 'Telegram not configured' });
+
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' }),
+    });
+    const data = await r.json();
+    res.status(200).json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', 'https://finzen-rho.vercel.app');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -26,11 +69,17 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(204).end();
 
+  // POST com `message` (sem `action`) = fluxo de envio direto, com seu próprio
+  // esquema de autorização (JWT ou segredo compartilhado) — não força JWT aqui.
+  if (req.method === 'POST' && req.body?.message && !req.body?.action) {
+    return enviarMensagem(req, res);
+  }
+
   const auth = req.headers['authorization'];
   if (!auth?.startsWith('Bearer ')) return res.status(403).json({ error: 'Forbidden' });
   const token = auth.slice(7);
-  const authRes = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
-    headers: { Authorization: `Bearer ${token}`, apikey: process.env.SUPABASE_SERVICE_KEY },
+  const authRes = await fetch(`${SB_URL}/auth/v1/user`, {
+    headers: { Authorization: `Bearer ${token}`, apikey: SB_KEY },
   });
   if (!authRes.ok) return res.status(403).json({ error: 'Forbidden' });
   const usuario = await authRes.json();
