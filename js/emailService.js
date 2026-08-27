@@ -84,6 +84,7 @@ export const emailService = (() => {
         tipo       : tipo        || 'Compromisso',
         descricao  : descricao   || '—',
         email      : email       || EMAIL_FALLBACK,
+        email_destino: email     || EMAIL_FALLBACK,
         name       : 'FinZen',
       });
       console.log('[FinZen] E-mail enviado:', titulo);
