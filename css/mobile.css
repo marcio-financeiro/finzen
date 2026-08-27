@@ -92,54 +92,6 @@
   .btn.compact{
     padding:8px 10px;
   }
-
-  .mobile-nav{
-    position:fixed;
-    left:0;
-    right:0;
-    bottom:0;
-    display:flex;
-    background:var(--surface);
-    border-top:1px solid var(--border);
-    padding:8px 0 10px;
-    z-index:20;
-    box-shadow:0 -20px 50px rgba(0,0,0,.35);
-  }
-
-  .mobile-nav a{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:3px;
-    color:var(--muted);
-    font-size:10px;
-    padding:8px 2px 6px;
-    min-height:44px;
-    border-radius:0;
-  }
-
-  .mobile-nav a.active{
-    color:var(--accent);
-    background:transparent;
-  }
-
-  .mobile-nav a::before{
-    font-size:18px;
-    line-height:1;
-  }
-
-  .mobile-nav a[href*="dashboard"]::before{ content:"📊"; }
-  .mobile-nav a[href*="transactions"]::before{ content:"↕️"; }
-  .mobile-nav a[href*="cards"]::before{ content:"💳"; }
-  .mobile-nav a[href*="card-bills"]::before{ content:"🧾"; }
-  .mobile-nav a[href*="budgets"]::before{ content:"🎯"; }
-  .mobile-nav a[href*="goals"]::before{ content:"🏆"; }
-  .mobile-nav a[href*="investments"]::before{ content:"📈"; }
-  .mobile-nav a[href*="allocation"]::before{ content:"🧭"; }
-  .mobile-nav a[href*="wealth-dashboard"]::before{ content:"💎"; }
-  .mobile-nav a[href*="dividends"]::before{ content:"💰"; }
 }
 
 @media (max-width:390px){
@@ -152,9 +104,3 @@
   }
 }
 
-/* PWA safe areas iOS */
-@supports (padding: env(safe-area-inset-bottom)){
-  .mobile-nav{
-    padding-bottom:calc(10px + env(safe-area-inset-bottom));
-  }
-}
