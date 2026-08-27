@@ -12,7 +12,7 @@ import { hojeISO } from './utils/dateUtils.js';
 
 const EMAILJS_PUBLIC_KEY  = 'xdlmVD8Ie6WJcIYz-';
 const EMAILJS_SERVICE_ID  = 'service_2t1x059';
-const EMAILJS_TEMPLATE_ID = 'urtiw8g';
+const EMAILJS_TEMPLATE_ID = 'template_fpews0d';
 const EMAIL_FALLBACK      = 'info.marcio@gmail.com'; // fallback se não tiver perfil
 
 // Cache do e-mail do usuário por sessão
