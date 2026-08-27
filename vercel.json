@@ -36,6 +36,14 @@
     {
       "path": "/api/recurring-cron",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/weekly-summary-cron",
+      "schedule": "0 23 * * 5"
+    },
+    {
+      "path": "/api/monthly-summary-cron",
+      "schedule": "0 23 28-31 * *"
     }
   ]
 }
