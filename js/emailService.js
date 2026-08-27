@@ -8,6 +8,8 @@
  *   emailService.agendarLembretes(userId, supabaseClient)
  */
 
+import { hojeISO } from './utils/dateUtils.js';
+
 const EMAILJS_PUBLIC_KEY  = 'xdlmVD8Ie6WJcIYz-';
 const EMAILJS_SERVICE_ID  = 'service_2t1x059';
 const EMAILJS_TEMPLATE_ID = 'urtiw8g';
@@ -96,7 +98,7 @@ export const emailService = (() => {
   // Chamado uma vez por dia ao abrir o app
   async function agendarLembretes(userId, sb) {
     const CACHE_KEY  = 'finzen_email_lembrete_dia';
-    const hoje       = new Date().toISOString().split('T')[0];
+    const hoje       = hojeISO();
 
     if (localStorage.getItem(CACHE_KEY) === hoje) return;
 
