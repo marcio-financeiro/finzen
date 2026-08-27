@@ -1128,9 +1128,14 @@ async function salvarDividendo(){
     // Creditar na conta usando a moeda da conta (delta atômico)
     await ajustarSaldo(contaId, valorConta);
 
+    // Buscar categoria "Investimentos" (receita) para vincular a transação
+    const {data:catInv}=await supabase.from('categories')
+      .select('id').eq('user_id',user.id).eq('tipo','receita')
+      .ilike('nome','Investimentos').limit(1).maybeSingle();
+
     // Registrar transação com o valor na moeda da conta
     const {data:txRow, error:e2}=await supabase.from('transactions').insert({
-      user_id:user.id, account_id:contaId,
+      user_id:user.id, account_id:contaId, category_id:catInv?.id||null,
       type:'receita', amount:valorConta,
       description:`Dividendo ${ativo.ticker} (${tipo})`,
       date:dataPag, status:'pago',
