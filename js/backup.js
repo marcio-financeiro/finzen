@@ -8,7 +8,7 @@ if(!sessionData.session){ navigate('../login.html'); throw new Error('unauthenti
 const user = sessionData.session.user;
 
 // ── Google Drive OAuth ────────────────────────────────
-const GOOGLE_CLIENT_ID = '549570181101-vne6d1fflafenipib75caddtc2f60cs2.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '517557189244-93r1cs83rp0sqk2kr20eo2jrv7283ap6.apps.googleusercontent.com';
 const GOOGLE_SCOPE     = 'https://www.googleapis.com/auth/drive.file';
 const DRIVE_FOLDER     = 'FinZen Backups';
 
