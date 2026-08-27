@@ -248,7 +248,7 @@ async function carregarCartoes(){
 
   el('listaCartoes').innerHTML = data.map(c => `
     <div class="reg-item">
-      <div class="reg-color-dot" style="background:${c.color||'#8b5cf6'}"></div>
+      <div class="reg-color-dot" style="background:${c.cor||'#8b5cf6'}"></div>
       <div class="reg-item-info">
         <div class="reg-item-name">${escapeHtml(c.nome)}
           <span class="badge ${c.ativo?'success':'danger'} reg-item-badge">${c.ativo?'ativo':'inativo'}</span>
@@ -310,7 +310,7 @@ async function salvarCartao(){
   const dados={
     nome, banco, bandeira, limite,
     fechamento_dia:fechamento, vencimento_dia:vencimento,
-    color:cor, ativo,
+    cor, ativo,
   };
 
   let error;
