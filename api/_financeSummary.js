@@ -22,6 +22,12 @@ function somaPorTipo(tx, tipo) {
   return tx.filter(t => t.type === tipo).reduce((s, t) => s + Number(t.amount || 0), 0);
 }
 
+// Último dia do mês `mes` (1-based) de `ano`, em yyyy-mm-dd local (sem toISOString).
+function ultimoDiaDoMes(ano, mes) {
+  const d = new Date(ano, mes, 0);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function topCategorias(tx, cardTx, n = 3) {
   const mapa = {};
   tx.filter(t => t.type === 'despesa').forEach(t => {
@@ -58,10 +64,10 @@ export async function resumoSemanal(userId, { inicio, fim }, sbHeaders, SB_URL) 
 export async function resumoMensal(userId, { ano, mes }, sbHeaders, SB_URL) {
   const mesRef  = `${ano}-${String(mes).padStart(2, '0')}`;
   const inicio  = `${mesRef}-01`;
-  const fim     = new Date(ano, mes, 0).toISOString().split('T')[0]; // último dia do mês
+  const fim     = ultimoDiaDoMes(ano, mes); // último dia do mês
   const dataAnt = new Date(ano, mes - 2, 1); // mês-1 (mes é 1-based)
   const mesAnt  = `${dataAnt.getFullYear()}-${String(dataAnt.getMonth() + 1).padStart(2, '0')}`;
-  const fimAnt  = new Date(ano, mes - 1, 0).toISOString().split('T')[0]; // último dia do mês anterior
+  const fimAnt  = ultimoDiaDoMes(ano, mes - 1); // último dia do mês anterior
 
   const [tx, cardTx, txAnt, budgets, patrimonioHist] = await Promise.all([
     sbFetch(SB_URL, sbHeaders,
