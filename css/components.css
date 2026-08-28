@@ -416,7 +416,7 @@ input:-webkit-autofill:active{
 .dash-kpi:hover{ transform:none;box-shadow:none;border-color:var(--accent); }
 .dash-kpi:active{ transform:scale(.93); background:var(--surface-3); transition:transform .12s ease,background .12s ease; }
 .dash-kpi span{ font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px; }
-.dash-kpi strong{ font-size:20px;font-family:var(--font-mono);display:block;letter-spacing:-.03em; }
+.dash-kpi strong{ font-size:20px;font-family:var(--font-mono);display:block;letter-spacing:-.03em;font-variant-numeric:tabular-nums; }
 
 /* ── Grid 2 colunas ── */
 .dash-grid{
@@ -439,7 +439,7 @@ input:-webkit-autofill:active{
   display:flex;justify-content:space-between;align-items:center;
   padding:14px 18px;border-bottom:1px solid var(--border);
 }
-.dash-block-header h2{ font-size:13px;font-weight:800;margin:0; }
+.dash-block-header h2{ font-size:13px;font-weight:800;margin:0;font-family:var(--font-display); }
 .dash-block-body{ padding:16px 18px; }
 
 /* ── Despesas por categoria (barras) ── */
@@ -581,6 +581,24 @@ input:-webkit-autofill:active{
 /* ── Full-width panels ── */
 .dash-full{ margin-bottom:16px; }
 
+/* ── Cabeçalho e banner do assistente: entram junto com o resto do dashboard
+   (definidos em editorial.css sem animação de entrada própria) ── */
+.wealth-pulse{ animation:fadeInUp .3s ease both; }
+
+/* ── Sparkline dentro do card de destaque (Saldo total) ── */
+.ring-sparkline{ margin-top:6px; width:100%; max-width:150px; }
+.ring-sparkline svg{ display:block; width:100%; height:22px; }
+
+/* ── Elevação real só no card de destaque — os demais ficam quietos,
+   sem sombra, pra não competir por atenção (mais específico que o reset
+   de editorial.css, que zera box-shadow em todo bloco por padrão) ── */
+.dash-ring-row .ring-card:first-child{
+  box-shadow:0 20px 45px rgba(4,18,11,.32) !important;
+}
+html[data-theme="light"] .dash-ring-row .ring-card:first-child{
+  box-shadow:0 20px 45px rgba(16,26,21,.16) !important;
+}
+
 /* ── Score de Saúde Financeira ── */
 .score-block {
   background: var(--surface);
@@ -619,7 +637,7 @@ input:-webkit-autofill:active{
   margin-top: 2px;
 }
 .score-info { flex: 1; min-width: 220px; }
-.score-info h3 { font-size: 14px; font-weight: 800; margin-bottom: 12px; }
+.score-info h3 { font-size: 14px; font-weight: 800; margin-bottom: 12px; font-family:var(--font-display); }
 .score-itens { display: flex; flex-direction: column; gap: 8px; }
 .score-item {
   display: flex;
@@ -652,13 +670,14 @@ input:-webkit-autofill:active{
   background:linear-gradient(135deg,rgba(79,124,255,.06) 0%,rgba(124,92,252,.06) 100%);
   overflow:hidden;
   margin-bottom:16px;
+  animation:fadeInUp .3s ease both;
 }
 .cfai-header{
   display:flex;justify-content:space-between;align-items:center;
   padding:14px 18px;border-bottom:1px solid rgba(79,124,255,.2);
   cursor:pointer;
 }
-.cfai-header h2{ font-size:13px;font-weight:800;margin:0;display:flex;align-items:center;gap:8px; }
+.cfai-header h2{ font-size:13px;font-weight:800;margin:0;display:flex;align-items:center;gap:8px;font-family:var(--font-display); }
 .cfai-badge{
   font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;
   background:var(--accent-dim);color:var(--accent);letter-spacing:.04em;
