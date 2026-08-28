@@ -13,6 +13,7 @@
 import { supabase, requireAuth } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { dataLocalISO } from './utils/dateUtils.js';
 
 // ---------- Auth padrão (topo de todo módulo) ----------
 const user = await requireAuth();
@@ -112,7 +113,7 @@ const $  = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 const BRL  = v => formatCurrency ? formatCurrency(v) : v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
 const fmtD = d => d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
-const iso  = d => d.toISOString().slice(0,10);
+const iso  = d => dataLocalISO(d);
 const addD = (d,n)=>{ const x=new Date(d); x.setDate(x.getDate()+n); return x; };
 function hash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
 function rng(seed){ let a=seed; return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }

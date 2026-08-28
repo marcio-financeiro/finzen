@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400..700&display=swap">
-<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4/+esm">
 <link rel="stylesheet" href="../css/variables.css">
 <link rel="stylesheet" href="../css/base.css">
 <link rel="stylesheet" href="../css/layout.css">
@@ -70,8 +70,8 @@
           <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
             <p style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">+ Produto personalizado</p>
             <div class="comp-custom">
-              <input type="text" id="customNome" placeholder="Ex: LCI do Banco X">
-              <input type="number" id="customTaxa" placeholder="% a.a." min="0" step="0.1" inputmode="decimal">
+              <input type="text" id="customNome" placeholder="Ex: LCI do Banco X" aria-label="Nome do produto personalizado">
+              <input type="number" id="customTaxa" placeholder="% a.a." min="0" step="0.1" inputmode="decimal" aria-label="Taxa anual do produto personalizado">
             </div>
             <button class="btn btn-secondary compact" style="margin-top:8px;width:100%" data-action="adicionarCustom">
               + Adicionar

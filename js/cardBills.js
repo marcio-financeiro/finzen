@@ -8,6 +8,7 @@ import { invoiceRef, addMonthsRef } from './services/cardService.js';
 import { ajustarSaldo } from './services/balanceService.js';
 import { hojeISO } from './utils/dateUtils.js';
 import { iconeCategoriaSvg } from './utils/categoryIcon.js';
+import { comTrava } from './toast.js';
 
 // ─── DOM ───────────────────────────────────────
 const userEmail    = document.getElementById('userEmail');
@@ -217,14 +218,14 @@ function ativarInteracoesFatura() {
     });
   });
 
-  // Botões pagar
+  // Botões pagar (com trava anti-duplo-clique — evita debitar a fatura 2x)
   listaFaturas.querySelectorAll('.btn-pagar').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
+    btn.addEventListener('click', comTrava(btn, async (e) => {
       e.stopPropagation();
       const key     = btn.dataset.key;
       const contaId = listaFaturas.querySelector(`#conta_${key}`)?.value;
       await pagarFatura(key, contaId);
-    });
+    }));
   });
 }
 
@@ -504,6 +505,16 @@ async function pagarFatura(key, contaId) {
 
   msg('Registrando pagamento...');
 
+  // Marca a fatura como paga PRIMEIRO — torna a operação idempotente: se um
+  // passo seguinte falhar, a fatura já some da lista de "a pagar" e o botão
+  // (com trava anti-duplo-clique) não deixa disparar um segundo débito real.
+  const ids = fatura.itens.map(i => i.id);
+  const { error: erroFatura } = await supabase.from('card_transactions')
+    .update({ status: 'paga' })
+    .in('id', ids).eq('user_id', user.id);
+
+  if (erroFatura) { msg('Erro ao registrar pagamento: ' + erroFatura.message, 'danger'); return; }
+
   const descricao = `Fatura ${fatura.cartao} ${formatRef(fatura.referencia)}`;
   const categoryId = await getCategoriaFaturaId();
   const { error: erroTx } = await supabase.from('transactions').insert({
@@ -518,22 +529,15 @@ async function pagarFatura(key, contaId) {
     notes:       'Pagamento de fatura de cartão de crédito',
   });
 
-  if (erroTx) { msg('Erro ao registrar pagamento: ' + erroTx.message, 'danger'); return; }
+  if (erroTx) { msg('Fatura marcada como paga, mas erro ao registrar a transação: ' + erroTx.message, 'danger'); return; }
 
   // Ajuste atômico por delta — antes usava conta.saldo_atual de cache em
   // memória (carregado no load da página), sujeito a saldo desatualizado.
   try {
     await ajustarSaldo(contaId, -Number(fatura.total || 0));
   } catch (e) {
-    msg('Pagamento registrado, mas erro ao atualizar saldo: ' + e.message, 'danger'); return;
+    msg('Fatura marcada como paga e transação registrada, mas erro ao atualizar saldo: ' + e.message, 'danger'); return;
   }
-
-  const ids = fatura.itens.map(i => i.id);
-  const { error: erroFatura } = await supabase.from('card_transactions')
-    .update({ status: 'paga' })
-    .in('id', ids).eq('user_id', user.id);
-
-  if (erroFatura) { msg('Pagamento registrado, mas erro ao fechar fatura: ' + erroFatura.message, 'danger'); return; }
 
   msg(`Fatura ${fatura.cartao} ${formatRef(fatura.referencia)} paga com sucesso!`, 'success');
   await carregarContas();

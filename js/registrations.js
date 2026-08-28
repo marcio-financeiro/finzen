@@ -219,7 +219,7 @@ async function salvarConta(){
 }
 
 async function excluirConta(id,nome){
-  if(!await confirmarExclusao(`Excluir a conta <strong>${nome}</strong>?`)) return;
+  if(!await confirmarExclusao(`Excluir a conta <strong>${nome}</strong>?`, 'Todas as movimentações desta conta serão perdidas.')) return;
   const {error}=await supabase.from('accounts').delete().eq('id',id).eq('user_id',user.id);
   if(error){ msg('msgConta','Erro: '+error.message,'danger'); return; }
   msg('msgConta',`Conta "${nome}" excluída.`,'success');

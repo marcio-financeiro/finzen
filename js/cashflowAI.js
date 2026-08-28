@@ -8,6 +8,7 @@ import { analyzeRequest } from './apiClient.js';
 import { supabase } from './supabaseClient.js';
 import { formatCurrency } from './utils.js';
 import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
+import { dataLocalISO } from './utils/dateUtils.js';
 
 const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
 
@@ -20,11 +21,11 @@ export async function coletarContexto(userId) {
   const hoje = new Date();
   const anoMes = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
   const primeiroDia = `${anoMes}-01`;
-  const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).toISOString().split('T')[0];
-  const hojeISO = hoje.toISOString().split('T')[0];
+  const ultimoDia = dataLocalISO(new Date(hoje.getFullYear(), hoje.getMonth()+1, 0));
+  const hojeISO = dataLocalISO(hoje);
 
   // Data 3 meses atrás para histórico
-  const mes3Atras = new Date(hoje.getFullYear(), hoje.getMonth()-3, 1).toISOString().split('T')[0];
+  const mes3Atras = dataLocalISO(new Date(hoje.getFullYear(), hoje.getMonth()-3, 1));
 
   const [
     { data: contas },

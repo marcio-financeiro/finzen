@@ -11,6 +11,7 @@ import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 import { ajustarSaldo } from './services/balanceService.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { loadChart } from './utils/loadChart.js';
+import { hojeISO } from './utils/dateUtils.js';
 
 // ─────────────────────────────────────────────
 // AUTH
@@ -242,7 +243,6 @@ async function gerarAnaliseComite() {
 // ─────────────────────────────────────────────
 // UTILITÁRIOS
 // ─────────────────────────────────────────────
-function hojeISO(){ return new Date().toISOString().split('T')[0]; }
 function fmtData(d){ if(!d) return '-'; const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; }
 function fmtMoeda(v,m){ return m==='USD'?formatUSD(v):formatCurrency(v,'BRL'); }
 function calcAplicado(a){ return multSegura(toNumber(a.quantidade),toNumber(a.preco_medio)); }
@@ -817,11 +817,15 @@ function renderizarCarteira(){
       menu?.classList.toggle('open');
     });
   });
-  document.addEventListener('click', () => {
-    document.querySelectorAll('.inv-acoes-menu.open').forEach(m => m.classList.remove('open'));
-  });
   // abrirCotacaoManual e abrirDiarioTese agora são tratados pelo eventBus via data-action
 }
+
+// Fecha qualquer menu de ações aberto ao clicar fora — registrado uma única vez
+// (renderizarCarteira roda a cada compra/venda/atualização de cotação; um
+// listener aqui dentro se acumularia para sempre em document).
+document.addEventListener('click', () => {
+  document.querySelectorAll('.inv-acoes-menu.open').forEach(m => m.classList.remove('open'));
+});
 
 // ─────────────────────────────────────────────
 // APORTAR (aba 2)
@@ -883,9 +887,10 @@ async function salvarAtivo(){
         if(existing){
           const novaQtd = toNumber(existing.quantidade)+qtd;
           const novoPM  = (toNumber(existing.quantidade)*toNumber(existing.preco_medio)+qtd*preco)/novaQtd;
-          await supabase.from('investments').update({
+          const {error:erroUpdatePos} = await supabase.from('investments').update({
             nome:nome||existing.nome, tipo, quantidade:novaQtd, preco_medio:novoPM,
           }).eq('id',existing.id).eq('user_id',user.id);
+          if(erroUpdatePos) throw erroUpdatePos;
           investmentId = existing.id;
         }else{
           const {data:novo,error:erroNovo}=await supabase.from('investments').insert({
@@ -903,9 +908,11 @@ async function salvarAtivo(){
         }
         const novaQtd=toNumber(existing.quantidade)-qtd;
         if(novaQtd<=0){
-          await supabase.from('investments').update({ativo:false}).eq('id',existing.id).eq('user_id',user.id);
+          const {error:erroZerarPos} = await supabase.from('investments').update({ativo:false}).eq('id',existing.id).eq('user_id',user.id);
+          if(erroZerarPos) throw erroZerarPos;
         }else{
-          await supabase.from('investments').update({quantidade:novaQtd}).eq('id',existing.id).eq('user_id',user.id);
+          const {error:erroReduzirPos} = await supabase.from('investments').update({quantidade:novaQtd}).eq('id',existing.id).eq('user_id',user.id);
+          if(erroReduzirPos) throw erroReduzirPos;
         }
         investmentId = existing.id;
       }
@@ -925,7 +932,7 @@ async function salvarAtivo(){
       await ajustarSaldo(contaId, operacao==='compra' ? -valorTotal : valorTotal);
 
       // Registrar em transactions para aparecer no dashboard
-      await supabase.from('transactions').insert({
+      const {error:erroTxDashboard} = await supabase.from('transactions').insert({
         user_id:user.id, account_id:contaId,
         type: operacao==='compra'?'despesa':'receita',
         amount:valorTotal,
@@ -933,6 +940,7 @@ async function salvarAtivo(){
         date:data, status:'pago',
         notes:obs||`${tipoLabel(tipo)} via ${conta.nome}`,
       });
+      if(erroTxDashboard) console.error('[investments] falha ao registrar transação do dashboard (saldo já ajustado):', erroTxDashboard);
 
       msg('mensagemAtivo',`${operacao==='compra'?'Compra':'Venda'} de ${ticker} registrada. Saldo debitado da conta.`,'success');
       limparFormAtivo();
@@ -1004,7 +1012,7 @@ async function carregarTransacoes(){
     <thead><tr><th>Data</th><th>Ticker</th><th>Operação</th><th>Qtd</th><th>Preço</th><th>Total</th></tr></thead>
     <tbody>${data.map(t=>`<tr>
       <td>${fmtData(t.data_movimento)}</td>
-      <td><strong>${t.ticker}</strong></td>
+      <td><strong>${escapeHtml(t.ticker)}</strong></td>
       <td><span class="badge ${t.tipo_movimento==='compra'?'success':'danger'}">${t.tipo_movimento}</span></td>
       <td class="money">${toNumber(t.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:6})}</td>
       <td class="money">${fmtMoeda(toNumber(t.preco_unitario),t.moeda||'BRL')}</td>
@@ -1049,12 +1057,12 @@ async function carregarDividendos(){
       const c=todasContas.find(x=>x.id===d.account_id);
       return `<tr>
         <td>${fmtData(d.data_pagamento)}</td>
-        <td><strong>${d.ticker||a?.ticker||'-'}</strong></td>
-        <td><span class="badge neutral">${d.tipo||'-'}</span></td>
+        <td><strong>${escapeHtml(d.ticker||a?.ticker||'-')}</strong></td>
+        <td><span class="badge neutral">${escapeHtml(d.tipo||'-')}</span></td>
         <td class="money">${formatCurrency(toNumber(d.valor_por_cota),'BRL')}</td>
         <td class="money">${toNumber(d.quantidade_cotas).toLocaleString('pt-BR',{maximumFractionDigits:4})}</td>
         <td class="money positive">+${formatCurrency(toNumber(d.valor_total),'BRL')}</td>
-        <td>${c?.nome||'-'}</td>
+        <td>${escapeHtml(c?.nome||'-')}</td>
         <td><button class="btn compact" data-action="excluirDividendo" data-id="${d.id}" style="padding:4px 8px;color:var(--danger);background:transparent;border:1px solid var(--danger);margin:0" title="Excluir registro"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button></td>
       </tr>`;
     }).join('')}</tbody>
@@ -1551,13 +1559,13 @@ registrarAcao('abrirDiarioTese', async (el) => {
           <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">TESE DE ENTRADA</label>
           <textarea id="teseTese" rows="3" style="width:100%;background:var(--surface-2);border:1px solid var(--border);
             border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px;resize:vertical"
-            placeholder="Por que comprou este ativo?">${d.tese_entrada||''}</textarea>
+            placeholder="Por que comprou este ativo?">${escapeHtml(d.tese_entrada||'')}</textarea>
         </div>
         <div>
           <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">GATILHO DE SAÍDA</label>
           <textarea id="teseGatilho" rows="2" style="width:100%;background:var(--surface-2);border:1px solid var(--border);
             border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px;resize:vertical"
-            placeholder="Quando venderia este ativo?">${d.gatilho_saida||''}</textarea>
+            placeholder="Quando venderia este ativo?">${escapeHtml(d.gatilho_saida||'')}</textarea>
         </div>
         <div>
           <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">CONVICÇÃO</label>
@@ -1573,7 +1581,7 @@ registrarAcao('abrirDiarioTese', async (el) => {
           <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">NOTAS</label>
           <textarea id="teseNotas" rows="3" style="width:100%;background:var(--surface-2);border:1px solid var(--border);
             border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px;resize:vertical"
-            placeholder="Observações adicionais...">${d.notas||''}</textarea>
+            placeholder="Observações adicionais...">${escapeHtml(d.notas||'')}</textarea>
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
           <button onclick="document.getElementById('modalTese').remove()"

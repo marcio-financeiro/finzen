@@ -7,6 +7,7 @@ import { loadChart } from './utils/loadChart.js';
 import { iconeCategoriaSvg } from './utils/categoryIcon.js';
 import { chartColors, baseChartOptions } from './utils/chartTheme.js';
 import { registrarAcao } from './eventBus.js';
+import { dataLocalISO } from './utils/dateUtils.js';
 
 // Soma o valor de uma transação já convertido pra BRL, conforme a moeda da conta
 function valorBRL(t){ return convertToBRL(t.amount, t.accounts?.currency || 'BRL', dolarAtual); }
@@ -53,7 +54,7 @@ function inicioMes(ym) {
 
 function fimMes(ym) {
   const [a, m] = ym.split('-').map(Number);
-  return new Date(a, m, 0).toISOString().split('T')[0]; // último dia do mês
+  return dataLocalISO(new Date(a, m, 0)); // último dia do mês
 }
 
 function mesLabel(ym) {

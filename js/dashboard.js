@@ -7,6 +7,7 @@ import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
 import { getActiveAccounts } from './services/dataService.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { iconeCategoriaSvg } from './utils/categoryIcon.js';
+import { hojeISO, dataLocalISO } from './utils/dateUtils.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
@@ -53,7 +54,7 @@ function formatData(iso){
 }
 function diasAte(iso){
   if(!iso) return null;
-  const diff = new Date(iso+'T00:00:00') - new Date(hoje().toISOString().split('T')[0]+'T00:00:00');
+  const diff = new Date(iso+'T00:00:00') - new Date(hojeISO()+'T00:00:00');
   return Math.round(diff/(1000*60*60*24));
 }
 function aplicarClasse(el, valor){
@@ -134,13 +135,13 @@ async function carregarDashboard(){
       getActiveAccounts(supabase,user.id).then(data=>({data})),                                                                                                                                                                    // contas (dataService — compartilhado com navigation.js/assistantBar.js na mesma página)
       supabase.from('transactions').select('type,amount,status,date,category_id,accounts:account_id(currency),categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),                  // transacoesMes
       supabase.from('card_transactions').select('valor_parcela,fatura_referencia,status,card_id,category_id').eq('user_id',user.id).in('status',['aberta','pendente']).in('fatura_referencia',[ref,refProximo,refProx2]),      // parcelasMes (3 meses, abertas — faturas + projeção 90d)
-      supabase.from('transactions').select('id,description,amount,date,type,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date', (() => { const d=new Date(hoje()); d.setDate(d.getDate()+7); return d.toISOString().split('T')[0]; })()).order('date',{ascending:true}).limit(5), // transacoesPendentes
+      supabase.from('transactions').select('id,description,amount,date,type,status').eq('user_id',user.id).eq('status','pendente').gte('date',hojeISO()).lte('date', (() => { const d=new Date(hoje()); d.setDate(d.getDate()+7); return dataLocalISO(d); })()).order('date',{ascending:true}).limit(5), // transacoesPendentes
       supabase.from('budgets').select('*,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',ref),                                                                                                   // orcamentos
       supabase.from('goals').select('*').eq('user_id',user.id).eq('ativo',true).order('data_alvo',{ascending:true}).limit(5),                                                                                                  // metas
       supabase.from('transactions').select('type,amount,recurrence_frequency,accounts:account_id(currency)').eq('user_id',user.id).eq('is_recurring',true).eq('recurrence_active',true),                                        // recorrentes
       supabase.from('transactions').select('id,type,amount,description,date,status,created_at,accounts:account_id(nome,currency),categories:category_id(nome,icon)').eq('user_id',user.id).order('created_at',{ascending:false}).limit(8), // ultimosLanc
       supabase.from('categories').select('id,nome,icon,cor').eq('user_id',user.id),                                                                                                                                            // categorias
-      supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date',ultimoDiaMes()),                                 // pendentesRestantesMes
+      supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hojeISO()).lte('date',ultimoDiaMes()),                                 // pendentesRestantesMes
       supabase.from('credit_cards').select('id,nome,vencimento_dia,limite').eq('user_id',user.id).eq('ativo',true),                                                                                                            // cartoes (limite p/ score)
       supabase.from('card_transactions').select('id,descricao,valor_total,data_compra,status,created_at,credit_cards:card_id(nome),categories:category_id(nome,icon)').eq('user_id',user.id).eq('parcela_atual',1).order('created_at',{ascending:false}).limit(8), // ultimosCartao
       supabase.from('transactions').select('type,amount,status,accounts:account_id(currency)').eq('user_id',user.id).eq('status','pago').gte('date',primeiroDiaMesAnterior()).lte('date',ultimoDiaMesAnterior()),                // txMesAnterior

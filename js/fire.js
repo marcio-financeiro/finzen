@@ -9,6 +9,7 @@ import { navigate }       from './router.js';
 import { formatCurrency } from './utils.js';
 import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 import { loadChart } from './utils/loadChart.js';
+import { dataLocalISO } from './utils/dateUtils.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -78,8 +79,8 @@ window.atualizarLabel = function() {
 async function carregarDados() {
   const hoje   = new Date();
   const inicio = `${hoje.getFullYear()}-${String(hoje.getMonth()-2).padStart(2,'0') || '01'}-01`;
-  const fim    = hoje.toISOString().split('T')[0];
-  const mes3   = new Date(hoje.getFullYear(), hoje.getMonth()-3, 1).toISOString().split('T')[0];
+  const fim    = dataLocalISO(hoje);
+  const mes3   = dataLocalISO(new Date(hoje.getFullYear(), hoje.getMonth()-3, 1));
 
   const [
     { data: contas },

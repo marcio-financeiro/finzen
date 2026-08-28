@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { ajustarSaldo } from './services/balanceService.js';
+import { escapeHtml } from './utils/escapeHtml.js';
 
 const userEmail = document.getElementById('userEmail');
 const btnLogout = document.getElementById('btnLogout');
@@ -210,10 +211,10 @@ function renderizarTabela(proventos){
           return `
             <tr>
               <td>${formatarData(item.data_pagamento)}</td>
-              <td><strong>${item.ticker || '-'}</strong></td>
+              <td><strong>${escapeHtml(item.ticker || '-')}</strong></td>
               <td><span class="badge ${classeTipo(item.tipo)}">${tipoLabel(item.tipo)}</span></td>
               <td class="money positive">${formatCurrency(total, 'BRL')}</td>
-              <td>${item.observacao || '-'}</td>
+              <td>${escapeHtml(item.observacao || '-')}</td>
               <td><button class="btn compact" onclick="window.excluirProvento('${item.id}')" style="padding:4px 8px;color:var(--danger);background:transparent;border:1px solid var(--danger);margin:0" title="Excluir"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button></td>
             </tr>
           `;

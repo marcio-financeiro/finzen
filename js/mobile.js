@@ -16,6 +16,7 @@ import { ajustarSaldo } from './services/balanceService.js';
 import { ICON_SPRITE_MARKUP } from './iconSprite.js';
 import { iconeCategoriaSvg } from './utils/categoryIcon.js';
 import { getDescricoesRecentes, popularDatalist, encontrarSugestao } from './services/autocompleteService.js';
+import { hojeISO, dataLocalISO } from './utils/dateUtils.js';
 
 // ── Sprite SVG (ícones de linha do bottom nav / modal) ────
 (function injectSprite(){
@@ -112,7 +113,7 @@ registrarAcao('pagarFaturaMobile', async (el) => {
   if(!confirm(`Débitar de:\n${contaEscolhida.icon||'🏦'} ${contaEscolhida.nome}\nSaldo: ${fmt(contaEscolhida.saldo_atual||0)}\n\nConfirmar pagamento de ${fmt(total)}?`)) return;
 
   try {
-    const hoje = new Date().toISOString().split('T')[0];
+    const hoje = hojeISO();
     const anoMes = hoje.slice(0,7);
 
     // Marcar parcelas como pagas
@@ -192,9 +193,9 @@ async function carregar() {
   const hoje    = new Date();
   const anoMes  = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
   const inicio  = `${anoMes}-01`;
-  const fim     = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).toISOString().split('T')[0];
-  const hojeISO = hoje.toISOString().split('T')[0];
-  const em7     = new Date(Date.now()+7*864e5).toISOString().split('T')[0];
+  const fim     = dataLocalISO(new Date(hoje.getFullYear(), hoje.getMonth()+1, 0));
+  const hojeStr = dataLocalISO(hoje);
+  const em7     = dataLocalISO(new Date(Date.now()+7*864e5));
 
   // Tentar carregar do cache se offline
   if(!navigator.onLine) {
@@ -220,7 +221,7 @@ async function carregar() {
     supabase.from('accounts').select('id,nome,saldo_atual,currency,icon,tipo,account_kind').eq('user_id',user.id).eq('active',true),
     supabase.from('transactions').select('type,amount,status').eq('user_id',user.id).gte('date',inicio).lte('date',fim).eq('status','pago'),
     supabase.from('card_transactions').select('valor_parcela,credit_cards:card_id(nome,vencimento_dia)').eq('user_id',user.id).in('status',['aberta','pendente']).eq('fatura_referencia',anoMes),
-    supabase.from('transactions').select('description,amount,date,type').eq('user_id',user.id).eq('status','pendente').gte('date',hojeISO).lte('date',em7).order('date'),
+    supabase.from('transactions').select('description,amount,date,type').eq('user_id',user.id).eq('status','pendente').gte('date',hojeStr).lte('date',em7).order('date'),
     supabase.from('budgets').select('valor_planejado,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',anoMes),
     supabase.from('transactions').select('type,amount,date,created_at,description,categories:category_id(nome,icon),accounts:account_id(nome)').eq('user_id',user.id).eq('status','pago').order('created_at',{ascending:false}).limit(5),
     supabase.from('card_transactions').select('descricao,valor_total,data_compra,created_at,credit_cards:card_id(nome),categories:category_id(nome,icon)').eq('user_id',user.id).eq('parcela_atual',1).order('created_at',{ascending:false}).limit(5),
@@ -413,7 +414,7 @@ function popularModal() {
   }
 
   // Data hoje
-  el('mobData').value = new Date().toISOString().split('T')[0];
+  el('mobData').value = hojeISO();
 
   // Categorias rápidas
   renderCategorias('despesa');
@@ -541,6 +542,9 @@ registrarAcao('salvarLancamento', async () => {
       const refBase = invoiceRef(data, Number(cartao?.fechamento_dia || 1), Number(cartao?.vencimento_dia || 0));
 
       const valorParcela = parseFloat((valor/parcelas).toFixed(2));
+      // A última parcela absorve o resto de arredondamento, pra soma das
+      // parcelas sempre fechar exatamente com valor_total.
+      const ultimaParcela = Number((valor - valorParcela * (parcelas - 1)).toFixed(2));
       const grupoId = novoGrupoCompra();
       const registros = [];
       for(let i=0;i<parcelas;i++){
@@ -548,7 +552,7 @@ registrarAcao('salvarLancamento', async () => {
         registros.push({
           user_id:user.id, card_id:cartaoId, category_id:catId,
           descricao:desc, valor_total:valor, parcelas,
-          parcela_atual:i+1, valor_parcela:valorParcela,
+          parcela_atual:i+1, valor_parcela: i === parcelas - 1 ? ultimaParcela : valorParcela,
           data_compra:data, fatura_referencia:ref, status:'aberta',
           purchase_group_id:grupoId,
         });

@@ -1,4 +1,5 @@
 // Snapshot diário automático de patrimônio (para rentabilidade mensal parcial)
+import { hojeISO } from '../utils/dateUtils.js';
 
 function referenceMonth(date = new Date()){
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
@@ -55,7 +56,7 @@ async function sumInvestmentsSafe(supabase, userId){
 // Recalcula e salva o snapshot do mês corrente, só se ainda não foi feito hoje.
 export async function ensureDailySnapshot(supabase, user){
   const refMonth = referenceMonth();
-  const today = new Date().toISOString().substring(0, 10);
+  const today = hojeISO();
 
   const { data: existing } = await supabase
     .from('patrimony_history')
