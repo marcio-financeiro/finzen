@@ -12,6 +12,7 @@ import { ajustarSaldo, deltaTransacao } from './services/balanceService.js';
 import { deleteAccountTransfer } from './services/transferService.js';
 import { iconeCategoriaSvg } from './utils/categoryIcon.js';
 import { getDescricoesRecentes, popularDatalist, encontrarSugestao } from './services/autocompleteService.js';
+import { hojeISO } from './utils/dateUtils.js';
 
 let dolarAtual = 5.15;
 
@@ -98,13 +99,14 @@ let accounts = [];
 let cards = [];
 let categories = [];
 let editingTransaction = null;
+let loadMovementsToken = 0; // guarda contra race condition ao trocar filtro rápido
 let descricoesRecentes = [];
 
 // ─────────────────────────────────────────────
 // UTILITÁRIOS DE DATA
 // ─────────────────────────────────────────────
 function todayISO(){
-  return new Date().toISOString().split('T')[0];
+  return hojeISO();
 }
 
 function currentMonthValue(){
@@ -519,8 +521,9 @@ async function saveTransactionEdit(){
   const { data: targets, error: targetError } = await targetQuery;
   if(targetError){ showMessage('Erro ao buscar lançamentos para edição: '+targetError.message,'danger'); return; }
 
-  // Consolida os ajustes de saldo em 1 delta por conta e atualiza as linhas em
-  // lote — antes eram até 3 round-trips POR ocorrência editada (N+1).
+  // Consolida os ajustes de saldo em 1 delta por conta (aplicado só depois
+  // que a atualização das linhas confirmar — evita saldo mexido com o
+  // update falhando no meio e deixando saldo e registro dessincronizados).
   const deltas = {};
   for(const old of targets || []){
     if(old.status === 'pago'){
@@ -530,12 +533,6 @@ async function saveTransactionEdit(){
     if(status === 'pago'){
       deltas[accountId] = (deltas[accountId]||0) + (type === 'receita' ? amount : -amount);
     }
-  }
-  for(const [accId, delta] of Object.entries(deltas)){
-    if(!delta) continue;
-    // apply+receita soma o delta ao saldo (delta pode ser negativo)
-    const ok = await applyAccountBalance(accId, 'receita', delta, 'apply');
-    if(!ok) return;
   }
 
   const payload = {
@@ -550,6 +547,13 @@ async function saveTransactionEdit(){
     ? await supabase.from('transactions').update({ ...payload, date }).eq('id', original.id).eq('user_id', user.id)
     : await supabase.from('transactions').update(payload).in('id', ids).eq('user_id', user.id);
   if(error){ showMessage('Erro ao editar lançamento: '+error.message,'danger'); return; }
+
+  for(const [accId, delta] of Object.entries(deltas)){
+    if(!delta) continue;
+    // apply+receita soma o delta ao saldo (delta pode ser negativo)
+    const ok = await applyAccountBalance(accId, 'receita', delta, 'apply');
+    if(!ok) return;
+  }
 
   if(isRecurring) await gerarOcorrenciasRecorrentes();
 
@@ -638,12 +642,16 @@ async function saveCardPurchase(description, date){
 
   const grupoId = novoGrupoCompra();
   const registros = [];
+  // A última parcela absorve o resto de arredondamento, pra soma das parcelas
+  // sempre fechar exatamente com valor_total (ex: R$100/3x = 33,33+33,33+33,34).
+  const ultimaParcela = Number((calc.total - calc.installment * (calc.installments - 1)).toFixed(2));
   for(let i=0; i<calc.installments; i++){
     registros.push({
       user_id:user.id, card_id:cardId, category_id:categoryId,
       descricao:description, valor_total:calc.total,
       parcelas:calc.installments, parcela_atual:i+1,
-      valor_parcela:calc.installment, data_compra:date,
+      valor_parcela: i === calc.installments - 1 ? ultimaParcela : calc.installment,
+      data_compra:date,
       fatura_referencia:addMonthsRef(invoice, i), status:'aberta',
       purchase_group_id:grupoId,
     });
@@ -715,19 +723,22 @@ async function deleteTransaction(id){
   if(targetsError){ showMessage('Erro ao buscar lançamentos para excluir: '+targetsError.message,'danger'); return; }
   if(!targets || !targets.length){ showMessage('Nenhum lançamento encontrado para exclusão.','warning'); return; }
 
-  for(const item of targets){
-    if(item.status === 'pago'){
-      const reverted = await applyAccountBalance(item.account_id, item.type, Number(item.amount||0),'revert');
-      if(!reverted) return;
-    }
-  }
-
+  // Exclui as linhas primeiro, reverte o saldo só depois de confirmado —
+  // se o delete falhar no meio, o saldo não é mexido (evita reversão dupla
+  // numa nova tentativa de excluir a mesma transação "pago").
   const ids = targets.map(item => item.id);
   const del = await supabase.from('transactions').delete().eq('user_id',user.id).in('id',ids);
   if(del.error){ showMessage('Erro ao excluir: '+del.error.message,'danger'); return; }
 
   // Remove registros de dividendos vinculados às transações excluídas
   await supabase.from('dividends').delete().eq('user_id',user.id).in('transaction_id',ids);
+
+  for(const item of targets){
+    if(item.status === 'pago'){
+      const reverted = await applyAccountBalance(item.account_id, item.type, Number(item.amount||0),'revert');
+      if(!reverted) return;
+    }
+  }
 
   showMessage(
     scope === 'only'   ? 'Ocorrência excluída.' :
@@ -994,6 +1005,7 @@ async function loadUpcomingRecurring(){
 // LISTA DE MOVIMENTAÇÕES (com filtro de mês)
 // ─────────────────────────────────────────────
 async function loadMovements(){
+  const meuToken = ++loadMovementsToken;
   const monthFilter    = filterMonth.value; // "2026-06" ou vazio
   const categoryFilter = filterCategory.value; // id da categoria ou vazio
   const limit = (monthFilter || categoryFilter) ? 200 : 25;
@@ -1049,6 +1061,9 @@ async function loadMovements(){
   const [transactions, transfers, cardTx] = await Promise.all([
     txQuery, categoryFilter ? Promise.resolve({data:[]}) : trQuery, cardQuery,
   ]);
+
+  // Uma troca de filtro mais recente já disparou outra chamada — descarta esta resposta desatualizada
+  if(meuToken !== loadMovementsToken) return;
 
   const rows = [];
 

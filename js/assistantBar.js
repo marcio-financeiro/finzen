@@ -11,6 +11,7 @@
 
 import { supabase } from './supabaseClient.js';
 import { getActiveAccounts } from './services/dataService.js';
+import { dataLocalISO } from './utils/dateUtils.js';
 
 const CACHE_KEY = 'finzen_assistant_panel_v1';
 const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 horas
@@ -43,8 +44,8 @@ function cacheValido(c) {
 // ── Coletar contexto do Supabase ──────────────────────────────────────────────
 async function coletarContexto(userId) {
   const hoje    = new Date();
-  const hojeISO = hoje.toISOString().split('T')[0];
-  const em7     = new Date(hoje.getTime() + 7 * 864e5).toISOString().split('T')[0];
+  const hojeISO = dataLocalISO(hoje);
+  const em7     = dataLocalISO(new Date(hoje.getTime() + 7 * 864e5));
   const ref     = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
   const inicio  = `${ref}-01`;
 
@@ -135,13 +136,13 @@ async function buscarInsights(userId) {
 // ── Fallback local sem IA ─────────────────────────────────────────────────────
 async function insightsFallback(userId) {
   const hoje    = new Date();
-  const hojeISO = hoje.toISOString().split('T')[0];
+  const hojeISO = dataLocalISO(hoje);
   const ref     = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
 
   const [{ data: faturas }, { data: ciclos }, { data: pendentes }] = await Promise.all([
     supabase.from('card_transactions').select('valor_parcela').eq('user_id', userId).eq('status', 'aberta').eq('fatura_referencia', ref),
     supabase.from('offshore_cycles').select('data_embarque').eq('user_id', userId).gt('data_embarque', hojeISO).order('data_embarque').limit(1),
-    supabase.from('transactions').select('id').eq('user_id', userId).eq('status', 'pendente').gte('date', hojeISO).lte('date', new Date(hoje.getTime() + 7 * 864e5).toISOString().split('T')[0]),
+    supabase.from('transactions').select('id').eq('user_id', userId).eq('status', 'pendente').gte('date', hojeISO).lte('date', dataLocalISO(new Date(hoje.getTime() + 7 * 864e5))),
   ]);
 
   const insights = [];

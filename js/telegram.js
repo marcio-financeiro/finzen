@@ -2,6 +2,7 @@
 // Todas as funções são fire-and-forget (nunca quebram o fluxo principal)
 
 import { supabase } from './supabaseClient.js';
+import { hojeISO } from './utils/dateUtils.js';
 
 const API = '/api/telegram';
 
@@ -23,7 +24,7 @@ function fmt(valor) {
 }
 
 function diaHoje() {
-  return new Date().toISOString().split('T')[0];
+  return hojeISO();
 }
 
 // ── Transação registrada ──────────────────────────────────────────────────────

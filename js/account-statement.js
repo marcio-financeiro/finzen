@@ -3,6 +3,7 @@ import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
+import { dataLocalISO } from './utils/dateUtils.js';
 
 const { data: sessionData } = await supabase.auth.getSession();
 if(!sessionData.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
@@ -77,7 +78,7 @@ async function carregarExtrato(){
   if(mes){
     const [ano, m] = mes.split('-');
     const inicio = `${ano}-${m}-01`;
-    const fim    = new Date(Number(ano), Number(m), 0).toISOString().split('T')[0];
+    const fim    = dataLocalISO(new Date(Number(ano), Number(m), 0));
     query = query.gte('date', inicio).lte('date', fim);
     el('stmtPeriodo').innerText = new Date(Number(ano), Number(m)-1, 1)
       .toLocaleDateString('pt-BR', { month:'long', year:'numeric' });

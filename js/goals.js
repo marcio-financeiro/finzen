@@ -7,6 +7,7 @@ import { notificarMetaAtingida } from './telegram.js';
 import { openModal }        from './modal.js';
 import { escapeHtml }       from './utils/escapeHtml.js';
 import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
+import { hojeISO as hojeISOUtil, dataLocalISO } from './utils/dateUtils.js';
 
 const { data: sd } = await supabase.auth.getSession();
 if(!sd.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
@@ -25,7 +26,7 @@ let mediaAporteMensal = 0; // média de poupança dos últimos 3 meses
 // ── Utilitários ───────────────────────────────────────
 function diasRestantes(iso){
   if(!iso) return null;
-  const diff = new Date(iso+'T00:00:00') - new Date(new Date().toISOString().split('T')[0]+'T00:00:00');
+  const diff = new Date(iso+'T00:00:00') - new Date(hojeISOUtil()+'T00:00:00');
   return Math.ceil(diff/(1000*60*60*24));
 }
 function mesesRestantes(iso){
@@ -100,8 +101,8 @@ function analisarViabilidade(meta, mediaAporte){
 // ── Carregar contexto financeiro ─────────────────────
 async function carregarContexto(){
   const hoje   = new Date();
-  const mes3   = new Date(hoje.getFullYear(), hoje.getMonth()-3, 1).toISOString().split('T')[0];
-  const hojeISO = hoje.toISOString().split('T')[0];
+  const mes3   = dataLocalISO(new Date(hoje.getFullYear(), hoje.getMonth()-3, 1));
+  const hojeISO = dataLocalISO(hoje);
 
   const [{ data: contas }, { data: txHistorico }] = await Promise.all([
     supabase.from('accounts').select('saldo_atual,currency').eq('user_id',user.id).eq('active',true),
@@ -191,7 +192,8 @@ registrarAcao('confirmarAporte', async (el) => {
   if(!meta) return;
 
   const novoValor = Number(meta.valor_atual||0) + valor;
-  await supabase.from('goals').update({ valor_atual: novoValor }).eq('id',id).eq('user_id',user.id);
+  const { error } = await supabase.from('goals').update({ valor_atual: novoValor }).eq('id',id).eq('user_id',user.id);
+  if(error){ msg('Falha ao registrar aporte. Tente novamente.', 'danger'); return; }
 
   if(novoValor >= Number(meta.valor_alvo||0) && meta.valor_alvo > 0){
     notificarMetaAtingida({ id, nome, valor: novoValor }).catch(()=>{});

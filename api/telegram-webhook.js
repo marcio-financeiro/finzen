@@ -866,9 +866,16 @@ export default async function handler(req, res) {
   const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 
   if (req.method === 'GET' && req.query?.setup === '1') {
+    // Rota administrativa (reconfigura o webhook do bot) — exige o mesmo
+    // segredo dos crons. Fail-closed: sem CRON_SECRET configurado, recusa.
+    const setupSecret = process.env.CRON_SECRET;
+    if (!setupSecret) return res.status(500).json({ error: 'CRON_SECRET não configurado' });
+    if (req.query?.secret !== setupSecret) return res.status(401).json({ error: 'Unauthorized' });
+
     // Registra o webhook; com TELEGRAM_WEBHOOK_SECRET setado, o Telegram passa
     // a enviar o header X-Telegram-Bot-Api-Secret-Token em cada update.
-    let url = `https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=${encodeURIComponent(`https://${req.headers.host}/api/telegram-webhook`)}`;
+    // URL fixa (não confiar em req.headers.host, que pode ser forjado).
+    let url = `https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=${encodeURIComponent(`${VERCEL_URL}/api/telegram-webhook`)}`;
     if (WEBHOOK_SECRET) url += `&secret_token=${encodeURIComponent(WEBHOOK_SECRET)}`;
     const r = await fetch(url);
     return res.status(200).json(await r.json());

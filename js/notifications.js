@@ -8,6 +8,7 @@
 
 import { supabase } from './supabaseClient.js';
 import { formatCurrency } from './utils.js';
+import { dataLocalISO } from './utils/dateUtils.js';
 
 const fmt = v => formatCurrency(v, 'BRL');
 
@@ -58,8 +59,8 @@ export async function agendarAlertas(userId) {
   if(Notification.permission !== 'granted') return 0;
 
   const hoje    = new Date();
-  const hojeISO = hoje.toISOString().split('T')[0];
-  const em7     = new Date(Date.now() + 7 * 864e5).toISOString().split('T')[0];
+  const hojeISO = dataLocalISO(hoje);
+  const em7     = dataLocalISO(new Date(Date.now() + 7 * 864e5));
   const ref     = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
 
   const [

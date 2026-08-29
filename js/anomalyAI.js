@@ -6,6 +6,7 @@ import { analyzeRequest } from './apiClient.js';
  */
 
 import { supabase } from './supabaseClient.js';
+import { dataLocalISO } from './utils/dateUtils.js';
 
 // ── Coleta dados para análise de anomalias ────────────────────────────────
 export async function coletarDadosAnomalias(userId) {
@@ -17,8 +18,8 @@ export async function coletarDadosAnomalias(userId) {
     const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
     meses.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
   }
-  const mes6Atras = new Date(hoje.getFullYear(), hoje.getMonth()-6, 1).toISOString().split('T')[0];
-  const hojeISO   = hoje.toISOString().split('T')[0];
+  const mes6Atras = dataLocalISO(new Date(hoje.getFullYear(), hoje.getMonth()-6, 1));
+  const hojeISO   = dataLocalISO(hoje);
   const mesAtual  = meses[0];
 
   const [

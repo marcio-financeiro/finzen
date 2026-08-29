@@ -9,6 +9,7 @@ import { emailService } from './emailService.js';
 import { registrarAcao } from './eventBus.js';
 import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
 import { escapeHtml } from './utils/escapeHtml.js';
+import { hojeISO } from './utils/dateUtils.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sd } = await supabase.auth.getSession();
@@ -48,7 +49,7 @@ function diasEntre(d1, d2) {
 }
 function diasAteVencer(iso) {
   if (!iso) return null;
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeISO();
   return Math.round((new Date(iso+'T00:00:00') - new Date(hoje+'T00:00:00')) / 864e5);
 }
 
@@ -99,7 +100,7 @@ function renderKPIs() {
   const diasEmb = ciclos
     .filter(c => c.data_embarque >= inicio && c.data_embarque <= fim)
     .reduce((s, c) => {
-      const d2 = c.data_desembarque || new Date().toISOString().split('T')[0];
+      const d2 = c.data_desembarque || hojeISO();
       return s + Math.max(diasEntre(c.data_embarque, d2), 0);
     }, 0);
 
@@ -109,7 +110,7 @@ function renderKPIs() {
   const ciclosConcluidos = ciclos.filter(c => c.status === 'concluido').length;
 
   // Certificações
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeISO();
   const certValidas  = certs.filter(c => c.data_vencimento >= hoje).length;
   const certAVencer  = certs.filter(c => {
     const dias = diasAteVencer(c.data_vencimento);
@@ -171,7 +172,7 @@ function renderCerts() {
     return;
   }
 
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeISO();
 
   el('listaCerts').innerHTML = certs.map(c => {
     const dias = diasAteVencer(c.data_vencimento);
@@ -265,7 +266,7 @@ function renderHistorico() {
       <tbody>
         ${Object.entries(porPlat).map(([plat, cs]) => {
           const totalDias = cs.reduce((s,c) => {
-            const d2 = c.data_desembarque || new Date().toISOString().split('T')[0];
+            const d2 = c.data_desembarque || hojeISO();
             return s + Math.max(diasEntre(c.data_embarque, d2), 0);
           }, 0);
           const ultimo = cs.sort((a,b) => b.data_embarque.localeCompare(a.data_embarque))[0];
@@ -447,7 +448,7 @@ function preencherSelectCiclos() {
 
 el('btnNovaHE').addEventListener('click', () => {
   preencherSelectCiclos();
-  el('heData').value      = new Date().toISOString().split('T')[0];
+  el('heData').value      = hojeISO();
   el('heHoras').value     = '';
   el('heValorHora').value = '';
   el('heSobreaviso').checked = false;

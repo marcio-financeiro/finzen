@@ -65,11 +65,11 @@ js/moneyMask.js → máscara de moeda BR (attachMoneyMask/readMoneyValue/setMone
 js/modal.js     → openModal/showChoice/showDetail (Escape + trap de foco + role=dialog)
 js/services/    → financeService, accountService, transferService,
                   cardService (fonte ÚNICA do cálculo de fatura + purchase_group_id),
-                  balanceService (ajustarSaldo — delta atômico via RPC, com fallback)
+                  balanceService (ajustarSaldo — delta atômico via RPC)
 js/utils/       → escapeHtml (usar em TODO dado do usuário interpolado em innerHTML),
-                  dateUtils (hojeISO no fuso LOCAL — nunca toISOString p/ "hoje")
+                  dateUtils (hojeISO/dataLocalISO no fuso LOCAL — nunca toISOString p/ data-only)
 css/            → variables.css → base.css → layout.css → components.css →
-                  navigation.css → mobile.css · editorial.css (breakpoint mobile: 820px)
+                  mobile.css → navigation.css · editorial.css (breakpoint mobile: 820px)
 api/quotes.js   → Serverless Function (proxy brapi.dev + Yahoo Finance)
 api/_aiRateLimit.js → limite diário nos endpoints de IA (tabela ai_usage)
 database/       → Migrations SQL (YYYY_MM_DD_descricao.sql) — aplicar no SQL Editor.
@@ -94,22 +94,22 @@ vercel.json     → security headers (CSP etc.) + cache de /js e /css + crons (t
 
 ## Design system
 
-Tokens reais em `css/variables.css` (única fonte de verdade — este bloco é só um resumo, conferir o arquivo antes de usar cor "de cabeça"):
+Tokens reais em `css/variables.css` (única fonte de verdade — este bloco é só um resumo, conferir o arquivo antes de usar cor "de cabeça"). Paleta atual: **"Esmeralda Financeira"** (verde — substituiu a paleta dourada "Vyn" antiga; `sw.js` ainda usa `vyn-` no nome do cache por herança histórica, sem relação com a cor):
 
 ```css
---bg:            #0a0c10
---surface:       #12151c
---surface-2:     #181c24
---surface-3:     #20242e
---border:        #232732
---accent:        #c08a3e   /* dourado */
---accent-bright: #dcb067
---success:       #3f8f63
---danger:        #cf6a55
---warning:       #c08a3e
+--bg:            #0a0f0d
+--surface:       #121a17
+--surface-2:     #18221e
+--surface-3:     #1e2b25
+--border:        #243029
+--accent:        #3fae7c   /* verde esmeralda */
+--accent-bright: #5fcf9a
+--success:       #2f9d68
+--danger:        #d9705a
+--warning:       #c9963f
 --info:          #3b82f6
---text:          #e8e4d8
---muted:         #94907f
+--text:          #e7f0ea
+--muted:         #8ea198
 --radius-sm/md/lg: 8px/10px/12px
 ```
 
@@ -117,7 +117,7 @@ Existe também `html[data-theme="light"]` (tema claro) definido no mesmo arquivo
 
 Tokens de espaçamento (`--space-1`..`--space-8`) e tipografia (`--text-xs`..`--text-3xl`) também existem em `variables.css` mas **hoje quase não são usados** em `components.css` (valores mágicos em px direto) — ao escrever CSS novo, preferir os tokens.
 
-Arquivos CSS em `css/`: variables.css → base.css → layout.css → components.css → navigation.css → mobile.css → editorial.css.
+Arquivos CSS em `css/`: variables.css → base.css → layout.css → components.css → mobile.css → navigation.css → editorial.css (ordem real usada em todas as páginas — mobile.css vem ANTES de navigation.css).
 Importar nessa ordem em todas as páginas (editorial.css só onde necessário).
 
 ## Padrões de código obrigatórios

@@ -7,6 +7,7 @@ import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
 import { getActiveAccounts } from './services/dataService.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { iconeCategoriaSvg } from './utils/categoryIcon.js';
+import { hojeISO, dataLocalISO } from './utils/dateUtils.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
@@ -53,12 +54,79 @@ function formatData(iso){
 }
 function diasAte(iso){
   if(!iso) return null;
-  const diff = new Date(iso+'T00:00:00') - new Date(hoje().toISOString().split('T')[0]+'T00:00:00');
+  const diff = new Date(iso+'T00:00:00') - new Date(hojeISO()+'T00:00:00');
   return Math.round(diff/(1000*60*60*24));
 }
 function aplicarClasse(el, valor){
   el.classList.remove('positive','negative');
   el.classList.add(valor>=0?'positive':'negative');
+}
+
+// ── Movimento: respeita "menos movimento" do sistema operacional ──
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Anima um valor em R$ de 0 até o final (curva ease-out) — some com o
+// conteúdo já visível, nunca esconde o número atrás da animação.
+function animarValor(elx, valorFinal){
+  if(!elx) return;
+  if(reduceMotion){ elx.innerText = fmt(valorFinal); return; }
+  const dur = 650;
+  let start = null;
+  function passo(ts){
+    if(start === null) start = ts;
+    const p = Math.min((ts - start) / dur, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    elx.innerText = fmt(valorFinal * eased);
+    if(p < 1) requestAnimationFrame(passo);
+  }
+  requestAnimationFrame(passo);
+}
+
+// Entrada escalonada dos blocos do dashboard — reaproveita a animação
+// fadeInUp que cada bloco já tem, só distribui o atraso em sequência visual.
+function aplicarEntradaEscalonada(){
+  if(reduceMotion) return;
+  const alvos = document.querySelectorAll(
+    'main.content .wealth-pulse, main.content .assistant-banner, main.content .ring-card, ' +
+    'main.content .dash-kpi, main.content .dash-block, main.content .score-block, main.content .cfai-block'
+  );
+  alvos.forEach((elx, i) => {
+    elx.style.animationDelay = `${Math.min(i * 35, 320)}ms`;
+  });
+}
+
+// Sparkline dos últimos meses de patrimônio no card de Saldo total —
+// falha silenciosamente (sem histórico ainda) escondendo o próprio bloco.
+function renderSaldoSparkline(historico){
+  const card = document.querySelector('.dash-ring-row .ring-card:first-child .ring-info');
+  if(!card) return;
+  let holder = card.querySelector('.ring-sparkline');
+  if(!holder){
+    holder = document.createElement('div');
+    holder.className = 'ring-sparkline';
+    card.appendChild(holder);
+  }
+  const valores = (historico||[]).map(h => Number(h.net_worth||0));
+  if(valores.length < 2){ holder.innerHTML = ''; return; }
+
+  const min = Math.min(...valores), max = Math.max(...valores);
+  const range = max - min || 1;
+  const W = 100, H = 26, pad = 3;
+  const pontos = valores.map((v,i) => {
+    const x = (i/(valores.length-1)) * W;
+    const y = H - pad - ((v-min)/range) * (H - pad*2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const linha = pontos.join(' ');
+  const area  = `0,${H} ${linha} ${W},${H}`;
+  const [lastX,lastY] = pontos[pontos.length-1].split(',');
+
+  holder.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+      <polygon points="${area}" fill="rgba(255,255,255,.16)"></polygon>
+      <polyline points="${linha}" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></polyline>
+      <circle cx="${lastX}" cy="${lastY}" r="2.2" fill="#fff"></circle>
+    </svg>`;
 }
 
 // Paleta categórica validada (8 tons distintos sob visão de cor e no fundo escuro do app)
@@ -130,23 +198,25 @@ async function carregarDashboard(){
       { data: parcelasMesAll },
       { data: investimentos },
       { data: orcAnteriores },
+      { data: historicoPatrimonio },
     ] = await Promise.all([
       getActiveAccounts(supabase,user.id).then(data=>({data})),                                                                                                                                                                    // contas (dataService — compartilhado com navigation.js/assistantBar.js na mesma página)
       supabase.from('transactions').select('type,amount,status,date,category_id,accounts:account_id(currency),categories:category_id(nome,icon,cor)').eq('user_id',user.id).gte('date',inicio).lte('date',fim),                  // transacoesMes
       supabase.from('card_transactions').select('valor_parcela,fatura_referencia,status,card_id,category_id').eq('user_id',user.id).in('status',['aberta','pendente']).in('fatura_referencia',[ref,refProximo,refProx2]),      // parcelasMes (3 meses, abertas — faturas + projeção 90d)
-      supabase.from('transactions').select('id,description,amount,date,type,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date', (() => { const d=new Date(hoje()); d.setDate(d.getDate()+7); return d.toISOString().split('T')[0]; })()).order('date',{ascending:true}).limit(5), // transacoesPendentes
+      supabase.from('transactions').select('id,description,amount,date,type,status').eq('user_id',user.id).eq('status','pendente').gte('date',hojeISO()).lte('date', (() => { const d=new Date(hoje()); d.setDate(d.getDate()+7); return dataLocalISO(d); })()).order('date',{ascending:true}).limit(5), // transacoesPendentes
       supabase.from('budgets').select('*,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',ref),                                                                                                   // orcamentos
       supabase.from('goals').select('*').eq('user_id',user.id).eq('ativo',true).order('data_alvo',{ascending:true}).limit(5),                                                                                                  // metas
       supabase.from('transactions').select('type,amount,recurrence_frequency,accounts:account_id(currency)').eq('user_id',user.id).eq('is_recurring',true).eq('recurrence_active',true),                                        // recorrentes
       supabase.from('transactions').select('id,type,amount,description,date,status,created_at,accounts:account_id(nome,currency),categories:category_id(nome,icon)').eq('user_id',user.id).order('created_at',{ascending:false}).limit(8), // ultimosLanc
       supabase.from('categories').select('id,nome,icon,cor').eq('user_id',user.id),                                                                                                                                            // categorias
-      supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hoje().toISOString().split('T')[0]).lte('date',ultimoDiaMes()),                                 // pendentesRestantesMes
+      supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hojeISO()).lte('date',ultimoDiaMes()),                                 // pendentesRestantesMes
       supabase.from('credit_cards').select('id,nome,vencimento_dia,limite').eq('user_id',user.id).eq('ativo',true),                                                                                                            // cartoes (limite p/ score)
       supabase.from('card_transactions').select('id,descricao,valor_total,data_compra,status,created_at,credit_cards:card_id(nome),categories:category_id(nome,icon)').eq('user_id',user.id).eq('parcela_atual',1).order('created_at',{ascending:false}).limit(8), // ultimosCartao
       supabase.from('transactions').select('type,amount,status,accounts:account_id(currency)').eq('user_id',user.id).eq('status','pago').gte('date',primeiroDiaMesAnterior()).lte('date',ultimoDiaMesAnterior()),                // txMesAnterior
       supabase.from('card_transactions').select('valor_parcela,category_id,categories:category_id(nome,icon,cor)').eq('user_id',user.id).eq('fatura_referencia',ref),                                                            // parcelasMesAll (todos status, para orçamento + pizza)
       supabase.from('investments').select('tipo,quantidade,preco_medio,cotacao_atual').eq('user_id',user.id).eq('ativo',true),                                                                                                  // investimentos (score)
       supabase.from('budgets').select('*,categories:category_id(nome,icon),mes_referencia').eq('user_id',user.id).lt('mes_referencia',ref).order('mes_referencia',{ascending:false}).limit(50),                                  // orcAnteriores (herança de orçamento)
+      supabase.from('patrimony_history').select('net_worth,reference_month').eq('user_id',user.id).order('reference_month',{ascending:false}).limit(6),                                                                          // historicoPatrimonio (sparkline do Saldo total)
     ]);
 
     // ── KPIs ─────────────────────────────────────────
@@ -165,14 +235,15 @@ async function carregarDashboard(){
     const resultado = receitas - despesas;
     const totalFaturas = (parcelasMes||[]).filter(p=>p.fatura_referencia===ref).reduce((s,p)=>s+Number(p.valor_parcela||0),0);
 
-    el('kpiSaldo').innerText     = fmt(totalSaldo);
-    el('kpiReceitas').innerText  = fmt(receitas);
-    el('kpiDespesas').innerText  = fmt(despesas);
-    el('kpiResultado').innerText = fmt(resultado);
-    el('kpiFaturas').innerText   = fmt(totalFaturas);
     ['kpiSaldo','kpiReceitas','kpiDespesas','kpiResultado','kpiFaturas'].forEach(id => el(id).classList.remove('kpi-loading'));
+    animarValor(el('kpiSaldo'), totalSaldo);
+    animarValor(el('kpiReceitas'), receitas);
+    animarValor(el('kpiDespesas'), despesas);
+    animarValor(el('kpiResultado'), resultado);
+    animarValor(el('kpiFaturas'), totalFaturas);
     aplicarClasse(el('kpiResultado'), resultado);
     aplicarClasse(el('kpiSaldo'), totalSaldo);
+    renderSaldoSparkline((historicoPatrimonio||[]).slice().reverse());
 
     // ── Ring cards (Stage 2) ─────────────────────────
     const recAnt  = (txMesAnterior||[]).filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
@@ -187,8 +258,8 @@ async function carregarDashboard(){
     const projecao90 = totalSaldo + (receitasRec - despesasRec) * 3 - faturas90;
     const elProj = el('kpiProjecao90');
     if(elProj){
-      elProj.innerText = fmt(projecao90);
       elProj.classList.remove('kpi-loading');
+      animarValor(elProj, projecao90);
       aplicarClasse(elProj, projecao90);
     }
     const refEmerg = despesasRec > 0 ? despesasRec : (despesas > 0 ? despesas : 1);
@@ -984,6 +1055,7 @@ el('btnPrevisaoProximo').addEventListener('click', () => {
   carregarTendencia(previsaoBaseOffset);
 });
 
+aplicarEntradaEscalonada();
 carregarDashboard();
 initAssistantBar(user.id).catch(() => {});
 emailService.agendarLembretes(user.id, supabase).catch(() => {});

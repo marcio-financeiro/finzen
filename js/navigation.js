@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient.js';
 import { registrarAcao } from './eventBus.js';
 import { ICON_SPRITE_MARKUP } from './iconSprite.js';
 import { getActiveAccounts } from './services/dataService.js';
+import { hojeISO, dataLocalISO } from './utils/dateUtils.js';
 
 // ─── Sidebar rail: aplicar antes do primeiro paint (anti-flash) ───────────────
 const SIDEBAR_RAIL_KEY = 'finzen_sidebar_rail';
@@ -193,8 +194,8 @@ async function carregarBadges() {
     const { data: sd } = await supabase.auth.getSession();
     if (!sd?.session) return;
     const user = sd.session.user;
-    const hoje = new Date().toISOString().split('T')[0];
-    const em7  = new Date(Date.now() + 7 * 864e5).toISOString().split('T')[0];
+    const hoje = hojeISO();
+    const em7  = dataLocalISO(new Date(Date.now() + 7 * 864e5));
     const ref  = hoje.substring(0, 7);
 
     const [{ count: pendentes }, { count: faturas }] = await Promise.all([
