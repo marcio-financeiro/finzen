@@ -219,6 +219,15 @@ textarea:focus{
   margin:0;
   font-size:14px;
   font-weight:800;
+  font-family:var(--font-display);
+}
+
+/* ── Voz editorial estendida a outros títulos de seção do site (mesmo
+   tratamento aplicado ao dashboard) — .reg-form é definido só em
+   editorial.css (cadastros), sem font-family própria pra h3. ── */
+.reg-form h3{
+  font-family:var(--font-display);
+  font-weight:600;
 }
 
 .panel .form-grid,
@@ -589,7 +598,7 @@ input:-webkit-autofill:active{
 .ring-sparkline{ margin-top:6px; width:100%; max-width:150px; }
 .ring-sparkline svg{ display:block; width:100%; height:22px; }
 
-/* ── Elevação real só no card de destaque — os demais ficam quietos,
+/* ── Elevação real só nos cards de destaque — os demais ficam quietos,
    sem sombra, pra não competir por atenção (mais específico que o reset
    de editorial.css, que zera box-shadow em todo bloco por padrão) ── */
 .dash-ring-row .ring-card:first-child{
@@ -597,6 +606,9 @@ input:-webkit-autofill:active{
 }
 html[data-theme="light"] .dash-ring-row .ring-card:first-child{
   box-shadow:0 20px 45px rgba(16,26,21,.16) !important;
+}
+.patrimony-page .panel:first-of-type{
+  box-shadow:0 20px 45px rgba(4,18,11,.32) !important;
 }
 
 /* ── Score de Saúde Financeira ── */

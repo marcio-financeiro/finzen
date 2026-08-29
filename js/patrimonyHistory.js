@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { navigate } from './router.js';
 import { formatCurrency } from './utils.js';
+import { animarValor, aplicarEntradaEscalonada } from './utils/motion.js';
 
 const el = id => document.getElementById(id);
 
@@ -208,8 +209,8 @@ async function renderSummary(){
   const diff = currentValue - previousValue;
   const diffPercent = previousValue ? (diff / previousValue) * 100 : 0;
 
-  currentNetWorth.innerText = formatCurrency(currentValue, 'BRL');
-  previousNetWorth.innerText = formatCurrency(previousValue, 'BRL');
+  animarValor(currentNetWorth, currentValue, v => formatCurrency(v, 'BRL'));
+  animarValor(previousNetWorth, previousValue, v => formatCurrency(v, 'BRL'));
   evolutionAmount.innerText = `${diff >= 0 ? '+' : ''}${formatCurrency(diff, 'BRL')}`;
   evolutionPercent.innerText = `${diffPercent >= 0 ? '+' : ''}${percent(diffPercent)}`;
 }
@@ -297,6 +298,7 @@ btnLogout.addEventListener('click', async () => {
 btnReload.addEventListener('click', calculateSnapshot);
 btnSaveSnapshot.addEventListener('click', saveSnapshot);
 
+aplicarEntradaEscalonada('.content > .panel, .content .kpi-card');
 await calculateSnapshot();
 await loadHistory();
 renderGraficoEvolucao(user, supabase, 'graficoEvolucao');

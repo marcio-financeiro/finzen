@@ -8,6 +8,7 @@ import { getActiveAccounts } from './services/dataService.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { iconeCategoriaSvg } from './utils/categoryIcon.js';
 import { hojeISO, dataLocalISO } from './utils/dateUtils.js';
+import { animarValor, aplicarEntradaEscalonada } from './utils/motion.js';
 
 // ── Auth ──────────────────────────────────────────────
 const { data: sessionData } = await supabase.auth.getSession();
@@ -62,37 +63,12 @@ function aplicarClasse(el, valor){
   el.classList.add(valor>=0?'positive':'negative');
 }
 
-// ── Movimento: respeita "menos movimento" do sistema operacional ──
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-// Anima um valor em R$ de 0 até o final (curva ease-out) — some com o
-// conteúdo já visível, nunca esconde o número atrás da animação.
-function animarValor(elx, valorFinal){
-  if(!elx) return;
-  if(reduceMotion){ elx.innerText = fmt(valorFinal); return; }
-  const dur = 650;
-  let start = null;
-  function passo(ts){
-    if(start === null) start = ts;
-    const p = Math.min((ts - start) / dur, 1);
-    const eased = 1 - Math.pow(1 - p, 3);
-    elx.innerText = fmt(valorFinal * eased);
-    if(p < 1) requestAnimationFrame(passo);
-  }
-  requestAnimationFrame(passo);
-}
-
-// Entrada escalonada dos blocos do dashboard — reaproveita a animação
-// fadeInUp que cada bloco já tem, só distribui o atraso em sequência visual.
-function aplicarEntradaEscalonada(){
-  if(reduceMotion) return;
-  const alvos = document.querySelectorAll(
+// Entrada escalonada dos blocos do dashboard.
+function aplicarEntradaEscalonadaDashboard(){
+  aplicarEntradaEscalonada(
     'main.content .wealth-pulse, main.content .assistant-banner, main.content .ring-card, ' +
     'main.content .dash-kpi, main.content .dash-block, main.content .score-block, main.content .cfai-block'
   );
-  alvos.forEach((elx, i) => {
-    elx.style.animationDelay = `${Math.min(i * 35, 320)}ms`;
-  });
 }
 
 // Sparkline dos últimos meses de patrimônio no card de Saldo total —
@@ -236,11 +212,11 @@ async function carregarDashboard(){
     const totalFaturas = (parcelasMes||[]).filter(p=>p.fatura_referencia===ref).reduce((s,p)=>s+Number(p.valor_parcela||0),0);
 
     ['kpiSaldo','kpiReceitas','kpiDespesas','kpiResultado','kpiFaturas'].forEach(id => el(id).classList.remove('kpi-loading'));
-    animarValor(el('kpiSaldo'), totalSaldo);
-    animarValor(el('kpiReceitas'), receitas);
-    animarValor(el('kpiDespesas'), despesas);
-    animarValor(el('kpiResultado'), resultado);
-    animarValor(el('kpiFaturas'), totalFaturas);
+    animarValor(el('kpiSaldo'), totalSaldo, fmt);
+    animarValor(el('kpiReceitas'), receitas, fmt);
+    animarValor(el('kpiDespesas'), despesas, fmt);
+    animarValor(el('kpiResultado'), resultado, fmt);
+    animarValor(el('kpiFaturas'), totalFaturas, fmt);
     aplicarClasse(el('kpiResultado'), resultado);
     aplicarClasse(el('kpiSaldo'), totalSaldo);
     renderSaldoSparkline((historicoPatrimonio||[]).slice().reverse());
@@ -259,7 +235,7 @@ async function carregarDashboard(){
     const elProj = el('kpiProjecao90');
     if(elProj){
       elProj.classList.remove('kpi-loading');
-      animarValor(elProj, projecao90);
+      animarValor(elProj, projecao90, fmt);
       aplicarClasse(elProj, projecao90);
     }
     const refEmerg = despesasRec > 0 ? despesasRec : (despesas > 0 ? despesas : 1);
@@ -1055,7 +1031,7 @@ el('btnPrevisaoProximo').addEventListener('click', () => {
   carregarTendencia(previsaoBaseOffset);
 });
 
-aplicarEntradaEscalonada();
+aplicarEntradaEscalonadaDashboard();
 carregarDashboard();
 initAssistantBar(user.id).catch(() => {});
 emailService.agendarLembretes(user.id, supabase).catch(() => {});

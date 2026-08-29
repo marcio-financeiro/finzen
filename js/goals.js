@@ -8,6 +8,7 @@ import { openModal }        from './modal.js';
 import { escapeHtml }       from './utils/escapeHtml.js';
 import { attachMoneyMask, readMoneyValue, setMoneyValue } from './moneyMask.js';
 import { hojeISO as hojeISOUtil, dataLocalISO } from './utils/dateUtils.js';
+import { animarValor, aplicarEntradaEscalonada } from './utils/motion.js';
 
 const { data: sd } = await supabase.auth.getSession();
 if(!sd.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
@@ -280,11 +281,11 @@ function renderKpis(metas){
   const alvo  = metas.reduce((s,m)=>s+Number(m.valor_alvo||0),0);
   const atual = metas.reduce((s,m)=>s+Number(m.valor_atual||0),0);
   const falta = Math.max(alvo-atual,0);
-  el('totalAlvo').innerText     = fmt(alvo);
-  el('totalAtual').innerText    = fmt(atual);
-  el('totalFaltante').innerText = fmt(falta);
-  el('saldoDisponivel').innerText = fmt(saldoContas);
-  el('mediaAporte').innerText     = fmt(mediaAporteMensal) + '/mês';
+  animarValor(el('totalAlvo'), alvo, fmt);
+  animarValor(el('totalAtual'), atual, fmt);
+  animarValor(el('totalFaltante'), falta, fmt);
+  animarValor(el('saldoDisponivel'), saldoContas, fmt);
+  animarValor(el('mediaAporte'), mediaAporteMensal, v => fmt(v) + '/mês');
 }
 
 function renderMetas(metas){
@@ -397,5 +398,6 @@ el('btnSalvarMeta').addEventListener('click', salvar);
 el('btnCancelarEdicao').addEventListener('click', limpar);
 
 // Inicializar
+aplicarEntradaEscalonada('.content > .panel, .kpi-card');
 await carregarContexto();
 await carregar();
