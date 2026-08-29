@@ -4,6 +4,7 @@ import { formatCurrency } from './utils.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { getUsdBrlRate, convertToBRL } from './services/financeService.js';
 import { dataLocalISO } from './utils/dateUtils.js';
+import { animarValor, aplicarEntradaEscalonada } from './utils/motion.js';
 
 const { data: sessionData } = await supabase.auth.getSession();
 if(!sessionData.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
@@ -52,12 +53,12 @@ async function carregarExtrato(){
     const opt = el('filtroConta').options[el('filtroConta').selectedIndex];
     const saldo = parseFloat(opt.dataset.saldo || 0);
     const currency = opt.dataset.currency || 'BRL';
-    el('kpiSaldo').innerText = formatCurrency(saldo, currency);
     el('kpiSaldo').className = saldo >= 0 ? 'positive' : 'negative';
+    animarValor(el('kpiSaldo'), saldo, v => formatCurrency(v, currency));
   } else {
     const totalBRL = contasAtivas.reduce((sum,c) => sum+convertToBRL(c.saldo_atual, c.currency, dolarAtual), 0);
-    el('kpiSaldo').innerText = formatCurrency(totalBRL, 'BRL');
     el('kpiSaldo').className = totalBRL >= 0 ? 'positive' : 'negative';
+    animarValor(el('kpiSaldo'), totalBRL, v => formatCurrency(v, 'BRL'));
   }
 
   let query = supabase
@@ -99,10 +100,10 @@ async function carregarExtrato(){
   const saidas   = lancamentos.filter(l=>l.type==='despesa').reduce((s,l)=>s+Number(l.amount||0),0);
   const resultado = entradas - saidas;
 
-  el('kpiEntradas').innerText = formatCurrency(entradas, 'BRL');
-  el('kpiSaidas').innerText   = formatCurrency(saidas, 'BRL');
-  el('kpiResultado').innerText = formatCurrency(resultado, 'BRL');
+  animarValor(el('kpiEntradas'), entradas, v => formatCurrency(v, 'BRL'));
+  animarValor(el('kpiSaidas'), saidas, v => formatCurrency(v, 'BRL'));
   el('kpiResultado').className = resultado >= 0 ? 'positive' : 'negative';
+  animarValor(el('kpiResultado'), resultado, v => formatCurrency(v, 'BRL'));
   el('kpiQtd').innerText = lancamentos.length;
 
   if(!lancamentos.length){
@@ -155,6 +156,7 @@ if(contaParam){
   window.history.replaceState({}, '', window.location.pathname);
 }
 
+aplicarEntradaEscalonada('.content > .panel, .stmt-kpi');
 await carregarExtrato();
 
 el('btnFiltrar').addEventListener('click', carregarExtrato);

@@ -16,9 +16,10 @@
 .stmt-kpi{
   padding:14px 16px;border:1px solid color-mix(in srgb, var(--border) 55%, var(--text) 45%);border-radius:12px;
   background:var(--surface-2);
+  animation:fadeInUp .3s ease both;
 }
 .stmt-kpi span{ font-size:11px;color:var(--muted);font-weight:700;display:block; }
-.stmt-kpi strong{ font-size:18px;font-family:var(--font-mono);display:block;margin-top:4px; }
+.stmt-kpi strong{ font-size:18px;font-family:var(--font-mono);display:block;margin-top:4px;font-variant-numeric:tabular-nums; }
 .stmt-entry{
   display:grid;grid-template-columns:90px 1fr auto;gap:10px;align-items:start;
   padding:12px 0;border-bottom:1px solid var(--border);

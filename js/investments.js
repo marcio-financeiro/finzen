@@ -12,6 +12,7 @@ import { ajustarSaldo } from './services/balanceService.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { loadChart } from './utils/loadChart.js';
 import { hojeISO } from './utils/dateUtils.js';
+import { animarValor, aplicarEntradaEscalonada } from './utils/motion.js';
 
 // ─────────────────────────────────────────────
 // AUTH
@@ -398,10 +399,10 @@ function renderizarKPIs(){
   const resultado = patrimBRL-aplicBRL;
   const pct       = aplicBRL?resultado/aplicBRL*100:0;
 
-  el('kpiAplicado').innerText=formatCurrency(aplicBRL,'BRL');
-  el('kpiPatrimonio').innerText=formatCurrency(patrimBRL,'BRL');
-  el('kpiResultado').innerText=formatCurrency(resultado,'BRL');
+  animarValor(el('kpiAplicado'), aplicBRL, v=>formatCurrency(v,'BRL'));
+  animarValor(el('kpiPatrimonio'), patrimBRL, v=>formatCurrency(v,'BRL'));
   el('kpiResultado').className=resultado>=0?'positive':'negative';
+  animarValor(el('kpiResultado'), resultado, v=>formatCurrency(v,'BRL'));
   el('kpiResultadoPct').innerText=(resultado>=0?'+':'')+formatPercent(pct);
 }
 
@@ -411,7 +412,7 @@ function renderizarKPIs(){
 async function carregarTotalDividendos(){
   const {data}=await supabase.from('dividends').select('valor_total').eq('user_id',user.id);
   const total=(data||[]).reduce((s,d)=>s+toNumber(d.valor_total),0);
-  el('kpiDividendos').innerText=formatCurrency(total,'BRL');
+  animarValor(el('kpiDividendos'), total, v=>formatCurrency(v,'BRL'));
 }
 
 // ─────────────────────────────────────────────
@@ -1699,6 +1700,7 @@ registrarAcao('abrirFicha', async (el) => {
 // ─────────────────────────────────────────────
 // INICIALIZAÇÃO
 // ─────────────────────────────────────────────
+aplicarEntradaEscalonada('.content > .panel, .inv-kpi');
 await carregarDolar();
 await carregarCorretoras();
 await carregarAtivos();

@@ -6,6 +6,7 @@ import { notificarOrcamentoEstourado } from './telegram.js';
 import { attachMoneyMask, readMoneyValue } from './moneyMask.js';
 import { escapeHtml } from './utils/escapeHtml.js';
 import { iconeCategoriaSvg } from './utils/categoryIcon.js';
+import { animarValor, aplicarEntradaEscalonada } from './utils/motion.js';
 
 const { data: sd } = await supabase.auth.getSession();
 if(!sd.session){ navigate('../login.html'); throw new Error('unauthenticated'); }
@@ -79,10 +80,10 @@ function renderKpis(){
   const planejado = orcamentos.reduce((s,o)=>s+Number(o.valor_planejado||0),0);
   const gasto     = orcamentos.reduce((s,o)=>s+(gastos[o.category_id]||0),0);
   const restante  = planejado - gasto;
-  el('totalPlanejado').innerText = formatCurrency(planejado,'BRL');
-  el('totalGasto').innerText     = formatCurrency(gasto,'BRL');
-  el('saldoRestante').innerText  = formatCurrency(restante,'BRL');
+  animarValor(el('totalPlanejado'), planejado, v=>formatCurrency(v,'BRL'));
+  animarValor(el('totalGasto'), gasto, v=>formatCurrency(v,'BRL'));
   el('saldoRestante').className  = restante>=0?'positive':'negative';
+  animarValor(el('saldoRestante'), restante, v=>formatCurrency(v,'BRL'));
 }
 
 function renderLista(){
@@ -170,6 +171,8 @@ window.copiarParaEsteMes = async function(){
 
 el('btnSalvarOrcamento').addEventListener('click', salvar);
 el('mesReferencia').addEventListener('change', carregar);
+
+aplicarEntradaEscalonada('.content > .panel, .kpi-card');
 
 // Definir mês atual como padrão
 el('mesReferencia').value = mesAtual();
