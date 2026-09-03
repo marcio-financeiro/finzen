@@ -677,16 +677,16 @@ html[data-theme="light"] .dash-ring-row .ring-card:first-child{
 
 /* ── Cashflow AI ── */
 .cfai-block{
-  border:1px solid rgba(79,124,255,.35);
+  border:1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   border-radius:16px;
-  background:linear-gradient(135deg,rgba(79,124,255,.06) 0%,rgba(124,92,252,.06) 100%);
+  background:var(--surface);
   overflow:hidden;
   margin-bottom:16px;
   animation:fadeInUp .3s ease both;
 }
 .cfai-header{
   display:flex;justify-content:space-between;align-items:center;
-  padding:14px 18px;border-bottom:1px solid rgba(79,124,255,.2);
+  padding:14px 18px;border-bottom:1px solid color-mix(in srgb, var(--accent) 20%, transparent);
   cursor:pointer;
 }
 .cfai-header h2{ font-size:13px;font-weight:800;margin:0;display:flex;align-items:center;gap:8px;font-family:var(--font-display); }
@@ -729,7 +729,7 @@ html[data-theme="light"] .dash-ring-row .ring-card:first-child{
 @keyframes cfai-blink{ 0%,100%{opacity:1}50%{opacity:0} }
 .cfai-footer{
   display:flex;justify-content:space-between;align-items:center;
-  margin-top:16px;padding-top:12px;border-top:1px solid rgba(79,124,255,.15);
+  margin-top:16px;padding-top:12px;border-top:1px solid color-mix(in srgb, var(--accent) 15%, transparent);
   font-size:11px;color:var(--muted);
 }
 .cfai-refresh{
