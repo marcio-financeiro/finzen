@@ -347,7 +347,7 @@ textarea:focus{
 
 .badge.info{
   color:var(--info);
-  background:rgba(59,130,246,.12);
+  background:color-mix(in srgb, var(--info) 12%, transparent);
 }
 
 .badge.neutral{

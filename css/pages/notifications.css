@@ -12,10 +12,10 @@
   padding: 16px; border-radius: 12px;
   margin-bottom: 16px; font-size: 14px;
 }
-.notif-status.granted  { background: rgba(34,197,94,.08);  border: 1px solid rgba(34,197,94,.2); }
-.notif-status.denied   { background: rgba(239,68,68,.08);  border: 1px solid rgba(239,68,68,.2); }
-.notif-status.default  { background: rgba(79,132,243,.08); border: 1px solid rgba(79,132,243,.2); }
-.notif-status.indisp   { background: rgba(148,163,184,.08);border: 1px solid var(--border); }
+.notif-status.granted  { background: var(--success-dim);  border: 1px solid color-mix(in srgb, var(--success) 20%, transparent); }
+.notif-status.denied   { background: var(--danger-dim);  border: 1px solid color-mix(in srgb, var(--danger) 20%, transparent); }
+.notif-status.default  { background: var(--accent-dim); border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent); }
+.notif-status.indisp   { background: color-mix(in srgb, var(--muted) 8%, transparent);border: 1px solid var(--border); }
 .notif-status-icon svg { width: 22px; height: 22px; }
 
 .notif-toggle {
