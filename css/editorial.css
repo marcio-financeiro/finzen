@@ -79,7 +79,7 @@ h1.display,
 
 .btn-primary {
   border-radius: 4px;
-  box-shadow: 0 8px 20px rgba(63,174,124,.18);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 /* ── Cards e blocos gerais — cantos consistentes com a assinatura ── */
@@ -224,17 +224,13 @@ h1.display,
    Camada "Modern Wealth" — migrada de modern-wealth.css para editorial.css
    (fonte única de verdade, mesma posição de carregamento que o arquivo
    removido ocupava — precisa continuar por último para vencer os cantos
-   retos do bloco acima). Reescrita com tokens do design system Esmeralda
-   Financeira (variables.css) em vez de cores hardcoded.
+   retos do bloco acima). Reescrita com tokens do design system Vinho e
+   Cobre (variables.css) em vez de cores hardcoded.
+   NUNCA redefinir --radius-*/--font-* num :root aqui — variables.css é a
+   única fonte de verdade (era exatamente isso que este bloco quebrava:
+   um :root duplicado, carregado por último, sobrescrevia silenciosamente
+   a tipografia e o raio de borda do site inteiro com valores antigos).
    ───────────────────────────────────────────────────────────────────────── */
-:root{
-  --radius-sm:10px;
-  --radius-md:16px;
-  --radius-lg:22px;
-  --font-main:'Inter','Avenir Next',Arial,sans-serif;
-  --font-display:'Fraunces','Iowan Old Style',Georgia,serif;
-  --font-mono:'Inter','Avenir Next',Arial,sans-serif;
-}
 
 *{scrollbar-color:var(--border) transparent}
 body{font-family:var(--font-main);letter-spacing:-.006em;font-variant-numeric:tabular-nums}
