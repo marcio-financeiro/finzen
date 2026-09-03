@@ -11,19 +11,19 @@ export function chartColors() {
   const cs = getComputedStyle(document.documentElement);
   const v = (name, fallback) => (cs.getPropertyValue(name).trim() || fallback);
   return {
-    accent:       v('--accent', '#3fae7c'),
-    accentBright: v('--accent-bright', '#5fcf9a'),
-    success:      v('--success', '#2f9d68'),
-    danger:       v('--danger', '#d9705a'),
+    accent:       v('--accent', '#c9814a'),
+    accentBright: v('--accent-bright', '#dba36c'),
+    success:      v('--success', '#c9814a'),
+    danger:       v('--danger', '#b8455f'),
     warning:      v('--warning', '#c9963f'),
-    info:         v('--info', '#3b82f6'),
-    muted:        v('--muted', '#8ea198'),
-    text:         v('--text', '#e7f0ea'),
-    border:       v('--border', '#243029'),
-    surface2:     v('--surface-2', '#18221e'),
+    info:         v('--info', '#9b7086'),
+    muted:        v('--muted', '#a68e8a'),
+    text:         v('--text', '#f3e9e6'),
+    border:       v('--border', '#4a3438'),
+    surface2:     v('--surface-2', '#402e33'),
     categorical: [
-      v('--accent', '#3fae7c'), v('--info', '#3b82f6'), v('--warning', '#c9963f'),
-      v('--danger', '#d9705a'), '#8b5cf6', '#06b6d4', '#f97316', '#e11d48', '#6366f1', '#84cc16',
+      v('--accent', '#c9814a'), v('--info', '#9b7086'), v('--warning', '#c9963f'),
+      v('--danger', '#b8455f'), '#8a9a5b', '#5f8a8a', '#c2703f', '#7a5a72', '#a68e4a', '#b97a6a',
     ],
   };
 }
