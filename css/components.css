@@ -5,8 +5,8 @@
   justify-content:center;
   padding:24px;
   background:
-    radial-gradient(circle at top left,rgba(63,174,124,.08),transparent 32%),
-    radial-gradient(circle at bottom right,rgba(63,174,124,.05),transparent 34%),
+    radial-gradient(circle at top left,color-mix(in srgb, var(--accent) 8%, transparent),transparent 32%),
+    radial-gradient(circle at bottom right,color-mix(in srgb, var(--accent) 5%, transparent),transparent 34%),
     var(--app-bg);
 }
 
@@ -42,8 +42,8 @@
   color:var(--accent);
   font-weight:900;
   font-size:22px;
-  border:1px solid rgba(63,174,124,0.25);
-  box-shadow:0 16px 36px rgba(63,174,124,.15);
+  border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  box-shadow:0 16px 36px color-mix(in srgb, var(--accent) 15%, transparent);
 }
 
 .brand h1{
@@ -69,7 +69,7 @@ textarea{
   width:100%;
   padding:12px;
   border:1px solid var(--border);
-  border-radius:8px;
+  border-radius:var(--radius-sm);
   background:var(--surface-2);
   color:var(--input-color) !important;
   -webkit-text-fill-color:var(--input-color);
@@ -78,6 +78,11 @@ textarea{
   outline:none;
   touch-action:manipulation;
   transition:border-color .15s ease,box-shadow .15s ease,background .15s ease;
+}
+
+@media (max-width:820px){
+  /* 16px evita o zoom automático do Safari/iOS ao focar um campo */
+  input,select,textarea{ font-size:16px; }
 }
 
 input::placeholder,
@@ -164,7 +169,7 @@ textarea:focus{
 #btnLogout:hover{
   color:var(--danger);
   border-color:var(--danger);
-  background:rgba(177,80,63,.08);
+  background:color-mix(in srgb, var(--danger) 8%, transparent);
   transform:none;
   opacity:1;
 }
@@ -741,15 +746,15 @@ html[data-theme="light"] .dash-ring-row .ring-card:first-child{
 
 /* ── Anomaly AI ── */
 .anai-block{
-  border:1px solid rgba(177,80,63,.3);
+  border:1px solid color-mix(in srgb, var(--danger) 30%, transparent);
   border-radius:16px;
-  background:linear-gradient(135deg,rgba(177,80,63,.05) 0%,rgba(63,174,124,.05) 100%);
+  background:linear-gradient(135deg,color-mix(in srgb, var(--danger) 5%, transparent) 0%,color-mix(in srgb, var(--accent) 5%, transparent) 100%);
   overflow:hidden;
   margin-bottom:16px;
 }
 .anai-header{
   display:flex;justify-content:space-between;align-items:center;
-  padding:14px 18px;border-bottom:1px solid rgba(177,80,63,.15);
+  padding:14px 18px;border-bottom:1px solid color-mix(in srgb, var(--danger) 15%, transparent);
   cursor:pointer;
 }
 .anai-header h2{ font-size:13px;font-weight:800;margin:0;display:flex;align-items:center;gap:8px; }
@@ -776,7 +781,7 @@ html[data-theme="light"] .dash-ring-row .ring-card:first-child{
 .anai-output{ font-size:13px;line-height:1.7;color:var(--text); }
 .anai-footer{
   display:flex;justify-content:space-between;align-items:center;
-  margin-top:16px;padding-top:12px;border-top:1px solid rgba(177,80,63,.15);
+  margin-top:16px;padding-top:12px;border-top:1px solid color-mix(in srgb, var(--danger) 15%, transparent);
   font-size:11px;color:var(--muted);
 }
 .anai-refresh{
@@ -898,7 +903,7 @@ html[data-theme="light"] .dash-ring-row .ring-card:first-child{
   padding:14px;
   border-radius:14px;
   background:var(--accent-dim);
-  border:1px solid rgba(63,174,124,.25);
+  border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);
   display:flex;
   justify-content:space-between;
   gap:12px;
