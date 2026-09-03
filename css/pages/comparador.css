@@ -84,7 +84,7 @@
   transition: all .15s;
 }
 .comp-periodo-btn.ativo {
-  border-color: var(--accent); background: rgba(79,132,243,.12);
+  border-color: var(--accent); background: var(--accent-dim);
   color: var(--text); font-weight: 700;
 }
 

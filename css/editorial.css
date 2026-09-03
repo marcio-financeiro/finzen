@@ -171,7 +171,7 @@ h1.display,
 
 .alert-row.success .alert-icon { color: var(--success); }
 .alert-row.warning .alert-icon { color: var(--accent); }
-.alert-row.info    .alert-icon { color: #60a5fa; }
+.alert-row.info    .alert-icon { color: var(--info); }
 .alert-row.danger  .alert-icon { color: var(--danger); }
 
 .alert-body { flex: 1; min-width: 0; }
@@ -268,10 +268,56 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .wealth-pulse__eyebrow{display:flex;align-items:center;gap:8px;color:var(--accent);font-size:11px;font-family:var(--font-mono);font-weight:700;letter-spacing:.1em;text-transform:uppercase}.wealth-pulse__eyebrow::before{content:"";width:7px;height:7px;border-radius:99px;background:var(--accent);box-shadow:0 0 0 5px var(--accent-dim)}
 .wealth-pulse h2{font-size:clamp(30px,4vw,48px);line-height:1;max-width:650px;margin:12px 0 8px;font-weight:600}.wealth-pulse p{max-width:520px;margin:0;color:var(--muted);font-size:14px;line-height:1.55}.wealth-pulse__link{justify-self:end;align-self:center;color:var(--accent);font-size:13px;font-weight:800;text-decoration:none}
 .assistant-panel{border-radius:18px;padding:16px 20px;margin-bottom:24px;background:var(--accent-dim)!important}.assistant-panel-head{color:var(--accent)}.assistant-panel-head .dot{background:var(--accent)}.assistant-item{border:0;background:transparent;padding:6px 0;color:var(--text)}
-.dash-ring-row{display:grid!important;grid-template-columns:1.6fr 1fr 1fr;gap:0!important;margin:0 0 20px;border:1px solid var(--border);border-radius:22px;overflow:hidden;background:var(--surface)}
-.dash-ring-row .ring-card{border:0!important;border-radius:0;background:transparent!important;min-height:148px;padding:27px 24px;align-items:center}.dash-ring-row .ring-card+.ring-card{border-left:1px solid var(--border)!important}.dash-ring-row .ring-card:first-child{background:linear-gradient(130deg,var(--accent) 0%,var(--accent-bright) 100%)!important;color:#fff}.dash-ring-row .ring-card:first-child .ring-lbl,.dash-ring-row .ring-card:first-child .delta{color:rgba(255,255,255,.74)!important}.dash-ring-row .ring-card:first-child .ring-val{color:#fff!important;font-size:clamp(26px,3vw,39px)}
-.kpi-ring{width:52px!important;height:52px!important;border-width:5px!important;background:transparent!important}.ring-info{gap:3px}.ring-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em}.ring-val{font-family:var(--font-mono);font-size:22px!important}.dash-kpi-grid{grid-template-columns:repeat(3,1fr)!important;gap:0!important;margin:0 0 20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}.dash-kpi{border:0!important;border-radius:0!important;background:transparent!important;padding:18px 4px!important}.dash-kpi+.dash-kpi{border-left:1px solid var(--border)!important}.dash-kpi strong{font-family:var(--font-mono);font-size:18px}.dash-kpi:hover{box-shadow:none!important;transform:none!important;background:var(--surface-2)!important}
-.dash-grid{gap:20px}.dash-block{border-radius:18px}.dash-block-header{padding:17px 20px}.dash-block-body{padding:18px 20px}.score-block{border-radius:18px;padding:22px}.cfai-block{border-radius:18px}
+/* Bento da barra de KPIs (mobile-first): hero cheio + pares, em vez de fileira
+   apertada de 3 (desktop) ou lista empilhada (mobile, era o que sobrava do
+   grid de 3 colunas espremido em telas estreitas). */
+.dash-ring-row{display:grid!important;grid-template-columns:repeat(2,1fr);gap:10px!important;margin:0 0 10px;border:0;border-radius:0;overflow:visible;background:transparent}
+.dash-ring-row .ring-card{border:1px solid var(--border)!important;border-radius:var(--radius-lg)!important;background:var(--surface)!important;min-height:auto;padding:18px;align-items:flex-start!important;flex-direction:column}
+.dash-ring-row .ring-card:first-child{grid-column:1/-1;flex-direction:row!important;align-items:center!important;background:var(--surface-2)!important;padding:22px}
+.dash-ring-row .ring-card:first-child .ring-val{color:var(--accent-bright)!important;font-size:clamp(28px,5vw,40px)}
+.dash-ring-row .ring-card:first-child .ring-lbl,.dash-ring-row .ring-card:first-child .delta{color:var(--muted)!important}
+.kpi-ring{width:52px!important;height:52px!important;border-width:5px!important;background:transparent!important}.ring-info{gap:3px}.ring-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em}.ring-val{font-family:var(--font-mono);font-size:19px!important}
+
+.dash-kpi-grid{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:10px!important;margin:0 0 20px;border:0!important}
+.dash-kpi{border:1px solid var(--border)!important;border-radius:var(--radius-md)!important;background:var(--surface)!important;padding:14px!important}
+.dash-kpi:nth-child(3){grid-column:1/-1}
+.dash-kpi strong{font-family:var(--font-mono);font-size:18px}
+.dash-kpi:hover{box-shadow:none!important;transform:none!important;background:var(--surface-2)!important}
+
+.dash-grid{gap:14px}.dash-block{border-radius:var(--radius-lg)}.dash-block-header{padding:17px 20px}.dash-block-body{padding:18px 20px}.score-block{border-radius:var(--radius-lg);padding:22px}.cfai-block{border-radius:var(--radius-lg)}
+
+/* Acima de ~820px, a barra de KPIs ganha espaço: hero alto ao lado das duas
+   métricas do mês, e o trio inferior volta a caber numa fileira só. */
+@media(min-width:821px){
+  .dash-ring-row{grid-template-columns:1.4fr 1fr;grid-template-rows:repeat(2,1fr)}
+  .dash-ring-row .ring-card:first-child{grid-column:1;grid-row:1/3}
+  .dash-ring-row .ring-card:nth-child(2){grid-column:2;grid-row:1}
+  .dash-ring-row .ring-card:nth-child(3){grid-column:2;grid-row:2}
+  .dash-kpi-grid{grid-template-columns:repeat(3,1fr)!important}
+  .dash-kpi:nth-child(3){grid-column:auto}
+}
+
+/* Dashboard em telas largas: conteúdo principal + coluna lateral de resumo
+   (Score de Saúde + Insights IA), em vez de tudo empilhado num só fluxo.
+   Escopado via :has(.dash-ring-row) pra não afetar as outras páginas, que
+   também usam a classe genérica .content. */
+@media(min-width:1150px){
+  .content:has(.dash-ring-row){
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:0 24px;
+    align-content:start;
+  }
+  .content:has(.dash-ring-row) > *{ grid-column:1; }
+  .content:has(.dash-ring-row) > .topbar,
+  .content:has(.dash-ring-row) > .wealth-pulse,
+  .content:has(.dash-ring-row) > .assistant-banner,
+  .content:has(.dash-ring-row) > .dash-ring-row,
+  .content:has(.dash-ring-row) > .dash-kpi-grid{
+    grid-column:1/-1;
+  }
+  .content:has(.dash-ring-row) > [data-track="rail"]{ grid-column:2; }
+}
 
 /* Movimentações: o valor é a ação inicial; os demais campos vêm como contexto. */
 .movement-page .panel:first-of-type{border:0;background:transparent!important;overflow:visible}.movement-page .panel:first-of-type .panel-header{padding:0 0 14px;border:0;min-height:auto}.movement-page .panel:first-of-type > div[style]{padding:0!important}.movement-page .compact-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;background:var(--surface);padding:22px!important;border:1px solid var(--border);border-radius:22px}.movement-page .compact-form .always-visible:nth-child(3){grid-column:span 2}.movement-page #movementAmount{height:62px;font-family:var(--font-mono);font-size:27px;font-weight:500;letter-spacing:-.06em;background:var(--accent-dim);border-color:transparent}.movement-page #movementAmount:focus{border-color:var(--accent)}.movement-page #btnSaveMovement{margin:14px 0 0;padding:14px 20px}.movement-page .panel:not(:first-of-type){border-radius:18px}.movement-page .ff-month-filter{display:flex;gap:8px;align-items:center}.movement-page .ff-month-filter input,.movement-page .ff-month-filter select{width:auto;padding:9px 10px}
@@ -281,8 +327,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 
 .movement-page.quick-launch .panel:first-of-type{animation:wealth-arrive .32s ease both}.movement-page.quick-launch #movementAmount{box-shadow:0 0 0 7px var(--accent-dim)}
 @keyframes wealth-arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:1050px){.content{padding:24px 26px 110px}.topbar{margin:-24px -26px 26px;padding:17px 26px}.movement-page .compact-form{grid-template-columns:repeat(2,minmax(0,1fr))}.movement-page .compact-form .always-visible:nth-child(3){grid-column:auto}.dash-ring-row{grid-template-columns:1.3fr 1fr 1fr}}
-@media(max-width:820px){.content{padding:80px 16px 116px}.topbar{margin:0 -16px 20px;padding:14px 16px;position:relative;background:transparent;backdrop-filter:none}.topbar h1{font-size:20px}.content > .wealth-pulse{display:block;padding:18px 0 22px;margin-bottom:18px}.wealth-pulse h2{font-size:31px}.wealth-pulse__link{display:inline-flex;margin-top:16px}.assistant-panel{margin:0 0 16px;padding:14px 16px}.dash-ring-row{display:block!important;border-radius:18px}.dash-ring-row .ring-card{min-height:104px;padding:18px}.dash-ring-row .ring-card+.ring-card{border-left:0!important;border-top:1px solid var(--border)!important}.dash-ring-row .ring-card:first-child .ring-val{font-size:28px}.dash-kpi-grid{grid-template-columns:1fr!important}.dash-kpi+.dash-kpi{border-left:0!important;border-top:1px solid var(--border)!important}.movement-page .compact-form{grid-template-columns:minmax(0,1fr);padding:16px!important;border-radius:18px}.movement-page #movementAmount{height:58px;font-size:26px}.movement-page .panel:first-of-type .panel-header{display:block}.movement-page .panel:first-of-type .panel-header span{display:block;margin-top:5px}.movement-page .panel-header{flex-wrap:wrap}.movement-page .ff-month-filter{width:100%;margin-top:10px}.movement-page .ff-month-filter select{min-width:0;flex:1}.patrimony-page .panel:first-of-type .kpi-grid{grid-template-columns:1fr 1fr;gap:0}.patrimony-page .panel:first-of-type .kpi-card:first-child{grid-column:span 2;border-bottom:1px solid rgba(255,255,255,.16)!important;padding-bottom:18px;margin-bottom:14px}.patrimony-page .panel:first-of-type .kpi-card:nth-child(3){border-left:0!important;padding-left:0}.panel-header{padding:15px 16px}.panel .form-grid,.panel > .btn,.panel > .message{margin-left:16px;margin-right:16px}.data-table th,.data-table td{padding:12px}.sidebar{box-shadow:none}}
+@media(max-width:1050px){.content{padding:24px 26px 110px}.topbar{margin:-24px -26px 26px;padding:17px 26px}.movement-page .compact-form{grid-template-columns:repeat(2,minmax(0,1fr))}.movement-page .compact-form .always-visible:nth-child(3){grid-column:auto}}
+@media(max-width:820px){.content{padding:80px 16px 116px}.topbar{margin:0 -16px 20px;padding:14px 16px;position:relative;background:transparent;backdrop-filter:none}.topbar h1{font-size:20px}.content > .wealth-pulse{display:block;padding:18px 0 22px;margin-bottom:18px}.wealth-pulse h2{font-size:31px}.wealth-pulse__link{display:inline-flex;margin-top:16px}.assistant-panel{margin:0 0 16px;padding:14px 16px}.dash-ring-row .ring-card:first-child .ring-val{font-size:28px}.movement-page .compact-form{grid-template-columns:minmax(0,1fr);padding:16px!important;border-radius:18px}.movement-page #movementAmount{height:58px;font-size:26px}.movement-page .panel:first-of-type .panel-header{display:block}.movement-page .panel:first-of-type .panel-header span{display:block;margin-top:5px}.movement-page .panel-header{flex-wrap:wrap}.movement-page .ff-month-filter{width:100%;margin-top:10px}.movement-page .ff-month-filter select{min-width:0;flex:1}.patrimony-page .panel:first-of-type .kpi-grid{grid-template-columns:1fr 1fr;gap:0}.patrimony-page .panel:first-of-type .kpi-card:first-child{grid-column:span 2;border-bottom:1px solid rgba(255,255,255,.16)!important;padding-bottom:18px;margin-bottom:14px}.patrimony-page .panel:first-of-type .kpi-card:nth-child(3){border-left:0!important;padding-left:0}.panel-header{padding:15px 16px}.panel .form-grid,.panel > .btn,.panel > .message{margin-left:16px;margin-right:16px}.data-table th,.data-table td{padding:12px}.sidebar{box-shadow:none}}
 
 /* Carteira: o patrimônio investido é uma trajetória, não um painel de trading. */
 .investments-page .inv-kpi-row{grid-template-columns:1.7fr 1fr 1fr 1.15fr;gap:0;margin:0}.investments-page .inv-kpi{border:0;border-radius:0;padding:18px 20px;background:transparent}.investments-page .inv-kpi+.inv-kpi{border-left:1px solid var(--border)}.investments-page .inv-kpi span{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em}.investments-page .inv-kpi strong{font-size:clamp(18px,2vw,29px);letter-spacing:-.06em}.investments-page .inv-kpi:first-child strong{font-size:clamp(25px,3vw,42px)}

@@ -10,7 +10,7 @@
 }
 .upload-zone:hover, .upload-zone.drag-over {
   border-color: var(--accent);
-  background: rgba(79,132,243,.05);
+  background: var(--accent-dim);
 }
 .upload-zone input[type="file"] {
   position: absolute;

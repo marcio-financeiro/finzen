@@ -7,10 +7,10 @@
   }
   .ff-flow-main{
     grid-column:1 / -1;
-    padding:18px;
+    padding:22px;
     border:1px solid var(--border);
-    border-radius:18px;
-    background:linear-gradient(135deg,rgba(79,142,247,.18),rgba(15,185,129,.10));
+    border-radius:var(--radius-lg);
+    background:var(--surface-2);
   }
   .ff-flow-main span,
   .ff-flow-card span{
@@ -30,10 +30,10 @@
     color:var(--muted);
   }
   .ff-flow-card{
-    padding:14px;
+    padding:16px;
     border:1px solid var(--border);
-    border-radius:16px;
-    background:rgba(255,255,255,.025);
+    border-radius:var(--radius-md);
+    background:var(--surface);
   }
   .ff-flow-card strong{
     display:block;
@@ -45,8 +45,8 @@
     transition:transform .16s ease,border-color .16s ease,background .16s ease;
   }
   .ff-flow-card.clickable:hover{
-    border-color:rgba(79,142,247,.55);
-    background:rgba(79,142,247,.07);
+    border-color:var(--accent);
+    background:var(--accent-dim);
   }
   .ff-flow-card.clickable:active{ transform:scale(.985); }
 
