@@ -62,7 +62,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 /* ── Card de saldo ── */
 .mob-saldo-card {
   background: var(--gold-gradient);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   padding: 22px;
   margin-bottom: 16px;
 }
@@ -77,7 +77,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 }
 .mob-kpi {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 16px; padding: 14px;
+  border-radius: var(--radius-md); padding: 14px;
 }
 .mob-kpi-label { font-size: 11px; color: var(--muted); font-weight: 700; margin-bottom: 8px; }
 .mob-kpi-valor { font-size: 17px; font-weight: 800; font-family: var(--font-mono); }
@@ -86,7 +86,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .mob-alertas { margin-bottom: 16px; }
 .mob-alerta {
   display: flex; align-items: center; gap: 12px;
-  padding: 14px; border-radius: 16px; margin-bottom: 8px;
+  padding: 14px; border-radius: var(--radius-md); margin-bottom: 8px;
   font-size: 13px; cursor: pointer;
   transition: opacity .15s;
 }
@@ -111,7 +111,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .mob-orcamentos { margin-bottom: 16px; }
 .mob-orc-item {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+  border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 8px;
 }
 .mob-orc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .mob-orc-nome { font-size: 13px; font-weight: 700; }
@@ -124,7 +124,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .mob-lanc-item {
   display: flex; align-items: center; gap: 12px;
   padding: 12px 14px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
   margin-bottom: 8px;
 }
 .mob-lanc-icon {
