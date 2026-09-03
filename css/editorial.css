@@ -250,7 +250,7 @@ html[data-theme="light"] .topbar{background:rgba(243,247,244,.88)}
 .panel,.dash-block,.score-block,.cfai-block,.assistant-panel,.kpi-card{box-shadow:none!important;border-color:var(--border)!important;background:var(--surface)!important}
 .panel{border-radius:var(--radius-lg);margin-bottom:20px}.panel-header{min-height:64px;padding:17px 22px;border-color:var(--border)}
 .panel-header h2{font-size:15px;font-weight:800}.panel .form-grid{padding-top:20px}.panel .form-grid,.panel > .btn,.panel > .message{margin-left:22px;margin-right:22px}
-.btn{border-radius:12px;padding:11px 16px;margin-bottom:0;font-family:var(--font-main);font-weight:800;box-shadow:none!important}
+.btn{border-radius:var(--radius-sm);padding:13px 18px;min-height:44px;margin-bottom:0;font-family:var(--font-main);font-weight:800;box-shadow:none!important}
 .btn:hover{transform:translateY(-1px)}.btn-primary{background:var(--accent);color:var(--text-on-accent)}.btn-secondary{background:transparent;color:var(--text);border:1px solid var(--border)}
 #btnLogout{border:0;color:var(--muted);background:transparent}.btn.compact{min-height:38px}
 label{color:var(--text);font-size:12px;font-weight:800;letter-spacing:-.01em}
