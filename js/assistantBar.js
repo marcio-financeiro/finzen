@@ -63,7 +63,9 @@ async function coletarContexto(userId) {
   const extrair = r => (r.status === 'fulfilled' ? (r.value?.data || []) : []);
   const [contas, txMes, faturas, pendentes, ciclos, eventos, metas] = results.map(extrair);
 
-  const saldo = (contas || []).filter(c => (c.currency || 'BRL') === 'BRL')
+  // Contas de corretora guardam capital investido, não caixa disponível —
+  // ficam fora do saldo usado na previsão de fluxo de caixa.
+  const saldo = (contas || []).filter(c => (c.currency || 'BRL') === 'BRL' && c.account_kind !== 'broker')
     .reduce((s, c) => s + Number(c.saldo_atual || 0), 0);
 
   const pagas    = (txMes || []).filter(t => t.status === 'pago');

@@ -432,7 +432,10 @@ async function renderInvestimentos() {
 
   const ganho       = totalMercado - totalCusto;
   const dividendos  = divs.reduce((s, d) => s + Number(d.valor_total || 0), 0);
-  const saldoContas = accountsAll.reduce((s, c) => s + convertToBRL(c.saldo_atual, c.currency, dolarAtual), 0);
+  // "Saldo em Contas" aqui é caixa disponível, à parte do que já aparece em
+  // Valor de Mercado — contas de corretora ficam fora pra não duplicar.
+  const saldoContas = accountsAll.filter(c => c.account_kind !== 'broker')
+    .reduce((s, c) => s + convertToBRL(c.saldo_atual, c.currency, dolarAtual), 0);
 
   document.getElementById('kpisInvest').innerHTML = [
     kpiCard({ label: 'Valor de Mercado', valor: formatCurrency(totalMercado, 'BRL') }),
@@ -702,7 +705,7 @@ async function init() {
 
   const [{ data: patrim }, { data: contas }, { data: investimentos }] = await Promise.all([
     supabase.from('patrimony_history').select('reference_month,net_worth').eq('user_id', user.id).order('reference_month', { ascending: true }),
-    supabase.from('accounts').select('saldo_atual,currency,nome').eq('user_id', user.id).eq('active', true),
+    supabase.from('accounts').select('saldo_atual,currency,nome,account_kind').eq('user_id', user.id).eq('active', true),
     supabase.from('investments').select('ticker,quantidade,cotacao_atual,preco_medio,moeda').eq('user_id', user.id).eq('ativo', true),
   ]);
   patrimonioHist = patrim || [];

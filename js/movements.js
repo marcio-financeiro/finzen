@@ -754,9 +754,12 @@ async function deleteTransaction(id){
 // ─────────────────────────────────────────────
 async function sumCurrentAccountBalances(){
   const { data, error } = await supabase.from('accounts')
-    .select('saldo_atual,currency').eq('user_id',user.id).eq('active',true);
+    .select('saldo_atual,currency,account_kind').eq('user_id',user.id).eq('active',true);
   if(error) throw new Error('Erro ao calcular saldo em contas: '+error.message);
-  return (data||[]).reduce((sum,item) => sum+convertToBRL(item.saldo_atual,item.currency,dolarAtual),0);
+  // Contas de corretora (account_kind='broker') guardam capital investido, não
+  // caixa disponível — não entram no fluxo de caixa diário/mensal.
+  return (data||[]).filter(item => item.account_kind !== 'broker')
+    .reduce((sum,item) => sum+convertToBRL(item.saldo_atual,item.currency,dolarAtual),0);
 }
 
 async function getPendingTransactionsUntilMonthEnd(){
@@ -789,16 +792,20 @@ function showFlowDetailModal(title, subtitle, items, total, totalClass=''){
 
 async function openFlowAccountsDetail(){
   const { data, error } = await supabase.from('accounts')
-    .select('nome,bank,saldo_atual,currency').eq('user_id',user.id).eq('active',true)
+    .select('nome,bank,saldo_atual,currency,account_kind').eq('user_id',user.id).eq('active',true)
     .order('sort_order',{ascending:true}).order('nome',{ascending:true});
   if(error){ showMessage('Erro ao detalhar contas: '+error.message,'danger'); return; }
 
-  const items = (data||[]).map(item => ({
+  // Mesmo critério do total do Fluxo do Mês: contas de corretora (capital
+  // investido) não entram no detalhe do Saldo Atual (fluxo de caixa).
+  const contasLiquidas = (data||[]).filter(item => item.account_kind !== 'broker');
+
+  const items = contasLiquidas.map(item => ({
     title:item.nome, subtitle:item.bank||'Conta ativa',
     valueText:formatCurrency(Number(item.saldo_atual||0),item.currency||'BRL'),
     valueClass:Number(item.saldo_atual||0)>=0?'positive':'negative',
   }));
-  const total = (data||[]).reduce((sum,item) => sum+convertToBRL(item.saldo_atual,item.currency,dolarAtual),0);
+  const total = contasLiquidas.reduce((sum,item) => sum+convertToBRL(item.saldo_atual,item.currency,dolarAtual),0);
   showFlowDetailModal('Saldo Atual','Saldos das contas ativas',items,total,total>=0?'positive':'negative');
 }
 

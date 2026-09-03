@@ -281,8 +281,10 @@ async function carregarProfileCard() {
       supabase.from('goals').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('ativo', true),
     ]);
 
+    // Contas de corretora guardam capital investido, não caixa disponível —
+    // ficam fora do saldo rápido mostrado na sidebar.
     const saldo = (contas || [])
-      .filter(c => (c.currency || 'BRL') === 'BRL')
+      .filter(c => (c.currency || 'BRL') === 'BRL' && c.account_kind !== 'broker')
       .reduce((s, c) => s + Number(c.saldo_atual || 0), 0);
 
     const fmtSaldo = saldo >= 1000

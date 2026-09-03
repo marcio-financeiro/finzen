@@ -234,8 +234,11 @@ async function carregar() {
   window._cartoesMobile = cartoes || [];
 
   // ── Saldo ──────────────────────────────────────────
-  const saldoBRL = contas.filter(c=>(c.currency||'BRL')==='BRL').reduce((s,c)=>s+Number(c.saldo_atual||0),0);
-  const nContas  = contas.length;
+  // Contas de corretora (account_kind='broker') guardam capital investido,
+  // não caixa disponível — ficam fora do saldo líquido mostrado aqui.
+  const contasLiquidas = contas.filter(c => c.account_kind !== 'broker');
+  const saldoBRL = contasLiquidas.filter(c=>(c.currency||'BRL')==='BRL').reduce((s,c)=>s+Number(c.saldo_atual||0),0);
+  const nContas  = contasLiquidas.length;
   el('mobSaldo').textContent = fmt(saldoBRL);
   el('mobSaldoSub').textContent = `${nContas} conta${nContas!==1?'s':''} ativas`;
 

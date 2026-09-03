@@ -38,7 +38,7 @@ export async function coletarContexto(userId) {
     { data: comprasCartao },
   ] = await Promise.all([
     supabase.from('accounts')
-      .select('nome,saldo_atual,currency')
+      .select('nome,saldo_atual,currency,account_kind')
       .eq('user_id', userId).eq('active', true),
 
     supabase.from('transactions')
@@ -92,7 +92,10 @@ export async function coletarContexto(userId) {
   const pagas = (transacoesMes||[]).filter(t => t.status === 'pago');
   const receitasMes = pagas.filter(t => t.type === 'receita').reduce((s,t) => s+Number(t.amount||0), 0);
   const despesasMes = pagas.filter(t => t.type === 'despesa').reduce((s,t) => s+Number(t.amount||0), 0);
-  const saldoTotal  = (contas||[]).reduce((s,c) => s+convertToBRL(c.saldo_atual, c.currency||'BRL', dolarAtual), 0);
+  // Contas de corretora guardam capital investido, não caixa disponível —
+  // ficam fora do saldo usado na análise de fluxo de caixa.
+  const saldoTotal  = (contas||[]).filter(c => c.account_kind !== 'broker')
+    .reduce((s,c) => s+convertToBRL(c.saldo_atual, c.currency||'BRL', dolarAtual), 0);
   const totalFaturas = (parcelasMes||[]).reduce((s,p) => s+Number(p.valor_parcela||0), 0);
 
   // Receitas e despesas pendentes até fim do mês
