@@ -132,6 +132,38 @@ let dolarAtual = 5.15;          // cotação USD/BRL — contas em dólar (ex: N
 // Soma o valor de uma transação já convertido pra BRL, conforme a moeda da conta
 function valorBRL(t){ return convertToBRL(t.amount, t.accounts?.currency || 'BRL', dolarAtual); }
 
+function parseISO(dataISO){
+  const [y, m, d] = dataISO.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// Quantas vezes uma recorrência (mensal/semanal/anual) cai dentro do mês `ref`
+// (YYYY-MM) — mesma lógica de purchasePlanner.js / api/recurring-cron.js.
+// Sem isso, uma recorrência anual ou semanal era contada como se fosse
+// mensal, inflando a Projeção 90 dias e a Tendência de Gastos.
+function ocorrenciasNoMes(dataISO, frequency, ref){
+  const inicio = parseISO(dataISO);
+  const [ry, rm] = ref.split('-').map(Number);
+  if(ry < inicio.getFullYear() || (ry === inicio.getFullYear() && rm < inicio.getMonth() + 1)) return 0;
+
+  if(frequency === 'anual'){
+    return inicio.getMonth() === rm - 1 ? 1 : 0;
+  }
+
+  if(frequency === 'semanal'){
+    const primeiroDia = new Date(ry, rm - 1, 1);
+    const ultimoDia   = new Date(ry, rm, 0);
+    let count = 0;
+    for(let d = new Date(primeiroDia); d <= ultimoDia; d.setDate(d.getDate() + 1)){
+      const diffDias = Math.round((d - inicio) / 86400000);
+      if(diffDias >= 0 && diffDias % 7 === 0) count++;
+    }
+    return count;
+  }
+
+  return 1; // mensal (padrão)
+}
+
 function mesComOffset(offset){
   const d = hoje();
   const base = new Date(d.getFullYear(), d.getMonth()+offset, 1);
@@ -182,7 +214,7 @@ async function carregarDashboard(){
       supabase.from('transactions').select('id,description,amount,date,type,status').eq('user_id',user.id).eq('status','pendente').gte('date',hojeISO()).lte('date', (() => { const d=new Date(hoje()); d.setDate(d.getDate()+7); return dataLocalISO(d); })()).order('date',{ascending:true}).limit(5), // transacoesPendentes
       supabase.from('budgets').select('*,categories:category_id(nome,icon)').eq('user_id',user.id).eq('mes_referencia',ref),                                                                                                   // orcamentos
       supabase.from('goals').select('*').eq('user_id',user.id).eq('ativo',true).order('data_alvo',{ascending:true}).limit(5),                                                                                                  // metas
-      supabase.from('transactions').select('type,amount,recurrence_frequency,accounts:account_id(currency)').eq('user_id',user.id).eq('is_recurring',true).eq('recurrence_active',true),                                        // recorrentes
+      supabase.from('transactions').select('type,amount,date,recurrence_frequency,accounts:account_id(currency)').eq('user_id',user.id).eq('is_recurring',true).eq('recurrence_active',true),                                  // recorrentes
       supabase.from('transactions').select('id,type,amount,description,date,status,created_at,accounts:account_id(nome,currency),categories:category_id(nome,icon)').eq('user_id',user.id).order('created_at',{ascending:false}).limit(8), // ultimosLanc
       supabase.from('categories').select('id,nome,icon,cor').eq('user_id',user.id),                                                                                                                                            // categorias
       supabase.from('transactions').select('type,amount,date,status').eq('user_id',user.id).eq('status','pendente').gte('date',hojeISO()).lte('date',ultimoDiaMes()),                                 // pendentesRestantesMes
@@ -228,14 +260,25 @@ async function carregarDashboard(){
     // ── Ring cards (Stage 2) ─────────────────────────
     const recAnt  = (txMesAnterior||[]).filter(t=>t.type==='receita').reduce((s,t)=>s+Number(t.amount||0),0);
     const despAnt = (txMesAnterior||[]).filter(t=>t.type==='despesa').reduce((s,t)=>s+Number(t.amount||0),0);
-    const despesasRec = (recorrentes||[]).filter(r=>r.type==='despesa').reduce((s,r)=>s+Number(r.amount||0),0);
-    const receitasRec = (recorrentes||[]).filter(r=>r.type==='receita').reduce((s,r)=>s+Number(r.amount||0),0);
+    // Recorrências do mês atual, respeitando a frequência de cada uma —
+    // antes somava o valor cheio de recorrências semanais/anuais como se
+    // fossem mensais, inflando tudo que dependia disso (Projeção 90 dias,
+    // anel de reserva, Tendência de Gastos).
+    const despesasRec = (recorrentes||[]).filter(r=>r.type==='despesa')
+      .reduce((s,r)=>s+Number(r.amount||0)*ocorrenciasNoMes(r.date, r.recurrence_frequency||'mensal', ref),0);
+    const receitasRec = (recorrentes||[]).filter(r=>r.type==='receita')
+      .reduce((s,r)=>s+Number(r.amount||0)*ocorrenciasNoMes(r.date, r.recurrence_frequency||'mensal', ref),0);
 
     // ── Projeção 90 dias ──────────────────────────────
-    // Estimativa: saldo atual + 3× (receitas − despesas recorrentes)
-    // − todas as faturas de cartão abertas nos próximos 3 meses
+    // Estimativa: saldo atual + receitas − despesas recorrentes projetadas
+    // mês a mês pelos próximos 3 meses (cada recorrência conta só nos meses
+    // em que realmente ocorre) − todas as faturas de cartão abertas no período
     const faturas90 = (parcelasMes||[]).reduce((s,p)=>s+Number(p.valor_parcela||0),0);
-    const projecao90 = totalSaldo + (receitasRec - despesasRec) * 3 - faturas90;
+    const projecaoRefs = [ref, refProximo, refProx2];
+    const somaRecorrentes90 = tipo => (recorrentes||[]).filter(r=>r.type===tipo)
+      .reduce((s,r) => s + projecaoRefs.reduce((acc,rf) =>
+        acc + Number(r.amount||0) * ocorrenciasNoMes(r.date, r.recurrence_frequency||'mensal', rf), 0), 0);
+    const projecao90 = totalSaldo + (somaRecorrentes90('receita') - somaRecorrentes90('despesa')) - faturas90;
     const elProj = el('kpiProjecao90');
     if(elProj){
       elProj.classList.remove('kpi-loading');
@@ -610,8 +653,11 @@ function renderMetas(metas){
 
 // ── Receita líquida recorrente ────────────────────────
 function renderReceitaLiquida(recorrentes){
-  const receitasRec = recorrentes.filter(r=>r.type==='receita').reduce((s,r)=>s+Number(r.amount||0),0);
-  const despesasRec = recorrentes.filter(r=>r.type==='despesa').reduce((s,r)=>s+Number(r.amount||0),0);
+  const refAtual = refMesAtual();
+  const receitasRec = recorrentes.filter(r=>r.type==='receita')
+    .reduce((s,r)=>s+Number(r.amount||0)*ocorrenciasNoMes(r.date, r.recurrence_frequency||'mensal', refAtual),0);
+  const despesasRec = recorrentes.filter(r=>r.type==='despesa')
+    .reduce((s,r)=>s+Number(r.amount||0)*ocorrenciasNoMes(r.date, r.recurrence_frequency||'mensal', refAtual),0);
   previsaoReceitasRec = receitasRec;
   previsaoDespesasRec = despesasRec;
   const liquida = receitasRec - despesasRec;
@@ -938,7 +984,8 @@ function renderScore({ totalSaldo, receitas, despesas, totalFaturas, investiment
 
   // 2. Reserva de emergência (25 pts)
   // Meta: 6x as despesas mensais (inclui faturas de cartão)
-  const despesasMensaisRec = recorrentes.filter(r=>r.type==='despesa').reduce((s,r)=>s+Number(r.amount||0),0);
+  const despesasMensaisRec = recorrentes.filter(r=>r.type==='despesa')
+    .reduce((s,r)=>s+Number(r.amount||0)*ocorrenciasNoMes(r.date, r.recurrence_frequency||'mensal', refMesAtual()),0);
   const despesasRef = despesasMensaisRec > 0 ? despesasMensaisRec : (despesasTotal > 0 ? despesasTotal : 0);
   const reservaIdeal = despesasRef * 6;
   const pctReserva   = reservaIdeal > 0 ? Math.min(totalSaldo / reservaIdeal * 100, 100) : 0;
