@@ -26,7 +26,7 @@ let contasAtivas = [];
 async function carregarContas(){
   const { data } = await supabase
     .from('accounts')
-    .select('id,nome,currency,saldo_atual')
+    .select('id,nome,currency,saldo_atual,account_kind')
     .eq('user_id', user.id)
     .eq('active', true)
     .order('nome');
@@ -56,7 +56,10 @@ async function carregarExtrato(){
     el('kpiSaldo').className = saldo >= 0 ? 'positive' : 'negative';
     animarValor(el('kpiSaldo'), saldo, v => formatCurrency(v, currency));
   } else {
-    const totalBRL = contasAtivas.reduce((sum,c) => sum+convertToBRL(c.saldo_atual, c.currency, dolarAtual), 0);
+    // Contas de corretora ficam fora do total de "Todas as contas" (fluxo de
+    // caixa) — mas continuam selecionáveis individualmente no filtro acima.
+    const totalBRL = contasAtivas.filter(c => c.account_kind !== 'broker')
+      .reduce((sum,c) => sum+convertToBRL(c.saldo_atual, c.currency, dolarAtual), 0);
     el('kpiSaldo').className = totalBRL >= 0 ? 'positive' : 'negative';
     animarValor(el('kpiSaldo'), totalBRL, v => formatCurrency(v, 'BRL'));
   }

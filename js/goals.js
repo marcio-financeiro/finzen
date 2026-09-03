@@ -106,13 +106,14 @@ async function carregarContexto(){
   const hojeISO = dataLocalISO(hoje);
 
   const [{ data: contas }, { data: txHistorico }] = await Promise.all([
-    supabase.from('accounts').select('saldo_atual,currency').eq('user_id',user.id).eq('active',true),
+    supabase.from('accounts').select('saldo_atual,currency,account_kind').eq('user_id',user.id).eq('active',true),
     supabase.from('transactions').select('type,amount,date').eq('user_id',user.id)
       .gte('date', mes3).lte('date', hojeISO).eq('status','pago'),
   ]);
 
-  // Saldo total BRL
-  saldoContas = (contas||[]).filter(c=>(c.currency||'BRL')==='BRL')
+  // Saldo total BRL — contas de corretora (capital investido) ficam fora
+  // do saldo disponível pra financiar metas.
+  saldoContas = (contas||[]).filter(c=>(c.currency||'BRL')==='BRL' && c.account_kind !== 'broker')
     .reduce((s,c)=>s+Number(c.saldo_atual||0), 0);
 
   // Média de poupança mensal (receitas - despesas por mês)

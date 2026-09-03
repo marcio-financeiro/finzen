@@ -108,7 +108,7 @@ async function carregarDados(){
     { data: faturas },
     { data: pendentesMesAtual },
   ] = await Promise.all([
-    supabase.from('accounts').select('id,nome,currency,saldo_atual').eq('user_id', user.id).eq('active', true).order('nome'),
+    supabase.from('accounts').select('id,nome,currency,saldo_atual,account_kind').eq('user_id', user.id).eq('active', true).order('nome'),
     supabase.from('credit_cards').select('id,nome,limite,fechamento_dia,vencimento_dia').eq('user_id', user.id).eq('ativo', true).order('nome'),
     supabase.from('transactions').select('type,amount,date,recurrence_frequency,accounts:account_id(currency)').eq('user_id', user.id).eq('is_recurring', true).eq('recurrence_active', true),
     supabase.from('card_transactions').select('card_id,fatura_referencia,valor_parcela').eq('user_id', user.id).in('status', ['aberta', 'pendente']),
@@ -196,7 +196,10 @@ function simularCartao(valorTotal, parcelas, cardId, dataISO){
   const baseOffset = Math.max(offsetMeses(currentMonthRef(), refBase), 0);
   const totalMesesSimulados = baseOffset + parcelas;
 
-  let saldoAcumulado = contas.reduce((s, c) => s + convertToBRL(c.saldo_atual, c.currency || 'BRL', dolarAtual), 0);
+  // Contas de corretora guardam capital investido, não caixa disponível —
+  // ficam fora da simulação de fluxo de caixa.
+  let saldoAcumulado = contas.filter(c => c.account_kind !== 'broker')
+    .reduce((s, c) => s + convertToBRL(c.saldo_atual, c.currency || 'BRL', dolarAtual), 0);
   const linhas = [];
 
   for(let m = 0; m < totalMesesSimulados; m++){

@@ -202,7 +202,11 @@ async function carregarDashboard(){
     (txMesAnterior||[]).forEach(t => { t.amount = valorBRL(t); });
     (recorrentes||[]).forEach(t => { t.amount = valorBRL(t); });
 
-    const totalSaldo = (contas||[]).reduce((s,c)=>s+convertToBRL(c.saldo_atual, c.currency||'BRL', dolarAtual),0);
+    // Contas de corretora (account_kind='broker') guardam capital investido,
+    // não caixa disponível — ficam fora do saldo usado nos fluxos diários
+    // (KPI Saldo total, Projeção 90 dias, anel de reserva, Tendência de Gastos).
+    const contasLiquidas = (contas||[]).filter(c => c.account_kind !== 'broker');
+    const totalSaldo = contasLiquidas.reduce((s,c)=>s+convertToBRL(c.saldo_atual, c.currency||'BRL', dolarAtual),0);
     saldoContaAtual = totalSaldo;
     const tx = transacoesMes||[];
     const pagas = tx.filter(t=>t.status==='pago');
