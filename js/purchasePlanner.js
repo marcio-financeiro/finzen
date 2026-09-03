@@ -124,8 +124,14 @@ async function carregarDados(){
   faturasAbertas = faturas || [];
 
   const valorBRL = t => convertToBRL(t.amount, t.accounts?.currency || 'BRL', dolarAtual);
-  receitasRec = (recorrentes || []).filter(r => r.type === 'receita').reduce((s, r) => s + valorBRL(r), 0);
-  despesasRec = (recorrentes || []).filter(r => r.type === 'despesa').reduce((s, r) => s + valorBRL(r), 0);
+  // Recorrências do mês atual, respeitando a frequência de cada uma (mensal/
+  // semanal/anual) — uma recorrência anual/semanal não conta como se fosse
+  // mensal (mesma lógica de ocorrenciasNoMes usada na simulação abaixo).
+  const refAtual = hoje.slice(0, 7);
+  receitasRec = (recorrentes || []).filter(r => r.type === 'receita')
+    .reduce((s, r) => s + valorBRL(r) * ocorrenciasNoMes(r.date, r.recurrence_frequency || 'mensal', refAtual), 0);
+  despesasRec = (recorrentes || []).filter(r => r.type === 'despesa')
+    .reduce((s, r) => s + valorBRL(r) * ocorrenciasNoMes(r.date, r.recurrence_frequency || 'mensal', refAtual), 0);
 
   recorrentesTemplates = (recorrentes || []).map(r => ({
     type: r.type,
