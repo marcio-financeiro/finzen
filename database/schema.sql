@@ -27,7 +27,6 @@ create table public.accounts (
   nome text not null,
   tipo text not null,
   saldo_inicial numeric(14,2) default 0,
-  ativo boolean default true,
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now(),
   bank text,
@@ -36,13 +35,12 @@ create table public.accounts (
   active boolean default true,
   saldo_atual numeric default 0,
   sort_order integer default 0,
-  is_active boolean default true,
   account_kind text not null default 'bank',
   broker_name text,
   icon text
 );
--- Nota: ativo/active e is_active/active parecem duplicados (legado) — checar
--- qual o client realmente usa antes de tentar consolidar.
+-- ativo/is_active removidos em 2026_09_03_limpeza_colunas_legado.sql (legado
+-- morto, sem uso em código/RLS/RPC) — coluna canônica de status é `active`.
 
 create table public.transactions (
   id uuid not null default gen_random_uuid() primary key,
@@ -84,10 +82,10 @@ create table public.credit_cards (
   ativo boolean default true,
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now(),
-  sort_order integer default 0,
-  is_active boolean default true
+  sort_order integer default 0
 );
 -- Índice: idx_credit_cards_user_ativo(user_id,ativo) — Fase 1
+-- is_active removida em 2026_09_03_limpeza_colunas_legado.sql (legado morto)
 
 create table public.card_transactions (
   id uuid not null default gen_random_uuid() primary key,
@@ -119,10 +117,10 @@ create table public.categories (
   icon text,
   budget_amount numeric(15,2),
   parent_id uuid references categories(id) on delete set null,
-  sort_order integer default 0,
-  is_active boolean default true
+  sort_order integer default 0
 );
 -- Índice: idx_categories_user_ativo(user_id,ativo) — Fase 1
+-- is_active removida em 2026_09_03_limpeza_colunas_legado.sql (legado morto)
 
 create table public.category_rules (
   id uuid not null default gen_random_uuid() primary key,
@@ -230,7 +228,6 @@ create table public.investments (
   valor_aplicado_brl numeric(14,2),
   tese_entrada text,
   gatilho_saida text,
-  notas_livres text,
   convicao text,
   ind_pl numeric(10,2), ind_roe numeric(10,2), ind_dy numeric(10,2), ind_pvpa numeric(10,2),
   ind_pl_auto numeric(10,2), ind_roe_auto numeric(10,2), ind_dy_auto numeric(10,2), ind_pvpa_auto numeric(10,2),
@@ -240,6 +237,7 @@ create table public.investments (
 -- Índice: idx_investments_user_ativo(user_id,ativo) — Fase 1
 -- Escrita de cotacao_atual/valor_atual_brl/exchange_rate/atualizado_em também
 -- via RPC cotacao_patch_ativo (service_role, api/cotacao-cron.js).
+-- notas_livres removida em 2026_09_03_limpeza_colunas_legado.sql (cópia morta de `notas`)
 
 create table public.investment_transactions (
   id uuid not null default gen_random_uuid() primary key,
@@ -256,13 +254,16 @@ create table public.investment_transactions (
   imposto_retido numeric(18,2),
   account_id uuid references accounts(id) on delete set null,
   exchange_rate numeric(14,6),
-  tipo_ativo text,
   tipo_movimento text,
   preco_unitario numeric(14,6),
   moeda text default 'BRL',
   ticker text
 );
 -- Índice existente: (user_id, account_id, data_movimento) — sem índice em investment_id (backfill/CAGR).
+-- tipo_ativo removida em 2026_09_03_limpeza_colunas_legado.sql (cópia morta de `tipo`, nunca lida)
+-- ATENÇÃO: `tipo` tem semânticas conflitantes entre fluxos (js/investments.js grava classe do
+-- ativo; js/assetTransactions.js e a RPC recalculate_investment esperam 'compra'/'venda') —
+-- não mexer nela sem revisar recalculate_investment primeiro.
 
 create table public.dividends (
   id uuid not null default gen_random_uuid() primary key,
