@@ -24,6 +24,21 @@ function formatarData(dateStr) {
   return `${dia}/${meses[parseInt(mes) - 1]}/${ano}`;
 }
 
+// Diferença em dias (dataA - dataB), calculada em UTC pra não sofrer com
+// fuso/horário de verão — datas aqui são sempre "YYYY-MM-DD" puras.
+function diffDias(dataA, dataB) {
+  const [ay, am, ad] = dataA.split('-').map(Number);
+  const [by, bm, bd] = dataB.split('-').map(Number);
+  const ms = Date.UTC(ay, am - 1, ad) - Date.UTC(by, bm - 1, bd);
+  return Math.round(ms / 86400000);
+}
+
+function addDiasStr(dataISO, dias) {
+  const [y, m, d] = dataISO.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + dias));
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
+
 function emojiTipo(tipo) {
   if (tipo === 'saude')       return '🏥';
   if (tipo === 'financeiro')  return '💰';
@@ -82,9 +97,77 @@ async function lembretesDiarios() {
   }
 }
 
+const fmtBRL = v => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// ── Avisos de vencimento: 1 dia antes, no dia, e repete todo dia enquanto
+// estiver em atraso e não pago (contas avulsas/recorrentes + faturas de
+// cartão) ────────────────────────────────────────────────────────────────
+function rotuloVencimento(diasParaVencer) {
+  if (diasParaVencer < 0) return '⚠️ Venceu';
+  if (diasParaVencer === 0) return '🔴 Vence hoje';
+  return '🟡 Vence amanhã';
+}
+
+async function avisosVencimento() {
+  const dataHoje = hoje();
+  const amanha = addDiasStr(dataHoje, 1);
+
+  const alertasPorUsuario = {};
+  const add = (userId, texto) => (alertasPorUsuario[userId] = alertasPorUsuario[userId] || []).push(texto);
+
+  // Contas avulsas/recorrentes ainda não pagas — sem limite inferior de
+  // data, então uma conta atrasada continua sendo avisada todo dia até
+  // status virar "pago".
+  const rContas = await fetch(
+    `${SB_URL}/rest/v1/transactions?type=eq.despesa&status=eq.pendente&date=lte.${amanha}&select=user_id,description,amount,date`,
+    { headers: sbHeaders }
+  );
+  const contas = await rContas.json();
+  if (Array.isArray(contas)) {
+    for (const c of contas) {
+      const dias = diffDias(c.date, dataHoje);
+      const rotulo = dias < 0
+        ? `⚠️ Venceu em ${formatarData(c.date)} e ainda não foi paga`
+        : rotuloVencimento(dias);
+      add(c.user_id, `${rotulo}: <b>${c.description}</b> — R$ ${fmtBRL(c.amount)}`);
+    }
+  }
+
+  // Faturas de cartão em aberto — o vencimento é o dia fixo do cartão
+  // (vencimento_dia) dentro do mês de referência da fatura.
+  const [rCartoes, rParcelas] = await Promise.all([
+    fetch(`${SB_URL}/rest/v1/credit_cards?ativo=eq.true&select=id,user_id,nome,vencimento_dia`, { headers: sbHeaders }),
+    fetch(`${SB_URL}/rest/v1/card_transactions?status=eq.aberta&select=user_id,card_id,valor_parcela,fatura_referencia`, { headers: sbHeaders }),
+  ]);
+  const [cartoes, parcelas] = await Promise.all([rCartoes.json(), rParcelas.json()]);
+
+  if (Array.isArray(cartoes) && Array.isArray(parcelas)) {
+    for (const cartao of cartoes) {
+      const referencias = [...new Set(parcelas.filter(p => p.card_id === cartao.id).map(p => p.fatura_referencia))];
+      for (const ref of referencias) {
+        const vencimento = `${ref}-${String(cartao.vencimento_dia).padStart(2, '0')}`;
+        const dias = diffDias(vencimento, dataHoje);
+        if (dias > 1) continue;
+        const total = parcelas
+          .filter(p => p.card_id === cartao.id && p.fatura_referencia === ref)
+          .reduce((s, p) => s + Number(p.valor_parcela || 0), 0);
+        const rotulo = dias < 0
+          ? `⚠️ Fatura venceu em ${formatarData(vencimento)} e ainda não foi paga`
+          : rotuloVencimento(dias);
+        add(cartao.user_id, `${rotulo}: <b>${cartao.nome}</b> — R$ ${fmtBRL(total)}`);
+      }
+    }
+  }
+
+  for (const [userId, alertas] of Object.entries(alertasPorUsuario)) {
+    const chatId = await getChatId(userId);
+    if (!chatId) continue;
+    await enviar(chatId, `🔔 <b>Vencimentos</b>\n\n${alertas.join('\n')}`);
+  }
+}
+
 // ── Radar financeiro: fatura × limite + orçamento em risco ──────────────────
 function refMes(dataISO) { return dataISO.slice(0, 7); }
-const fmtBRL = v => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 async function radarFinanceiro() {
   const dataHoje = hoje();
@@ -200,6 +283,7 @@ export default async function handler(req, res) {
   const erros = [];
   // Cada bloco é independente — falha em um não derruba os demais
   await lembretesDiarios().catch(e => { console.error('lembretes:', e.message); erros.push('lembretes'); });
+  await avisosVencimento().catch(e => { console.error('vencimentos:', e.message); erros.push('vencimentos'); });
   await radarFinanceiro().catch(e => { console.error('radar:', e.message); erros.push('radar'); });
   await resumoMensal().catch(e => { console.error('resumo:', e.message); erros.push('resumo'); });
 
