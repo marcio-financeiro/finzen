@@ -1126,7 +1126,25 @@ async function loadMovements(){
     }
   });
 
-  rows.sort((a,b) => String(b.date).localeCompare(String(a.date)));
+  if(monthFilter){
+    rows.sort((a,b) => String(b.date).localeCompare(String(a.date)));
+  } else {
+    // Sem filtro de mês, a tabela mistura lançamentos já pagos (relevante ver
+    // os mais recentes primeiro) com ocorrências futuras de recorrências
+    // ainda pendentes — e essas podem ir meses/anos à frente. Ordenar tudo só
+    // por data desc colocava a ocorrência mais distante no topo, na frente da
+    // que realmente vence essa semana, e isso já causou dar baixa na
+    // ocorrência errada. Agora pendentes ficam agrupadas no topo, da mais
+    // próxima pra mais distante; o resto continua abaixo, mais recente primeiro.
+    rows.sort((a,b) => {
+      const aPend = a.status === 'pendente';
+      const bPend = b.status === 'pendente';
+      if(aPend !== bPend) return aPend ? -1 : 1;
+      return aPend
+        ? String(a.date).localeCompare(String(b.date))
+        : String(b.date).localeCompare(String(a.date));
+    });
+  }
 
   if(categoryFilter){
     const total = rows.reduce((s,r) => s + Number(r.value||0), 0);
