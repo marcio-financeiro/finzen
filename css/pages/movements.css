@@ -6,7 +6,7 @@
     padding:16px;
   }
   .ff-flow-main{
-    grid-column:1 / -1;
+    grid-column:span 2;
     padding:22px;
     border:1px solid var(--border);
     border-radius:var(--radius-lg);

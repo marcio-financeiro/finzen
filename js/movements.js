@@ -130,6 +130,11 @@ function monthEndISO(){
   return `${last.getFullYear()}-${String(last.getMonth()+1).padStart(2,'0')}-${String(last.getDate()).padStart(2,'0')}`;
 }
 
+function monthStartISO(){
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`;
+}
+
 function currentMonthRef(){
   return currentMonthValue();
 }
@@ -763,14 +768,28 @@ async function sumCurrentAccountBalances(){
 }
 
 async function getPendingTransactionsUntilMonthEnd(){
-  const today = todayISO();
+  // Mês inteiro (não só de hoje em diante) — uma conta que venceu no início
+  // do mês e ainda está pendente também precisa entrar na previsão do saldo
+  // final, senão o "Saldo Previsto" fica otimista demais.
+  const start = monthStartISO();
   const end   = monthEndISO();
   const { data, error } = await supabase.from('transactions')
     .select('id,type,amount,description,date,status')
     .eq('user_id',user.id).eq('status','pendente')
-    .gte('date',today).lte('date',end).order('date',{ascending:true});
+    .gte('date',start).lte('date',end).order('date',{ascending:true});
   if(error) throw new Error('Erro ao calcular lançamentos pendentes: '+error.message);
   return data||[];
+}
+
+async function sumPaidTransactionsThisMonth(){
+  const start = monthStartISO();
+  const end   = monthEndISO();
+  const { data, error } = await supabase.from('transactions')
+    .select('type,amount')
+    .eq('user_id',user.id).eq('status','pago')
+    .gte('date',start).lte('date',end);
+  if(error) throw new Error('Erro ao calcular pagos do mês: '+error.message);
+  return (data||[]).reduce((sum,t) => sum + (t.type==='receita' ? Number(t.amount||0) : -Number(t.amount||0)), 0);
 }
 
 async function sumOpenCardInvoicesThisMonth(){
@@ -810,14 +829,14 @@ async function openFlowAccountsDetail(){
 }
 
 async function openFlowPendingDetail(type){
-  const today = todayISO();
+  const start = monthStartISO();
   const end   = monthEndISO();
   const { data, error } = await supabase.from('transactions')
     .select(`id,type,amount,description,date,status,
       accounts:account_id(nome,currency),
       categories:category_id(nome,icon)`)
     .eq('user_id',user.id).eq('status','pendente').eq('type',type)
-    .gte('date',today).lte('date',end).order('date',{ascending:true});
+    .gte('date',start).lte('date',end).order('date',{ascending:true});
   if(error){ showMessage('Erro ao detalhar lançamentos: '+error.message,'danger'); return; }
 
   const isIncome = type === 'receita';
@@ -857,24 +876,40 @@ async function openFlowCardsDetail(){
 
 async function renderCashFlowMonth(){
   try{
-    const [accountBalance, pendingTransactions, openCards] = await Promise.all([
+    const [accountBalance, pendingTransactions, paidNetThisMonth, openCards] = await Promise.all([
       sumCurrentAccountBalances(),
       getPendingTransactionsUntilMonthEnd(),
+      sumPaidTransactionsThisMonth(),
       sumOpenCardInvoicesThisMonth(),
     ]);
 
     const pendingIncome  = pendingTransactions.filter(i=>i.type==='receita').reduce((s,i)=>s+Number(i.amount||0),0);
     const pendingExpense = pendingTransactions.filter(i=>i.type==='despesa').reduce((s,i)=>s+Number(i.amount||0),0);
-    const freeBalance    = accountBalance+pendingIncome-pendingExpense-openCards;
-    const statusClass    = freeBalance>=0?'positive':'negative';
+
+    // Saldo Inicial = saldo real hoje menos o que já entrou/saiu este mês —
+    // fica fixo o mês inteiro (só se move quando o mês vira). Dar baixa numa
+    // conta pendente deste mês só troca ela de "pendente" pra "pago": soma
+    // no Saldo Atual e sai do pendente, mas o Saldo Inicial não sente, porque
+    // já é subtraído dos dois lados.
+    const initialBalance = accountBalance - paidNetThisMonth;
+    // Saldo Previsto = Saldo Inicial + tudo que ainda falta (e o que já
+    // aconteceu) este mês inteiro − faturas ainda em aberto.
+    const projectedBalance = accountBalance + pendingIncome - pendingExpense - openCards;
+    const projectedClass = projectedBalance>=0?'positive':'negative';
+    const initialClass   = initialBalance>=0?'positive':'negative';
     const accountClass   = accountBalance>=0?'positive':'negative';
 
     cashFlowMonthList.innerHTML = `
       <div class="ff-flow-grid">
         <div class="ff-flow-main">
-          <span>Saldo Livre Estimado</span>
-          <strong class="${statusClass}">${formatCurrency(freeBalance,'BRL')}</strong>
-          <small>Estimativa até ${shortDateBR(monthEndISO())}</small>
+          <span>Saldo Inicial do Mês</span>
+          <strong class="${initialClass}">${formatCurrency(initialBalance,'BRL')}</strong>
+          <small>Saldo em ${shortDateBR(monthStartISO())}</small>
+        </div>
+        <div class="ff-flow-main">
+          <span>Saldo Previsto</span>
+          <strong class="${projectedClass}">${formatCurrency(projectedBalance,'BRL')}</strong>
+          <small>Projeção até ${shortDateBR(monthEndISO())}</small>
         </div>
         <button type="button" class="ff-flow-card clickable" data-flow-detail="accounts">
           <span>Saldo Atual</span>
@@ -1192,6 +1227,12 @@ async function loadMovements(){
                   <button type="button" class="btn btn-primary compact"
                     onclick="window.pagarMovimentoFinZen('${r.id}')"
                     style="background:var(--success);border-color:var(--success);padding:6px 8px" title="Marcar como pago">✓</button>
+                  ` : r.status==='pago' ? `
+                  <button type="button" class="btn btn-secondary compact"
+                    onclick="window.desfazerBaixaFinZen('${r.id}')"
+                    style="padding:6px 8px" title="Desfazer baixa (volta pra pendente)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-6.7L3 9"/></svg>
+                  </button>
                   ` : ''}
                   <button type="button" class="btn btn-secondary compact"
                     onclick="window.editMovementFinZen('${r.id}')"
@@ -1241,6 +1282,9 @@ async function loadMovements(){
               <button type="button" class="btn compact"
                 onclick="window.pagarMovimentoFinZen('${r.id}')"
                 style="background:var(--success);border-color:var(--success);color:#fff;flex:2">✓ Pagar</button>
+              ` : r.status==='pago' ? `
+              <button type="button" class="btn btn-secondary compact"
+                onclick="window.desfazerBaixaFinZen('${r.id}')" style="flex:2">↺ Desfazer baixa</button>
               ` : ''}
               <button type="button" class="btn btn-secondary compact"
                 onclick="window.editMovementFinZen('${r.id}')">Editar</button>
@@ -1335,9 +1379,22 @@ window.pagarMovimentoFinZen = async function(id) {
     if(error){ showMessage(error.message.includes('já está pago') ? 'Lançamento já está pago.' : 'Erro ao dar baixa: '+error.message, error.message.includes('já está pago') ? 'info' : 'danger'); return; }
 
     showMessage('✓ Lançamento marcado como pago!', 'success');
-    await loadMovements();
+    await refreshAll();
   } catch(e) {
     showMessage('Erro ao dar baixa: ' + e.message, 'danger');
+  }
+};
+
+// ── Desfaz uma baixa: volta pra pendente e reverte o ajuste de saldo ────
+window.desfazerBaixaFinZen = async function(id) {
+  try {
+    const { error } = await supabase.rpc('fz_desfazer_baixa', { p_transaction_id: id });
+    if(error){ showMessage(error.message.includes('não está pago') ? 'Lançamento não está pago.' : 'Erro ao desfazer baixa: '+error.message, error.message.includes('não está pago') ? 'info' : 'danger'); return; }
+
+    showMessage('↺ Baixa desfeita — voltou pra pendente.', 'success');
+    await refreshAll();
+  } catch(e) {
+    showMessage('Erro ao desfazer baixa: ' + e.message, 'danger');
   }
 };
 
