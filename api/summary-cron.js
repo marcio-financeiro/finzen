@@ -46,6 +46,10 @@ function formatarSemanal(periodo, resumo) {
     `💸 Despesas: ${fmtBRL(resumo.despesas)}`,
     `${resumo.resultado >= 0 ? '✅' : '🔴'} Resultado: ${fmtBRL(resumo.resultado)}`,
   ];
+  if (resumo.variacaoCarteira !== null) {
+    const v = resumo.variacaoCarteira;
+    linhas.push(`${v >= 0 ? '📈' : '📉'} Carteira: ${v >= 0 ? '+' : '-'}${fmtBRL(Math.abs(v))} de variação de mercado na semana`);
+  }
   if (resumo.top3.length > 0) {
     linhas.push('', 'Top categorias de despesa:');
     resumo.top3.forEach((c, i) => linhas.push(`${i + 1}º ${c.nome} — ${fmtBRL(c.valor)}`));

@@ -9,7 +9,7 @@
 // (fatura_referencia é mensal, não mapeia 1:1 numa janela de 7 dias) nem
 // conversão de câmbio (assume BRL — simplificação pra manter o e-mail leve).
 
-import { mesRefLabel } from './_dateUtils.js';
+import { mesRefLabel, addDays } from './_dateUtils.js';
 
 async function sbFetch(SB_URL, sbHeaders, path) {
   const r = await fetch(`${SB_URL}/rest/v1/${path}`, { headers: sbHeaders });
@@ -38,20 +38,55 @@ function topCategorias(tx, cardTx, n = 3) {
     .slice(0, n);
 }
 
+// Snapshot da carteira mais próximo, na data indicada ou antes dela (o cron
+// de cotação só roda seg-sex, então um fim de semana pode não ter snapshot
+// próprio — busca o último disponível pra trás).
+async function snapshotCarteiraEm(userId, dataAlvo, sbHeaders, SB_URL) {
+  const rows = await sbFetch(
+    SB_URL, sbHeaders,
+    `investment_value_history?user_id=eq.${userId}&date=lte.${dataAlvo}` +
+    '&select=date,valor_total_brl&order=date.desc&limit=1'
+  );
+  return rows[0] ?? null;
+}
+
+// Variação de mercado da carteira na semana = diferença do valor total entre
+// o snapshot de véspera do início do período e o de hoje, descontando os
+// aportes/resgates feitos no período (senão um aporte novo entraria como se
+// fosse ganho de mercado). Mesma fórmula de retorno já usada em
+// js/investments.js (calcularRetornoMensal). Retorna null se não houver
+// snapshot dos dois lados (ex.: primeira semana depois de a tabela existir).
+async function calcularVariacaoCarteira(userId, inicio, fim, sbHeaders, SB_URL) {
+  const [snapInicio, snapFim, movimentos] = await Promise.all([
+    snapshotCarteiraEm(userId, addDays(inicio, -1), sbHeaders, SB_URL),
+    snapshotCarteiraEm(userId, fim, sbHeaders, SB_URL),
+    sbFetch(SB_URL, sbHeaders,
+      `investment_transactions?user_id=eq.${userId}&data_movimento=gte.${inicio}&data_movimento=lte.${fim}` +
+      '&select=tipo_movimento,valor_total'),
+  ]);
+  if (!snapInicio || !snapFim) return null;
+
+  const netFlow = movimentos.reduce((s, m) => s + (m.tipo_movimento === 'venda' ? -1 : 1) * Number(m.valor_total || 0), 0);
+  return Number(snapFim.valor_total_brl) - Number(snapInicio.valor_total_brl) - netFlow;
+}
+
 // ── Resumo semanal (últimos N dias corridos) ──────────────────────────────
 export async function resumoSemanal(userId, { inicio, fim }, sbHeaders, SB_URL) {
-  const tx = await sbFetch(
-    SB_URL, sbHeaders,
-    `transactions?user_id=eq.${userId}&date=gte.${inicio}&date=lte.${fim}&status=eq.pago` +
-    '&select=type,amount,category_id,categories:category_id(nome)'
-  );
+  const [tx, variacaoCarteira] = await Promise.all([
+    sbFetch(
+      SB_URL, sbHeaders,
+      `transactions?user_id=eq.${userId}&date=gte.${inicio}&date=lte.${fim}&status=eq.pago` +
+      '&select=type,amount,category_id,categories:category_id(nome)'
+    ),
+    calcularVariacaoCarteira(userId, inicio, fim, sbHeaders, SB_URL),
+  ]);
 
   const receitas  = somaPorTipo(tx, 'receita');
   const despesas  = somaPorTipo(tx, 'despesa');
   const resultado = receitas - despesas;
   const top3 = topCategorias(tx, []);
 
-  return { receitas, despesas, resultado, top3 };
+  return { receitas, despesas, resultado, top3, variacaoCarteira };
 }
 
 // ── Resumo mensal (mês fechado + insights) ────────────────────────────────
