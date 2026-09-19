@@ -307,6 +307,18 @@ create table public.patrimony_history (
 );
 -- Índice: idx_patrimony_history_user_month
 
+create table public.investment_value_history (
+  id uuid not null default gen_random_uuid() primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  date date not null,
+  valor_total_brl numeric(14,2) not null default 0,
+  created_at timestamp with time zone not null default now(),
+  unique (user_id, date)
+);
+-- Índice: idx_investment_value_history_user_date(user_id,date desc)
+-- Snapshot diário da carteira, gravado por api/cotacao-cron.js — ver
+-- database/2026_09_18_investment_value_history.sql
+
 -- ═══════════════════════════════════════════════════════════════════════════
 -- GESTÃO PESSOAL
 -- ═══════════════════════════════════════════════════════════════════════════
