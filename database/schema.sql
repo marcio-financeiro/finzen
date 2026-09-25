@@ -61,8 +61,11 @@ create table public.transactions (
   recurrence_until date,
   recurrence_group_id uuid,
   parent_transaction_id uuid references transactions(id) on delete set null,
-  recurrence_active boolean not null default true
+  recurrence_active boolean not null default true,
+  tags text[]
 );
+-- tags: 2026_09_25_classificacao_categorias_tags.sql — tags livres do
+-- usuário, usadas pela exportação de dados para IA (FinZen Flash).
 -- Índices: idx_transactions_user_date(user_id,date desc), idx_transactions_user_status(user_id,status),
 -- idx_transactions_recorrencia(user_id,is_recurring,recurrence_frequency),
 -- idx_transactions_recurrence_active(user_id,is_recurring,recurrence_active),
@@ -117,10 +120,15 @@ create table public.categories (
   icon text,
   budget_amount numeric(15,2),
   parent_id uuid references categories(id) on delete set null,
-  sort_order integer default 0
+  sort_order integer default 0,
+  fixo_variavel text check (fixo_variavel in ('fixo', 'variavel')),
+  essencial boolean
 );
 -- Índice: idx_categories_user_ativo(user_id,ativo) — Fase 1
 -- is_active removida em 2026_09_03_limpeza_colunas_legado.sql (legado morto)
+-- fixo_variavel/essencial: 2026_09_25_classificacao_categorias_tags.sql —
+-- classificação manual usada pela exportação de dados para IA (FinZen
+-- Flash). Null = usuário ainda não classificou essa categoria.
 
 create table public.category_rules (
   id uuid not null default gen_random_uuid() primary key,
